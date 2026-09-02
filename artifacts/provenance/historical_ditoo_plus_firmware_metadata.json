@@ -1,0 +1,24 @@
+{
+  "recorded_utc": "2026-09-02",
+  "note": "Historical REvoom-discovered Ditoo Plus firmware metadata. Original CDN objects returned 404 during this reconnaissance; binaries were NOT recovered.",
+  "records": [
+    {
+      "product_flag": 60,
+      "version": 60010,
+      "filename": "L1ghbmA929aEUhOCAAAAAD9iqis747.bin",
+      "file_id": "group1/M00/B8/1A/L1ghbmA929aEUhOCAAAAAD9iqis747.bin",
+      "sha1": "017a40dcef6018f34be0ec9b83003d71c67e4a58",
+      "historical_url": "https://f.divoom-gz.com/group1/M00/B8/1A/L1ghbmA929aEUhOCAAAAAD9iqis747.bin",
+      "status_2026_09_02": "404"
+    },
+    {
+      "product_flag": 42,
+      "version": 42010,
+      "filename": "eEwpPWA93ECEIZjCAAAAAArkYGQ617.bin",
+      "file_id": "group1/M00/B8/F6/eEwpPWA93ECEIZjCAAAAAArkYGQ617.bin",
+      "sha1": "7c352e6b8f62af8d0a2d51d824f75d1dafc18050",
+      "historical_url": "https://f.divoom-gz.com/group1/M00/B8/F6/eEwpPWA93ECEIZjCAAAAAArkYGQ617.bin",
+      "status_2026_09_02": "404"
+    }
+  ]
+}

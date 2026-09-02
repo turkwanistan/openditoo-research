@@ -1,0 +1,7 @@
+{
+  "captured_utc": "2026-09-02",
+  "request_url": "https://app.divoom-gz.com/GetUpdateFileV3?Hardware=60&IsTest=false&Language=EN&UpdateFlag=2",
+  "response": {"ReturnCode":0,"ReturnMessage":"","FileId":"group1/M00/DE/44/L1ghbmDns8KEN_qPAAAAAPrbuLY357.bin","Version":60014,"Sha1":"0d2b2ac511d233e769dbd31f3371dc52cc589e17","Explain":"Rml4IEJ1Z3Mh"},
+  "artifact": "../firmware/flag60_v60014.bin",
+  "sha256": "02efa679cf1c152d6e6cf57f43223153218b411f41a787b65978e5caa77c1300"
+}

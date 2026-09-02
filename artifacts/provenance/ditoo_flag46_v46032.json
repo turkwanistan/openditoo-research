@@ -1,0 +1,8 @@
+{
+  "captured_utc": "2026-09-02",
+  "request_url": "https://app.divoom-gz.com/GetUpdateFileV3?Hardware=46&IsTest=false&Language=EN&UpdateFlag=2",
+  "response": {"ReturnCode":0,"ReturnMessage":"","FileId":"group1/M00/DF/28/eEwpPWDnwIqEYXPIAAAAACPl7Fc716.bin","Version":46032,"Sha1":"a1ca1ac25d63b9c6adb5258e32ab26fb8b779221","Explain":"Rml4IEJ1Z3Mh"},
+  "artifact": "../reference/ditoo_flag46_v46032.bin",
+  "sha256": "a7ee309ef2d0c07f8a72abb9dd9bb444f33bd8f952ca9009c7b7f8e385d7e3d2",
+  "role": "related-family calibration only; not Ditoo Plus truth"
+}

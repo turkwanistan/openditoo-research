@@ -1,0 +1,17 @@
+{
+  "fcc_id": "A8I-DITOO-PLUS",
+  "mirrored_utc": "2026-09-02",
+  "source": "fccid.io public FCC exhibit mirror",
+  "documents": [
+    {"id":5058743,"file":"5058743_external_photos.pdf","url":"https://fccid.io/A8IDITOOPLUS/External-Photos/External-Photos-5058743.pdf","sha256":"8ebe8d79edd7a982da1b2fed974974e454ed380241ec7d04cdd7f71ee2a328bf"},
+    {"id":5058744,"file":"5058744_internal_photos.pdf","url":"https://fccid.io/A8I-DITOO-PLUS/Internal-Photos/Internal-Photos-5058744.pdf","sha256":"9a659d9021f4990d5e16fd72744a568d85e7ca95c6df94e70202c80d15e829b5"},
+    {"id":5058745,"file":"5058745_test_setup_photos.pdf","url":"https://fccid.io/A8IDITOOPLUS/Test-Setup-Photos/TestSetupphoto-5058745.pdf","sha256":"abdc0794319c65aa1b127662bf75da78fa25691cba1071e68a803abc23d95fee"},
+    {"id":5058746,"file":"5058746_user_manual.pdf","url":"https://fccid.io/A8I-DITOO-PLUS/Users-Manual/User-Manual-5058746.pdf","sha256":"620c9bff6561b6d56547d85482e20a418ab5226c16bbd873b1778a7b45c916a1"},
+    {"id":5058747,"file":"5058747_short_confidentiality_request.pdf","url":"https://fccid.io/A8IDITOOPLUS/Letter/ShortConReq-5058747.pdf","sha256":"21e8c3bd9f08708bfde2bc1df4e5683802014aa71ce2d68202b2551cc4da072d"},
+    {"id":5058748,"file":"5058748_confidentiality_request.pdf","url":"https://fccid.io/A8IDITOOPLUS/Letter/Confidentiality-Request-Letter-5058748.pdf","sha256":"78b4ef6907dce29ef187ce1091bae0779034b1ee32117aa5c644834f5988dc47"},
+    {"id":5058749,"file":"5058749_sdoc_letter.pdf","url":"https://fccid.io/A8IDITOOPLUS/Letter/SDoC-letter-5058749.pdf","sha256":"146a1514645c7694d016bc4db688344ac4b0861a33c65412cb63a85ea7481700"},
+    {"id":5058750,"file":"5058750_bdr_edr_test_report.pdf","url":"https://fccid.io/A8IDITOOPLUS/Test-Report/18220WC00165601-BDR-EDR-5058750.pdf","sha256":"53452ddaf7b324f361e4710c1c0391c202c361041a39be61c09bc58c0103b28e"},
+    {"id":5058751,"file":"5058751_rf_exposure.pdf","url":"https://fccid.io/A8IDITOOPLUS/RF-Exposure-Info/RFExposure-5058751.pdf","sha256":"09d3c3dbf17575ad5615ae324686f0b837cdeb9da1bfcb9214180305cf5fa7cd"},
+    {"id":5058752,"file":"5058752_label.pdf","url":"https://fccid.io/A8I-DITOO-PLUS/Label/Label-5058752.pdf","sha256":"08a9756d1e59aca38cba8f9c9f2edf287afc1bc45bdd99c2dd33c368c199b381"}
+  ]
+}

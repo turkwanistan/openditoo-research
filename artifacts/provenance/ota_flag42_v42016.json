@@ -1,0 +1,7 @@
+{
+  "captured_utc": "2026-09-02",
+  "request_url": "https://app.divoom-gz.com/GetUpdateFileV3?Hardware=42&IsTest=false&Language=EN&UpdateFlag=2",
+  "response": {"ReturnCode":0,"ReturnMessage":"","FileId":"group1/M00/14/F0/eEwpPWNEzqqED5ZwAAAAAHJLNEc371.bin","Version":42016,"Sha1":"4371b90f4a0846fbb8dc26b77ad03695962f7ffb","Explain":"MTpGaXggYnVncyE="},
+  "artifact": "../firmware/flag42_v42016.bin",
+  "sha256": "f2509588d3ca52175591925298cdcffe9c7e01f6d43d89ee352b967610025b6a"
+}
