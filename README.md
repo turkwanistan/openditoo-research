@@ -2,6 +2,10 @@
 
 Preservation-first reverse-engineering workspace for the Divoom Ditoo Plus.
 
+## Project state
+
+Start with [`START_HERE.md`](START_HERE.md), then read [`PROJECT_STATE.md`](PROJECT_STATE.md) for the comprehensive current research synthesis, evidence calibration, physical-session plan, and ranked next work.
+
 ## Artifact preservation
 
 Public artifacts acquired during reconnaissance are stored under `artifacts/` and intentionally committed to local Git so future work does not depend on Divoom CDN or FCC mirror availability.
