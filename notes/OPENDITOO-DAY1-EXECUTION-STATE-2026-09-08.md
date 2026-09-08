@@ -226,6 +226,10 @@ Android package metadata also closes two M0 fields: Android 16 / build `CP1A.260
 | M4 bounded custom query | FROZEN / AUTHORITY BLOCKED | exact read-only 0x97 request frozen; manifest has only `transmission_authority_missing`; compile-only Windows proof pending before activation |
 | M5 volatile frame | BLOCKED | entry/paint/exit + persistence evidence not established |
 
+## Windows M4 compile proof
+
+The operator compiled `runtime/windows/OpenDitoo.Day1.Host/OpenDitoo.Day1.Host.csproj` on Windows with `.NET 8`, Release configuration, `--no-restore`, and `--nologo`. Result: **Build succeeded, 0 warnings, 0 errors** in 1.24 seconds. This was compile-only: the installed Host was not restarted or replaced, `Program.cs` remained status-only, and no Bluetooth discovery, pairing, connection, or Ditoo transmission occurred.
+
 ## Exact next action
 
-Validate the newly prepared typed M4 Windows source with a compile-only `.NET 8` build from Windows. `Program.cs` still exposes only `/v1/status` and contains no reference to the M4 protocol/transport classes, so this build cannot connect or transmit. After compile PASS, preserve the exact source hashes and request explicit authority covering Windows pairing if needed plus exactly one frozen M4 RFCOMM exchange. Do not activate any M4 route or perform Bluetooth pairing/custom transmission before that authority.
+Compile proof is PASS. M4 is now fully frozen except for explicit physical authority. Request authority covering, if necessary, ordinary Windows Bluetooth pairing/discovery for the exact unit `11:75:58:CE:DE:C7`, followed by exactly one RFCOMM channel-1 exchange using TX `01040097009b0002`, with one connect, one send, no retry, max 13-byte response, 20-second total deadline, immediate close, and no other command. Keep Android disconnected during the Windows-owned trial so only one controller owns the Ditoo. Do not activate any M4 route or perform Bluetooth pairing/custom transmission until that authority is explicit.
