@@ -25,10 +25,22 @@
   "app": {
     "phone_os_version": "Android - exact version pending",
     "divoom_app_version": null,
-    "reported_model": null,
+    "reported_model": "Ditoo-Plus-audio",
     "reported_firmware": null,
     "firmware_update_prompted": null,
     "firmware_update_dismissed": null
+  },
+  "bluetooth_stock_observation": {
+    "android_system_name": "Ditoo-Plus-audio",
+    "device_address": "11:75:58:CE:DE:C7",
+    "android_status": "Active",
+    "reported_battery_percent": 10,
+    "phone_calls_profile_enabled": true,
+    "media_audio_profile_enabled": true,
+    "spatial_audio_enabled": true,
+    "contacts_and_call_history_access_enabled": true,
+    "control_transport": null,
+    "control_endpoint": null
   },
   "evidence": {
     "photos_private_paths": [],
@@ -39,7 +51,14 @@
       "Bottom label also shows Input: 5V==2A and CMIIT ID: 2021DP1493.",
       "Private chat photo SHA-256 758a55507077eb90868f691e4b034fe268633b88a3518cdf433bd9c76f955085 (powered-on front view); photo itself is not committed.",
       "Private chat photo SHA-256 7beea6ae7864d0811955136cb3c4e8d75ee360f7aad529c8b900ac4f360004ab (bottom regulatory label); photo itself is not committed.",
-      "Operator has an Android phone available for official-app stock traffic observation; intended custom-control topology remains Windows/WSL, not Android."
+      "Operator has an Android phone available for official-app stock traffic observation; intended custom-control topology remains Windows/WSL, not Android.",
+      "Android Bluetooth details screenshot shows Ditoo-Plus-audio active at address 11:75:58:CE:DE:C7 with 10% battery and audio/call profiles enabled; this identifies the stock audio endpoint but does not identify the application-control transport.",
+      "Official Divoom app screenshots show the same Ditoo-Plus-audio device connected with brightness control, Device settings, and device functions including Design, Animation, Leditor, Pixel Coloring, Mixer, Voice message, Sleep, Planner and More.",
+      "Device settings screenshot exposes ordinary stock settings such as 24 hours, display song title, brightness-related controls, energy saver, temperature unit, Bluetooth auto reconnect, notification sound, light intensity and auto power off.",
+      "No installed firmware version or explicit firmware-update prompt is visible in the supplied screenshots; both remain unresolved rather than inferred.",
+      "Private chat screenshot SHA-256 9172188adec1b521b7e08839d19bfd84d58bd3a705bdc1f925a71ae1ed0a2e4e (Android Bluetooth device details); screenshot itself is not committed.",
+      "Private chat screenshot SHA-256 30ba904f212f0ed1a8926fda69dc1bd6109e926c8eb0148f85a784fd7d4071b3 (Divoom Device settings); screenshot itself is not committed.",
+      "Private chat screenshot SHA-256 1f5bd7bce50781b52a39e9ce840bb947865ef93f64cc51aeee6bbbafe9291ccb (Divoom main device page); screenshot itself is not committed."
     ]
   },
   "device_io_classification": "ordinary_stock_observation_only",

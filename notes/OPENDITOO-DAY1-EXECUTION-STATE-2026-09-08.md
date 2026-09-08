@@ -191,15 +191,17 @@ Operator-provided photographs establish the purchased unit is the expected pink 
 
 The operator has an Android phone available. Android will be used only as a stock-app observation/capture instrument for M1 if needed. The intended custom-control topology remains `WSL_MCP -> WSL CLI -> Windows Host -> Windows Bluetooth -> Ditoo`, matching the OpenTivoo architecture at the control-plane level.
 
-M0 is not yet closed because ordinary controls/speaker behavior and stock-app-reported model/firmware are still unobserved.
+Additional Android screenshots establish a stock Bluetooth audio identity `Ditoo-Plus-audio` at device address `11:75:58:CE:DE:C7`, shown active by Android with 10% reported battery and audio/call profiles enabled. The official Divoom app is connected to the same named device and exposes brightness, Device settings, and application functions including Design, Animation, Leditor and Pixel Coloring. This proves stock app/device interaction exists, but it does not establish whether application control is Classic SPP, BLE/GATT, or another endpoint. No installed firmware version or explicit firmware-update prompt is visible in the supplied screenshots, so those remain unresolved.
+
+M0 is materially advanced but not yet closed because ordinary physical controls/speaker behavior and the installed firmware version remain unobserved.
 
 ## Milestone status
 
 | Milestone | State | Gate |
 |---|---|---|
 | Environment | PASS | WSL_MCP → CLI → authenticated Windows Host proven on 127.0.0.1:8796; status-only, zero device I/O |
-| M0 intake/stock baseline | PARTIAL | exact label/display/backlight observed; controls, speaker and stock app model/firmware still pending |
-| M1 transport/capture | NOT EXECUTED | no advertisement/SDP/GATT/app-capture evidence from purchased unit |
+| M0 intake/stock baseline | PARTIAL | exact label/display/backlight plus stock Android/app identity observed; physical controls, speaker and installed firmware still pending |
+| M1 transport/capture | READY TO CAPTURE | stock app connection confirmed; exact application-control transport/endpoint still unmeasured |
 | M2 attributable stock transaction | NOT EXECUTED | no exported application payload capture |
 | M3 offline compatibility verdict | PREPARED, BLOCKED ON INPUT | candidate comparator/tests/manifests ready; needs reassembled attributable stock TX/RX |
 | M4 bounded custom query | BLOCKED | exact transaction and authority not yet reviewable |
@@ -207,4 +209,4 @@ M0 is not yet closed because ordinary controls/speaker behavior and stock-app-re
 
 ## Exact next action
 
-Complete M0 with ordinary stock behavior and the stock app's device-information page, without accepting a firmware update. Then begin M1 by capturing the official Android app's attributable Ditoo traffic for a single device-info/status refresh. Android is the measurement sidecar only; no Android-based custom control path is being adopted. Do not issue any custom Ditoo transaction before M2/M3 evidence exists and a concrete M4 manifest passes review.
+Begin M1 with Android Bluetooth HCI snoop enabled, then capture the official app performing one tightly attributable stock interaction. Prefer a device-info/settings refresh if the app exposes one; otherwise use one deterministic stock brightness change and record the before/after value. Export a whole Android bugreport privately and preserve it unmodified; derive and commit only filtered Ditoo-specific payload evidence after review. Android is the measurement sidecar only; no Android-based custom control path is being adopted. Do not issue any custom Ditoo transaction before M2/M3 evidence exists and a concrete M4 manifest passes review.
