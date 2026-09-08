@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-DAY1-M4-QUERY-PENDING",
+  "milestone": "M4",
+  "status": "offline_template_not_executable",
+  "target": {
+    "exact_unit_id": null,
+    "model_label": "Ditoo Plus - exact label pending M0",
+    "installed_firmware": null,
+    "identity_evidence": []
+  },
+  "transport": {
+    "kind": null,
+    "measured_endpoint": null,
+    "stock_route_evidence": [],
+    "pairing_required": null,
+    "single_controller_required": true
+  },
+  "operation": {
+    "semantic_name": "device_info_or_status_query_pending_capture",
+    "semantic_evidence": null,
+    "application_tx_hex": null,
+    "application_tx_sha256": null,
+    "expected_response": null,
+    "persistence_effect": "unknown_until_semantics_established",
+    "automatic_retry": false
+  },
+  "budgets": {
+    "connection_attempts": 1,
+    "connect_deadline_seconds": 15,
+    "application_requests": 1,
+    "response_deadline_seconds": 5,
+    "max_application_tx_bytes": null,
+    "max_application_rx_bytes": null
+  },
+  "authority": {
+    "transmission_authorized": false,
+    "authorization_basis": null,
+    "note": "This template is not physical authority. Fill only from exact-unit stock evidence, then review."
+  },
+  "stop_policy": {
+    "ambiguous_send_or_timeout": "close locally; outcome unknown; no resend",
+    "unexpected_response": "close locally; preserve bytes; no reinterpretation as success",
+    "liveness_loss": "close local transmitter; use documented ordinary stock controls only",
+    "automatic_reconnect": false
+  }
+}

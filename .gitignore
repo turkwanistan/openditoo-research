@@ -1,0 +1,17 @@
+# Local credentials/runtime state
+.openditoo-local/
+
+# Python
+__pycache__/
+*.pyc
+
+# .NET build outputs
+bin/
+obj/
+
+# Windows/local build staging
+runtime/windows/.build/
+
+# Captures may contain unrelated personal Bluetooth/phone data.
+# Commit only filtered, reviewed evidence explicitly.
+captures/private/

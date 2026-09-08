@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "capture_id": "OPENDITOO-DAY1-STOCK-TRANSACTION-PENDING",
+  "status": "template_no_payloads",
+  "privacy": "store whole phone bugreport privately; commit only filtered Ditoo-specific payload evidence after review",
+  "unit": {
+    "private_unit_id": null,
+    "installed_firmware": null
+  },
+  "capture": {
+    "captured_at_utc": null,
+    "phone_os_version": null,
+    "divoom_app_version": null,
+    "source_kind": "android_hci_snoop_or_other_proven_payload_capture",
+    "raw_private_source_sha256": null,
+    "filtered_source_sha256": null,
+    "connection_identity": null,
+    "transport": null,
+    "endpoint": null,
+    "stock_owner": "official_app",
+    "action": "device_info_refresh_preferred",
+    "action_started_monotonic_or_video_time": null,
+    "idle_before_seconds": null,
+    "idle_after_seconds": null
+  },
+  "transactions": [
+    {
+      "direction": "tx",
+      "packet_numbers": [],
+      "application_hex": "",
+      "interpretation": "pending attributable stock action"
+    },
+    {
+      "direction": "rx",
+      "packet_numbers": [],
+      "application_hex": "",
+      "interpretation": "pending candidate response"
+    }
+  ],
+  "notes": [
+    "Reassemble application bytes after removing HCI/L2CAP/RFCOMM or ATT transport headers as applicable.",
+    "Keep startup/background transactions separate from the named action.",
+    "Do not guess missing bytes or silently discard parser failures."
+  ]
+}

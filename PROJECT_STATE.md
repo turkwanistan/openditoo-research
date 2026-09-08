@@ -1,11 +1,21 @@
 # OpenDitoo Research — Canonical Project State
 
 **Target:** Divoom Ditoo Plus (pink purchased unit)  
-**State date:** 2026-09-02  
-**Phase:** public reconnaissance + static firmware analysis complete enough to prepare first physical session; purchased unit not yet used for experiments.  
+**State date:** 2026-09-08
+**Phase:** Day-1 application-first execution prepared offline; purchased-unit M0/M1 observations and stock application capture still pending.
 **Safety posture:** preservation-first. No flashing, arbitrary proprietary writes, guessed service-mode entry, electrical probing, soldering, or destructive teardown has been authorized or performed.
 
 This file is the current human-readable project synthesis. It supersedes ad-hoc chat summaries for project state but does not replace raw evidence, hashes, or provenance under `artifacts/`.
+
+## 0. 2026-09-08 Day-1 application-first execution update
+
+The current objective is now stock characterization -> measured application-control transport -> codec verdict -> one bounded custom query -> one independently justified volatile 16x16 frame. This temporarily overrides the older ranked MassBoot/update priorities without deleting or weakening that research.
+
+A synchronized WSL_MCP implementation checkout is established at `/home/wan/Projects/openditoo-research` and matches fetched `origin/main` at pre-Day-1 HEAD `0f000cbb2ff8ea79c7a48294f5886853ea906fba`. All 19 preserved artifact SHA-256 entries verify. The older OptiPlex checkout remains clean at `1e4fd070...`; updating it is blocked by unprovisioned project Git credentials.
+
+Offline Day-1 tooling now includes a separate OpenDitoo CLI/token, candidate-only frame comparator, exact diagnostic RGB source, fail-closed M4/M5 manifest templates, and a status-only Windows Host candidate on `127.0.0.1:8796`. The Host source has no Bluetooth transport or target and does not reuse OpenTivoo port 8779, target, token, task or physical authority. The Windows build/install proof is pending because WSL_MCP exposes no Windows process interop.
+
+Current milestone state and exact next action are canonicalized for this execution in `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md`. Run `python3 scripts/verify_day1_offline.py` before extending Day-1 code. No custom Ditoo transmission is currently authorized or technically exposed.
 
 ## 1. Project boundaries and evidence discipline
 

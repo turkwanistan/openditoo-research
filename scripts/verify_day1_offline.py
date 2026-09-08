@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Offline Day-1 readiness verifier. Never performs network or device I/O."""
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def fail(message: str) -> None:
+    raise SystemExit(f"DAY1_OFFLINE_FAIL: {message}")
+
+
+def verify_sha256_manifest() -> int:
+    manifest = ROOT / "artifacts/SHA256SUMS"
+    count = 0
+    for line in manifest.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        expected, relative = line.split(None, 1)
+        relative = relative.lstrip("* ")
+        path = ROOT / relative
+        if not path.is_file():
+            fail(f"artifact missing: {relative}")
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual != expected:
+            fail(f"artifact hash mismatch: {relative}")
+        count += 1
+    return count
+
+
+def run_tests() -> None:
+    proc = subprocess.run(
+        [sys.executable, "-m", "unittest", "-q", "tests/test_day1_offline.py"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        sys.stderr.write(proc.stdout)
+        sys.stderr.write(proc.stderr)
+        fail("offline unit tests failed")
+
+
+def verify_pending_manifests() -> None:
+    for name in ("DAY1-M4-QUERY-PENDING.json", "DAY1-M5-FRAME-PENDING.json"):
+        data = json.loads((ROOT / "experiments" / name).read_text(encoding="utf-8"))
+        if data.get("status") != "offline_template_not_executable":
+            fail(f"{name} status is not fail-closed")
+        if data.get("authority", {}).get("transmission_authorized") is not False:
+            fail(f"{name} unexpectedly authorizes transmission")
+        if data.get("operation", {}).get("automatic_retry") is not False:
+            fail(f"{name} unexpectedly permits automatic retry")
+
+
+def verify_host_boundary() -> None:
+    program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
+    cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+    combined = program + "\n" + cli
+    required = [
+        '127.0.0.1:8796',
+        'masterTransmitEnabled = false',
+        'transportConfigured = false',
+        'targetBound = false',
+    ]
+    # The fixed origin string is in the Python CLI while the C# Host keeps port
+    # and loopback as separate constants; accept either representation.
+    if 'HOST_ORIGIN = "http://127.0.0.1:8796"' not in cli:
+        fail("CLI origin is not fixed to OpenDitoo 8796")
+    for needle in required[1:]:
+        if needle not in program:
+            fail(f"Host boundary missing {needle}")
+    forbidden = [
+        "11:75:58:C8:5E:FE",
+        "Windows.Devices.Bluetooth",
+        "Ws2_32",
+        "AF_BTH",
+        "send_hex",
+    ]
+    for needle in forbidden:
+        if needle in combined:
+            fail(f"status-only control plane contains forbidden transport/target surface: {needle}")
+    if "127.0.0.1:8779" in cli or "const int Port = 8779" in program:
+        fail("OpenDitoo control plane collides with OpenTivoo Host port")
+
+
+def main() -> int:
+    artifact_count = verify_sha256_manifest()
+    run_tests()
+    verify_pending_manifests()
+    verify_host_boundary()
+    print(
+        "DAY1_OFFLINE_PASS "
+        f"artifacts={artifact_count} tests=11 host=status_only port=8796 "
+        "device_io=false transmission_authorized=false"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

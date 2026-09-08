@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "record_id": "OPENDITOO-DAY1-UNIT-INTAKE-PENDING",
+  "status": "pending_operator_observation",
+  "observed_at_utc": null,
+  "unit": {
+    "private_unit_id": null,
+    "model_label_verbatim": null,
+    "fcc_id_verbatim": null,
+    "serial_private_not_for_public_commit": null,
+    "color": "pink - listing expectation only",
+    "supplied_cable": null,
+    "inserted_card_present": null
+  },
+  "stock_baseline": {
+    "powers_on_normally": null,
+    "display_normal": null,
+    "ordinary_controls_normal": null,
+    "speaker_normal": null,
+    "keyboard_backlight_normal": null,
+    "unexpected_reboots": null,
+    "severe_heat": null,
+    "visible_faults": null
+  },
+  "app": {
+    "phone_os_version": null,
+    "divoom_app_version": null,
+    "reported_model": null,
+    "reported_firmware": null,
+    "firmware_update_prompted": null,
+    "firmware_update_dismissed": null
+  },
+  "evidence": {
+    "photos_private_paths": [],
+    "stock_video_private_path": null,
+    "app_info_screenshot_private_path": null,
+    "notes": []
+  },
+  "device_io_classification": "ordinary_stock_observation_only",
+  "custom_transmission_authorized": false
+}

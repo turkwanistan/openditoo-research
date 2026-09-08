@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-DAY1-M5-FRAME-PENDING",
+  "milestone": "M5",
+  "status": "offline_template_not_executable",
+  "target": {
+    "exact_unit_id": null,
+    "installed_firmware": null
+  },
+  "transport": {
+    "kind": null,
+    "measured_endpoint": null,
+    "single_controller_required": true
+  },
+  "operation": {
+    "semantic_name": "volatile_diagnostic_frame_pending_proof",
+    "semantic_evidence": null,
+    "entry_semantics": null,
+    "paint_semantics": null,
+    "exit_semantics": null,
+    "persistence_analysis": null,
+    "packet_sequence": null,
+    "packet_hashes": [],
+    "application_tx_hex": null,
+    "application_tx_sha256": null,
+    "diagnostic_source": "host/diagnostic_frame.py",
+    "source_format": "RGB888",
+    "device_packing": null,
+    "automatic_retry": false
+  },
+  "budgets": {
+    "entry_frame_sets": 1,
+    "send_deadline_seconds": 10,
+    "automatic_repeats": 0,
+    "observation_seconds": 5,
+    "max_packets": null,
+    "max_application_tx_bytes": null
+  },
+  "authority": {
+    "transmission_authorized": false,
+    "authorization_basis": null,
+    "note": "Requires separate proof of drawing entry, paint and exit plus reviewed volatility claim."
+  },
+  "stop_policy": {
+    "ambiguous_or_partial_send": "close locally; outcome unknown; no resend",
+    "wrong_orientation_or_color": "freeze result; correct mapping offline; require newly bounded review",
+    "recovery": "ordinary documented stock control or separately proven exit only",
+    "automatic_reconnect": false
+  }
+}
