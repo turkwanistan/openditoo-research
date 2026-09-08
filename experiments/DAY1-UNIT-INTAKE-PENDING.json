@@ -1,29 +1,29 @@
 {
   "schema_version": 1,
   "record_id": "OPENDITOO-DAY1-UNIT-INTAKE-PENDING",
-  "status": "pending_operator_observation",
+  "status": "partial_operator_observation",
   "observed_at_utc": null,
   "unit": {
     "private_unit_id": null,
-    "model_label_verbatim": null,
-    "fcc_id_verbatim": null,
+    "model_label_verbatim": "Ditoo-plus",
+    "fcc_id_verbatim": "A8I-DITOO-PLUS",
     "serial_private_not_for_public_commit": null,
-    "color": "pink - listing expectation only",
+    "color": "pink - physically observed",
     "supplied_cable": null,
     "inserted_card_present": null
   },
   "stock_baseline": {
-    "powers_on_normally": null,
-    "display_normal": null,
+    "powers_on_normally": true,
+    "display_normal": true,
     "ordinary_controls_normal": null,
     "speaker_normal": null,
-    "keyboard_backlight_normal": null,
+    "keyboard_backlight_normal": true,
     "unexpected_reboots": null,
     "severe_heat": null,
     "visible_faults": null
   },
   "app": {
-    "phone_os_version": null,
+    "phone_os_version": "Android - exact version pending",
     "divoom_app_version": null,
     "reported_model": null,
     "reported_firmware": null,
@@ -34,7 +34,13 @@
     "photos_private_paths": [],
     "stock_video_private_path": null,
     "app_info_screenshot_private_path": null,
-    "notes": []
+    "notes": [
+      "2026-09-08 operator photos show the exact purchased unit powered on with an active 16x16 display and active RGB keyboard backlighting.",
+      "Bottom label also shows Input: 5V==2A and CMIIT ID: 2021DP1493.",
+      "Private chat photo SHA-256 758a55507077eb90868f691e4b034fe268633b88a3518cdf433bd9c76f955085 (powered-on front view); photo itself is not committed.",
+      "Private chat photo SHA-256 7beea6ae7864d0811955136cb3c4e8d75ee360f7aad529c8b900ac4f360004ab (bottom regulatory label); photo itself is not committed.",
+      "Operator has an Android phone available for official-app stock traffic observation; intended custom-control topology remains Windows/WSL, not Android."
+    ]
   },
   "device_io_classification": "ordinary_stock_observation_only",
   "custom_transmission_authorized": false

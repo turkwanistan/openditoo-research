@@ -97,9 +97,11 @@ The installer only observes whether OpenTivoo's port 8779/task exist and explici
 
 WSL_MCP's sandbox exposes no `powershell.exe`, `cmd.exe` or WSL interop, and this WSL environment has no `dotnet` SDK, so Windows execution remains an operator action. On Windows, the status-only Host dry run built successfully and reported `DEVICE_IO=false`, `BLUETOOTH_CONFIGURED=false`, `TARGET_BOUND=false`, with OpenTivoo observed separately on 8779.
 
-The first `-Apply` attempt copied the isolated OpenDitoo runtime payload under `%LOCALAPPDATA%\OpenDitoo\Day1Host`, then failed at `Register-ScheduledTask` with `(14,8):UserId` before task launch or localhost status proof. Root cause was the installer using unqualified `$env:USERNAME` for the task principal. The installer is now aligned with the proven OpenTivoo registration pattern: resolve `[System.Security.Principal.WindowsIdentity]::GetCurrent().Name`, require a fully qualified `authority\user`, bind both the `-AtLogOn -User` trigger and principal to that identity, build a task object, and register the object. The retry path still refuses any pre-existing OpenDitoo task or 8796 listener and never modifies OpenTivoo. Windows validation of this patch is pending.
+The first `-Apply` attempt copied the isolated OpenDitoo runtime payload under `%LOCALAPPDATA%\OpenDitoo\Day1Host`, then failed at `Register-ScheduledTask` with `(14,8):UserId` before task launch or localhost status proof. Root cause was the installer using unqualified `$env:USERNAME` for the task principal. The installer was aligned with the proven OpenTivoo registration pattern: resolve `[System.Security.Principal.WindowsIdentity]::GetCurrent().Name`, require a fully qualified `authority\user`, bind both the `-AtLogOn -User` trigger and principal to that identity, build a task object, and register the object.
 
-No Bluetooth stack or Ditoo target was touched by either attempt. The WSL CLI still has no fallback port or raw/device transmission surface.
+The patched installer then applied successfully. `OpenDitoo Day1 Host` registered for `WANSTATION\Wanstation`, preserved `OpenTivoo Product Runtime`, and completed `INSTALL_STATUS=PASS_STATUS_ONLY`.
+
+No Bluetooth stack or Ditoo target was touched by environment setup. The WSL CLI still has no fallback port or raw/device transmission surface.
 
 ## Offline portability preparation
 
@@ -115,7 +117,6 @@ No Bluetooth stack or Ditoo target was touched by either attempt. The WSL CLI st
 - retained malformed/checksum errors.
 
 It contains no Ditoo command allowlist and treats its receive bound as a local analysis cap, not a Ditoo device limit.
-
 
 ### Exact-firmware application leads
 
@@ -184,12 +185,20 @@ A subsequent authenticated probe from WSL_MCP through `cli/openditoo.py status` 
 
 This proves the environment/control-plane portion of `WSL_MCP → WSL CLI → Windows Host` while leaving the Windows Bluetooth → Ditoo portion intentionally unconfigured until M0/M1 evidence collection.
 
+## M0 exact-unit evidence — partial
+
+Operator-provided photographs establish the purchased unit is the expected pink Ditoo Plus family unit. The bottom label reads `Model: Ditoo-plus`, `FCC ID: A8I-DITOO-PLUS`, `Input: 5V==2A`, and `CMIIT ID: 2021DP1493`. A powered-on front photograph shows an active 16x16 display and active RGB keyboard backlighting. The source photographs remain private/uncommitted; only their SHA-256 values and non-sensitive observations are recorded in `experiments/DAY1-UNIT-INTAKE-PENDING.json`.
+
+The operator has an Android phone available. Android will be used only as a stock-app observation/capture instrument for M1 if needed. The intended custom-control topology remains `WSL_MCP -> WSL CLI -> Windows Host -> Windows Bluetooth -> Ditoo`, matching the OpenTivoo architecture at the control-plane level.
+
+M0 is not yet closed because ordinary controls/speaker behavior and stock-app-reported model/firmware are still unobserved.
+
 ## Milestone status
 
 | Milestone | State | Gate |
 |---|---|---|
 | Environment | PASS | WSL_MCP → CLI → authenticated Windows Host proven on 127.0.0.1:8796; status-only, zero device I/O |
-| M0 intake/stock baseline | NOT EXECUTED | exact unit not physically observed in this tool session |
+| M0 intake/stock baseline | PARTIAL | exact label/display/backlight observed; controls, speaker and stock app model/firmware still pending |
 | M1 transport/capture | NOT EXECUTED | no advertisement/SDP/GATT/app-capture evidence from purchased unit |
 | M2 attributable stock transaction | NOT EXECUTED | no exported application payload capture |
 | M3 offline compatibility verdict | PREPARED, BLOCKED ON INPUT | candidate comparator/tests/manifests ready; needs reassembled attributable stock TX/RX |
@@ -198,4 +207,4 @@ This proves the environment/control-plane portion of `WSL_MCP → WSL CLI → Wi
 
 ## Exact next action
 
-Environment setup is complete. The next action is M0 exact-unit stock characterization, followed by M1 transport observation using only stock/user-operated behavior and attributable capture. Do not issue any custom Ditoo transaction before M2/M3 evidence exists and a concrete M4 manifest passes review.
+Complete M0 with ordinary stock behavior and the stock app's device-information page, without accepting a firmware update. Then begin M1 by capturing the official Android app's attributable Ditoo traffic for a single device-info/status refresh. Android is the measurement sidecar only; no Android-based custom control path is being adopted. Do not issue any custom Ditoo transaction before M2/M3 evidence exists and a concrete M4 manifest passes review.
