@@ -48,14 +48,23 @@ def run_tests() -> None:
 
 
 def verify_pending_manifests() -> None:
-    for name in ("DAY1-M4-QUERY-PENDING.json", "DAY1-M5-FRAME-PENDING.json"):
-        data = json.loads((ROOT / "experiments" / name).read_text(encoding="utf-8"))
-        if data.get("status") != "offline_template_not_executable":
-            fail(f"{name} status is not fail-closed")
-        if data.get("authority", {}).get("transmission_authorized") is not False:
-            fail(f"{name} unexpectedly authorizes transmission")
-        if data.get("operation", {}).get("automatic_retry") is not False:
-            fail(f"{name} unexpectedly permits automatic retry")
+    m4 = json.loads((ROOT / "experiments" / "DAY1-M4-QUERY-PENDING.json").read_text(encoding="utf-8"))
+    if m4.get("status") != "frozen_pending_explicit_authority":
+        fail("M4 is not frozen pending explicit authority")
+    if m4.get("authority", {}).get("transmission_authorized") is not False:
+        fail("M4 unexpectedly authorizes transmission")
+    if m4.get("operation", {}).get("automatic_retry") is not False:
+        fail("M4 unexpectedly permits automatic retry")
+    if m4.get("operation", {}).get("application_tx_hex") != "01040097009b0002":
+        fail("M4 frozen TX drifted")
+
+    m5 = json.loads((ROOT / "experiments" / "DAY1-M5-FRAME-PENDING.json").read_text(encoding="utf-8"))
+    if m5.get("status") != "offline_template_not_executable":
+        fail("M5 status is not fail-closed")
+    if m5.get("authority", {}).get("transmission_authorized") is not False:
+        fail("M5 unexpectedly authorizes transmission")
+    if m5.get("operation", {}).get("automatic_retry") is not False:
+        fail("M5 unexpectedly permits automatic retry")
 
 
 def verify_host_boundary() -> None:
@@ -96,7 +105,7 @@ def main() -> int:
     verify_host_boundary()
     print(
         "DAY1_OFFLINE_PASS "
-        f"artifacts={artifact_count} tests=11 host=status_only port=8796 "
+        f"artifacts={artifact_count} tests=12 host=status_only port=8796 "
         "device_io=false transmission_authorized=false"
     )
     return 0

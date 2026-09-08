@@ -23,10 +23,10 @@
     "visible_faults": null
   },
   "app": {
-    "phone_os_version": "Android - exact version pending",
-    "divoom_app_version": null,
+    "phone_os_version": "Android 16 / CP1A.260505.005",
+    "divoom_app_version": "3.8.34 (versionCode 634)",
     "reported_model": "Ditoo-Plus-audio",
-    "reported_firmware": null,
+    "reported_firmware": "v42012 (decoded from official-app stock SPP 0x97 response)",
     "firmware_update_prompted": null,
     "firmware_update_dismissed": null
   },
@@ -39,8 +39,8 @@
     "media_audio_profile_enabled": true,
     "spatial_audio_enabled": true,
     "contacts_and_call_history_access_enabled": true,
-    "control_transport": null,
-    "control_endpoint": null
+    "control_transport": "Bluetooth Classic BR/EDR -> L2CAP PSM 0x0003 -> RFCOMM/SPP",
+    "control_endpoint": "11:75:58:CE:DE:C7 RFCOMM channel 1 (SDP service Serial Port 1)"
   },
   "evidence": {
     "photos_private_paths": [],
@@ -55,10 +55,16 @@
       "Android Bluetooth details screenshot shows Ditoo-Plus-audio active at address 11:75:58:CE:DE:C7 with 10% battery and audio/call profiles enabled; this identifies the stock audio endpoint but does not identify the application-control transport.",
       "Official Divoom app screenshots show the same Ditoo-Plus-audio device connected with brightness control, Device settings, and device functions including Design, Animation, Leditor, Pixel Coloring, Mixer, Voice message, Sleep, Planner and More.",
       "Device settings screenshot exposes ordinary stock settings such as 24 hours, display song title, brightness-related controls, energy saver, temperature unit, Bluetooth auto reconnect, notification sound, light intensity and auto power off.",
-      "No installed firmware version or explicit firmware-update prompt is visible in the supplied screenshots; both remain unresolved rather than inferred.",
+      "At the screenshot-only stage no installed firmware version or explicit firmware-update prompt was visible; later stock HCI evidence resolves the version number as v42012 while update-prompt status remains unresolved.",
       "Private chat screenshot SHA-256 9172188adec1b521b7e08839d19bfd84d58bd3a705bdc1f925a71ae1ed0a2e4e (Android Bluetooth device details); screenshot itself is not committed.",
       "Private chat screenshot SHA-256 30ba904f212f0ed1a8926fda69dc1bd6109e926c8eb0148f85a784fd7d4071b3 (Divoom Device settings); screenshot itself is not committed.",
-      "Private chat screenshot SHA-256 1f5bd7bce50781b52a39e9ce840bb947865ef93f64cc51aeee6bbbafe9291ccb (Divoom main device page); screenshot itself is not committed."
+      "Private chat screenshot SHA-256 1f5bd7bce50781b52a39e9ce840bb947865ef93f64cc51aeee6bbbafe9291ccb (Divoom main device page); screenshot itself is not committed.",
+      "Private Android bugreport source SHA-256 a263e98039d4624b7d1fdd0b6c1021bc3bebf4242ec021bd7f704b7b31258a65; raw archive is not committed.",
+      "Filtered HCI capture proves Classic BR/EDR ACL to 11:75:58:CE:DE:C7, L2CAP RFCOMM PSM 0x0003, SDP Serial Port 1, and application RFCOMM server channel 1.",
+      "Android bugreport package metadata identifies com.divoom.Divoom versionName 3.8.34 / versionCode 634 on Android 16 build CP1A.260505.005.",
+      "Filtered stock protocol evidence is committed separately at captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json; one sensitive stock app frame is omitted by content and retained only by SHA-256.",
+      "Exact stock request 01040097009b0002 / response 010900049755001ca400b90102 identifies firmware-file selector 0 and version value 42012; exact binary identity remains unresolved.",
+      "The app home screenshot displayed a yellow upward-arrow indicator beside the connected device; it was not activated, and no firmware update was performed."
     ]
   },
   "device_io_classification": "ordinary_stock_observation_only",

@@ -136,27 +136,19 @@ Prepared `experiments/DAY1-UNIT-INTAKE-PENDING.json` and `captures/DAY1-STOCK-TR
 
 ### Pending manifests
 
-Prepared fail-closed templates:
+M4 is now frozen at `experiments/DAY1-M4-QUERY-PENDING.json` as `OPENDITOO-DAY1-M4-FILE-VERSION-001`; M5 remains a fail-closed template at `experiments/DAY1-M5-FRAME-PENDING.json`. Both retain `transmission_authorized=false` and no automatic retry.
 
-- `experiments/DAY1-M4-QUERY-PENDING.json`
-- `experiments/DAY1-M5-FRAME-PENDING.json`
+The M4 manifest binds the exact purchased unit, stock-measured RFCOMM channel 1 endpoint, high-confidence installed firmware version v42012, exact stock-observed read-only `0x97` file-version semantics, exact 8-byte TX, expected 13-byte wrapped response geometry, and one-shot budgets. `manifest-check` now reports exactly one blocker:
 
-Both have `transmission_authorized=false` and no automatic retry. M4 currently reports these blockers:
+1. `transmission_authority_missing`
 
-1. `exact_unit_id_unbound`
-2. `installed_firmware_unbound`
-3. `measured_endpoint_unbound`
-4. `semantic_evidence_missing`
-5. `application_tx_unfrozen`
-6. `transmission_authority_missing`
-
-No physical authorization is being requested yet because the concrete transaction is not reviewable.
+The semantic/evidence freeze is documented in `notes/OPENDITOO-DAY1-M4-FILE-VERSION-FREEZE-2026-09-08.md`. No custom Ditoo transmission has occurred.
 
 ## Verification
 
 `python3 scripts/verify_day1_offline.py`:
 
-`DAY1_OFFLINE_PASS artifacts=19 tests=11 host=status_only port=8796 device_io=false transmission_authorized=false`
+`DAY1_OFFLINE_PASS artifacts=19 tests=12 host=status_only port=8796 device_io=false transmission_authorized=false`
 
 Source hashes at this gate:
 
@@ -165,7 +157,11 @@ Source hashes at this gate:
 - `host/diagnostic_frame.py`: `a4a58ef5d2b5d87ed6778db90a9c7f21f037f7dba9f42a2e64c7fd42ebe30a4d`
 - Windows Host `Program.cs`: `e4da750034acf2ad50aa85d949b3c3ff7af5334faddedfcfc80f08b8d86172f8`
 - Windows installer: `108023eeb44038b3fb615cf5cd688de7d85bea1db888b3e38529220c51bd451f`
-- pending M4 manifest: `ac3f7ea2de4a320f0c11074859202ec8b5e78b1271858a55f1c17a5639795195`
+- frozen M4 manifest: `a855c68ac9c666388263e260b8a400be2da3fc49439e2e9534751667d53d0cef`
+- filtered stock RFCOMM evidence: `9581469a4267db3b229e5167c73cbd0c9a056fa1c95c4709d4fb62a23fea3d70`
+- M4 semantic freeze note: `1d47d927533341ee6db735d123429ef83accc100cc2c705616ef3b2b1b41ea2c`
+- M4 exact protocol source: `bbf0bdf08a7e0c03c28297c17b432f9b8da541d7ceb8c566c64d78a854882dc4`
+- M4 bounded RFCOMM source: `ac0e8187dcc252e214681e1178a38c09c93156882d2dfaaabc504a57113056ad`
 - pending M5 manifest: `ebeca7284820b0a1322e4e38733a6accce59a19a14bf1a53d945e116f3e91401`
 
 ## Windows status-only environment proof
@@ -183,7 +179,7 @@ A subsequent authenticated probe from WSL_MCP through `cli/openditoo.py status` 
 - `targetBound=false`
 - `deviceIo=false`
 
-This proves the environment/control-plane portion of `WSL_MCP → WSL CLI → Windows Host` while leaving the Windows Bluetooth → Ditoo portion intentionally unconfigured until M0/M1 evidence collection.
+This proves the environment/control-plane portion of `WSL_MCP → WSL CLI → Windows Host`. The installed/running Host intentionally remains status-only even after M1/M3 transport discovery; the frozen M4 RFCOMM implementation is currently offline/unreferenced source and cannot be invoked by `Program.cs`.
 
 ## M0 exact-unit evidence — partial
 
@@ -191,22 +187,45 @@ Operator-provided photographs establish the purchased unit is the expected pink 
 
 The operator has an Android phone available. Android will be used only as a stock-app observation/capture instrument for M1 if needed. The intended custom-control topology remains `WSL_MCP -> WSL CLI -> Windows Host -> Windows Bluetooth -> Ditoo`, matching the OpenTivoo architecture at the control-plane level.
 
-Additional Android screenshots establish a stock Bluetooth audio identity `Ditoo-Plus-audio` at device address `11:75:58:CE:DE:C7`, shown active by Android with 10% reported battery and audio/call profiles enabled. The official Divoom app is connected to the same named device and exposes brightness, Device settings, and application functions including Design, Animation, Leditor and Pixel Coloring. This proves stock app/device interaction exists, but it does not establish whether application control is Classic SPP, BLE/GATT, or another endpoint. No installed firmware version or explicit firmware-update prompt is visible in the supplied screenshots, so those remain unresolved.
+Additional Android screenshots establish a stock Bluetooth audio identity `Ditoo-Plus-audio` at device address `11:75:58:CE:DE:C7`, shown active by Android with 10% reported battery and audio/call profiles enabled. The official Divoom app is connected to the same named device and exposes brightness, Device settings, and application functions including Design, Animation, Leditor and Pixel Coloring. The later HCI capture independently resolves the application-control route as Classic RFCOMM/SPP channel 1.
 
-M0 is materially advanced but not yet closed because ordinary physical controls/speaker behavior and the installed firmware version remain unobserved.
+The same exact-unit stock capture contains official-app request `01040097009b0002` and wrapped response `010900049755001ca400b90102`. Supporting Divoom application reverse engineering maps command `0x97` to `SPP_GET_FILE_VERSION`; selector `00` is echoed and response bytes `1c a4` decode little-endian to decimal **42012**. The installed version is therefore frozen as **v42012 with high confidence**. This identifies the installed version number, not byte identity with a preserved firmware binary; the project does not currently possess a v42012 image.
+
+M0 is materially advanced but remains partial only because ordinary physical-control and speaker behavior have not yet been explicitly recorded.
+
+## M1/M2/M3 stock-capture result — PASS
+
+A private Android 16 bugreport from the exact purchased unit was analyzed without committing the raw archive. Source SHA-256 is `a263e98039d4624b7d1fdd0b6c1021bc3bebf4242ec021bd7f704b7b31258a65`; extracted `btsnoop_hci.log` SHA-256 is `a00ed50b2dc78bc38167de6d0d73ee4c0f63a4e0faf4b33a56ff5f56898b3d43`. One official-app frame contained account/application metadata; its contents are omitted and only SHA-256 `11d7ade7a5b95032c1c423a119be8777327d7da98f569689368abba874b56e66` is retained. Filtered evidence is `captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json`.
+
+Measured exact-unit route:
+
+`11:75:58:CE:DE:C7 -> Bluetooth Classic BR/EDR ACL -> L2CAP PSM 0x0003 -> RFCOMM mux -> SDP Serial Port 1 -> RFCOMM server channel 1 / DLCI 2`
+
+The same Classic link also carries ordinary audio/telephony profiles on other RFCOMM channels. No Ditoo-attributable LE connection-complete event was observed during this capture. This proves the observed application-control route is Classic RFCOMM/SPP for this stock session; it does not claim the device has no BLE capability.
+
+Application framing verdict is **MATCH**. All 56 host-to-device application frames and all 36 device-to-host application frames in the filtered channel-1 stream satisfy the candidate additive-checksum frame geometry. All 36 device responses use outer command `0x04`, inner-command echo, tag `0x55`, and inner payload. No captured channel-1 frame failed the checksum rule. The capture itself did not exercise application-frame fragmentation or concatenation.
+
+Representative official-app transaction:
+
+- request `01 03 00 31 34 00 02` -> normal command `0x31`, no payload;
+- response `01 06 00 04 31 55 5D ED 00 02` -> outer `0x04`, inner `0x31`, tag `0x55`, payload `0x5D`.
+
+This transaction is fully attributable to the official Divoom app over measured RFCOMM channel 1. Its exact Ditoo semantic label is intentionally not promoted yet. OpenTivoo independently maps family command `0x31` to a read-only display-light-level getter, and the live Ditoo value `0x5D` is compatible with the high light-intensity stock setting visible in the operator screenshot, but this remains supporting family/correlation evidence until exact-Ditoo semantics are frozen.
+
+Android package metadata also closes two M0 fields: Android 16 / build `CP1A.260505.005`, Divoom app `3.8.34` / versionCode `634`. The stock `0x97` transaction closes the installed version number as v42012; see the M4 semantic freeze note for evidence layering.
 
 ## Milestone status
 
 | Milestone | State | Gate |
 |---|---|---|
 | Environment | PASS | WSL_MCP → CLI → authenticated Windows Host proven on 127.0.0.1:8796; status-only, zero device I/O |
-| M0 intake/stock baseline | PARTIAL | exact label/display/backlight plus stock Android/app identity observed; physical controls, speaker and installed firmware still pending |
-| M1 transport/capture | READY TO CAPTURE | stock app connection confirmed; exact application-control transport/endpoint still unmeasured |
-| M2 attributable stock transaction | NOT EXECUTED | no exported application payload capture |
-| M3 offline compatibility verdict | PREPARED, BLOCKED ON INPUT | candidate comparator/tests/manifests ready; needs reassembled attributable stock TX/RX |
-| M4 bounded custom query | BLOCKED | exact transaction and authority not yet reviewable |
+| M0 intake/stock baseline | PARTIAL | exact label/display/backlight/app identity and v42012 version established; explicit physical controls/speaker confirmation remains |
+| M1 transport/capture | PASS | exact purchased-unit stock route measured as Classic RFCOMM/SPP channel 1 |
+| M2 attributable stock transaction | PASS | official-app channel-1 request/response bytes frozen, including exact stock file-version query |
+| M3 offline compatibility verdict | PASS | 92/92 observed application frames match candidate checksum/frame geometry; all 36 responses match outer-0x04/tag-0x55 wrapping |
+| M4 bounded custom query | FROZEN / AUTHORITY BLOCKED | exact read-only 0x97 request frozen; manifest has only `transmission_authority_missing`; compile-only Windows proof pending before activation |
 | M5 volatile frame | BLOCKED | entry/paint/exit + persistence evidence not established |
 
 ## Exact next action
 
-Begin M1 with Android Bluetooth HCI snoop enabled, then capture the official app performing one tightly attributable stock interaction. Prefer a device-info/settings refresh if the app exposes one; otherwise use one deterministic stock brightness change and record the before/after value. Export a whole Android bugreport privately and preserve it unmodified; derive and commit only filtered Ditoo-specific payload evidence after review. Android is the measurement sidecar only; no Android-based custom control path is being adopted. Do not issue any custom Ditoo transaction before M2/M3 evidence exists and a concrete M4 manifest passes review.
+Validate the newly prepared typed M4 Windows source with a compile-only `.NET 8` build from Windows. `Program.cs` still exposes only `/v1/status` and contains no reference to the M4 protocol/transport classes, so this build cannot connect or transmit. After compile PASS, preserve the exact source hashes and request explicit authority covering Windows pairing if needed plus exactly one frozen M4 RFCOMM exchange. Do not activate any M4 route or perform Bluetooth pairing/custom transmission before that authority.

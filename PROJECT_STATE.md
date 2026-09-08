@@ -2,7 +2,7 @@
 
 **Target:** Divoom Ditoo Plus (pink purchased unit)  
 **State date:** 2026-09-08
-**Phase:** Day-1 application-first execution prepared offline; purchased-unit M0/M1 observations and stock application capture still pending.
+**Phase:** Day-1 application-first execution active; M1/M2/M3 proven, v42012 identified, M4 frozen pending compile proof + explicit authority.
 **Safety posture:** preservation-first. No flashing, arbitrary proprietary writes, guessed service-mode entry, electrical probing, soldering, or destructive teardown has been authorized or performed.
 
 This file is the current human-readable project synthesis. It supersedes ad-hoc chat summaries for project state but does not replace raw evidence, hashes, or provenance under `artifacts/`.
@@ -13,9 +13,13 @@ The current objective is now stock characterization -> measured application-cont
 
 A synchronized WSL_MCP implementation checkout is established at `/home/wan/Projects/openditoo-research` and matches fetched `origin/main` at pre-Day-1 HEAD `0f000cbb2ff8ea79c7a48294f5886853ea906fba`. All 19 preserved artifact SHA-256 entries verify. The older OptiPlex checkout remains clean at `1e4fd070...`; updating it is blocked by unprovisioned project Git credentials.
 
-Offline Day-1 tooling now includes a separate OpenDitoo CLI/token, candidate-only frame comparator, exact diagnostic RGB source, fail-closed M4/M5 manifest templates, and a status-only Windows Host candidate on `127.0.0.1:8796`. The Host source has no Bluetooth transport or target and does not reuse OpenTivoo port 8779, target, token, task or physical authority. The Windows build/install proof is pending because WSL_MCP exposes no Windows process interop.
+Offline Day-1 tooling includes a separate OpenDitoo CLI/token, candidate frame comparator, exact diagnostic RGB source, fail-closed M4/M5 manifests, and a separate authenticated Windows Host on `127.0.0.1:8796`. Windows installation/status proof is PASS while remaining status-only and isolated from OpenTivoo on 8779.
 
-Current milestone state and exact next action are canonicalized for this execution in `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md`. Run `python3 scripts/verify_day1_offline.py` before extending Day-1 code. No custom Ditoo transmission is currently authorized or technically exposed.
+Exact purchased-unit stock capture now proves the official app control route is Bluetooth Classic BR/EDR -> L2CAP RFCOMM PSM 0x0003 -> SDP Serial Port 1 -> RFCOMM channel 1 on `Ditoo-Plus-audio` / `11:75:58:CE:DE:C7`. The filtered channel-1 stream contains 56 host-to-device and 36 device-to-host application frames; all 92 satisfy the candidate normal framing/checksum, and all 36 responses use outer command `0x04` with inner-command echo and tag `0x55`. This promotes framing/transport compatibility, not Tivoo command semantics. Raw Android bugreport material remains private; filtered evidence is preserved under `captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json`.
+
+The exact-unit stock initialization also contains `0x97 00` with wrapped payload `00 1c a4 00`. Independent Divoom application reverse engineering names `0x97` as `SPP_GET_FILE_VERSION`; the echoed selector plus little-endian `0xa41c` identifies installed version **v42012** with high confidence. This is a version-number observation, not a recovered v42012 firmware binary.
+
+M4 is frozen as the exact stock-observed read-only request `01040097009b0002` with one connect, one send, no retry, and a 20-second total budget. Offline Windows source pins the exact target and response parser but is deliberately unreferenced by `Program.cs`, so the installed Host remains status-only. `manifest-check` reports only `transmission_authority_missing`; Windows compile-only proof is the remaining implementation validation before explicit physical authority is requested. Current milestone state and exact next action are canonicalized in `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md`.
 
 ## 1. Project boundaries and evidence discipline
 

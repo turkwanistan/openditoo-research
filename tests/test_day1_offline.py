@@ -124,6 +124,31 @@ class BoundaryTests(unittest.TestCase):
         self.assertNotIn("Stop-Process", src)
         self.assertNotIn("$Port = 8779", src)
 
+    def test_frozen_m4_transport_is_typed_one_shot_and_unreachable(self) -> None:
+        protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooM4FileVersionProtocol.cs").read_text(encoding="utf-8")
+        transport = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/WindowsRfcommBoundedM4Transport.cs").read_text(encoding="utf-8")
+        program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
+
+        self.assertIn('TargetMac = "11:75:58:CE:DE:C7"', protocol)
+        self.assertIn('TargetBluetoothAddress = 0x117558CEDEC7', protocol)
+        self.assertIn('TargetRfcommChannel = 1', protocol)
+        self.assertIn('01040097009B0002', protocol)
+        self.assertIn('010900049755001CA400B90102', protocol)
+        self.assertIn('ExpectedInstalledVersion = 42012', protocol)
+        self.assertIn('MaxResponseWireBytes = 13', protocol)
+        self.assertIn('ConnectBudgetMs = 15_000', protocol)
+        self.assertIn('ResponseBudgetMs = 5_000', protocol)
+        self.assertIn('TotalBudgetMs = 20_000', protocol)
+
+        self.assertEqual(transport.count('var connectResult = connect(socketHandle, ref remote, layoutSize);'), 1)
+        self.assertEqual(transport.count('var sent = send(socketHandle, request, request.Length, 0);'), 1)
+        self.assertIn('NO_RETRY', transport)
+        self.assertNotIn('for (var attempt', transport)
+        self.assertNotIn('while (attempt', transport)
+        self.assertNotIn('DitooM4FileVersionProtocol', program)
+        self.assertNotIn('WindowsRfcommBoundedM4Transport', program)
+        self.assertNotIn('/v1/m4', program.lower())
+
     def test_pending_manifest_fails_closed(self) -> None:
         manifest = ROOT / "experiments/DAY1-M4-QUERY-PENDING.json"
         proc = subprocess.run(
@@ -134,8 +159,12 @@ class BoundaryTests(unittest.TestCase):
         )
         result = json.loads(proc.stdout)
         self.assertFalse(result["execution_ready"])
-        self.assertIn("exact_unit_id_unbound", result["execution_blockers"])
-        self.assertIn("transmission_authority_missing", result["execution_blockers"])
+        self.assertNotIn("exact_unit_id_unbound", result["execution_blockers"])
+        self.assertNotIn("measured_endpoint_unbound", result["execution_blockers"])
+        self.assertNotIn("installed_firmware_unbound", result["execution_blockers"])
+        self.assertNotIn("semantic_evidence_missing", result["execution_blockers"])
+        self.assertNotIn("application_tx_unfrozen", result["execution_blockers"])
+        self.assertEqual(result["execution_blockers"], ["transmission_authority_missing"])
 
     def test_frame_preview_is_offline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

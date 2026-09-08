@@ -1,28 +1,53 @@
 {
   "schema_version": 1,
-  "experiment_id": "OPENDITOO-DAY1-M4-QUERY-PENDING",
+  "experiment_id": "OPENDITOO-DAY1-M4-FILE-VERSION-001",
   "milestone": "M4",
-  "status": "offline_template_not_executable",
+  "status": "frozen_pending_explicit_authority",
   "target": {
-    "exact_unit_id": null,
-    "model_label": "Ditoo Plus - exact label pending M0",
-    "installed_firmware": null,
-    "identity_evidence": []
+    "exact_unit_id": "Ditoo-plus@11:75:58:CE:DE:C7",
+    "model_label": "Ditoo-plus / FCC A8I-DITOO-PLUS",
+    "installed_firmware": "v42012 (stock 0x97 response; exact binary not recovered)",
+    "identity_evidence": [
+      "experiments/DAY1-UNIT-INTAKE-PENDING.json",
+      "captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json"
+    ],
+    "installed_firmware_evidence": [
+      "captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json"
+    ]
   },
   "transport": {
-    "kind": null,
-    "measured_endpoint": null,
-    "stock_route_evidence": [],
-    "pairing_required": null,
+    "kind": "Bluetooth Classic RFCOMM/SPP",
+    "measured_endpoint": "11:75:58:CE:DE:C7 RFCOMM channel 1",
+    "stock_route_evidence": [
+      "captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json"
+    ],
+    "pairing_required": true,
     "single_controller_required": true
   },
   "operation": {
-    "semantic_name": "device_info_or_status_query_pending_capture",
-    "semantic_evidence": null,
-    "application_tx_hex": null,
-    "application_tx_sha256": null,
-    "expected_response": null,
-    "persistence_effect": "unknown_until_semantics_established",
+    "semantic_name": "get_firmware_file_version_file_type_0",
+    "semantic_evidence": {
+      "exact_stock_capture": "captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json",
+      "stock_request_hex": "01040097009b0002",
+      "stock_response_hex": "010900049755001ca400b90102",
+      "supporting_app_reverse_engineering": "Recent Divoom APK decompilation maps 0x97 to SPP_GET_FILE_VERSION; exact current app 3.8.34 independently emitted the same command in the purchased-unit capture.",
+      "confidence": "high",
+      "scope": "read-only file-version query only; no other command semantics inherited"
+    },
+    "application_tx_hex": "01040097009b0002",
+    "application_tx_sha256": "6260dc0995cdaa13dadd614eb7f25b5b9ecf4c8a555f6da96bc84c62b5c31780",
+    "expected_response": {
+      "max_wire_bytes": 13,
+      "stock_response_hex": "010900049755001ca400b90102",
+      "stock_response_sha256": "d312a0a59165ca6c65aaa156465b3d3ad84acc4af7ef70bfc75a7338de800cc0",
+      "required_outer_command": "0x04",
+      "required_inner_command": "0x97",
+      "required_tag": "0x55",
+      "required_payload_prefix_hex": "00",
+      "expected_installed_version": 42012,
+      "parser_rule": "payload[0] must echo firmware selector 0; payload[1:3] little-endian is version; trailing payload byte is retained but not assigned semantics"
+    },
+    "persistence_effect": "read_only_query; no state mutation is requested; exact same request was already emitted by the stock app during normal connection initialization",
     "automatic_retry": false
   },
   "budgets": {
@@ -30,18 +55,20 @@
     "connect_deadline_seconds": 15,
     "application_requests": 1,
     "response_deadline_seconds": 5,
-    "max_application_tx_bytes": null,
-    "max_application_rx_bytes": null
+    "total_deadline_seconds": 20,
+    "max_application_tx_bytes": 8,
+    "max_application_rx_bytes": 13
   },
   "authority": {
     "transmission_authorized": false,
     "authorization_basis": null,
-    "note": "This template is not physical authority. Fill only from exact-unit stock evidence, then review."
+    "note": "Frozen exact one-request M4. Requires explicit user authority before any custom connect/send."
   },
   "stop_policy": {
     "ambiguous_send_or_timeout": "close locally; outcome unknown; no resend",
     "unexpected_response": "close locally; preserve bytes; no reinterpretation as success",
     "liveness_loss": "close local transmitter; use documented ordinary stock controls only",
-    "automatic_reconnect": false
+    "automatic_reconnect": false,
+    "post_success": "close RFCOMM immediately after the single complete response; do not send any second application frame"
   }
 }

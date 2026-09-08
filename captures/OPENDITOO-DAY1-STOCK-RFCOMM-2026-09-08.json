@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "capture_id": "OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08",
+  "status": "filtered_transport_and_codec_evidence",
+  "privacy": {
+    "raw_bugreport_committed": false,
+    "raw_bugreport_sha256": "a263e98039d4624b7d1fdd0b6c1021bc3bebf4242ec021bd7f704b7b31258a65",
+    "btsnoop_hci_sha256": "a00ed50b2dc78bc38167de6d0d73ee4c0f63a4e0faf4b33a56ff5f56898b3d43",
+    "sensitive_stock_frame_contents_committed": false,
+    "sensitive_stock_frame_sha256": "11d7ade7a5b95032c1c423a119be8777327d7da98f569689368abba874b56e66",
+    "note": "One official-app RFCOMM frame contained account/application metadata. Its contents are intentionally omitted; only its hash is preserved."
+  },
+  "phone": {
+    "os": "Android 16",
+    "build": "CP1A.260505.005",
+    "official_app_package": "com.divoom.Divoom",
+    "official_app_version_name": "3.8.34",
+    "official_app_version_code": 634
+  },
+  "unit": {
+    "model_label": "Ditoo-plus",
+    "fcc_id": "A8I-DITOO-PLUS",
+    "observed_bluetooth_name": "Ditoo-Plus-audio",
+    "observed_bluetooth_address": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012 (stock 0x97 file-version query; exact binary not recovered)"
+  },
+  "capture_window": {
+    "timezone": "UTC-04:00",
+    "first_hci_record": "2026-09-08T17:28:11.300872-04:00",
+    "last_hci_record": "2026-09-08T17:29:07.760299-04:00"
+  },
+  "transport": {
+    "observed_control_transport": "Bluetooth Classic BR/EDR -> L2CAP PSM 0x0003 -> RFCOMM -> channel 1",
+    "hci_create_connection": {
+      "time": "2026-09-08T17:28:12.273182-04:00",
+      "peer": "11:75:58:CE:DE:C7",
+      "h4_hex": "0105040dc7dece58751118cc0100abd401"
+    },
+    "hci_connection_complete": {
+      "time": "2026-09-08T17:28:12.539046-04:00",
+      "status": 0,
+      "handle": "0x000B",
+      "peer": "11:75:58:CE:DE:C7",
+      "link_type": 1,
+      "interpretation": "ACL/BR-EDR connection established"
+    },
+    "l2cap_rfcomm": {
+      "psm": "0x0003",
+      "request_time": "2026-09-08T17:28:12.774547-04:00",
+      "local_scid": "0x0041",
+      "remote_dcid": "0x0044",
+      "result": 0
+    },
+    "sdp": {
+      "service_name": "Serial Port 1",
+      "rfcomm_server_channel": 1,
+      "service_record_observed": true
+    },
+    "rfcomm": {
+      "application_dlci": 2,
+      "server_channel": 1,
+      "channel_open_observed": true,
+      "channel_close_observed": true
+    },
+    "ble_control_connection_observed": false,
+    "ble_scope_note": "No LE connection-complete event attributable to Ditoo control was observed in this capture. This does not prove the device lacks BLE capability."
+  },
+  "application_codec": {
+    "verdict": "MATCH",
+    "request_geometry": "01 | length_le16 | command | payload | additive_checksum_le16 | 02",
+    "response_geometry": "same outer frame with outer command 0x04; payload begins inner_command, tag 0x55, inner_payload",
+    "host_to_device_frames": 56,
+    "device_to_host_frames": 36,
+    "host_to_device_checksum_failures": 0,
+    "device_to_host_checksum_failures": 0,
+    "device_to_host_wrapped_tag_0x55_frames": 36,
+    "capture_fragmentation_observed": false,
+    "capture_concatenation_observed": false,
+    "scope_note": "The capture proves framing/checksum/wrapped-response compatibility for observed stock traffic. It does not by itself transfer command semantics from Tivoo to Ditoo."
+  },
+  "representative_stock_transactions": [
+    {
+      "request_time": "2026-09-08T17:28:24.519312-04:00",
+      "response_time": "2026-09-08T17:28:24.566430-04:00",
+      "request_wire_hex": "01030031340002",
+      "request_decode": {
+        "command": "0x31",
+        "payload_hex": ""
+      },
+      "response_wire_hex": "0106000431555ded0002",
+      "response_decode": {
+        "outer_command": "0x04",
+        "inner_command": "0x31",
+        "tag": "0x55",
+        "payload_hex": "5d"
+      },
+      "attribution": "official Divoom Android app over the observed Ditoo RFCOMM channel-1 session",
+      "semantic_label": null,
+      "semantic_note": "Command meaning is intentionally unresolved in exact-Ditoo evidence."
+    },
+    {
+      "request_time": "2026-09-08T17:28:24.559495-04:00",
+      "request_wire_hex": "010500bd2f02f30002",
+      "request_decode": {
+        "command": "0xBD",
+        "payload_hex": "2f02"
+      },
+      "attribution": "official Divoom Android app over the observed Ditoo RFCOMM channel-1 session",
+      "semantic_label": null
+    }
+  ],
+  "evidence_boundaries": {
+    "all_observed_device_traffic_owner": "official stock app / Android Bluetooth stack",
+    "custom_openditoo_transmission_performed": false,
+    "custom_openditoo_transmission_authorized": false,
+    "firmware_update_performed": false,
+    "persistent_upload_performed": false
+  },
+  "installed_firmware_evidence": {
+    "verdict": "v42012_high_confidence_stock_query",
+    "request_time": "2026-09-08T17:28:26.540-04:00",
+    "request_wire_hex": "01040097009b0002",
+    "request_sha256": "6260dc0995cdaa13dadd614eb7f25b5b9ecf4c8a555f6da96bc84c62b5c31780",
+    "request_decode": {
+      "command": "0x97",
+      "payload_hex": "00",
+      "stock_semantic": "file-version query, firmware selector 0"
+    },
+    "response_time": "2026-09-08T17:28:26.620-04:00",
+    "response_wire_hex": "010900049755001ca400b90102",
+    "response_sha256": "d312a0a59165ca6c65aaa156465b3d3ad84acc4af7ef70bfc75a7338de800cc0",
+    "response_decode": {
+      "outer_command": "0x04",
+      "inner_command": "0x97",
+      "tag": "0x55",
+      "payload_hex": "001ca400",
+      "selector_echo": "0x00",
+      "version_le16_hex": "1ca4",
+      "version_decimal": 42012,
+      "trailing_byte_hex": "00"
+    },
+    "evidence_scope": [
+      "Exact purchased unit and exact installed Divoom 3.8.34 stock app generated this request/response.",
+      "Independent decompilation of a recent Divoom app maps command 0x97 to SPP_GET_FILE_VERSION.",
+      "The first response payload byte mirrors selector 0; the next two little-endian bytes decode to 42012; the final zero byte is left semantically unresolved.",
+      "This identifies the installed firmware version number; it does not establish byte identity with any preserved firmware binary."
+    ]
+  }
+}
