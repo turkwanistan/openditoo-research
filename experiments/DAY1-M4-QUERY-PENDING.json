@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "OPENDITOO-DAY1-M4-FILE-VERSION-001",
   "milestone": "M4",
-  "status": "frozen_pending_explicit_authority",
+  "status": "authorized_pending_execution",
   "target": {
     "exact_unit_id": "Ditoo-plus@11:75:58:CE:DE:C7",
     "model_label": "Ditoo-plus / FCC A8I-DITOO-PLUS",
@@ -60,9 +60,10 @@
     "max_application_rx_bytes": 13
   },
   "authority": {
-    "transmission_authorized": false,
-    "authorization_basis": null,
-    "note": "Frozen exact one-request M4. Requires explicit user authority before any custom connect/send."
+    "transmission_authorized": true,
+    "authorization_basis": "User explicitly authorized Windows pairing/discovery if needed and exactly one frozen M4 RFCOMM file-version query on 2026-09-08 in this session, with no retries or other commands.",
+    "authorized_scope": "pair/discover exact Ditoo if needed; then one RFCOMM channel-1 connect and exactly one application TX 01040097009b0002; no retry; no second command",
+    "note": "Authority applies only to OPENDITOO-DAY1-M4-FILE-VERSION-001 and does not transfer to M5 or any other command."
   },
   "stop_policy": {
     "ambiguous_send_or_timeout": "close locally; outcome unknown; no resend",

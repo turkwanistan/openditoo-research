@@ -2,7 +2,7 @@
 
 **Target:** Divoom Ditoo Plus (pink purchased unit)  
 **State date:** 2026-09-08
-**Phase:** Day-1 application-first execution active; M1/M2/M3 proven, v42012 identified, M4 frozen pending compile proof + explicit authority.
+**Phase:** Day-1 application-first execution active; M1/M2/M3 proven, v42012 identified, M4 explicitly authorized and ready for one-shot execution.
 **Safety posture:** preservation-first. No flashing, arbitrary proprietary writes, guessed service-mode entry, electrical probing, soldering, or destructive teardown has been authorized or performed.
 
 This file is the current human-readable project synthesis. It supersedes ad-hoc chat summaries for project state but does not replace raw evidence, hashes, or provenance under `artifacts/`.
@@ -19,7 +19,7 @@ Exact purchased-unit stock capture now proves the official app control route is 
 
 The exact-unit stock initialization also contains `0x97 00` with wrapped payload `00 1c a4 00`. Independent Divoom application reverse engineering names `0x97` as `SPP_GET_FILE_VERSION`; the echoed selector plus little-endian `0xa41c` identifies installed version **v42012** with high confidence. This is a version-number observation, not a recovered v42012 firmware binary.
 
-M4 is frozen as the exact stock-observed read-only request `01040097009b0002` with one connect, one send, no retry, and a 20-second total budget. Offline Windows source pins the exact target and response parser but is deliberately unreferenced by `Program.cs`, so the installed Host remains status-only. `manifest-check` reports only `transmission_authority_missing`; Windows compile-only proof is the remaining implementation validation before explicit physical authority is requested. Current milestone state and exact next action are canonicalized in `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md`.
+M4 is the exact stock-observed read-only request `01040097009b0002` with one connect, one send, no retry, and a 20-second total budget. Windows compile proof is PASS and the user explicitly authorized pairing/discovery if needed plus exactly this one frozen RFCOMM exchange. A dedicated no-argument runner enforces the exact target/request and fails before connecting when Windows pairing is absent. The installed Host remains status-only. `manifest-check` is execution-ready with no blockers. Current milestone state and exact next action are canonicalized in `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md`.
 
 ## 1. Project boundaries and evidence discipline
 

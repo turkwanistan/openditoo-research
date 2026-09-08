@@ -124,10 +124,11 @@ class BoundaryTests(unittest.TestCase):
         self.assertNotIn("Stop-Process", src)
         self.assertNotIn("$Port = 8779", src)
 
-    def test_frozen_m4_transport_is_typed_one_shot_and_unreachable(self) -> None:
+    def test_authorized_m4_transport_is_typed_one_shot_and_host_unreachable(self) -> None:
         protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooM4FileVersionProtocol.cs").read_text(encoding="utf-8")
         transport = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/WindowsRfcommBoundedM4Transport.cs").read_text(encoding="utf-8")
         program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
+        runner = (ROOT / "runtime/windows/OpenDitoo.M4.Runner/Program.cs").read_text(encoding="utf-8")
 
         self.assertIn('TargetMac = "11:75:58:CE:DE:C7"', protocol)
         self.assertIn('TargetBluetoothAddress = 0x117558CEDEC7', protocol)
@@ -149,7 +150,13 @@ class BoundaryTests(unittest.TestCase):
         self.assertNotIn('WindowsRfcommBoundedM4Transport', program)
         self.assertNotIn('/v1/m4', program.lower())
 
-    def test_pending_manifest_fails_closed(self) -> None:
+        self.assertIn('args.Length != 0', runner)
+        self.assertIn('RequireAuthenticatedExactTarget()', runner)
+        self.assertIn('ExchangeFrozenFileVersionOnce()', runner)
+        self.assertIn('M4_PAIRING_REQUIRED_NO_CONNECT', runner)
+        self.assertNotIn('Console.ReadLine', runner)
+
+    def test_authorized_manifest_is_exactly_ready(self) -> None:
         manifest = ROOT / "experiments/DAY1-M4-QUERY-PENDING.json"
         proc = subprocess.run(
             [sys.executable, str(ROOT / "cli/openditoo.py"), "manifest-check", "--file", str(manifest)],
@@ -158,13 +165,15 @@ class BoundaryTests(unittest.TestCase):
             check=True,
         )
         result = json.loads(proc.stdout)
-        self.assertFalse(result["execution_ready"])
-        self.assertNotIn("exact_unit_id_unbound", result["execution_blockers"])
-        self.assertNotIn("measured_endpoint_unbound", result["execution_blockers"])
-        self.assertNotIn("installed_firmware_unbound", result["execution_blockers"])
-        self.assertNotIn("semantic_evidence_missing", result["execution_blockers"])
-        self.assertNotIn("application_tx_unfrozen", result["execution_blockers"])
-        self.assertEqual(result["execution_blockers"], ["transmission_authority_missing"])
+        self.assertTrue(result["execution_ready"])
+        self.assertEqual(result["execution_blockers"], [])
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        self.assertEqual(data["status"], "authorized_pending_execution")
+        self.assertTrue(data["authority"]["transmission_authorized"])
+        self.assertEqual(data["operation"]["application_tx_hex"], "01040097009b0002")
+        self.assertFalse(data["operation"]["automatic_retry"])
+        self.assertEqual(data["budgets"]["connection_attempts"], 1)
+        self.assertEqual(data["budgets"]["application_requests"], 1)
 
     def test_frame_preview_is_offline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -4,7 +4,7 @@
 
 Freeze the first custom OpenDitoo operation as the exact stock-observed, read-only firmware file-version query on the purchased Ditoo Plus.
 
-No custom transmission is authorized by this document.
+This freeze document itself did not grant authority; explicit user authority was subsequently granted in-session for exactly this M4 operation, including Windows pairing/discovery if needed, with no retries or other commands.
 
 ## Exact-unit evidence
 
@@ -60,4 +60,4 @@ Budgets are frozen in `experiments/DAY1-M4-QUERY-PENDING.json`: 1 connection att
 
 This operation is a read-only version query. The exact same bytes were already emitted by the official stock app during normal initialization. It does not request firmware update, upload, drawing mode, persistent storage, service mode, or any state change.
 
-The manifest remains `transmission_authorized=false`. Explicit user authority for this exact frozen operation is the final physical gate.
+The manifest is now `transmission_authorized=true` for `OPENDITOO-DAY1-M4-FILE-VERSION-001` only. M5 and all other commands remain unauthorized. A dedicated no-argument runner enforces exact target/channel/request/budgets and checks pairing before any connection attempt.

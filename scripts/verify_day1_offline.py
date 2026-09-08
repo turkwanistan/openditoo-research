@@ -47,16 +47,19 @@ def run_tests() -> None:
         fail("offline unit tests failed")
 
 
-def verify_pending_manifests() -> None:
+def verify_manifests() -> None:
     m4 = json.loads((ROOT / "experiments" / "DAY1-M4-QUERY-PENDING.json").read_text(encoding="utf-8"))
-    if m4.get("status") != "frozen_pending_explicit_authority":
-        fail("M4 is not frozen pending explicit authority")
-    if m4.get("authority", {}).get("transmission_authorized") is not False:
-        fail("M4 unexpectedly authorizes transmission")
+    if m4.get("status") != "authorized_pending_execution":
+        fail("M4 is not in authorized-pending-execution state")
+    if m4.get("authority", {}).get("transmission_authorized") is not True:
+        fail("M4 authority is not explicit")
     if m4.get("operation", {}).get("automatic_retry") is not False:
         fail("M4 unexpectedly permits automatic retry")
     if m4.get("operation", {}).get("application_tx_hex") != "01040097009b0002":
         fail("M4 frozen TX drifted")
+    budgets = m4.get("budgets", {})
+    if budgets.get("connection_attempts") != 1 or budgets.get("application_requests") != 1:
+        fail("M4 one-shot budget drifted")
 
     m5 = json.loads((ROOT / "experiments" / "DAY1-M5-FRAME-PENDING.json").read_text(encoding="utf-8"))
     if m5.get("status") != "offline_template_not_executable":
@@ -77,8 +80,6 @@ def verify_host_boundary() -> None:
         'transportConfigured = false',
         'targetBound = false',
     ]
-    # The fixed origin string is in the Python CLI while the C# Host keeps port
-    # and loopback as separate constants; accept either representation.
     if 'HOST_ORIGIN = "http://127.0.0.1:8796"' not in cli:
         fail("CLI origin is not fixed to OpenDitoo 8796")
     for needle in required[1:]:
@@ -98,15 +99,33 @@ def verify_host_boundary() -> None:
         fail("OpenDitoo control plane collides with OpenTivoo Host port")
 
 
+def verify_authorized_runner() -> None:
+    runner = (ROOT / "runtime/windows/OpenDitoo.M4.Runner/Program.cs").read_text(encoding="utf-8")
+    project = (ROOT / "runtime/windows/OpenDitoo.M4.Runner/OpenDitoo.M4.Runner.csproj").read_text(encoding="utf-8")
+    for needle in (
+        "args.Length != 0",
+        "RequireAuthenticatedExactTarget()",
+        "ExchangeFrozenFileVersionOnce()",
+        "M4_PAIRING_REQUIRED_NO_CONNECT",
+    ):
+        if needle not in runner:
+            fail(f"authorized runner missing exact boundary: {needle}")
+    if "Console.ReadLine" in runner:
+        fail("authorized runner unexpectedly accepts interactive input")
+    if "DitooM4FileVersionProtocol.cs" not in project or "WindowsRfcommBoundedM4Transport.cs" not in project:
+        fail("authorized runner is not linked to the frozen protocol/transport sources")
+
+
 def main() -> int:
     artifact_count = verify_sha256_manifest()
     run_tests()
-    verify_pending_manifests()
+    verify_manifests()
     verify_host_boundary()
+    verify_authorized_runner()
     print(
         "DAY1_OFFLINE_PASS "
         f"artifacts={artifact_count} tests=12 host=status_only port=8796 "
-        "device_io=false transmission_authorized=false"
+        "device_io=false m4_authorized=true m5_authorized=false"
     )
     return 0
 

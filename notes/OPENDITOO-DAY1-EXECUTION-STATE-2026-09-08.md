@@ -136,19 +136,17 @@ Prepared `experiments/DAY1-UNIT-INTAKE-PENDING.json` and `captures/DAY1-STOCK-TR
 
 ### Pending manifests
 
-M4 is now frozen at `experiments/DAY1-M4-QUERY-PENDING.json` as `OPENDITOO-DAY1-M4-FILE-VERSION-001`; M5 remains a fail-closed template at `experiments/DAY1-M5-FRAME-PENDING.json`. Both retain `transmission_authorized=false` and no automatic retry.
+M4 is authorized at `experiments/DAY1-M4-QUERY-PENDING.json` as `OPENDITOO-DAY1-M4-FILE-VERSION-001`; M5 remains a fail-closed template at `experiments/DAY1-M5-FRAME-PENDING.json`. M4 has explicit one-shot authority; M5 remains `transmission_authorized=false`. Neither permits automatic retry.
 
-The M4 manifest binds the exact purchased unit, stock-measured RFCOMM channel 1 endpoint, high-confidence installed firmware version v42012, exact stock-observed read-only `0x97` file-version semantics, exact 8-byte TX, expected 13-byte wrapped response geometry, and one-shot budgets. `manifest-check` now reports exactly one blocker:
+The M4 manifest binds the exact purchased unit, stock-measured RFCOMM channel 1 endpoint, high-confidence installed firmware version v42012, exact stock-observed read-only `0x97` file-version semantics, exact 8-byte TX, expected 13-byte wrapped response geometry, and one-shot budgets. The user explicitly authorized Windows pairing/discovery if needed and exactly one frozen M4 RFCOMM exchange, with no retries or other commands. `manifest-check` now reports `execution_ready=true` with no blockers.
 
-1. `transmission_authority_missing`
-
-The semantic/evidence freeze is documented in `notes/OPENDITOO-DAY1-M4-FILE-VERSION-FREEZE-2026-09-08.md`. No custom Ditoo transmission has occurred.
+The semantic/evidence freeze is documented in `notes/OPENDITOO-DAY1-M4-FILE-VERSION-FREEZE-2026-09-08.md`. A dedicated no-argument Windows runner now enforces the exact operation and checks Windows pairing before any RFCOMM connect. No custom Ditoo transmission has occurred yet.
 
 ## Verification
 
 `python3 scripts/verify_day1_offline.py`:
 
-`DAY1_OFFLINE_PASS artifacts=19 tests=12 host=status_only port=8796 device_io=false transmission_authorized=false`
+`DAY1_OFFLINE_PASS artifacts=19 tests=12 host=status_only port=8796 device_io=false m4_authorized=true m5_authorized=false`
 
 Source hashes at this gate:
 
@@ -223,7 +221,7 @@ Android package metadata also closes two M0 fields: Android 16 / build `CP1A.260
 | M1 transport/capture | PASS | exact purchased-unit stock route measured as Classic RFCOMM/SPP channel 1 |
 | M2 attributable stock transaction | PASS | official-app channel-1 request/response bytes frozen, including exact stock file-version query |
 | M3 offline compatibility verdict | PASS | 92/92 observed application frames match candidate checksum/frame geometry; all 36 responses match outer-0x04/tag-0x55 wrapping |
-| M4 bounded custom query | FROZEN / AUTHORITY BLOCKED | exact read-only 0x97 request frozen; manifest has only `transmission_authority_missing`; compile-only Windows proof pending before activation |
+| M4 bounded custom query | AUTHORIZED / READY | exact read-only 0x97 request authorized; no-argument one-shot Windows runner prepared; execution pending |
 | M5 volatile frame | BLOCKED | entry/paint/exit + persistence evidence not established |
 
 ## Windows M4 compile proof
@@ -232,4 +230,4 @@ The operator compiled `runtime/windows/OpenDitoo.Day1.Host/OpenDitoo.Day1.Host.c
 
 ## Exact next action
 
-Compile proof is PASS. M4 is now fully frozen except for explicit physical authority. Request authority covering, if necessary, ordinary Windows Bluetooth pairing/discovery for the exact unit `11:75:58:CE:DE:C7`, followed by exactly one RFCOMM channel-1 exchange using TX `01040097009b0002`, with one connect, one send, no retry, max 13-byte response, 20-second total deadline, immediate close, and no other command. Keep Android disconnected during the Windows-owned trial so only one controller owns the Ditoo. Do not activate any M4 route or perform Bluetooth pairing/custom transmission until that authority is explicit.
+Compile proof and explicit authority are PASS. Execute only `runtime/windows/run_openditoo_m4_once.ps1`. The runner accepts no arguments, checks that the exact Ditoo is already authenticated/paired in Windows before any RFCOMM connect, then performs exactly one channel-1 connect and one TX `01040097009b0002`, no retry, max 13-byte response, 20-second total deadline, immediate close, and no other command. If pairing is absent it exits `M4_PAIRING_REQUIRED_NO_CONNECT` with zero connection attempts and zero requests. Keep Android disconnected during the Windows-owned trial.
