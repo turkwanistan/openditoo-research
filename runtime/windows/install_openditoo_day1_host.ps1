@@ -76,11 +76,18 @@ try {
     New-Item -ItemType Directory -Path $WindowsRoot -Force | Out-Null
     Copy-Item -Path (Join-Path $Stage '*') -Destination $WindowsRoot -Recurse -Force
     $InstalledExe = Join-Path $WindowsRoot 'OpenDitoo.Day1.Host.exe'
+    $currentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    if ([string]::IsNullOrWhiteSpace($currentIdentity.Name) -or $currentIdentity.Name -notmatch '\\') {
+        throw 'Could not resolve the fully-qualified current Windows account for OpenDitoo task registration.'
+    }
+    $TaskUserName = $currentIdentity.Name
+    Step 'SCHEDULED_TASK_USER' $TaskUserName
     $action = New-ScheduledTaskAction -Execute $InstalledExe -Argument ('--token-file "' + $TokenFile + '"')
-    $trigger = New-ScheduledTaskTrigger -AtLogOn
-    $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
+    $trigger = New-ScheduledTaskTrigger -AtLogOn -User $TaskUserName
+    $principal = New-ScheduledTaskPrincipal -UserId $TaskUserName -LogonType Interactive -RunLevel Limited
     $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
-    Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings | Out-Null
+    $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings
+    Register-ScheduledTask -TaskName $TaskName -InputObject $task -ErrorAction Stop | Out-Null
     Start-ScheduledTask -TaskName $TaskName
 
     $deadline = [DateTime]::UtcNow.AddSeconds(8)

@@ -93,11 +93,13 @@ Identity is deliberately separate:
 
 The installer only observes whether OpenTivoo's port 8779/task exist and explicitly preserves them. It refuses an ambiguous existing 8796 listener or pre-existing OpenDitoo task rather than replacing either automatically.
 
-### Current Windows blocker
+### Current Windows validation state
 
-WSL_MCP's sandbox exposes no `powershell.exe`, `cmd.exe` or WSL interop, and this WSL environment has no `dotnet` SDK. Therefore the Windows `.NET 8` build/install/status proof cannot be executed from WSL_MCP. The source and exact installer are prepared, but Windows execution remains an operator action.
+WSL_MCP's sandbox exposes no `powershell.exe`, `cmd.exe` or WSL interop, and this WSL environment has no `dotnet` SDK, so Windows execution remains an operator action. On Windows, the status-only Host dry run built successfully and reported `DEVICE_IO=false`, `BLUETOOTH_CONFIGURED=false`, `TARGET_BOUND=false`, with OpenTivoo observed separately on 8779.
 
-No Windows Host was started by this session and no Bluetooth stack was touched. An authenticated CLI status probe to fixed `127.0.0.1:8796` returned `HOST_UNAVAILABLE` / connection refused (exit 20), confirming that the separate Host is not yet installed/running; no fallback port or target was attempted.
+The first `-Apply` attempt copied the isolated OpenDitoo runtime payload under `%LOCALAPPDATA%\OpenDitoo\Day1Host`, then failed at `Register-ScheduledTask` with `(14,8):UserId` before task launch or localhost status proof. Root cause was the installer using unqualified `$env:USERNAME` for the task principal. The installer is now aligned with the proven OpenTivoo registration pattern: resolve `[System.Security.Principal.WindowsIdentity]::GetCurrent().Name`, require a fully qualified `authority\user`, bind both the `-AtLogOn -User` trigger and principal to that identity, build a task object, and register the object. The retry path still refuses any pre-existing OpenDitoo task or 8796 listener and never modifies OpenTivoo. Windows validation of this patch is pending.
+
+No Bluetooth stack or Ditoo target was touched by either attempt. The WSL CLI still has no fallback port or raw/device transmission surface.
 
 ## Offline portability preparation
 
@@ -161,7 +163,7 @@ Source hashes at this gate:
 - `host/ditoo_candidate_codec.py`: `4631a421ae69175884d1dee70db4e4b917938828d424698a1c9f6a3bba77cc96`
 - `host/diagnostic_frame.py`: `a4a58ef5d2b5d87ed6778db90a9c7f21f037f7dba9f42a2e64c7fd42ebe30a4d`
 - Windows Host `Program.cs`: `e4da750034acf2ad50aa85d949b3c3ff7af5334faddedfcfc80f08b8d86172f8`
-- Windows installer: `fb33c03b76c4b9237c16191208b4161d67394cea8eb42708ec5463542a945657`
+- Windows installer: `108023eeb44038b3fb615cf5cd688de7d85bea1db888b3e38529220c51bd451f`
 - pending M4 manifest: `ac3f7ea2de4a320f0c11074859202ec8b5e78b1271858a55f1c17a5639795195`
 - pending M5 manifest: `ebeca7284820b0a1322e4e38733a6accce59a19a14bf1a53d945e116f3e91401`
 
@@ -169,7 +171,7 @@ Source hashes at this gate:
 
 | Milestone | State | Gate |
 |---|---|---|
-| Environment | WSL side PASS; Windows status-only Host source prepared | Windows build/install/status proof still operator-gated |
+| Environment | WSL side PASS; Windows build PASS; task-registration patch prepared | patched Windows task registration + authenticated status proof still operator-gated |
 | M0 intake/stock baseline | NOT EXECUTED | exact unit not physically observed in this tool session |
 | M1 transport/capture | NOT EXECUTED | no advertisement/SDP/GATT/app-capture evidence from purchased unit |
 | M2 attributable stock transaction | NOT EXECUTED | no exported application payload capture |
@@ -179,18 +181,16 @@ Source hashes at this gate:
 
 ## Exact next action
 
-From Windows PowerShell opened at the WSL repository UNC path, run the status-only installer first without `-Apply`:
+From the Windows PowerShell session already opened at the WSL repository UNC path, re-run the patched status-only installer without `-Apply`:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\runtime\windows\install_openditoo_day1_host.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\runtime\windows\install_openditoo_day1_host.ps1
 ```
 
-Expected terminal condition is `DRY_RUN_PASS` with `DEVICE_IO=false`, `BLUETOOTH_CONFIGURED=false`, `TARGET_BOUND=false`, and no change to OpenTivoo.
-
-If that passes, the reviewed environment-only apply command is:
+Expected terminal condition remains `DRY_RUN_PASS` with `DEVICE_IO=false`, `BLUETOOTH_CONFIGURED=false`, `TARGET_BOUND=false`. Then run:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\runtime\windows\install_openditoo_day1_host.ps1 -Apply
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\runtime\windows\install_openditoo_day1_host.ps1 -Apply
 ```
 
-This installs/starts only the status-only OpenDitoo Host. It still cannot discover, pair, connect or transmit to Ditoo. After that, WSL_MCP can verify the authenticated localhost route before M0/M1 physical stock characterization begins.
+The patched apply should additionally print `SCHEDULED_TASK_USER=<authority>\<user>` before registration and finish `INSTALL_STATUS=PASS_STATUS_ONLY`. If a task or 8796 listener unexpectedly exists, the installer must fail closed rather than replace it. This remains environment-only and cannot discover, pair, connect, or transmit to Ditoo.
