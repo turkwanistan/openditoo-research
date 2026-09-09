@@ -113,3 +113,10 @@ Production status semantics remain green <5 min, yellow 5-20 min, red >=20 min, 
 ### Product decision after 007 — dashboard owns the display while connected
 
 The operator does not intend to use the stock Ditoo UI. Future hardened product mode should therefore treat a physical-input stock takeover as transient: detect canvas invalidation, then deliberately reacquire the exact Ditoo and restore the MCP dashboard. This is a NEW unattended/reclaim authority shape and is not authorized by 008 or any earlier grant. It must preserve exact-target binding, single-controller ownership, bounded reconnect/backoff, no raw-send surface, and OpenTivoo isolation.
+
+
+### Activation 008 result — status transitions physically accepted
+
+`OPENDITOO-M9-ACTIVATION-008` is consumed and PASS. The test-only virtual-clock profile produced exactly four ACKed changed frames over 15 s (12 packets / 714 bytes), clean `lifetime_expired`, with 287 unchanged holds and no pacing/refusal. Operator observation: **all green → yellow → red → grey transitions were visible and looked good**. Production thresholds remain unchanged: green <5 min, yellow 5–20 min, red >=20 min; grey remains no usable activity data. Nothing is currently authorized.
+
+Product decision recorded immediately after acceptance: stock UI is not desired while OpenDitoo owns the device. Future plug-and-play product mode should automatically restore the last/current MCP dashboard after a physical input causes stock takeover, rather than yielding until reconnect. This is a new product-runtime authority shape and is not authorized by 008.

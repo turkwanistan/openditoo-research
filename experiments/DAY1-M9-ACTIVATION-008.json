@@ -2,7 +2,7 @@
   "schema_version": 2,
   "experiment_id": "OPENDITOO-M9-ACTIVATION-008",
   "milestone": "MCP dashboard accelerated status-colour transition acceptance",
-  "status": "authorized_pending_execution",
+  "status": "completed_pass",
   "objective": "Physically verify the production green/yellow/red/grey dashboard states on the exact Ditoo using a test-only virtual clock; production 5/20-minute thresholds remain unchanged.",
   "why_this_shape": "006 was a clean idle-hold pass but no source event occurred, so animation was not exercised. 007 keeps the same accepted transport/pacing envelope and changes only the test procedure: after the operator starts the session, the assistant performs one harmless read-only WSL_MCP call, which appends a genuine completed WSL_MCP audit record that the existing collector should observe.",
   "target": {
@@ -99,8 +99,8 @@
     "operator present and watching the unit"
   ],
   "authority": {
-    "transmission_authorized": true,
-    "authorization_consumed": false,
+    "transmission_authorized": false,
+    "authorization_consumed": true,
     "experiment_id": "OPENDITOO-M9-ACTIVATION-008",
     "granted_by": "operator, in-session, 2026-09-09",
     "grant_text": "Grant OPENDITOO-M9-ACTIVATION-008",
@@ -122,6 +122,23 @@
     "experiment_id": "OPENDITOO-M9-ACTIVATION-005",
     "why": "005 grant is consumed; 006 is a fresh visual-only trial for the operator-requested longer animation."
   },
-  "result": null,
+  "result": {
+    "completed_at": "2026-09-09T18:13:12Z",
+    "outcome": "stopped_clean",
+    "terminal_reason": "lifetime_expired",
+    "frames_sent": 4,
+    "packets_sent": 12,
+    "tx_bytes_sent": 714,
+    "acks": [
+      "0xB6",
+      "0x05",
+      "0xD0",
+      "0x00"
+    ],
+    "operator_visual": "PASS: operator saw all green -> yellow -> red -> grey transitions and said they look good",
+    "status_transition_acceptance": "PASS",
+    "production_thresholds_changed": false,
+    "grey_semantics": "no usable activity data, not an age bucket"
+  },
   "acceptance_profile": "status_age_colors_v1"
 }
