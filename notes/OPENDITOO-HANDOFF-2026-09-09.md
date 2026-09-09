@@ -8,13 +8,13 @@ Routing refreshed after activation 008 and product-runtime hardening. Always run
 
 ## 0. Read this first if you are the next session
 
-**Current live authority:** persistent product authority `OPENDITOO-PRODUCT-RUNTIME-001` remains active in the local mode-0600 policy, and one additional experimental grant is live: `OPENDITOO-M9-ACTIVATION-009`, exactly one frozen Lab fault-bar visual sequence. The product service must be stopped only for that run, then restarted; 009 grants no retry or second attempt.
+**Current live authority:** Runtime 001 (`OPENDITOO-PRODUCT-RUNTIME-001`) remains the only standing product authority, through the local git-ignored mode-0600 policy. Activations 001–009 are consumed; no one-shot experiment is live.
 
-**Activations 001–008 are consumed. Persistent product authority `OPENDITOO-PRODUCT-RUNTIME-001` is currently granted through the local git-ignored mode-0600 policy.** 008 is a physical PASS: exactly four changed frames rendered green → yellow → red → grey over 15 s and the operator confirmed every transition looked good. Production semantics remain green <5 min, yellow 5–20 min, red >=20 min, grey for no usable activity data.
+The MCP Dashboard v1 product baseline is already working in everyday use. P1 attach/reclaim/device-reconnect, M9 activity/status visuals, and Activation 009 fault-display rendering are accepted. P3 is closed for v1 without deliberately breaking a healthy Lab. See `PRODUCT.md`, `notes/OPENDITOO-MCP-PRODUCT-BASELINE-FREEZE-2026-09-09.md`, and `notes/OPENDITOO-P3-PRODUCT-EVIDENCE-CLOSURE-2026-09-09.md`.
 
-The current objective is **persistent plug-and-play MCP product runtime activation**. The operator explicitly granted `OPENDITOO-PRODUCT-RUNTIME-001`; the committed template remains disabled, while the local mode-0600 `.openditoo-local/product-runtime-policy.json` is materialized and `product-check` reports `execution_ready:true`. Persistent authority belongs only to that local policy and exact scope described in `AGENTS.md`; experimental manifests remain one-use/consumed. Next: install/start transactionally and physically accept startup, reclaim, and reconnect.
+**Next and final MCP-productization boundary:** Runtime 002 is the telemetry-only successor at `product/OPENDITOO-PRODUCT-RUNTIME-002.json`. It is side-by-side with Runtime 001 so the live 001 policy remains hash-valid. Runtime 002 changes only live supervisor observability (`connected`, ACK timing/count, stale-error clearing); Host bytes and all transport/reconnect/reclaim semantics are unchanged. Its committed template is disabled and requires the exact named operator grant `Grant OPENDITOO-PRODUCT-RUNTIME-002` before local-policy cutover/service restart.
 
-Prepared behavior: Windows logon bootstrap → WSL product service → bounded typed activity sessions → automatic bounded reconnect when Ditoo returns → immediate fresh-session MCP-screen reclaim after `canvas_invalidated`. No new Host route or raw Bluetooth surface was added. `OpenDitoo Day1 Host` and OpenTivoo remain separately owned/preserved. See `notes/OPENDITOO-PRODUCT-RUNTIME-HARDENING-2026-09-09.md`.
+After one healthy Runtime 002 cutover/status check, P2/P3/P4 are done. Do not grow the MCP dashboard milestone further; route next work to streaming/other OpenDitoo objectives. Windows reboot/login autostart observation remains intentionally deferred and non-blocking.
 
 ### If you are running under WSL_MCP, expect to do offline work only
 

@@ -4,7 +4,7 @@ Preservation-first reverse-engineering workspace for the Divoom Ditoo Plus.
 
 ## Project state
 
-Start with [`START_HERE.md`](START_HERE.md). For the active 2026-09-08 application-first Day-1 execution, read [`notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md`](notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md), then use [`PROJECT_STATE.md`](PROJECT_STATE.md) as the comprehensive static/reconnaissance evidence base.
+Start with [`START_HERE.md`](START_HERE.md). The everyday MCP Dashboard v1 operating guide is [`PRODUCT.md`](PRODUCT.md), with the accepted baseline/release closure under `notes/`. Use [`PROJECT_STATE.md`](PROJECT_STATE.md) as the comprehensive static/reconnaissance evidence base when deeper preservation research is actually needed.
 
 ## Artifact preservation
 

@@ -101,3 +101,6 @@ Activations 001–009 are historical one-shot experiments and must remain consum
 Leave the persistent product runtime installed and running under `OPENDITOO-PRODUCT-RUNTIME-001`. Normal physical-input stock screens are transient by design; the dashboard reclaims ownership. Device loss is recoverable via bounded reconnect. No further experimentation is required merely to preserve this baseline.
 
 Before changing implementation code, hydrate from `START_HERE.md`, this note, `notes/OPENDITOO-HANDOFF-2026-09-09.md`, and `notes/OPENDITOO-PRODUCT-RUNTIME-HARDENING-2026-09-09.md`; run `python3 scripts/verify_day1_offline.py`; verify `product-check`; preserve the local standing policy and all legitimate concurrent work.
+## Follow-on closure package
+
+The Runtime 001 baseline in this file remains immutable acceptance evidence. P2/P3/P4 follow-on work is routed through `notes/OPENDITOO-MCP-DASHBOARD-V1-RELEASE-2026-09-09.md`. Runtime 002 is side-by-side and telemetry-only; it does not supersede this physical evidence until separately granted and cut over.

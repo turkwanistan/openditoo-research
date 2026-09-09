@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "product_id": "OPENDITOO-MCP-DASHBOARD-V1",
+  "description": "Persistent plug-and-play MCP activity dashboard for the owner's exact Ditoo Plus; Runtime 002 adds telemetry-only live session observability.",
+  "target": {
+    "exact_unit_id": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012",
+    "rfcomm_channel": 1,
+    "target_override_enabled": false
+  },
+  "build": {
+    "code_sha256": {
+      "renderer_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+      "ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+      "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+      "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+      "product_runtime_sha256": "85b6ca70a1340bd53cc69441034c780d39d62db985cf6d61a10c1bccb0483e0d"
+    },
+    "host_dll_sha256": "fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
+    "host_note": "Runtime 002 changes WSL supervisor telemetry only; existing typed activity-session Host bytes and transport behavior are unchanged."
+  },
+  "session": {
+    "lifetime_seconds": 600,
+    "min_frame_interval_ms": 150,
+    "poll_interval_ms": 50,
+    "pulse_freshness_seconds": 30,
+    "max_frames": 500,
+    "max_tx_bytes": 101500,
+    "renewal": "fresh unique Host session after lifetime/budget; displayed frame persists across brief socket rollover"
+  },
+  "behavior": {
+    "automatic_reconnect": true,
+    "reclaim_on_canvas_invalidated": true,
+    "start_at_windows_logon": true,
+    "reconnect_backoff_seconds": [
+      1,
+      2,
+      5,
+      10,
+      30
+    ],
+    "reclaim_storm_guard": {
+      "max_immediate_reclaims": 8,
+      "window_seconds": 10,
+      "cooldown_seconds": 1
+    },
+    "raw_send_enabled": false,
+    "target_override_enabled": false,
+    "collector_ownership": "product runtime collects while connected and while backing off; standalone collector timer is transactionally disabled and restored on uninstall"
+  },
+  "install": {
+    "windows_task": "OpenDitoo Product Runtime",
+    "wsl_service": "openditoo-product.service",
+    "local_policy": ".openditoo-local/product-runtime-policy.json",
+    "host_task": "OpenDitoo Day1 Host (preserved)",
+    "opentivoo_task": "OpenTivoo Product Runtime (preserved)",
+    "startup_boundary": "Windows user logon / StartWhenAvailable; WSL is user-scoped, so this is the reliable Windows startup boundary"
+  },
+  "authority": {
+    "persistent_runtime_authorized": false,
+    "revoked": false,
+    "granted_by": null,
+    "grant_text": null,
+    "grant_scope_requested": "Persistent unattended OpenDitoo MCP dashboard product runtime on exact Ditoo 11:75:58:CE:DE:C7 / firmware v42012 only; start automatically at Windows user logon; automatically reconnect after Host/device/Bluetooth unavailability with bounded backoff; after a physical input invalidates the canvas, immediately open a fresh bounded session and restore the MCP dashboard; collect the three configured MCP activity sources; use only the existing typed activity-session Host surface with one ACK per frame, 150 ms Host pacing floor and 200 ms nominal client cadence; no raw send, target override, generic Bluetooth operations, firmware/persistent device writes, command enumeration, pipelining, or OpenTivoo changes. Authority persists until explicit uninstall/revocation. Runtime 002 additionally permits telemetry-only state updates after successful Host open/frame ACK; this does not change transport bytes, pacing, reconnect/reclaim policy, or device operations.",
+    "grant_scope": null,
+    "revocation": "runtime/wsl/install_openditoo_product.sh --uninstall stops/disables product service, restores prior collector state, and moves a revoked policy record under .openditoo-local/revoked/"
+  },
+  "runtime_revision": 2
+}

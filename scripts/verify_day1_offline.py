@@ -223,8 +223,14 @@ def verify_activation_boundary() -> None:
 
 def verify_product_runtime_boundary() -> None:
     """Persistent product mode is a separate, disabled-by-default authority shape."""
-    policy_path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-001.json"
+    historical_path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-001.json"
+    historical = json.loads(historical_path.read_text(encoding="utf-8"))
+    if historical.get("authority", {}).get("persistent_runtime_authorized") is not False:
+        fail("historical Runtime 001 committed template gained authority")
+    policy_path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-002.json"
     policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    if policy.get("runtime_revision") != 2:
+        fail("current product policy is not Runtime 002")
     if policy.get("product_id") != "OPENDITOO-MCP-DASHBOARD-V1":
         fail("product policy id drifted")
     target = policy.get("target", {})
@@ -239,7 +245,7 @@ def verify_product_runtime_boundary() -> None:
     if authority.get("persistent_runtime_authorized") is not False or authority.get("grant_scope") is not None:
         fail("committed product policy must never carry standing authority")
 
-    product_py = (ROOT / "host/product_runtime.py").read_text(encoding="utf-8")
+    product_py = (ROOT / "host/product_runtime_v2.py").read_text(encoding="utf-8")
     if "activity_session.run_session" not in product_py:
         fail("product supervisor no longer reuses bounded activity sessions")
     if "canvas_invalidated" not in product_py or "reconnect_backoff_seconds" not in product_py:
@@ -247,6 +253,10 @@ def verify_product_runtime_boundary() -> None:
     for forbidden in ("import socket", "BluetoothAddress", "send_hex", "packetHex"):
         if forbidden in product_py:
             fail(f"product supervisor gained a transport/raw-send escape: {forbidden}")
+
+    cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+    if "_product_runtime_module" not in cli or "runtime_revision" not in cli:
+        fail("CLI lost frozen product runtime revision selection")
 
     unit = (ROOT / "runtime/wsl/openditoo-product.service").read_text(encoding="utf-8")
     exec_lines = [line for line in unit.splitlines() if line.startswith("ExecStart=")]

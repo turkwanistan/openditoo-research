@@ -31,6 +31,7 @@ from host import btsnoop  # noqa: E402
 from host import mcp_activity  # noqa: E402
 from host import activity_session  # noqa: E402
 from host import product_runtime  # noqa: E402
+from host import product_runtime_v2  # noqa: E402
 
 CLI_VERSION = "0.3.0-mcp-product"
 HOST_ORIGIN = "http://127.0.0.1:8796"
@@ -806,21 +807,31 @@ def activity_session_run(args: argparse.Namespace) -> int:
     return EXIT_OK if result["outcome"] != "unknown" else EXIT_DEVICE
 
 
+def _product_runtime_module(path: Path):
+    """Select a frozen product runtime revision from the local/committed policy."""
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return product_runtime
+    return product_runtime_v2 if raw.get("runtime_revision") == 2 else product_runtime
+
+
 def product_check(args: argparse.Namespace) -> int:
     """Offline review of the persistent product policy. Never touches the Host/device."""
     path = Path(args.policy)
+    runtime = _product_runtime_module(path)
     try:
-        policy = product_runtime.load_policy(path, require_authority=False)
-    except product_runtime.ProductPolicyError as exc:
+        policy = runtime.load_policy(path, require_authority=False)
+    except (product_runtime.ProductPolicyError, product_runtime_v2.ProductPolicyError) as exc:
         emit({"ok": False, "command": "product-check", "device_io": False,
               "execution_ready": False, "error_code": exc.code, "detail": exc.detail})
         return EXIT_BLOCKED
-    blockers = product_runtime.authority_blockers(path)
+    blockers = runtime.authority_blockers(path)
     emit({
         "ok": True, "command": "product-check", "device_io": False,
         "execution_ready": not blockers, "execution_blockers": blockers,
         "product_id": policy.product_id, "policy_file": str(path),
-        "exact_unit_id": product_runtime.EXACT_UNIT_ID,
+        "exact_unit_id": runtime.EXACT_UNIT_ID,
         "session_lifetime_seconds": policy.session_lifetime_seconds,
         "min_frame_interval_ms": policy.min_frame_interval_ms,
         "max_frames_per_session": policy.max_frames_per_session,
@@ -831,16 +842,19 @@ def product_check(args: argparse.Namespace) -> int:
         "reconnect_backoff_seconds": list(policy.reconnect_backoff_seconds),
         "code_hashes_verified": True,
         "host_build_sha256": policy.host_build_sha256,
+        "runtime_revision": getattr(runtime, "RUNTIME_REVISION", 1),
     })
     return EXIT_OK
 
 
 def product_status(args: argparse.Namespace) -> int:
-    state = product_runtime.read_runtime_state(Path(args.state_file))
     policy_path = Path(args.policy)
-    blockers = product_runtime.authority_blockers(policy_path) if policy_path.exists() else ["PRODUCT_POLICY_MISSING"]
+    runtime = _product_runtime_module(policy_path)
+    state = runtime.read_runtime_state(Path(args.state_file))
+    blockers = runtime.authority_blockers(policy_path) if policy_path.exists() else ["PRODUCT_POLICY_MISSING"]
     emit({"ok": True, "command": "product-status", "device_io": False,
           "policy_file": str(policy_path), "authority_blockers": blockers,
+          "runtime_revision": getattr(runtime, "RUNTIME_REVISION", 1),
           "runtime": state})
     return EXIT_OK
 
@@ -848,11 +862,12 @@ def product_status(args: argparse.Namespace) -> int:
 def product_runtime_run(args: argparse.Namespace) -> int:
     """Persistent product supervisor. Only an explicitly authorized local policy may run."""
     path = Path(args.policy)
+    runtime = _product_runtime_module(path)
     try:
-        policy = product_runtime.load_policy(path, require_authority=True)
+        policy = runtime.load_policy(path, require_authority=True)
         token = read_token()
         config = _activity_config()
-    except product_runtime.ProductPolicyError as exc:
+    except (product_runtime.ProductPolicyError, product_runtime_v2.ProductPolicyError) as exc:
         emit({"ok": False, "command": "product-runtime", "error_code": exc.code,
               "detail": exc.detail, "device_io": False})
         return EXIT_BLOCKED
@@ -873,7 +888,7 @@ def product_runtime_run(args: argparse.Namespace) -> int:
         previous[sig] = signal.getsignal(sig)
         signal.signal(sig, request_stop)
     try:
-        state = product_runtime.run_product(
+        state = runtime.run_product(
             policy, lambda: _HostSessionTransport(token),
             stop_requested=stop.is_set,
             config=config,
@@ -883,7 +898,8 @@ def product_runtime_run(args: argparse.Namespace) -> int:
         for sig, handler in previous.items():
             signal.signal(sig, handler)
     emit({"ok": True, "command": "product-runtime", "device_io": True,
-          "stopped": True, "runtime": state})
+          "stopped": True, "runtime_revision": getattr(runtime, "RUNTIME_REVISION", 1),
+          "runtime": state})
     return EXIT_OK
 
 

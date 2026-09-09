@@ -22,41 +22,29 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 | Milestone | State |
 | --- | --- |
-| M0-M5 | complete; authorities consumed |
-| M6 static runtime + diagnostics | complete; physically accepted; pixel geometry proven |
-| M7 keyboard/button mapping | complete as a **bounded negative**; no usable physical navigation |
-| M8 repeated frames | complete; historical loops ran ~1118 ms/frame; later R1-R5 measured the same one-ACK-per-frame shape through 18.46 fps |
-| M9 activity application | complete through 008: deterministic trigger, repeated activity animation, stock takeover detection, and physical green → yellow → red → grey status acceptance all PASS; fault-bar remains opportunistic only |
-
-| Rate ladder R1-R5 | complete; **0.90 → 18.46 fps** sustained at full colour, all operator-confirmed |
-| A1 collection worker | installed collection-only baseline; product installer will transactionally pause it while product runtime owns source cursors and restore its prior state on uninstall |
-| P1 persistent MCP product runtime | implemented/offline-hardened; **persistent local authority granted**; install/start pending |
+| M0-M8 | complete; accepted evidence preserved |
+| M9 MCP activity application | complete; layout/activity/status/fault-display acceptance recorded |
+| R1-R5 rate ladder | complete; measured through 18.46 fps full-colour one-ACK-per-frame ceiling |
+| A1 collection worker | installed/preserved; product owns collection while active |
+| P1 Runtime 001 | installed, standing local authority active, attach/reclaim/device-reconnect accepted |
+| P2 Runtime 002 | telemetry-only successor implemented/offline verified; committed template disabled; cutover requires its own named grant |
+| P3 product evidence | closed for v1; normal MCP use accepted; forced healthy-Lab outage waived |
+| P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
 
 ### Authority state
 
-**Persistent product authority `OPENDITOO-PRODUCT-RUNTIME-001` remains active locally, and `OPENDITOO-M9-ACTIVATION-009` is additionally authorized for ONE fault-bar visual acceptance execution.** 009 requires temporarily stopping the product service, running the exact frozen healthy → simulated Lab unavailable → healthy sequence once, then restarting the product service. No other experimental transmission is authorized.
+Activations 001–009 are consumed. No experimental one-shot transmission is live. Persistent Runtime 001 authority remains active only in the git-ignored mode-0600 `.openditoo-local/product-runtime-policy.json`; its code remains hash-valid and restart-safe.
 
-**Every activation 001–008 is consumed. Persistent product authority `OPENDITOO-PRODUCT-RUNTIME-001` is now granted.** The committed template remains deliberately disabled; standing authority exists only in the local git-ignored mode-0600 `.openditoo-local/product-runtime-policy.json`, which currently passes `product-check` with `execution_ready:true`. Install/start is the next boundary. Never commit the authorized local policy.
+Runtime 002 is a separate reviewed product policy at `product/OPENDITOO-PRODUCT-RUNTIME-002.json`. Its committed template is deliberately unauthorized. Do **not** infer Runtime 002 authority from the Runtime 001 grant: cutover requires the explicit named grant `Grant OPENDITOO-PRODUCT-RUNTIME-002`.
 
-### Next objective — plug-and-play product activation
+### Current objective — finish Runtime 002 cutover, then leave MCP productization
 
-008 physically accepted production status rendering: green <5 min, yellow 5–20 min, red >=20 min, grey for no usable activity data. The dashboard/product surface is therefore ready for the granted persistent authority shape. See `notes/OPENDITOO-PRODUCT-RUNTIME-HARDENING-2026-09-09.md`.
+The MCP dashboard is already the owner's working everyday baseline. Do not reopen durability, firmware, MassBoot, ACK decoding, command enumeration, or speculative UI work as release blockers.
 
-Prepared product behavior:
+The only remaining MCP-dashboard action is the small Runtime 002 telemetry cutover described in `notes/OPENDITOO-MCP-DASHBOARD-V1-RELEASE-2026-09-09.md`. After one healthy Runtime 002 status check, treat P2/P3/P4 as closed and move to streaming/other OpenDitoo objectives.
 
-- Windows user logon starts the existing `OpenDitoo Day1 Host` and a separate owned `OpenDitoo Product Runtime` bootstrap;
-- the bootstrap starts the WSL `openditoo-product.service`;
-- product service collects MCP state itself, using the same approved renderer and bounded Host sessions;
-- if Ditoo/Host is unavailable, reconnect uses bounded 1/2/5/10/30 s backoff and keeps collecting while waiting;
-- if a physical input causes `canvas_invalidated`, the supervisor immediately starts a fresh bounded session and restores the current MCP dashboard; a storm guard adds a 1 s cooldown only after >8 takeovers in 10 s;
-- routine bounded-session renewal is automatic and uses a fresh globally unique Host-ledger ID each epoch;
-- SIGTERM/Windows shutdown requests a clean session close;
-- the standalone collection timer is transactionally paused during product install and its exact prior enabled/active state is restored on rollback/uninstall;
-- uninstall revokes the local persistent policy.
+Use `PRODUCT.md` for normal operation. The reliable startup design boundary remains current-user Windows logon / StartWhenAvailable; a real Windows reboot/login observation is intentionally deferred and is not to be invented as accepted evidence.
 
-The reliable Windows startup boundary is **current-user logon / StartWhenAvailable**, not pre-login kernel boot, because the WSL distro and its systemd user service are user-scoped. The bootstrap itself starts WSL, so no terminal or manual WSL launch is required.
-
-Offline commands remain safe without authority: verifier, `product-check`, `product-status`, `session-check`, `session-preview`, `activity-status` without a transmitting action, and `activity-preview`. `product-runtime` refuses without a valid local persistent policy.
 
 ## Current objective
 

@@ -750,9 +750,11 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
                                   msg=f"live grant {experiment_id} is not named in the routing")
             else:
                 lowered = document.lower()
-                self.assertIn("001–008", lowered)
+                self.assertIn("001–009", lowered)
                 self.assertIn("consumed", lowered)
-                self.assertIn("persistent product authority", lowered)
+                self.assertIn("runtime 001", lowered)
+                self.assertIn("runtime 002", lowered)
+                self.assertIn("grant openditoo-product-runtime-002", lowered)
                 self.assertNotIn("currently authorized for one", lowered,
                                  msg="routing still advertises a consumed one-shot grant")
         # Every note the routing sends a reader to must exist.
@@ -1578,6 +1580,7 @@ if __name__ == "__main__":
 
 from host import activity_session  # noqa: E402
 from host import product_runtime  # noqa: E402
+from host import product_runtime_v2  # noqa: E402
 
 HOST_DIR = ROOT / "runtime/windows/OpenDitoo.Day1.Host"
 
@@ -1967,6 +1970,99 @@ class ProductRuntimeTests(unittest.TestCase):
             self.assertEqual(transport.closed_reason, "operator_stop")
 
 
+class ProductRuntimeV2Tests(unittest.TestCase):
+    def _policy_raw(self, authorized: bool = False) -> dict:
+        raw = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-002.json").read_text(encoding="utf-8"))
+        raw["build"]["code_sha256"] = product_runtime_v2.runtime_hashes()
+        if authorized:
+            scope = raw["authority"]["grant_scope_requested"]
+            raw["authority"].update({
+                "persistent_runtime_authorized": True,
+                "granted_by": "operator",
+                "grant_text": "Grant OPENDITOO-PRODUCT-RUNTIME-002",
+                "grant_scope": scope,
+            })
+        return raw
+
+    def test_runtime_001_source_remains_hash_stable_while_002_is_side_by_side(self) -> None:
+        historical = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-001.json").read_text(encoding="utf-8"))
+        self.assertEqual(historical["build"]["code_sha256"], product_runtime.runtime_hashes())
+        self.assertFalse(historical["authority"]["persistent_runtime_authorized"])
+
+    def test_runtime_002_policy_is_disabled_and_hash_complete(self) -> None:
+        path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-002.json"
+        reviewed = product_runtime_v2.load_policy(path, require_authority=False)
+        self.assertEqual(reviewed.product_id, product_runtime_v2.PRODUCT_ID)
+        self.assertIn("PRODUCT_AUTHORITY_MISSING", product_runtime_v2.authority_blockers(path))
+        with self.assertRaises(product_runtime_v2.ProductPolicyError) as blocked:
+            product_runtime_v2.load_policy(path, require_authority=True)
+        self.assertEqual(blocked.exception.code, "PRODUCT_AUTHORITY_MISSING")
+
+    def test_observed_transport_reports_open_and_acks_without_changing_transport(self) -> None:
+        events = []
+        inner = activity_session.FakeSessionTransport()
+        observed = product_runtime_v2.ObservedSessionTransport(
+            inner,
+            on_open=lambda opened: events.append(("open", opened["sessionId"])),
+            on_frame=lambda ack, count: events.append(("ack", count, ack["ackPayloadHex"])),
+        )
+        policy = product_runtime_v2.load_policy(
+            self._write_policy(self._policy_raw(True)), require_authority=True)
+        manifest = product_runtime_v2.product_session_manifest(policy, "TELEMETRY-TEST")
+        opened = observed.open(manifest)
+        ack = observed.send_frame(bytes([0, 255, 0]) * 256, "0" * 64)
+        observed.close("done")
+        self.assertEqual(opened["sessionId"], "fake")
+        self.assertEqual(ack["frame"], 1)
+        self.assertEqual(events, [("open", "fake"), ("ack", 1, "0x00")])
+        self.assertEqual(len(inner.frames), 1)
+        self.assertEqual(inner.closed_reason, "done")
+
+    def _write_policy(self, raw: dict) -> Path:
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        try:
+            json.dump(raw, tmp)
+            tmp.close()
+            return Path(tmp.name)
+        finally:
+            pass
+
+    def test_runtime_002_successful_session_clears_stale_error_and_records_ack_time(self) -> None:
+        raw = self._policy_raw(True)
+        path = self._write_policy(raw)
+        policy = product_runtime_v2.load_policy(path, require_authority=True)
+        clock = {"s": 0.0}
+        transports = [
+            activity_session.FakeSessionTransport(fail_on_frame=1),
+            activity_session.FakeSessionTransport(),
+        ]
+        starts = []
+        def factory():
+            starts.append(clock["s"])
+            return transports[len(starts)-1]
+        class StaticRenderer:
+            def __call__(self, _now):
+                return bytes([0, 255, 0]) * 256, False
+            def frame_sent(self):
+                pass
+        with tempfile.TemporaryDirectory() as tmp:
+            state_file = Path(tmp) / "state.json"
+            result = product_runtime_v2.run_product(
+                policy, factory, max_sessions=2,
+                config={"poll_seconds": 2.0, "sources": {}},
+                activity_state=mcp_activity.blank_state(), state_file=state_file,
+                renderer_factory=lambda _c, _s, _m: StaticRenderer(),
+                waiting_collector=lambda _c, _s: None,
+                monotonic=lambda: clock["s"],
+                sleep=lambda sec: clock.__setitem__("s", clock["s"] + sec),
+            )
+        self.assertEqual(result["reconnects"], 1)
+        self.assertEqual(result["connected_sessions"], 1)
+        self.assertIsNone(result["last_error"])
+        self.assertIsNotNone(result["last_frame_acked_at"])
+        self.assertGreaterEqual(starts[1]-starts[0], 1.0)
+
+
 class ProductInstallationBoundaryTests(unittest.TestCase):
     def test_committed_product_policy_is_disabled_but_hash_complete(self) -> None:
         path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-001.json"
@@ -1980,6 +2076,16 @@ class ProductInstallationBoundaryTests(unittest.TestCase):
         self.assertTrue(reviewed.automatic_reconnect)
         self.assertTrue(reviewed.reclaim_on_canvas_invalidated)
         self.assertIn("PRODUCT_AUTHORITY_MISSING", product_runtime.authority_blockers(path))
+
+    def test_runtime_002_committed_template_is_disabled_and_hash_complete(self) -> None:
+        path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-002.json"
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(raw["runtime_revision"], 2)
+        self.assertFalse(raw["authority"]["persistent_runtime_authorized"])
+        self.assertIsNone(raw["authority"]["grant_scope"])
+        reviewed = product_runtime_v2.load_policy(path, require_authority=False)
+        self.assertTrue(reviewed.automatic_reconnect)
+        self.assertTrue(reviewed.reclaim_on_canvas_invalidated)
 
     def test_product_systemd_service_is_narrow_and_restartable(self) -> None:
         unit = (ROOT / "runtime/wsl/openditoo-product.service").read_text(encoding="utf-8")
