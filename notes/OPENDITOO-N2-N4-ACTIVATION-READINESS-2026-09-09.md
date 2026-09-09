@@ -168,12 +168,51 @@ The mockups are therefore executable acceptance criteria: if a pixel moves, a te
    would be decimated to noise. The crown is static while activity is fresh; the visible
    activity signal is the blue override appearing and disappearing. Upgrading this needs
    a faster rate, which needs separate evidence and its own grant.
-2. **Grey merges idle with unreachable**, exactly as the approved spec defines it — and
-   the spec itself lists splitting them as an open question. The previous renderer kept
-   them apart. `describe()` therefore still reports `source_health` separately, so the
-   merge is never load-bearing for diagnosis, but on the panel they look the same.
-3. **RGB222 is inherited with the artwork, not with the device.** Its channel values are
-   a strict subset of the RGB888 the Ditoo encoder already sends, so it costs nothing —
-   but it is a design constraint and must never be recorded as a Ditoo limitation. A test
-   pins the palette; another pins the worst-case frame at 188 bytes (203 with preambles,
-   up from 191).
+2. **Idle and unreachable are separated by a fault bar**, on the operator's decision.
+   The approved spec merged them into grey and listed splitting them as an open question.
+   A source the collector could not read (`unavailable`) or has stopped reading (`stale`)
+   shows a dim red bar across the middle of its crown row; a source that has simply been
+   quiet stays plain grey, and a source never yet polled shows neither — otherwise a cold
+   start would light three fault bars.
+
+   The crown row is free by construction: the collector zeroes the new-event count for
+   any source it failed to read, so a faulted source can never pulse. The renderer still
+   gives fault explicit precedence rather than resting on that invariant, and a test pins
+   the invariant itself. The bar reuses a red already in the design, so it costs no extra
+   palette entry and the worst-case frame is unchanged.
+3. **RGB222 is gone as a constraint.** It came in with the Tivoo artwork; the exact unit's
+   stock `0x44` path is plain RGB888, proven by all 8/8 captured snapshots re-encoding
+   byte-for-byte from an RGB888 palette. The approved artwork keeps its colours because
+   they are the approved design, not because they are required. A behavioural test now
+   round-trips off-palette colours through the whole encode path to prove nothing
+   quantises them. Worst-case frame is 188 bytes, 203 with preambles, up from 191.
+
+## 8. Parked: the frame-rate ladder
+
+The operator wants ~10 fps eventually. Recording the evidence now so nobody re-derives it,
+and so nobody mistakes the target for an earned rate.
+
+**Where the current 1118 ms actually goes:** ~80 ms of packet spacing (`SendSpacingMs`
+40 ms x 2 gaps) plus ~105 ms median ACK latency, inside a deliberately conservative
+1000 ms inter-frame delay. The delay, not the device, is the bulk of it.
+
+| Step | Change | Expected | Risk |
+| --- | --- | --- | --- |
+| R1 | drop the 1000 ms inter-frame delay; send on ACK | ~185 ms, **~5.4 fps** | low — same shape, same packets |
+| R2 | `SendSpacingMs` 40 -> 10 | ~125 ms, **~8 fps** | low-med — the spacing was derived from stock capture and may exist for a reason |
+| R3 | pipeline: do not wait for ACK N before frame N+1 | **10 fps+** | real — abandons the per-frame confirmation everything currently depends on |
+
+**10 fps is 100 ms per frame, which is below the observed median ACK latency alone
+(105 ms, range 99-124).** So it is unreachable with a confirm-every-frame design on this
+unit: R3 is not an optimisation but a different protocol shape, and it would remove the
+evidence that each frame was accepted.
+
+Two things that are *not* evidence for 10 fps here:
+
+- OpenTivoo's 10 fps is class-5 comparative prior art on a different device.
+- The stock app's 148 ms floor is an observation about that app on our unit, not a rate
+  we have earned. Even it is only ~6.8 fps.
+
+R1 alone is a 6x improvement for almost no risk and would make animation viable. Each step
+needs its own manifest, grant and ~30-frame measurement. None is authorized, and the
+accepted ceiling remains 1118 ms until one of them passes.

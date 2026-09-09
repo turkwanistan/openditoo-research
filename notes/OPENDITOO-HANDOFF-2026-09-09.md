@@ -285,9 +285,12 @@ The operator supplied the approved three-MCP page design (`assets/ui/`), so the 
 is no longer the three-band renderer that trial 001 showed. It is now L/mushroom,
 O/bunny, W/skull with a blue activity override. The pixel data is derived from the
 supplied mockups, and the offline suite re-renders all eight of them pixel-for-pixel.
-Section 7 of the N2-N4 readiness note covers the three things that are not obvious: the
-blue pulse is not animated at our rate, grey merges idle with unreachable per the spec,
-and RGB222 is an artwork constraint rather than a device one.
+Section 7 of the N2-N4 readiness note covers what is not obvious: the blue pulse is not
+animated at our rate, a dim red fault bar in the crown row now separates unreachable from
+merely idle (operator decision, superseding the spec's merged grey), and RGB222 is gone —
+the exact unit's stock `0x44` path is plain RGB888 and the artwork's palette is design,
+not a limit. Section 8 records the parked frame-rate ladder toward the operator's ~10 fps
+target, including why 10 fps needs a different protocol shape rather than a smaller delay.
 
 `experiments/DAY1-M9-ACTIVATION-002-PENDING.json` is cut and unarmed for the next trial,
 with budgets rederived for the new page (203 bytes/frame worst case, up from 191).

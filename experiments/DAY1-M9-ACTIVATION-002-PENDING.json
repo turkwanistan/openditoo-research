@@ -18,7 +18,7 @@
  },
  "build": {
   "code_sha256": {
-   "renderer_sha256": "ec02de63499d471e2f23cf1dc777f03dea2f0f07349c91a1b37f380959a305ea",
+   "renderer_sha256": "8eb7d9bde7f89d5663bcefa596023129f03f98027a89c4051e6a0924874ac6ea",
    "ui_data_sha256": "b44156ee32abd0d3e821ed2f79043ad5bbf26f385181d1667db5d9180d36698c",
    "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
    "session_sha256": "a3327424f2713ad80a1749ff36cd67aa38ac09ef72f137bc71ada89e4a147c23"
@@ -28,7 +28,7 @@
   "currently_installed_dll_sha256": "a0f2fa1c3b5ced5c1225393453a4476ce4b0aa9e06c39364020868eda97f2762",
   "installed_identity_note": "The installed Host predates the heartbeat fix and would reproduce 001's failure. `refresh_openditoo_day1_host.ps1 -Apply` MUST be re-run and the installed hash re-verified before this experiment. Because the Release build is not byte-reproducible, freeze host_dll_sha256 from the artifact actually installed at that point, not from this file.",
   "build_is_not_byte_reproducible": "Two Release builds of identical source produced different DLL hashes (d3ece014...a042a then a0f2fa1c...f2762). The build is not deterministic, so a build hash is only meaningful when taken from the artifact actually installed. That is what is frozen here.",
-  "ui_design": "Operator-approved three-MCP page from the supplied handoff package: L/mushroom, O/bunny, W/skull, blue activity override. host/activity_ui_data.py is DERIVED from assets/ui/reference/ and the offline suite re-renders all eight approved mockups pixel-for-pixel."
+  "ui_design": "Operator-approved three-MCP page from the supplied handoff package: L/mushroom, O/bunny, W/skull, blue activity override. host/activity_ui_data.py is DERIVED from assets/ui/reference/ and the offline suite re-renders all eight approved mockups pixel-for-pixel. Two operator decisions depart from the supplied spec, both deliberate: a dim red fault bar in the crown row separates an unreadable source from a merely idle one (the spec merged both into grey and listed the split as an open question), and the RGB222 palette constraint is dropped because the exact unit's stock 0x44 path is plain RGB888."
  },
  "session": {
   "lifetime_seconds": 300,
@@ -78,7 +78,7 @@
  },
  "expected_observations": {
   "transport": "one connection; three application packets per sent frame; one wrapped 0x44 ACK each; clean local close; zero reconnects",
-  "physical": "the letters L O W on rows 5-9 in per-source status colour, 5x5 mushroom / bunny / skull icons on rows 11-15, and a blue chevron crown on rows 0-2 above any column with fresh activity, whose letter and icon accent turn blue with it",
+  "physical": "the letters L O W on rows 5-9 in per-source status colour, 5x5 mushroom / bunny / skull icons on rows 11-15, a blue chevron crown on rows 0-2 above any column with fresh activity whose letter and icon accent turn blue with it, and a dim red bar in the crown row of any column whose source the collector could not read",
   "idle_silence": "during any period with no status change and no activity, ZERO packets are sent",
   "animation_expectation": "the approved four-stage blue pulse is NOT animated. At ~1118 ms per frame it would be decimated to noise, so the crown is static while activity is fresh. Expect the blue override to appear and disappear, not to shimmer.",
   "ack_payload": "recorded per frame, never asserted. It is not a success constant."
@@ -98,7 +98,8 @@
    "sessions longer than this lifetime",
    "absence of non-volatile writes",
    "menu-takeover behaviour (0xBD) unless it happens to occur and is recorded"
-  ]
+  ],
+  "fault_signal_acceptance": "if a source becomes unreadable during the session, its column shows the red fault bar and NOT a blue crown, and the bar is legible as distinct from the chevron. If no source fails, record NOT TESTED rather than assuming it."
  },
  "preconditions": [
   "operator grant naming OPENDITOO-M9-ACTIVATION-002",
@@ -130,7 +131,8 @@
   "sending a frame to reclaim the screen after a takeover",
   "delta or partial-frame updates",
   "any new command id, command enumeration or raw send",
-  "firmware update, persistent upload, service/MassBoot entry or teardown"
+  "firmware update, persistent upload, service/MassBoot entry or teardown",
+  "any frame rate above the accepted ~1118 ms ceiling; the R1-R3 rate ladder is parked research and each step needs its own manifest, grant and measurement"
  ],
  "result": null,
  "supersedes": {

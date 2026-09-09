@@ -11,7 +11,17 @@ acceptance criteria: if a pixel moves, a test fails.
 
 Status is one colour per source -- green under 5 minutes, yellow to 20, red beyond, grey
 for no usable data. During activity that column's crown, letter and icon accent all take
-the blue override together, then fall back to the status colour. See `LEGEND`.
+the blue override together, then fall back to the status colour.
+
+A source the collector could not read, or has stopped reading, additionally shows a dim
+red fault bar in its crown row. The approved spec renders idle and unreachable alike in
+grey and lists splitting them as an open question; this splits them without touching the
+approved letters or icons, because an unreachable source can never produce activity and
+its crown row is therefore free by construction. See `LEGEND`.
+
+The palette is plain RGB888, which is what the exact unit's stock `0x44` path uses: all
+8/8 captured stock snapshots re-encoded byte-for-byte from an RGB888 palette. The RGB222
+values in the supplied artwork are an inherited design choice, never a device limit.
 """
 from __future__ import annotations
 
@@ -32,10 +42,18 @@ RECENT_LIMIT = timedelta(minutes=5)
 WARM_LIMIT = timedelta(minutes=20)
 
 # A source we could not read has no usable "last activity", so it renders grey rather
-# than as a stale-but-fine colour. The approved spec merges idle and disconnected into
-# grey and lists splitting them as an open question; `describe()` therefore keeps the
-# health separately in JSON so the merge is never load-bearing for diagnosis.
+# than as a stale-but-fine colour.
 UNUSABLE_HEALTH = {"unavailable", "stale", "unknown"}
+
+# ...and of those, these are actual faults worth showing on the panel. `unknown` is NOT
+# one: it is the state before the first poll, where grey with no marker is the honest
+# answer rather than three fault bars at startup.
+FAULT_HEALTH = {"unavailable", "stale"}
+
+# Dim red bar across the middle of the column's top row. Deliberately reuses a red
+# already in the design's palette, so it costs no extra palette entry.
+FAULT_MARKER = ((1, 0), (2, 0), (3, 0))
+FAULT_RGB = (170, 0, 0)
 
 # Which pixel index belongs to which source column, precomputed once.
 _SLOT_OF = {}
@@ -73,9 +91,9 @@ def describe(state: dict, now: datetime | None = None, pulses: set[str] | None =
         out[source_id] = {
             "status": status_for(source, now),
             "activity_pulse": source_id in pulses,
-            # Kept separate from `status` on purpose: the approved page shows an
-            # unreachable collector and a merely idle one with the same grey, and that
-            # ambiguity must not reach anyone reading the JSON.
+            "fault": health in FAULT_HEALTH,
+            # `status` alone cannot distinguish idle from unreachable -- both are grey.
+            # The fault bar does that on the panel; this does it in JSON.
             "source_health": health,
             "last_activity_at": source["last_activity_at"],
             "last_observed_at": source["last_observed_at"],
@@ -102,11 +120,18 @@ def render_rgb888(state: dict, now: datetime | None = None, pulses: set[str] | N
 
     # Crowns are per-column and cannot overlap, so simultaneous activity simply shows
     # more than one crown. Nothing is queued and nothing is shown late.
+    #
+    # A crown and a fault bar cannot collide: the collector zeroes the new-event count
+    # for any source it failed to read, so a faulted source never pulses. Fault still
+    # wins explicitly rather than resting on that invariant holding forever.
     for source_id, base in SLOTS.items():
-        if not summary[source_id]["activity_pulse"]:
-            continue
-        for dx, dy, color in CROWN:
-            pixels[dy * SIZE + base + dx] = color
+        view = summary[source_id]
+        if view["fault"]:
+            for dx, dy in FAULT_MARKER:
+                pixels[dy * SIZE + base + dx] = FAULT_RGB
+        elif view["activity_pulse"]:
+            for dx, dy, color in CROWN:
+                pixels[dy * SIZE + base + dx] = color
 
     return b"".join(bytes(color) for color in pixels)
 
@@ -161,6 +186,7 @@ LEGEND = {
                "grey": "no usable data: idle, unreadable or disconnected"},
     "activity": "the active column's crown, letter and icon accent all take the blue override together, then fall back to its status colour",
     "accents": "mushroom cap recolours as a whole; bunny and skull recolour their eyes only",
-    "known_ambiguity": "grey merges idle with unreachable, per the approved spec; activity-status reports source_health separately",
+    "fault": "a dim red bar in the crown row means the collector could not read that source (unavailable) or has stopped reading it (stale) -- as opposed to grey, which means it read fine and there was simply nothing to report. A source that has never been polled shows neither.",
+    "color_model": "RGB888, as the exact unit's stock 0x44 path uses. The artwork's RGB222 values are inherited design, not a device limit.",
     "animation": "the crown is shown while activity is fresh. The approved four-stage blue pulse is NOT animated: at the accepted ~1118 ms per frame it would be decimated to noise, so the crown is static and the blue override is the visible activity signal.",
 }

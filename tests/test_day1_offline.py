@@ -786,6 +786,18 @@ def _optiplex_record(ts: str, ok: bool = True) -> str:
     return json.dumps({"ts": ts, "tool": "run_command", "project": "p", "ok": ok, "duration_ms": 5})
 
 
+class _FailingAdapter:
+    """Always unreadable, so a failed poll can be asserted end to end."""
+
+    kind = "stub"
+
+    def __init__(self, source_id: str, config: dict) -> None:
+        pass
+
+    def poll(self, cursor):
+        raise mcp_activity.SourceError("SOURCE_READ_FAILED")
+
+
 class _StubAdapter:
     """In-memory adapter so collector tests never touch a real source."""
 
@@ -1033,14 +1045,16 @@ class M9RendererTests(unittest.TestCase):
         self.assertEqual(activity_render.status_for(ahead, self.now), "grey")
 
     def test_an_unreadable_source_greys_out_despite_recent_history(self) -> None:
-        # It renders grey, as the approved spec merges idle with disconnected -- but the
-        # health must survive separately in the JSON so the merge never hides a fault.
+        # Its status colour is grey like any quiet source -- the fault bar, not the
+        # status colour, is what separates unreachable from idle, and the health still
+        # survives separately in the JSON.
         state = self._state({"optiplex_mcp": "green"})
         state["sources"]["optiplex_mcp"]["source_health"] = "unavailable"
         view = activity_render.describe(state, self.now)["optiplex_mcp"]
         self.assertEqual(view["status"], "grey")
+        self.assertTrue(view["fault"])
         self.assertEqual(view["source_health"], "unavailable")
-        self.assertIn("known_ambiguity", activity_render.LEGEND)
+        self.assertIn("fault", activity_render.LEGEND)
 
     def test_the_layout_keeps_its_approved_geometry(self) -> None:
         rgb = activity_render.render_rgb888(self._state(self.MIXED), self.now)
@@ -1080,25 +1094,98 @@ class M9RendererTests(unittest.TestCase):
         self.assertEqual(rgb[letter_l:letter_l + 3], override)
         self.assertEqual(rgb[letter_o:letter_o + 3], bytes((255, 255, 0)))
 
-    def test_every_state_and_activity_combination_encodes_for_the_device(self) -> None:
+    def test_every_state_health_and_activity_combination_encodes_for_the_device(self) -> None:
         worst = 0
         for combo in itertools.product(("green", "yellow", "red", "grey"), repeat=3):
             statuses = dict(zip(mcp_activity.SOURCE_IDS, combo))
-            for count in range(4):
-                for pulses in itertools.combinations(mcp_activity.SOURCE_IDS, count):
-                    rgb = activity_render.render_rgb888(self._state(statuses), self.now, set(pulses))
-                    wire, palette_colors = encode_rgb888_static_image(rgb)
-                    self.assertLessEqual(palette_colors, 255)
-                    worst = max(worst, len(wire))
-        # Pinned so a budget derived from it cannot silently go stale.
+            for healths in itertools.product(("healthy", "unavailable", "stale", "unknown"), repeat=3):
+                state = self._state(statuses)
+                for sid, health in zip(mcp_activity.SOURCE_IDS, healths):
+                    state["sources"][sid]["source_health"] = health
+                for count in range(4):
+                    for pulses in itertools.combinations(mcp_activity.SOURCE_IDS, count):
+                        rgb = activity_render.render_rgb888(state, self.now, set(pulses))
+                        wire, palette_colors = encode_rgb888_static_image(rgb)
+                        self.assertLessEqual(palette_colors, 255)
+                        worst = max(worst, len(wire))
+        # Pinned so a budget derived from it cannot silently go stale. The fault red
+        # reuses a colour already in the design, so adding it cost nothing.
         self.assertEqual(worst, 188)
 
-    def test_the_palette_stays_rgb222_legal(self) -> None:
-        # Inherited with the artwork. RGB222 is a strict subset of the RGB888 the encoder
-        # sends, so this is a design constraint, never a device one.
-        rgb = activity_render.render_rgb888(self._state(self.MIXED), self.now,
-                                            set(mcp_activity.SOURCE_IDS))
-        self.assertTrue(set(rgb) <= {0, 85, 170, 255}, msg=sorted(set(rgb) - {0, 85, 170, 255}))
+    def test_the_display_path_is_not_constrained_to_the_artwork_palette(self) -> None:
+        # RGB222 came in with the Tivoo artwork, not from this device: all 8/8 captured
+        # stock 0x44 snapshots re-encoded byte-for-byte from an RGB888 palette. Prove it
+        # behaviourally -- colours the artwork never uses must survive the whole encode
+        # path untouched, so nothing downstream quantises them.
+        off_palette = [(1, 2, 3), (17, 200, 99), (254, 128, 7), (85, 86, 87)]
+        rgb = bytearray()
+        for index in range(256):
+            rgb += bytes(off_palette[index % len(off_palette)])
+        wire, palette_colors = encode_rgb888_static_image(bytes(rgb))
+        self.assertEqual(palette_colors, len(off_palette))
+        self.assertEqual(_decode_static_image_packet(wire), bytes(rgb))
+        self.assertIn("RGB888", activity_render.LEGEND["color_model"])
+
+    def test_an_unreadable_source_shows_a_fault_bar_in_its_own_crown_row(self) -> None:
+        for health, expected in (("unavailable", True), ("stale", True),
+                                 ("unknown", False), ("healthy", False)):
+            with self.subTest(health):
+                state = self._state(self.MIXED)
+                state["sources"]["optiplex_mcp"]["source_health"] = health
+                view = activity_render.describe(state, self.now)["optiplex_mcp"]
+                self.assertEqual(view["fault"], expected)
+                rgb = activity_render.render_rgb888(state, self.now)
+                bar = {rgb[(0 * 16 + x) * 3:(0 * 16 + x) * 3 + 3] for x in (6, 7, 8)}
+                self.assertEqual(bar == {bytes(activity_render.FAULT_RGB)}, expected)
+
+    def test_a_source_never_polled_shows_no_fault_bar(self) -> None:
+        # Otherwise a cold start would light three fault bars before the first poll.
+        rgb = activity_render.render_rgb888(mcp_activity.blank_state(), self.now)
+        self.assertEqual(rgb[:48], bytes(48))
+
+    def test_the_fault_bar_and_the_activity_crown_cannot_both_be_drawn(self) -> None:
+        state = self._state(self.MIXED)
+        state["sources"]["optiplex_mcp"]["source_health"] = "unavailable"
+        rgb = activity_render.render_rgb888(state, self.now, {"optiplex_mcp"})
+        # Fault wins, and the crown's rows 1-2 in that column stay dark.
+        self.assertEqual(rgb[(0 * 16 + 7) * 3:(0 * 16 + 7) * 3 + 3], bytes(activity_render.FAULT_RGB))
+        for y in (1, 2):
+            for x in range(5, 10):
+                self.assertEqual(rgb[(y * 16 + x) * 3:(y * 16 + x) * 3 + 3], b"\x00\x00\x00")
+
+    def test_the_collector_never_pulses_a_source_it_failed_to_read(self) -> None:
+        # This is why fault and crown cannot collide in practice; the renderer does not
+        # rely on it, but if it ever broke the display would start lying.
+        config = {"sources": {sid: {} for sid in mcp_activity.SOURCE_IDS}}
+        state = mcp_activity.blank_state()
+        for sid in mcp_activity.SOURCE_IDS:
+            state["sources"][sid]["cursor"] = {"offset": 0}
+        original = dict(mcp_activity.ADAPTERS)
+        try:
+            for sid in mcp_activity.SOURCE_IDS:
+                mcp_activity.ADAPTERS[sid] = _FailingAdapter
+            counts = mcp_activity.collect_once(config, state)
+        finally:
+            mcp_activity.ADAPTERS.clear()
+            mcp_activity.ADAPTERS.update(original)
+        self.assertEqual(set(counts.values()), {0})
+        for sid in mcp_activity.SOURCE_IDS:
+            self.assertEqual(state["sources"][sid]["source_health"], "unavailable")
+
+    def test_a_fault_bar_does_not_disturb_the_approved_letters_or_icons(self) -> None:
+        clean = self._state(self.MIXED)
+        faulted = self._state(self.MIXED)
+        faulted["sources"]["optiplex_mcp"]["source_health"] = "unavailable"
+        a = activity_render.render_rgb888(clean, self.now)
+        b = activity_render.render_rgb888(faulted, self.now)
+        # Rows 5-15 differ only because that column greyed out; rows 3-4 and 10 stay clear.
+        for y in (3, 4, 10):
+            self.assertEqual(b[y * 48:(y + 1) * 48], bytes(48))
+        # Columns other than the faulted one are untouched from rows 3 down.
+        for y in range(3, 16):
+            for x in list(range(0, 5)) + list(range(10, 16)):
+                i = (y * 16 + x) * 3
+                self.assertEqual(a[i:i + 3], b[i:i + 3], msg=f"({x},{y}) changed outside the faulted column")
 
     def test_preview_pngs_are_written_and_decode_back_to_the_exact_frame(self) -> None:
         rgb = activity_render.render_rgb888(self._state(self.MIXED), self.now)
