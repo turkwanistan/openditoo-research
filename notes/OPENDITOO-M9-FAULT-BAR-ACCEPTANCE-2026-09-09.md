@@ -9,3 +9,8 @@ Visual sequence: **grey Lab/no bar (3 s) → grey Lab + dim-red 3-pixel top bar 
 The committed hash-frozen persistent product runtime is not modified. For live execution its service must be stopped to release the single-controller Host/session gate, the one-shot sequence run once, and the product service restarted immediately afterward. This is rendering acceptance only; it does not claim a real source outage was detected.
 
 No live authority is embedded here. 009 requires an explicit grant naming its exact experiment id.
+
+
+### Activation 009 result — Lab fault bar physically accepted
+
+`OPENDITOO-M9-ACTIVATION-009` is consumed and PASS. The frozen production-renderer sequence sent exactly three frames in one connection (9 packets / 494 application bytes, ACKs 0x61/0x99/0xF4, 6413 ms total): healthy Lab grey/no bar -> render-only simulated `source_health=unavailable` Lab grey + dim-red crown fault bar -> healthy Lab grey/no bar. Operator observation: **"saw it, looks good"**. This physically accepts the fault-bar appearance/path on the exact Ditoo. It remains correctly labeled simulated source-health acceptance; it does not prove that a genuine Lab outage is detected end-to-end. Persistent product authority remains separate and active.

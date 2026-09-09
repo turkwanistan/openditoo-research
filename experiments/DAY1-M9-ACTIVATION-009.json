@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "OPENDITOO-M9-ACTIVATION-009",
   "milestone": "M9 fault-bar visual acceptance",
-  "status": "authorized_pending_execution",
+  "status": "completed_pass_authority_consumed",
   "objective": "Physically inspect the production Lab source-health fault bar without modifying persisted MCP activity state or causing a real source outage.",
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -106,13 +106,14 @@
     "recovery": "restart the already-authorized persistent product service after the one-shot sequence returns"
   },
   "authority": {
-    "transmission_authorized": true,
-    "authorization_consumed": false,
+    "transmission_authorized": false,
+    "authorization_consumed": true,
     "grant_scope_requested": "ONE execution only of OPENDITOO-M9-ACTIVATION-009: stop the persistent product supervisor, run the exact frozen 3-frame Lab fault-bar sequence (healthy -> simulated unavailable -> healthy) on exact Ditoo 11:75:58:CE:DE:C7, then restart the persistent product supervisor; one connection, 3 frames, 9 packets, 494 application bytes, 3000 ms inter-frame delay, no retry/reconnect/raw send/target override/source-state mutation.",
     "granted_by": "operator, in-session, 2026-09-09",
     "grant_text": "Grant OPENDITOO-M9-ACTIVATION-009",
     "grant_scope": "ONE execution only of OPENDITOO-M9-ACTIVATION-009: stop the persistent product supervisor, run the exact frozen 3-frame Lab fault-bar sequence (healthy -> simulated unavailable -> healthy) on exact Ditoo 11:75:58:CE:DE:C7, then restart the persistent product supervisor; one connection, 3 frames, 9 packets, 494 application bytes, 3000 ms inter-frame delay, no retry/reconnect/raw send/target override/source-state mutation.",
-    "expires_at": "2026-09-10T00:00:00Z"
+    "expires_at": "2026-09-10T00:00:00Z",
+    "consumed_at_utc": "2026-09-09T18:59:00Z"
   },
   "explicitly_out_of_scope": [
     "real Lab outage",
@@ -121,5 +122,35 @@
     "automatic retry",
     "streaming/pipelining",
     "any target other than exact unit"
-  ]
+  ],
+  "result": {
+    "status": "pass",
+    "acceptance": "physical_visual_pass_simulated_source_health_fault_bar",
+    "operator_observation": "saw it, looks good",
+    "connections_attempted": 1,
+    "frames_sent": 3,
+    "packets_sent": 9,
+    "tx_bytes_sent": 494,
+    "elapsed_ms": 6413,
+    "ack_payload_hex_ordered": [
+      "0x61",
+      "0x99",
+      "0xF4"
+    ],
+    "image_packet_sha256_ordered": [
+      "11187582e6a2b3c37d20312fa3d2fa886a61b7c203a409900f5d516d1ca1f2f1",
+      "0fa1c4db7265913e284532717e9046d9ac30e8477dc6792683e0332c89c28d78",
+      "11187582e6a2b3c37d20312fa3d2fa886a61b7c203a409900f5d516d1ca1f2f1"
+    ],
+    "palette_colors_ordered": [
+      8,
+      9,
+      8
+    ],
+    "retry": false,
+    "reconnect": false,
+    "socket_closed": true,
+    "visual_sequence": "healthy grey Lab/no bar -> simulated unavailable grey Lab + dim red crown bar -> healthy grey Lab/no bar",
+    "scope_note": "Renderer-only simulated Lab source-health fault; does not prove detection of a genuine Lab outage."
+  }
 }
