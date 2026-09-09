@@ -4,7 +4,10 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## Current session route — 2026-09-09
 
-0. **Read `notes/OPENDITOO-S1-STREAM-PRIMITIVE-2026-09-09.md` first.** It is the current
+0. **Read `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md` first.** The external N980P webcam
+   plan is adopted as the route, with recorded amendments; its W0/W4 are done offline and the
+   Host streaming profile is built but **not deployed**. Then read
+   `notes/OPENDITOO-S1-STREAM-PRIMITIVE-2026-09-09.md`. It is the current
    route: the general 16x16 frame-streaming primitive is implemented, offline-verified and
    physically exercised once. `OPENDITOO-S1-STREAM-001` is **consumed** and may never be
    re-armed; any further live stream needs a fresh manifest and a fresh named grant.
@@ -30,6 +33,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | M0-M8 | complete; accepted evidence preserved |
 | M9 MCP activity application | complete; layout/activity/status/fault-display acceptance recorded |
 | R1-R5 rate ladder | complete; measured through 18.46 fps full-colour one-ACK-per-frame ceiling |
+| W4 streaming session profile | implemented + built + self-tested offline (204 tests). Host `bin/Streaming/net8.0` = `56e56e22...`, NOT deployed; `bin/Release/net8.0` still `fb750078...` so Runtime 002 stays valid. Deploying it needs Runtime 003 |
 | S2 stream-rate measurement | `OPENDITOO-S2-STREAM-RATE-001` consumed. Measured dispatch→ACK: median 66 ms, p95 93 ms at 1039 bytes. Dispatching at the 150 ms Host floor is FATAL (HTTP 429 on frame 10) — client must add 50 ms margin, so ~5 fps is today's safe cadence. Higher rates need a Host pacing change + Runtime 003. See `notes/OPENDITOO-STREAM-PRODUCER-CONTRACT-2026-09-09.md` |
 | S1 general frame streaming | **accepted**; `OPENDITOO-S1-STREAM-001` consumed, transport PASS (42 frames / 126 packets / 2982 bytes, clean close) and operator visual PASS |
 | A1 collection worker | installed/preserved; product owns collection while active |

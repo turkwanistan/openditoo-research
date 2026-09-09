@@ -24,6 +24,51 @@ static class ActivitySessionHost
     // the 150 ms frame-start budget ample ACK/jitter headroom without running at R5's
     // zero-idle ceiling. This is fixed for the activity session, not caller-configurable.
     internal const int ActivitySendSpacingMs = 10;
+
+    // -- session profiles --------------------------------------------------
+    //
+    // Two shapes, both already physically accepted, selected by NAME rather than by
+    // caller-supplied timing. A caller may pick a profile; it may never hand us numbers.
+    //
+    // "activity" is the MCP dashboard: 150 ms floor, 10 ms packet spacing. Unchanged, and
+    // what an absent profile resolves to, so every existing caller keeps its exact
+    // behaviour.
+    //
+    // "streaming_ack_clock" is R5's shape: zero packet spacing, and pacing governed by the
+    // ACK rather than by a clock. R5 ran 1024 full-colour frames this way in 55.5 s with
+    // one ACK per frame and no tearing.
+    //
+    // Why the floor drops but does not vanish: OPENDITOO-S2-STREAM-RATE-001 died on frame
+    // 10 with a pacing violation because a client dispatching AT the floor can arrive a
+    // millisecond early, and a violation is terminal. Under an ACK clock that race cannot
+    // happen -- the client physically cannot send before the previous ACK returns, so it
+    // cannot be early. The floor is therefore no longer the pacing mechanism, but it is
+    // kept as a BACKSTOP: the Host, not the client, must remain the thing that bounds the
+    // rate, and 40 ms sits comfortably under R5's 53 ms median ACK so it never gates a
+    // healthy link. If ACKs ever returned instantly, this is what still holds.
+    internal const string ProfileActivity = "activity";
+    internal const string ProfileStreamingAckClock = "streaming_ack_clock";
+    internal const int StreamingMinFrameIntervalMs = 40;
+    internal const int StreamingSendSpacingMs = 0;
+
+    private static string profile = ProfileActivity;
+
+    internal static int FloorFor(string? requested) =>
+        Normalize(requested) == ProfileStreamingAckClock
+            ? StreamingMinFrameIntervalMs : AcceptedMinFrameIntervalMs;
+
+    internal static int SpacingFor(string? requested) =>
+        Normalize(requested) == ProfileStreamingAckClock
+            ? StreamingSendSpacingMs : ActivitySendSpacingMs;
+
+    /// <summary>An unknown profile name is a refusal, never a silent fallback.</summary>
+    internal static string Normalize(string? requested)
+    {
+        if (string.IsNullOrWhiteSpace(requested)) return ProfileActivity;
+        if (requested == ProfileActivity || requested == ProfileStreamingAckClock) return requested;
+        throw new SessionRejectedException("SESSION_PROFILE_UNKNOWN", 400);
+    }
+
     internal const int MaxLifetimeSeconds = 900;
     internal const int MaxFrames = 500;
     internal const int WatchdogIntervalMs = 250;
@@ -100,16 +145,17 @@ static class ActivitySessionHost
     internal sealed record OpenResult(string SessionId, string DeadlineUtc, int MinFrameIntervalMs);
 
     internal static OpenResult Open(string experimentId, int lifetimeSeconds, int minIntervalMs,
-                                    int frameBudget, int txByteBudget)
+                                    int frameBudget, int txByteBudget, string? sessionProfile = null)
     {
         lock (Gate)
         {
+            var requestedProfile = Normalize(sessionProfile);
             if (IsActive) throw new SessionRejectedException("SESSION_ALREADY_ACTIVE", 409);
             if (string.IsNullOrWhiteSpace(experimentId) || experimentId.Length > 128)
                 throw new SessionRejectedException("SESSION_EXPERIMENT_ID_INVALID", 400);
             if (lifetimeSeconds <= 0 || lifetimeSeconds > MaxLifetimeSeconds)
                 throw new SessionRejectedException("SESSION_LIFETIME_INVALID", 400);
-            if (minIntervalMs < AcceptedMinFrameIntervalMs)
+            if (minIntervalMs < FloorFor(requestedProfile))
                 throw new SessionRejectedException("SESSION_PACING_BELOW_ACCEPTED_CEILING", 400);
             if (frameBudget <= 0 || frameBudget > MaxFrames)
                 throw new SessionRejectedException("SESSION_FRAME_BUDGET_INVALID", 400);
@@ -119,6 +165,7 @@ static class ActivitySessionHost
                 throw new SessionRejectedException("AUTHORITY_ALREADY_CONSUMED", 409);
 
             ExperimentId = experimentId;
+            profile = requestedProfile;
             SessionId = Convert.ToHexString(RandomNumberGenerator.GetBytes(6)).ToLowerInvariant();
             startedAt = DateTimeOffset.UtcNow;
             deadline = startedAt.AddSeconds(lifetimeSeconds);
@@ -135,7 +182,8 @@ static class ActivitySessionHost
 
             // Claimed on disk BEFORE the socket exists, so a crash during connect still
             // consumes the id rather than leaving it silently re-armable.
-            Append("open", new { lifetimeSeconds, minIntervalMs, frameBudget, txByteBudget });
+            Append("open", new { lifetimeSeconds, minIntervalMs, frameBudget, txByteBudget,
+                                 sessionProfile = profile, sendSpacingMs = SpacingFor(profile) });
 
             PairedDitooTargetGuard.RequireAuthenticatedExactTarget();
             try
@@ -153,7 +201,8 @@ static class ActivitySessionHost
     }
 
     internal sealed record FrameResult(int Frame, string AckPayloadHex, string ImagePacketSha256,
-                                       int PaletteColors, int PacketsSent, int TxBytesSent, string DeadlineUtc);
+                                       int PaletteColors, int PacketsSent, int TxBytesSent,
+                                       string DeadlineUtc, int HostFrameElapsedMs);
 
     internal static FrameResult SendFrame(string sessionId, byte[] rgb, string expectedPacketSha256)
     {
@@ -199,7 +248,7 @@ static class ActivitySessionHost
             DitooReport ack;
             try
             {
-                link.SendFrameGroup(packets, null, framesSent, ActivitySendSpacingMs);
+                link.SendFrameGroup(packets, null, framesSent, SpacingFor(profile));
                 ack = link.ReadOneAck(DitooStaticImageProtocol.AckBudgetMs);
             }
             catch (DitooTakeoverException takeover)
@@ -221,8 +270,11 @@ static class ActivitySessionHost
             displayState = "ours_last_acked";
             var hex = $"0x{ack.Payload[0]:X2}";
             acks.Add(hex);
+            // The Host's own send-to-ACK figure. A client can only measure HTTP round trip,
+            // which folds in transport it does not own; S2 had to infer the difference.
+            var hostElapsedMs = (int)(Environment.TickCount64 - lastFrameStartedTicks);
             return new FrameResult(framesSent, hex, encoded.PacketSha256, encoded.PaletteColors,
-                                   packetsSent, txBytesSent, deadline.ToString("O"));
+                                   packetsSent, txBytesSent, deadline.ToString("O"), hostElapsedMs);
         }
     }
 
@@ -264,6 +316,8 @@ static class ActivitySessionHost
                 startedAtUtc = startedAt == default ? null : startedAt.ToString("O"),
                 deadlineUtc = deadline == default ? null : deadline.ToString("O"),
                 minFrameIntervalMs,
+                sessionProfile = profile,
+                sendSpacingMs = SpacingFor(profile),
                 framesSent,
                 packetsSent,
                 txBytesSent,

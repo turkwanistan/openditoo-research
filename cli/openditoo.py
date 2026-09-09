@@ -608,15 +608,29 @@ class _HostSessionTransport:
         self.opened: dict = {}
 
     def open(self, manifest) -> dict:
-        self.opened = _post(SESSION_OPEN_URL, {
+        body = {
             "experimentId": manifest.experiment_id,
             "lifetimeSeconds": manifest.lifetime_seconds,
             "minFrameIntervalMs": manifest.min_frame_interval_ms,
             "maxFrames": manifest.max_frames,
             "maxTxBytes": manifest.max_tx_bytes,
-        }, self.token, timeout=30.0)
+        }
+        # A profile is a NAME, never timing numbers: the Host owns the constants each name
+        # resolves to. Omitting it keeps the activity dashboard's exact behaviour, so this
+        # is invisible to every existing caller.
+        profile = (manifest.raw.get("stream") or {}).get("session_profile")
+        if profile:
+            body["sessionProfile"] = profile
+        self.opened = _post(SESSION_OPEN_URL, body, self.token, timeout=30.0)
         if self.opened.get("ok") is not True or not self.opened.get("sessionId"):
             raise activity_session.SessionError("SESSION_OPEN_REJECTED", json.dumps(self.opened, sort_keys=True))
+        if profile and self.opened.get("sessionProfile") != profile:
+            # The Host is the authority on what profile it actually applied. If it did not
+            # confirm ours, we are not running the reviewed shape and must not send.
+            raise activity_session.SessionError(
+                "SESSION_PROFILE_NOT_CONFIRMED",
+                json.dumps({"requested": profile, "host": self.opened.get("sessionProfile")},
+                           sort_keys=True))
         self.session_id = self.opened["sessionId"]
         return self.opened
 

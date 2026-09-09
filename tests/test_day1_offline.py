@@ -2452,7 +2452,10 @@ class N3HostBoundaryTests(unittest.TestCase):
         self.assertIn(f"MaxFrames = {activity_session.MAX_SESSION_FRAMES};", src)
         self.assertIn("SESSION_PACING_BELOW_ACCEPTED_CEILING", src)
         self.assertIn("ActivitySendSpacingMs = 10;", src)
-        self.assertIn("SendFrameGroup(packets, null, framesSent, ActivitySendSpacingMs)", src)
+        # Spacing is resolved from the session's profile, which is a name the Host maps to
+        # its own frozen constants. What must never appear is spacing as a caller argument.
+        self.assertIn("SendFrameGroup(packets, null, framesSent, SpacingFor(profile))", src)
+        self.assertNotIn("SpacingFor(request", src)
 
     def test_the_host_bounds_a_session_without_the_worker(self) -> None:
         src = (HOST_DIR / "ActivitySessionHost.cs").read_text(encoding="utf-8")
@@ -2943,3 +2946,140 @@ class S1FrameStreamTests(unittest.TestCase):
                              msg=f"frame_stream must not reach the device itself: {forbidden}")
         for forbidden in ("def release", "def unclaim", "def reset", "os.remove", "os.unlink"):
             self.assertNotIn(forbidden, module)
+
+
+class S3StreamingProfileTests(unittest.TestCase):
+    """The ACK-clocked streaming session profile, offline."""
+
+    HOST_CS = ROOT / "runtime/windows/OpenDitoo.Day1.Host/ActivitySessionHost.cs"
+    PROGRAM_CS = ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs"
+    MANIFEST = ROOT / "experiments/DAY1-S1-STREAM-SWEEP-001.json"
+
+    # -- the two implementations must agree --------------------------------
+
+    def test_python_and_csharp_agree_on_the_streaming_floor_and_spacing(self) -> None:
+        # A client that believes in a lower floor than the Host enforces does not get a slow
+        # frame, it gets a terminal pacing refusal. S2 is what that looks like.
+        host = self.HOST_CS.read_text(encoding="utf-8")
+        self.assertIn(f"StreamingMinFrameIntervalMs = {frame_stream.STREAMING_HOST_FLOOR_MS};", host)
+        self.assertIn("StreamingSendSpacingMs = 0;", host)
+        self.assertIn(f'ProfileStreamingAckClock = "{frame_stream.SESSION_PROFILE_STREAMING}"', host)
+        self.assertIn(f'ProfileActivity = "{frame_stream.SESSION_PROFILE_ACTIVITY}"', host)
+        # The activity dashboard's constants must be untouched by the streaming work.
+        self.assertIn("AcceptedMinFrameIntervalMs = 150;", host)
+        self.assertIn("ActivitySendSpacingMs = 10;", host)
+
+    def test_an_absent_profile_is_the_activity_profile_and_an_unknown_one_is_refused(self) -> None:
+        host = self.HOST_CS.read_text(encoding="utf-8")
+        self.assertIn("if (string.IsNullOrWhiteSpace(requested)) return ProfileActivity;", host)
+        self.assertIn('throw new SessionRejectedException("SESSION_PROFILE_UNKNOWN", 400)', host)
+        # The Host must resolve profiles by name; timing may never be a caller argument.
+        self.assertNotIn("request.SendSpacingMs", host)
+        program = self.PROGRAM_CS.read_text(encoding="utf-8")
+        self.assertIn("request.SessionProfile", program)
+        self.assertNotIn("int SendSpacingMs)", program.split("record OpenSessionRequest")[1][:200])
+
+    def test_the_host_confirms_the_applied_profile_and_the_client_checks_it(self) -> None:
+        program = self.PROGRAM_CS.read_text(encoding="utf-8")
+        self.assertIn("sessionProfile = ActivitySessionHost.Normalize(request.SessionProfile)", program)
+        self.assertIn("sendSpacingMs = ActivitySessionHost.SpacingFor(request.SessionProfile)", program)
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        self.assertIn("SESSION_PROFILE_NOT_CONFIRMED", cli)
+
+    def test_the_host_reports_its_own_per_frame_elapsed_time(self) -> None:
+        # S2 could only measure HTTP round trip and had to infer the wire share.
+        self.assertIn("HostFrameElapsedMs", self.HOST_CS.read_text(encoding="utf-8"))
+        self.assertIn("hostFrameElapsedMs = sent.HostFrameElapsedMs",
+                      self.PROGRAM_CS.read_text(encoding="utf-8"))
+
+    # -- validation --------------------------------------------------------
+
+    def _load(self, mutate):
+        data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+        mutate(data)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "s.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            return frame_stream.load_stream_manifest(path, require_authority=False,
+                                                     verify_code_hashes=False)
+
+    def _streaming(self, **stream_overrides):
+        def mutate(d):
+            stream = {"session_profile": frame_stream.SESSION_PROFILE_STREAMING,
+                      "playback_interval_ms": 40, "loop": True, **stream_overrides}
+            d["stream"].update(stream)
+            d["session"].update(min_frame_interval_ms=min(40, stream["playback_interval_ms"]),
+                                poll_interval_ms=10, lifetime_seconds=10)
+            frames = min(10 * 1000 // 40 + 1, activity_session.MAX_SESSION_FRAMES)
+            d["budgets"].update(max_frames=frames,
+                                max_application_packets=frames * 3,
+                                max_tx_bytes=frames * 71)
+        return self._load(mutate)
+
+    def test_the_streaming_profile_admits_the_lower_host_floor(self) -> None:
+        manifest, _, stream = self._streaming()
+        self.assertEqual(manifest.min_frame_interval_ms, frame_stream.STREAMING_HOST_FLOOR_MS)
+        self.assertEqual(stream["session_profile"], frame_stream.SESSION_PROFILE_STREAMING)
+
+    def test_the_streaming_profile_still_refuses_below_the_host_floor(self) -> None:
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            self._streaming(playback_interval_ms=frame_stream.STREAMING_HOST_FLOOR_MS - 1)
+        self.assertIn(caught.exception.code,
+                      ("STREAM_PLAYBACK_INTERVAL_INVALID", "SESSION_PACING_BELOW_ACCEPTED_CEILING"))
+
+    def test_an_unknown_profile_name_is_refused_by_the_validator_too(self) -> None:
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            self._load(lambda d: d["stream"].__setitem__("session_profile", "go_faster"))
+        self.assertEqual(caught.exception.code, "STREAM_SESSION_PROFILE_UNKNOWN")
+
+    def test_the_activity_profile_keeps_its_jitter_margin(self) -> None:
+        # The streaming carve-out must not leak into clock-paced streams.
+        def mutate(d):
+            d["stream"]["playback_interval_ms"] = activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            self._load(mutate)
+        self.assertEqual(caught.exception.code, "STREAM_PLAYBACK_INTERVAL_INVALID")
+
+    # -- ACK-clocked dispatch ---------------------------------------------
+
+    def test_ack_clocked_dispatch_advances_only_on_an_ack(self) -> None:
+        manifest, frame_set, stream = self._streaming()
+        clock = {"ms": 0}
+        transport = activity_session.FakeSessionTransport()
+        result = frame_stream.stream_session(
+            manifest, frame_set, stream, transport,
+            lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + max(ms, 1)),
+            claim=None)
+        # One frame per ACK, in order, with no pacing holds: the ACK is the clock.
+        self.assertEqual(result["frames_sent"], manifest.max_frames)
+        self.assertEqual(result["terminal_reason"], "budget_exhausted")
+        self.assertEqual(result["outcome"], "stopped_clean")
+        self.assertNotIn("pacing", result["holds"])
+        self.assertEqual([item["playback_index"] for item in result["frame_timings"][:5]],
+                         [0, 1, 2, 3, 4])
+        # Dropped-step counting is meaningless under an ACK clock and must stay zero.
+        self.assertEqual(result["playback_steps_dropped"], 0)
+
+    def test_ack_advance_skips_duplicate_frames_instead_of_deadlocking(self) -> None:
+        # Two identical consecutive frames are held as unchanged, so no ACK would ever
+        # arrive to advance a naive cursor.
+        frames = [bytes((1, 0, 0)) * 256, bytes((1, 0, 0)) * 256, bytes((2, 0, 0)) * 256]
+        frame_set = frame_stream.build_frame_set(frames)
+        renderer = frame_stream.FrameSetRenderer(frame_set, 40, loop=False, ack_advanced=True)
+        self.assertEqual(renderer(0)[0][:1], b"\x01")
+        renderer.frame_sent()
+        self.assertEqual(renderer(0)[0][:1], b"\x02")
+
+    def test_an_all_identical_clip_terminates_rather_than_spinning(self) -> None:
+        frame_set = frame_stream.build_frame_set([bytes((7, 7, 7)) * 256] * 4)
+        renderer = frame_stream.FrameSetRenderer(frame_set, 40, loop=True, ack_advanced=True)
+        renderer(0)
+        renderer.frame_sent()  # must return, not loop forever
+        self.assertEqual(renderer(0)[0][:3], bytes((7, 7, 7)))
+
+    def test_streaming_budgets_are_a_reviewed_ceiling_not_a_clip_length(self) -> None:
+        manifest, frame_set, _ = self._streaming()
+        # 10 s at the 40 ms floor could admit 251 frames; the clip is only 48 long, and
+        # under an ACK clock it loops, so the ceiling comes from the lifetime and the Host.
+        self.assertGreater(manifest.max_frames, frame_set.count)
+        self.assertLessEqual(manifest.max_frames, activity_session.MAX_SESSION_FRAMES)

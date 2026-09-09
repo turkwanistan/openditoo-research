@@ -313,7 +313,30 @@ def verify_stream_boundary() -> None:
         # An armed manifest is REPORTED, not failed: a grant is session-local and the
         # verifier must still pass while an authorized trial is actually being run.
         # Structural boundaries below are the hard failures.
+    # The streaming pacing profile must stay a NAME the Host resolves, never caller timing,
+    # and must not disturb the activity dashboard's constants.
+    host_cs = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/ActivitySessionHost.cs").read_text(encoding="utf-8")
+    for needed in ('ProfileActivity = "activity"', 'ProfileStreamingAckClock = "streaming_ack_clock"',
+                   "AcceptedMinFrameIntervalMs = 150;", "ActivitySendSpacingMs = 10;",
+                   "StreamingMinFrameIntervalMs = 40;", "StreamingSendSpacingMs = 0;",
+                   'SESSION_PROFILE_UNKNOWN',
+                   "if (string.IsNullOrWhiteSpace(requested)) return ProfileActivity;",
+                   "SendFrameGroup(packets, null, framesSent, SpacingFor(profile))"):
+        if needed not in host_cs:
+            fail(f"Host session profile boundary missing: {needed}")
+    program_cs = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
+    for forbidden in ("request.SendSpacingMs, request.SessionProfile", "SpacingFor(request.MinFrame"):
+        if forbidden in program_cs:
+            fail(f"session open exposes caller-supplied timing: {forbidden}")
     module = (ROOT / "host/frame_stream.py").read_text(encoding="utf-8")
+    # The client's streaming floor must equal the Host's, or a stream earns a terminal
+    # pacing refusal instead of a slow frame. This is what OPENDITOO-S2-STREAM-RATE-001 cost.
+    import re as _re
+    match = _re.search(r"StreamingMinFrameIntervalMs = (\d+);", host_cs)
+    if not match:
+        fail("Host streaming floor is unreadable")
+    if f"STREAMING_HOST_FLOOR_MS = {match.group(1)}" not in module:
+        fail(f"client streaming floor disagrees with the Host's {match.group(1)} ms")
     # Streaming must not grow a second Bluetooth stack, route or authority path: it
     # renders frames and hands them to the one existing typed session client.
     for forbidden in ("socket", "urllib", "http", "subprocess", "def release", "def unclaim"):

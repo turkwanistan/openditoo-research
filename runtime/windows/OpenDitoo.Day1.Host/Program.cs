@@ -360,8 +360,11 @@ app.MapPost("/v1/session/open", (OpenSessionRequest request) =>
         return Results.Json(new { ok = false, errorCode = "IMAGE_BUSY" }, statusCode: StatusCodes.Status409Conflict);
     try
     {
+        // An absent profile is the activity dashboard's, so every existing caller keeps its
+        // exact behaviour; an unrecognised one is refused rather than quietly defaulted.
         var opened = ActivitySessionHost.Open(request.ExperimentId, request.LifetimeSeconds,
-                                              request.MinFrameIntervalMs, request.MaxFrames, request.MaxTxBytes);
+                                              request.MinFrameIntervalMs, request.MaxFrames,
+                                              request.MaxTxBytes, request.SessionProfile);
         return Results.Json(new
         {
             ok = true,
@@ -373,6 +376,8 @@ app.MapPost("/v1/session/open", (OpenSessionRequest request) =>
             sessionId = opened.SessionId,
             deadlineUtc = opened.DeadlineUtc,
             minFrameIntervalMs = opened.MinFrameIntervalMs,
+            sessionProfile = ActivitySessionHost.Normalize(request.SessionProfile),
+            sendSpacingMs = ActivitySessionHost.SpacingFor(request.SessionProfile),
             connectionsAttempted = 1,
             retry = false,
             reconnect = false,
@@ -435,6 +440,9 @@ app.MapPost("/v1/session/frame", (SessionFrameRequest request) =>
             packetCount = 3,
             packetsSentTotal = sent.PacketsSent,
             txBytesSentTotal = sent.TxBytesSent,
+            // The Host's own send-to-ACK time. A client can only see HTTP round trip, which
+            // folds in transport it does not own; S2 had to infer the difference.
+            hostFrameElapsedMs = sent.HostFrameElapsedMs,
             deadlineUtc = sent.DeadlineUtc,
             retry = false,
             reconnect = false,
@@ -501,6 +509,6 @@ return 0;
 sealed record ShowImageRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256);
 sealed record SequenceFrameRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256);
 sealed record ShowSequenceRequest(SequenceFrameRequest[] Frames, int InterFrameDelayMs, int TotalBudgetMs, int? SendSpacingMs);
-sealed record OpenSessionRequest(string ExperimentId, int LifetimeSeconds, int MinFrameIntervalMs, int MaxFrames, int MaxTxBytes);
+sealed record OpenSessionRequest(string ExperimentId, int LifetimeSeconds, int MinFrameIntervalMs, int MaxFrames, int MaxTxBytes, string? SessionProfile);
 sealed record SessionFrameRequest(string SessionId, string PixelsRgb888Hex, string ExpectedImagePacketSha256);
 sealed record CloseSessionRequest(string SessionId, string Reason);

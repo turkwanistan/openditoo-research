@@ -52,6 +52,19 @@ MAX_PALETTE_COLORS = 255
 # tightest plausible one.
 CLIENT_JITTER_MARGIN_MS = 50
 MIN_PLAYBACK_INTERVAL_MS = _session.ACCEPTED_MIN_FRAME_INTERVAL_MS + CLIENT_JITTER_MARGIN_MS
+
+# Session profiles, mirroring `ActivitySessionHost`. These are NAMES; the Host owns the
+# constants each resolves to, and confirms in its open response which one it applied.
+SESSION_PROFILE_ACTIVITY = "activity"
+SESSION_PROFILE_STREAMING = "streaming_ack_clock"
+SESSION_PROFILES = (SESSION_PROFILE_ACTIVITY, SESSION_PROFILE_STREAMING)
+# Must equal ActivitySessionHost.StreamingMinFrameIntervalMs. A test asserts they agree
+# against the C# source, because a client that believes in a lower floor than the Host
+# enforces gets a terminal pacing refusal rather than a slow frame.
+STREAMING_HOST_FLOOR_MS = 40
+# Under an ACK clock the client cannot dispatch early -- it has no permission to send until
+# the previous ACK returns -- so the S2 jitter margin is unnecessary, not merely reduced.
+STREAMING_MIN_PLAYBACK_INTERVAL_MS = STREAMING_HOST_FLOOR_MS
 # Unused by a stream: no frame is a pulse, so nothing can expire. Present because the
 # shared manifest record requires it.
 _STREAM_PULSE_FRESHNESS_SECONDS = 30
@@ -183,28 +196,52 @@ def write_frame_set(frames: list[bytes], path: Path) -> FrameSet:
 # --------------------------------------------------------------------------
 
 class FrameSetRenderer:
-    """Time-indexed playback of a frozen frame set.
+    """Playback of a frozen frame set, clock-indexed or ACK-advanced.
 
-    Indexing on the clock rather than on ACKs is what keeps playback honest: a slow
-    transport drops frames instead of stretching the clip, and two identical consecutive
-    frames simply hold (the shared scheduler sends nothing), rather than stalling an
-    ACK-gated cursor forever.
+    Clock-indexed is the honest default for content with intended timing: a slow transport
+    drops frames instead of stretching the clip, and two identical consecutive frames simply
+    hold rather than stalling a cursor forever.
+
+    ACK-advanced exists for the streaming profile, where the point is to run at whatever
+    rate the device grants and the clip is a rate fixture rather than a timed animation.
+    There the deadlock is real -- an unchanged frame is never sent, so no ACK ever arrives to
+    advance the cursor -- so advancing explicitly skips duplicates.
     """
 
-    def __init__(self, frame_set: FrameSet, playback_interval_ms: int, loop: bool = False) -> None:
+    def __init__(self, frame_set: FrameSet, playback_interval_ms: int, loop: bool = False,
+                 ack_advanced: bool = False) -> None:
         self.frame_set = frame_set
         self.playback_interval_ms = playback_interval_ms
         self.loop = loop
+        self.ack_advanced = ack_advanced
         self.last_index = -1
+        self._cursor = 0
 
     def __call__(self, now_ms: int) -> tuple[bytes, bool]:
-        step = max(0, now_ms) // self.playback_interval_ms
-        index = step % self.frame_set.count if self.loop else min(step, self.frame_set.count - 1)
+        if self.ack_advanced:
+            index = self._cursor
+        else:
+            step = max(0, now_ms) // self.playback_interval_ms
+            index = step % self.frame_set.count if self.loop else min(step, self.frame_set.count - 1)
         self.last_index = index
         return self.frame_set.frames[index], False
 
     def frame_sent(self) -> None:
-        """Playback follows the clock, so an ACK advances nothing."""
+        """Advance the cursor in ACK-advanced mode; clock-indexed playback ignores ACKs."""
+        if not self.ack_advanced:
+            return
+        sent = self.frame_set.packet_sha256[self._cursor]
+        # Skip frames identical to the one just sent, bounded by one pass, so a clip of all
+        # identical frames terminates instead of spinning.
+        for _ in range(self.frame_set.count):
+            nxt = self._cursor + 1
+            if nxt >= self.frame_set.count:
+                if not self.loop:
+                    return  # hold the final frame; the lifetime ends the session
+                nxt = 0
+            self._cursor = nxt
+            if self.frame_set.packet_sha256[self._cursor] != sent:
+                return
 
 
 # --------------------------------------------------------------------------
@@ -262,12 +299,19 @@ def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
     lifetime = session.get("lifetime_seconds")
     require(isinstance(lifetime, int) and 0 < lifetime <= _session.MAX_SESSION_LIFETIME_SECONDS,
             "SESSION_LIFETIME_INVALID", f"1..{_session.MAX_SESSION_LIFETIME_SECONDS} s")
+    # The profile decides which Host floor applies, so it is read before the pacing checks.
+    profile = (data.get("stream") or {}).get("session_profile", SESSION_PROFILE_ACTIVITY)
+    require(profile in SESSION_PROFILES, "STREAM_SESSION_PROFILE_UNKNOWN",
+            f"allowed: {', '.join(SESSION_PROFILES)}")
+    streaming = profile == SESSION_PROFILE_STREAMING
+    host_floor = STREAMING_HOST_FLOOR_MS if streaming else _session.ACCEPTED_MIN_FRAME_INTERVAL_MS
     interval = session.get("min_frame_interval_ms")
-    require(isinstance(interval, int) and interval >= _session.ACCEPTED_MIN_FRAME_INTERVAL_MS,
+    require(isinstance(interval, int) and interval >= host_floor,
             "SESSION_PACING_BELOW_ACCEPTED_CEILING",
-            f"the Host floor is {_session.ACCEPTED_MIN_FRAME_INTERVAL_MS} ms per frame start")
+            f"the Host floor for profile {profile!r} is {host_floor} ms per frame start")
     poll_ms = session.get("poll_interval_ms")
-    require(isinstance(poll_ms, int) and 50 <= poll_ms <= interval, "SESSION_POLL_INTERVAL_INVALID")
+    require(isinstance(poll_ms, int) and 10 <= poll_ms <= max(interval, 50),
+            "SESSION_POLL_INTERVAL_INVALID")
     require(session.get("automatic_retry") is False, "SESSION_RETRY_NOT_DISABLED")
     require(session.get("automatic_reconnect") is False, "SESSION_RECONNECT_NOT_DISABLED")
     require(session.get("stock_screen_reclaim") is False, "SESSION_RECLAIM_NOT_DISABLED")
@@ -283,14 +327,23 @@ def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
     require(stream.get("frame_count") == frame_set.count, "STREAM_FRAME_COUNT_MISMATCH",
             f"manifest {stream.get('frame_count')!r} != actual {frame_set.count}")
     playback_ms = stream.get("playback_interval_ms")
-    require(isinstance(playback_ms, int) and playback_ms >= MIN_PLAYBACK_INTERVAL_MS,
-            "STREAM_PLAYBACK_INTERVAL_INVALID",
-            f"the Host floor is {_session.ACCEPTED_MIN_FRAME_INTERVAL_MS} ms and a client must add "
-            f"{CLIENT_JITTER_MARGIN_MS} ms of jitter margin on top of it; see "
-            "OPENDITOO-S2-STREAM-RATE-001")
-    require(playback_ms >= interval + CLIENT_JITTER_MARGIN_MS, "STREAM_PLAYBACK_FASTER_THAN_FLOOR",
-            f"a stream must dispatch at least {CLIENT_JITTER_MARGIN_MS} ms slower than the floor it "
-            "asks the Host to enforce")
+    if streaming:
+        # ACK-clocked: the interval is not a dispatch schedule, it is the floor the Host
+        # backstops with, so no jitter margin is required or meaningful.
+        require(isinstance(playback_ms, int) and playback_ms >= STREAMING_MIN_PLAYBACK_INTERVAL_MS,
+                "STREAM_PLAYBACK_INTERVAL_INVALID",
+                f"the streaming Host floor is {STREAMING_HOST_FLOOR_MS} ms")
+        require(playback_ms >= interval, "STREAM_PLAYBACK_FASTER_THAN_FLOOR")
+    else:
+        require(isinstance(playback_ms, int) and playback_ms >= MIN_PLAYBACK_INTERVAL_MS,
+                "STREAM_PLAYBACK_INTERVAL_INVALID",
+                f"the Host floor is {_session.ACCEPTED_MIN_FRAME_INTERVAL_MS} ms and a clock-paced "
+                f"client must add {CLIENT_JITTER_MARGIN_MS} ms of jitter margin on top of it; see "
+                "OPENDITOO-S2-STREAM-RATE-001")
+        require(playback_ms >= interval + CLIENT_JITTER_MARGIN_MS,
+                "STREAM_PLAYBACK_FASTER_THAN_FLOOR",
+                f"a clock-paced stream must dispatch at least {CLIENT_JITTER_MARGIN_MS} ms slower "
+                "than the floor it asks the Host to enforce")
     loop = stream.get("loop")
     require(isinstance(loop, bool), "STREAM_LOOP_INVALID")
     require(stream.get("source_description"), "STREAM_SOURCE_DESCRIPTION_MISSING")
@@ -300,7 +353,14 @@ def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
     # lifetime, whichever ends first -- bounds the frame count. This is what stops a
     # stream manifest from quietly buying a bigger budget than its content needs.
     steps_in_lifetime = lifetime * 1000 // playback_ms + 1
-    expected_frames = steps_in_lifetime if loop else min(frame_set.count, steps_in_lifetime)
+    if streaming:
+        # ACK-clocked, so how many frames actually land depends on the device's measured
+        # turnaround, not on a schedule. The budget is therefore a reviewed CEILING -- what
+        # the lifetime could admit at the floor, capped by the Host's own frame ceiling --
+        # and a run that sends fewer ends on budget or lifetime, both clean.
+        expected_frames = min(steps_in_lifetime, _session.MAX_SESSION_FRAMES)
+    else:
+        expected_frames = steps_in_lifetime if loop else min(frame_set.count, steps_in_lifetime)
     max_frames = budgets.get("max_frames")
     require(isinstance(max_frames, int) and 0 < max_frames <= _session.MAX_SESSION_FRAMES,
             "BUDGET_FRAME_COUNT_INVALID", f"1..{_session.MAX_SESSION_FRAMES}")
@@ -358,10 +418,13 @@ def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
 
 
 def derived_budgets(frame_set: FrameSet, lifetime_seconds: int, playback_interval_ms: int,
-                    loop: bool) -> dict:
+                    loop: bool, session_profile: str = SESSION_PROFILE_ACTIVITY) -> dict:
     """The budget block a manifest for this content must state, so it is derived once."""
     steps = lifetime_seconds * 1000 // playback_interval_ms + 1
-    frames = steps if loop else min(frame_set.count, steps)
+    if session_profile == SESSION_PROFILE_STREAMING:
+        frames = min(steps, _session.MAX_SESSION_FRAMES)
+    else:
+        frames = steps if loop else min(frame_set.count, steps)
     return {
         "connection_attempts": 1,
         "max_frames": frames,
@@ -390,7 +453,13 @@ def stream_session(manifest, frame_set: FrameSet, stream: dict, transport,
     """
     renderer = renderer_for(frame_set, stream)
     interval_ms = renderer.playback_interval_ms
-    scheduler = _session.ChangeOnlyScheduler(interval_ms, manifest.pulse_freshness_ms)
+    # ACK-clocked: the previous ACK is the permission to send the next frame, so the client
+    # cannot dispatch early and the pacing race that ended S2 cannot occur. The Host's floor
+    # stays as a backstop but stops being the pacing mechanism. Still one frame in flight and
+    # one ACK per frame -- this is R5's accepted shape, not pipelining.
+    ack_clocked = stream.get("session_profile") == SESSION_PROFILE_STREAMING
+    scheduler = _session.ChangeOnlyScheduler(
+        0 if ack_clocked else interval_ms, manifest.pulse_freshness_ms)
     started_ms = clock()
     deadline_ms = started_ms + manifest.lifetime_ms
     timings: list[dict] = []
@@ -449,7 +518,8 @@ def stream_session(manifest, frame_set: FrameSet, stream: dict, transport,
             rgb, _ = renderer(now)
             # A step the clock passed over while we were sending is a dropped frame, not a
             # delayed one. Count it: for a live source this is the headroom measurement.
-            if renderer.last_index > last_index + 1:
+            # Meaningless under an ACK clock, where the cursor only ever moves on a send.
+            if not ack_clocked and renderer.last_index > last_index + 1:
                 result["playback_steps_dropped"] += renderer.last_index - last_index - 1
             last_index = renderer.last_index
 
@@ -457,9 +527,15 @@ def stream_session(manifest, frame_set: FrameSet, stream: dict, transport,
             action, reason = scheduler.next_action(clock())
             if action == "hold":
                 hold(reason)
-                # Wake at the next playback step rather than on a poll grid: there is
-                # nothing else for a stream to do between frames.
-                sleep(max(1, interval_ms - (clock() - started_ms) % interval_ms))
+                if ack_clocked:
+                    # ACK-clocked, so there is no next step to wait for. A hold here means
+                    # the clip has nothing new (its end, un-looped), and the lifetime is what
+                    # ends the session -- so idle cheaply rather than spinning.
+                    sleep(manifest.poll_interval_ms)
+                else:
+                    # Wake at the next playback step rather than on a poll grid: there is
+                    # nothing else for a stream to do between frames.
+                    sleep(max(1, interval_ms - (clock() - started_ms) % interval_ms))
                 continue
 
             desired = scheduler.sending(clock())
@@ -476,6 +552,9 @@ def stream_session(manifest, frame_set: FrameSet, stream: dict, transport,
                 return finish("transport_fault", "unknown", f"{type(exc).__name__}: {exc}")
             acked_ms = clock()
             scheduler.sent()
+            # Only an ACKed frame advances the source, so pacing or a slow Host can never
+            # silently skip content. Clock-indexed playback ignores this.
+            renderer.frame_sent()
             result["frames_sent"] = scheduler.frames_sent
             result["packets_sent"] += _session.PACKETS_PER_FRAME
             result["tx_bytes_sent"] += frame_bytes
@@ -499,4 +578,6 @@ def clip_lifetime_seconds(frame_set: FrameSet,
 
 
 def renderer_for(frame_set: FrameSet, stream: dict) -> FrameSetRenderer:
-    return FrameSetRenderer(frame_set, int(stream["playback_interval_ms"]), bool(stream["loop"]))
+    return FrameSetRenderer(
+        frame_set, int(stream["playback_interval_ms"]), bool(stream["loop"]),
+        ack_advanced=stream.get("session_profile") == SESSION_PROFILE_STREAMING)

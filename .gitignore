@@ -23,3 +23,4 @@ captures/private/
 # traffic plus unrelated personal data. Never commit them; record SHA-256 only.
 bugreport-*.zip
 *btsnoop*
+runtime/windows/OpenDitoo.Day1.Host/bin/Streaming/

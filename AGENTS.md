@@ -74,6 +74,17 @@ every live stream needs its own reviewed `kind=frame_stream` manifest and an exp
 operator grant naming that experiment id, and the persistent product supervisor must be
 stopped for the duration because one controller owns Ditoo at a time.
 
+**Session pacing profiles.** The session family now resolves timing from a named profile:
+`activity` (150 ms floor, 10 ms packet spacing — the MCP dashboard, and what an absent profile
+means) and `streaming_ack_clock` (40 ms floor, 0 ms spacing, ACK-clocked — R5's accepted
+shape). A caller selects a profile by NAME and never supplies timing; the Host owns the
+constants, confirms which profile it applied, and refuses an unknown name rather than
+defaulting. One frame in flight and one ACK per frame in both: this is not pipelining, which
+remains prohibited. The streaming floor is deliberately non-zero so the Host, not the client,
+remains what bounds the rate. **The streaming profile is currently built only at
+`bin/Streaming/net8.0`; deploying it over `bin/Release/net8.0` invalidates the standing
+Runtime 002 policy hash and requires a reviewed Runtime 003 policy.**
+
 **Sequence authority lifecycle:** the earlier manual-consumption gap is closed in the current source; `sequence-run` takes the same durable one-use experiment claim before dispatch. This does not revive any sequence authority: every existing sequence manifest is consumed.
 
 ## Discipline
