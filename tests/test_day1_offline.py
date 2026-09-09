@@ -409,6 +409,34 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertLess(hash_gate, program.index("RequireAuthenticatedExactTarget"))
         self.assertLess(hash_gate, program.index("ExchangeOnce"))
 
+    def test_cli_does_not_treat_the_ack_payload_as_a_success_constant(self) -> None:
+        # Observed payloads for successful sends: 0x12, 0x75, 0xF0 - two of those for
+        # a byte-identical image packet. Requiring a fixed value would be wrong.
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        required = cli[cli.index('    required = {\n        "apiVersion": 1,\n        "command": "image-show"'):]
+        required = required[:required.index("}")]
+        self.assertNotIn("ackPayloadHex", required)
+        self.assertIn('"imagePacketSha256": expected_packet_sha', required)
+
+    def test_m6_acceptance_capture_is_frozen(self) -> None:
+        data = json.loads((ROOT / "captures/OPENDITOO-M6-IMAGE-SHOW-ACCEPTANCE-2026-09-09.json").read_text(encoding="utf-8"))
+        self.assertEqual(data["milestone"], "M6.4")
+        self.assertFalse(data["authority"]["transmission_authorized"])
+        self.assertTrue(data["authority"]["authorization_consumed"])
+        self.assertEqual(data["target"]["exact_unit_id"], "11:75:58:CE:DE:C7")
+        self.assertEqual(data["source_image"]["image_packet_sha256"],
+                         "e4fe7ff42632495cdcb5eceb9131a720eb77fccad2183dc98dcf0e881b2e37ea")
+        acks = set()
+        for operation in data["operations"]:
+            self.assertEqual(operation["result"], "ok")
+            self.assertEqual(operation["connections_attempted"], 1)
+            self.assertEqual(operation["packets_sent_complete"], 3)
+            self.assertFalse(operation["automatic_retry"])
+            self.assertFalse(operation["in_flight_packet_bytes_unknown"])
+            acks.add(operation["ack_payload_hex"])
+        self.assertGreater(len(acks), 1, msg="the differing ACK payloads are the point of this record")
+        self.assertEqual(data["operator_observation"]["orientation_confirmed"], "unconfirmed")
+
     def test_status_reports_host_health_not_device_connectivity(self) -> None:
         program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
         status = program[program.index('app.MapGet("/v1/status"'):program.index('app.MapPost("/v1/image/show"')]

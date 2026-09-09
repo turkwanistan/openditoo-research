@@ -99,34 +99,52 @@ the real count from the unittest run.
 
 `DAY1_OFFLINE_PASS artifacts=19 tests=29 host=typed_image port=8796 device_io=false m4_completed=true m4_authorized=false m5_authorized=false`
 
-## M6.4 Product-path acceptance — OPEN OPERATOR GATE
+## M6.4 Product-path acceptance — CLOSED (operator, 2026-09-09)
 
-`examples/openditoo-smile-16.png` is prepared and frozen offline:
+The operator invoked the product primitive once against the frozen fixture and
+**reports the smile visible on the exact unit**. Evidence:
+`captures/OPENDITOO-M6-IMAGE-SHOW-ACCEPTANCE-2026-09-09.json`.
 
-- PNG SHA-256 `def0d19fbac3d8ebae47b674009cbda392996a634ce9774a9d303ac13770f382`
-- RGB888 SHA-256 `fbed71941831927c926c15f897f3335de45d9becc53c28793c9fefa146f96067`
-- palette colours 4, image packet 94 bytes, packet SHA-256 `e4fe7ff42632495cdcb5eceb9131a720eb77fccad2183dc98dcf0e881b2e37ea`
+The Host's new diagnostics recorded the transaction end to end:
+`result=ok`, `lastCompletedStage=ack`, `connectionsAttempted=1`,
+`packetsSentComplete=3/3`, `txBytesSentComplete=109/109`,
+`inFlightPacketBytesUnknown=false`, `socketClosed=true`, `retry=false`, 216 ms —
+against `imagePacketSha256 e4fe7ff4…37ea`, matching the frozen offline preparation
+exactly, so the Python encoder and the C# encoder agreed before any Bluetooth I/O.
 
-No existing capture records a physical acceptance of this image, so the send has not
-been replaced by prior evidence. It was **not** performed here: `image-show` is
-authorized only by the operator's own explicit invocation.
+### Two operations, not one
 
-Operator action, with the Ditoo powered on and the Android app's Bluetooth
-disconnected (one controller at a time):
+`operationsCompletedSinceHostStart` is **2**: `b7f8f263e448` at 04:05:47 UTC and
+`7026e693402d` at 04:05:59 UTC, 12.5 s apart, same image packet. Both were separate
+inbound requests, each with exactly one connection. Neither the Host nor the CLI can
+retry or reconnect, so this is not an automatic replay — but only one invocation was
+reported, so the origin of the second is **unconfirmed and recorded as an open
+question**, not assumed to be a second manual run.
 
-```sh
-cd /home/wan/Projects/openditoo-research
-python3 cli/openditoo.py image-show --png examples/openditoo-smile-16.png
-```
+### Finding: the ACK payload is not a success constant
 
-Then record: returned `imagePacketSha256` (must equal the frozen packet hash above),
-`ackPayloadHex`, `operationId`, `lastCompletedStage`, and the physical observation of
-orientation, marks and colours. `python3 cli/openditoo.py status` afterwards will show
-the same operation in `diagnostics.lastOperation`.
+| Operation | Image packet | ACK payload |
+| --- | --- | --- |
+| M5 diagnostic (different image) | `db336e89…cb9b` | `0x12` |
+| `b7f8f263e448` | `e4fe7ff4…37ea` | `0x75` |
+| `7026e693402d` | `e4fe7ff4…37ea` (identical) | `0xF0` |
 
-If the result is ambiguous after transmission, stop: do not re-run. A successful ACK
-is transport evidence only — not visual acceptance and not proof that nothing
-persisted.
+A byte-identical image packet produced two different ACK payload bytes. **MATCHED:**
+the wrapped `0x44` ACK payload is not a fixed success code and must never be validated
+as one. No meaning is assigned to it — counter, sequence, echo and unrelated state are
+all still open. The CLI already gates on `ok`, packet count, packet hash, palette
+count, connection count, socket close and `retry`, and deliberately not on the ACK
+value; `test_cli_does_not_treat_the_ack_payload_as_a_success_constant` pins that.
+
+### Still open after acceptance
+
+- **Orientation** — the fixture carries a yellow asymmetry mark at the top-left
+  (row 0, columns 1-2 plus row 1, column 1). Where it actually appeared was not
+  reported, so a flip or transpose is not yet excluded by physical evidence.
+- **Colour rendition** — not reported.
+- **Persistence** — untested. A successful ACK and a visible frame say nothing about
+  whether anything was written to the device, or whether the frame survives a power
+  cycle or a stock page change.
 
 ## M6 exit criteria status
 
@@ -134,6 +152,6 @@ persisted.
 | --- | --- |
 | Installed identity reconciled with repository | PASS (hash-identical before and after) |
 | Status separates Host health, past transactions, unknown device state | PASS |
-| Exact PNG → Host → device acceptance | OPEN — operator gate, command frozen above |
+| Exact PNG → Host → device acceptance | **PASS** — operator-invoked, visually confirmed, recorded in `captures/OPENDITOO-M6-IMAGE-SHOW-ACCEPTANCE-2026-09-09.json`; orientation, colour rendition and persistence remain unconfirmed |
 | Existing static behaviour and offline verification pass | PASS (29 tests, verifier PASS) |
 | Startup needs no persistent user terminal | PASS — scheduled task `OpenDitoo Day1 Host`, at-logon, observed Running |

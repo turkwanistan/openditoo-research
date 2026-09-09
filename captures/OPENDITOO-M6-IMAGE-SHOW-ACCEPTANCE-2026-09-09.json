@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "record_id": "OPENDITOO-M6-IMAGE-SHOW-ACCEPTANCE-001",
+  "milestone": "M6.4",
+  "recorded_at_utc": "2026-09-09T04:10:00Z",
+  "evidence_class": "exact_unit_live_result",
+  "authority": {
+    "basis": "operator explicit invocation of the product image-show primitive",
+    "transmission_authorized": false,
+    "authorization_consumed": true,
+    "note": "image-show authority is per-invocation. This record does not authorize a replay."
+  },
+  "target": {
+    "exact_unit_id": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012",
+    "model": "Ditoo Plus"
+  },
+  "transport": {
+    "measured_endpoint": "Windows Classic RFCOMM channel 1",
+    "controller": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+    "host_dll_sha256": "c53f8d36165b8b6107cb378154cfd5dd78261477ce376c7a06b2bffe8a376591"
+  },
+  "source_image": {
+    "file": "examples/openditoo-smile-16.png",
+    "png_sha256": "def0d19fbac3d8ebae47b674009cbda392996a634ce9774a9d303ac13770f382",
+    "rgb888_sha256": "fbed71941831927c926c15f897f3335de45d9becc53c28793c9fefa146f96067",
+    "image_packet_sha256": "e4fe7ff42632495cdcb5eceb9131a720eb77fccad2183dc98dcf0e881b2e37ea",
+    "palette_colors": 4,
+    "content": "magenta smile, two cyan eyes, one yellow asymmetry mark at row 0 columns 1-2 / row 1 column 1"
+  },
+  "operations": [
+    {
+      "operation_id": "b7f8f263e448",
+      "started_at_utc": "2026-09-09T04:05:46.9745117Z",
+      "ended_at_utc": "2026-09-09T04:05:47.1900796Z",
+      "duration_ms": 216,
+      "result": "ok",
+      "last_completed_stage": "ack",
+      "connections_attempted": 1,
+      "packets_planned": 3,
+      "packets_sent_complete": 3,
+      "tx_bytes_planned": 109,
+      "tx_bytes_sent_complete": 109,
+      "in_flight_packet_bytes_unknown": false,
+      "socket_closed": true,
+      "ack_payload_hex": "0x75",
+      "automatic_retry": false
+    },
+    {
+      "operation_id": "7026e693402d",
+      "started_at_utc": "2026-09-09T04:05:59.7126672Z",
+      "ended_at_utc": "2026-09-09T04:05:59.8451883Z",
+      "duration_ms": 132,
+      "result": "ok",
+      "last_completed_stage": "ack",
+      "connections_attempted": 1,
+      "packets_planned": 3,
+      "packets_sent_complete": 3,
+      "tx_bytes_planned": 109,
+      "tx_bytes_sent_complete": 109,
+      "in_flight_packet_bytes_unknown": false,
+      "socket_closed": true,
+      "ack_payload_hex": "0xF0",
+      "automatic_retry": false
+    }
+  ],
+  "operation_count_note": "The Host recorded two completed operations 12.5 s apart with distinct operation ids. Both were separate inbound requests; no automatic retry or reconnect exists in the Host or CLI, and each performed exactly one connection. Only one invocation was reported by the operator, so the origin of the second is unconfirmed and is recorded as an open question rather than assumed.",
+  "operator_observation": {
+    "visual_result": "smile visible on the exact unit",
+    "orientation_confirmed": "unconfirmed",
+    "colors_confirmed": "unconfirmed",
+    "persistence_after_power_cycle": "untested",
+    "note": "The operator reported seeing the smile. Where the yellow asymmetry mark appeared, exact colour rendition, and whether the frame survives a power cycle were not reported and remain open."
+  },
+  "findings": [
+    {
+      "id": "ACK-PAYLOAD-NOT-A-SUCCESS-CONSTANT",
+      "confidence": "MATCHED",
+      "statement": "The wrapped 0x44 ACK payload byte differs across identical successful image sends: 0x12 (M5 diagnostic, different image), 0x75 and 0xF0 (this record, byte-identical image packet twice). It is therefore not a fixed success code and must not be validated as one.",
+      "not_claimed": "No semantic meaning is assigned. It may be a counter, sequence, echo or unrelated state; nothing in the current evidence distinguishes these.",
+      "enforced_by": "cli/openditoo.py validates ok/packetCount/imagePacketSha256/paletteColors/connectionsAttempted/socketClosed/retry and deliberately does not require a specific ackPayloadHex."
+    },
+    {
+      "id": "TYPED-RUNTIME-END-TO-END-PROVEN",
+      "confidence": "MATCHED",
+      "statement": "exact local 16x16 PNG -> deterministic RGB888 decode -> stock-derived image packet -> Python/C# hash agreement -> authenticated fixed-target Host -> Ditoo produced a visible custom frame, with the Host's stage diagnostics reporting ack and a clean close."
+    }
+  ],
+  "device_io": true,
+  "prohibitions_observed": [
+    "no automatic retry",
+    "no target override",
+    "no raw packet override",
+    "one connection per operation",
+    "socket closed after each operation"
+  ]
+}

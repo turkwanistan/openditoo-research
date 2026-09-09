@@ -33,21 +33,22 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | Milestone | State |
 | --- | --- |
 | M0-M5 | complete; authority consumed |
-| M6 static runtime acceptance + diagnostics | code, build, deployment and offline verification **complete**; physical PNG acceptance is the **one open operator gate** |
+| M6 static runtime acceptance + diagnostics | **complete** — code, build, deployment, offline verification and operator-confirmed physical PNG acceptance (2026-09-09) |
 | M7 keyboard/button mapping | worksheet prepared; **blocked on operator capture** |
 | M8 bounded repeated frames | **not started**; needs its own experiment manifest and authority |
 | M9 three-MCP activity application | sources discovered, collector + renderer + previews **complete and tested offline**; worker install and physical updates wait on M8 |
 
-**Exact next action** — operator, Ditoo powered on and the Android app disconnected:
+**Exact next action** — M6 is closed; the next gated step is M8, which needs a
+reviewed experiment manifest and explicit authority before any A→B sequence runs.
+Available without new authority:
 
-```sh
-cd /home/wan/Projects/openditoo-research
-python3 cli/openditoo.py image-show --png examples/openditoo-smile-16.png
-```
-
-Record the returned `imagePacketSha256` (must equal
-`e4fe7ff42632495cdcb5eceb9131a720eb77fccad2183dc98dcf0e881b2e37ea`), `ackPayloadHex`,
-`operationId` and the physical observation. Do not re-run after an ambiguous result.
+- M7 operator capture using `notes/OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md`
+  (stock observation only, one controller at a time).
+- Three cheap follow-ups to the M6.4 acceptance, each one operator-invoked
+  `image-show` under the existing per-invocation rule: confirm where the fixture's
+  top-left yellow mark appears (orientation), confirm colour rendition, and check
+  whether the frame survives a power cycle (persistence). None of these needs new
+  protocol semantics.
 
 Offline, with no device involved:
 
