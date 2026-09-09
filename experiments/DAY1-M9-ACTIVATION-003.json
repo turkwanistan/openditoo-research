@@ -2,7 +2,7 @@
  "schema_version": 2,
  "experiment_id": "OPENDITOO-M9-ACTIVATION-003",
  "milestone": "MCP dashboard final bounded acceptance \u2014 rate-integrated pulse and stock-yield",
- "status": "pending_operator_grant",
+ "status": "authorized_pending_execution",
  "objective": "Physically accept the installed 150 ms / 10 ms MCP dashboard path on the exact unit: verify the four ACK-gated cyan/blue/light-blue/cyan activity pulse and intentionally exercise stock-yield with one physical control after the pulse is observed.",
  "why_this_shape": "Streaming is explicitly tabled. This is a short supervised product-acceptance run using the same reusable persistent RFCOMM session transport, with the MCP-specific 150 ms policy. It does not test higher-rate streaming or pipelining.",
  "target": {
@@ -100,14 +100,14 @@
   "operator present and watching the unit"
  ],
  "authority": {
-  "transmission_authorized": false,
+  "transmission_authorized": true,
   "authorization_consumed": false,
   "experiment_id": "OPENDITOO-M9-ACTIVATION-003",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "Grant OPENDITOO-M9-ACTIVATION-003",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution only: up to 60 seconds; change-only MCP dashboard frames no faster than one frame start per 150 ms; at most 401 frames / 1203 packets / 81403 application bytes; one RFCOMM connection; one ACK per frame; 10 ms intra-frame packet spacing; no retry, reconnect, reclaim, pipelining, higher-rate streaming, unattended operation, or second attempt.",
-  "grant_scope": null
+  "grant_scope": "ONE execution only: up to 60 seconds; change-only MCP dashboard frames no faster than one frame start per 150 ms; at most 401 frames / 1203 packets / 81403 application bytes; one RFCOMM connection; one ACK per frame; 10 ms intra-frame packet spacing; no retry, reconnect, reclaim, pipelining, higher-rate streaming, unattended operation, or second attempt."
  },
  "explicitly_out_of_scope": [
   "streaming or video milestone work",

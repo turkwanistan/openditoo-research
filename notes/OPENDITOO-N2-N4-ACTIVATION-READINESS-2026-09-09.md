@@ -135,7 +135,8 @@ resulting manifests are consumed. After the rate integration, the changed Window
 source must first be built in a capable environment and its repository/installed identity
 verified. The activity sources must also be reachable there. Only after those offline/build
 preconditions are frozen should a **new** experiment id and manifest be prepared for any
-new physical acceptance. Nothing is currently authorized.
+new physical acceptance. This historical statement is superseded by section 10: activation
+003 now has its own one-execution operator grant.
 
 ## 7. The approved MCP page (operator-supplied design, 2026-09-09)
 
@@ -265,6 +266,6 @@ Note this also made the display *correct* while it was broken: the two dead sour
 rendered as unavailable, which is exactly what the fault bar is for.
 
 
-## 10. Rate-integrated MCP dashboard activation 003 — ready for grant
+## 10. Rate-integrated MCP dashboard activation 003 — granted, pending execution
 
-The post-rate-integration Windows boundary is now closed: changed Host build/deploy PASS, installed DLL == repository DLL (`fb750078e9...af70f`), `/v1/status` healthy with `activity-session`, and all three activity sources reachable from normal WSL. `DAY1-M9-ACTIVATION-003.json` freezes the current renderer/collector/session hashes and a 60 s, 150 ms, one-ACK-per-frame envelope. It remains pending explicit operator grant; no Bluetooth/device I/O was performed while preparing it. Streaming and pipelining are deliberately deferred to later milestones.
+The post-rate-integration Windows boundary is now closed: changed Host build/deploy PASS, installed DLL == repository DLL (`fb750078e9...af70f`), `/v1/status` healthy with `activity-session`, and all three activity sources reachable from normal WSL. `DAY1-M9-ACTIVATION-003.json` freezes the current renderer/collector/session hashes and a 60 s, 150 ms, one-ACK-per-frame envelope. The operator explicitly granted `OPENDITOO-M9-ACTIVATION-003` in-session on 2026-09-09 for exactly this one execution; it is armed and not yet consumed. No Bluetooth/device I/O was performed while preparing or recording the grant. Streaming and pipelining are deliberately deferred to later milestones.

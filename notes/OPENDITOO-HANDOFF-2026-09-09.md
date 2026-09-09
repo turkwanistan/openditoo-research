@@ -10,10 +10,11 @@ m9_activation_authorized=false`
 
 ## 0. Read this first if you are the next session
 
-**Nothing is currently authorized. Every manifest is consumed.** Eleven live experiments
-ran on 2026-09-09, each under its own operator grant naming its experiment id, each
-consumed on execution. A new live operation needs a NEW manifest with a NEW id and a NEW
-grant that names it. Never re-arm a consumed manifest: un-consuming destroys the record of
+**`OPENDITOO-M9-ACTIVATION-003` is currently authorized for ONE execution.** The prior
+live experiments remain consumed. This grant names only the fresh 003 manifest: a 60 s
+supervised MCP-dashboard acceptance at a 150 ms frame-start floor, fixed 10 ms packet
+spacing, one connection, ACK-per-frame, no retry/reconnect/reclaim/pipelining. Never
+re-arm a consumed manifest: un-consuming destroys the record of
 what happened, and the durable claim would refuse anyway.
 
 ### If you are running under WSL_MCP, expect to do offline work only
@@ -257,7 +258,7 @@ exactly why they are re-run, never inherited.**
 - `OpenTivoo Product Runtime` and port 8779 were preserved throughout and never touched.
   OpenTivoo has **active concurrent work**; treat it as read-only reference.
 
-## 5. Authority state — nothing is currently authorized
+## 5. Authority state — activation 003 authorized for one execution
 
 `OPENDITOO-M9-ACTIVATION-001` and `-002` were each granted and executed once on
 2026-09-09. Both are consumed. 002 passed to its full lifetime; a spent grant is spent
@@ -382,8 +383,8 @@ colour.
 
 ### Both trials' grants are consumed
 
-Nothing is currently authorized. A third trial — for stock yield, the fault bar, or a
-longer session — needs a new manifest with a new id under a new grant.
+At that historical point both grants were consumed. The fresh 003 trial below now has its
+own separate one-execution grant; 001 and 002 remain consumed.
 
 ## 8b. A1 collection worker — installed 2026-09-09
 
@@ -468,4 +469,4 @@ means command enumeration, which is prohibited).
 
 Windows deployment and preconditions are now verified for source commit `d1d72d8`: `WINDOWS_BUILD=PASS`, `REFRESH_STATUS=PASS_TYPED_IMAGE`, OpenTivoo preserved; repository and installed Host DLL are byte-identical at `fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f`; normal WSL `/v1/status` is healthy with `activity-session`; all three MCP sources are reachable.
 
-Fresh pending manifest: `experiments/DAY1-M9-ACTIVATION-003.json`, experiment id **`OPENDITOO-M9-ACTIVATION-003`**. It is a 60 s supervised MCP-dashboard acceptance at the current 150 ms frame-start floor and fixed 10 ms packet spacing, max 401 frames / 1203 packets / 81403 bytes, one connection, ACK-per-frame, no retry/reconnect/reclaim. It specifically asks the operator to observe one complete four-stage pulse and then press one physical Ditoo control to test stock-yield. **Nothing is authorized yet.** Streaming/pipelining is tabled until the dashboard milestone is complete.
+Fresh manifest: `experiments/DAY1-M9-ACTIVATION-003.json`, experiment id **`OPENDITOO-M9-ACTIVATION-003`**. It is a 60 s supervised MCP-dashboard acceptance at the current 150 ms frame-start floor and fixed 10 ms packet spacing, max 401 frames / 1203 packets / 81403 bytes, one connection, ACK-per-frame, no retry/reconnect/reclaim. **Operator grant received in-session on 2026-09-09; exactly one execution is authorized and not yet consumed.** The operator should observe one complete four-stage pulse and then press one physical Ditoo control to test stock-yield. Streaming/pipelining is tabled until the dashboard milestone is complete.

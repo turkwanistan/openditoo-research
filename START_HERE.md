@@ -33,21 +33,18 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ### Authority state
 
-**Nothing is currently authorized.** `OPENDITOO-M9-ACTIVATION-001` was granted and
-executed once on 2026-09-09; it is consumed. It ended early on a defect of ours rather
-than a device fault, which does not re-authorize it. Every experiment manifest is
-consumed; `sequence-run` exits 30 on all of them. **Every live operation — `image-show` included —
-needs a NEW reviewed manifest and an explicit operator grant naming that manifest's
-experiment id.** A consumed manifest is never re-armed; an ambiguous or partial attempt
-needs a fresh manifest, not a reset flag. Build/deploy capability, credentials, a
-reachable Host, process startup and prior successful trials confer no transmission
-authority. Continuous or unattended display is a larger authority shape than any bounded
-run so far.
+**`OPENDITOO-M9-ACTIVATION-003` is currently authorized for exactly ONE execution.**
+The prior 001/002 grants and all rate-ladder grants remain consumed. The 003 grant covers
+only the frozen 60 s supervised MCP-dashboard session: 150 ms frame-start floor, fixed
+10 ms packet spacing, one connection, one ACK per frame, no retry/reconnect/reclaim or
+pipelining. A consumed manifest is never re-armed; an ambiguous or partial attempt needs a
+fresh manifest, not a reset flag. Build/deploy capability, credentials, a reachable Host,
+process startup and prior successful trials confer no additional transmission authority.
 
 Both `activity-session` and current `sequence-run` source use durable one-use experiment
 claims before dispatch. The activity Host additionally consumes its id in an on-disk ledger
-before the socket exists. None of this is ongoing authority: all existing manifests are
-consumed, and the claims have no reset/un-consume path.
+before the socket exists. The 003 authority is live only until its one execution is claimed;
+the claims have no reset/un-consume path.
 
 ### Next objective
 
@@ -56,13 +53,11 @@ frame-start floor (6.67 fps)**, the accepted 10 ms intra-frame spacing, and the 
 four ACK-gated cyan/blue/light-blue/cyan stages. See
 `notes/OPENDITOO-ACTIVITY-RATE-INTEGRATION-2026-09-09.md`.
 
-The implementing WSL_MCP session had no `powershell.exe`, the Host connection was refused,
-and all three live activity sources were unreadable. Therefore the **next real boundary is
-a capable-environment Windows build + exact repository/installed identity verification**,
-followed by source reachability verification. That work confers no transmission authority.
-Only after those identities are frozen should a **new manifest with a new experiment id**
-be prepared for any physical stock-yield/fault-bar acceptance. No current manifest is
-authorized and no consumed manifest may be re-armed.
+That capable-environment boundary is now closed for activation 003: the changed Windows
+Host built and deployed successfully, repository and installed DLL hashes match exactly,
+`/v1/status` is healthy with `activity-session`, and all three MCP activity sources are
+reachable from normal WSL. `OPENDITOO-M9-ACTIVATION-003` is now the sole live grant and is
+ready for one supervised execution. No consumed manifest may be re-armed.
 
 Offline commands that remain safe without a grant include the verifier, `session-check`,
 `session-preview`, `activity-status` without a transmitting action, and `activity-preview`.
