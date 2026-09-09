@@ -4,19 +4,20 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## Current session route — 2026-09-09
 
-1. **Read `notes/OPENDITOO-HANDOFF-2026-09-09.md` first, especially section 0.** It carries
+1. **Read `notes/OPENDITOO-STREAMING-HANDOFF-2026-09-09.md` first.** MCP Dashboard v1 is closed; this is the canonical route into streaming/other owner-selected objectives.
+2. **Then read `notes/OPENDITOO-HANDOFF-2026-09-09.md` selectively for exact-unit transport/rate evidence and historical traps.** It carries
    current state, the authority position, and an explicit warning about environment
    capability that matters if you are running under WSL_MCP rather than a local session
    with a Windows bridge.
-2. Run the three read-only capability checks in handoff section 0 **in your own session**.
+3. Run the three read-only capability checks in the historical handoff section 0 **in your own session**.
    Do not inherit either previous session's answers; two sessions got opposite results on
    the same day.
-3. Read `AGENTS.md` for the execution and authority boundary.
-4. Run `python3 scripts/verify_day1_offline.py` before changing or executing anything.
-5. Read `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md` for the N/A/L sequence. N1-N5 and the
+4. Read `AGENTS.md` for the execution and authority boundary.
+5. Run `python3 scripts/verify_day1_offline.py` before changing or executing anything.
+6. Read `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md` as historical planning context only; its pre-productization streaming deferral is superseded. N1-N5 and the
    R1-R5 rate ladder are complete; A1 is installed. See handoff section 8d for what is
    genuinely still open.
-6. Read milestone evidence only as needed:
+7. Read milestone evidence only as needed:
 
 ### Milestone state
 
