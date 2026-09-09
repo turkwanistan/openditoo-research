@@ -45,31 +45,41 @@ Two live commands exist, both operator-invoked, neither able to retry or reconne
 
 ### Accepted operating ceiling
 
-**~175 ms per frame (5.70 frames/s), measured 2026-09-09 by `OPENDITOO-R2A-DELAY-50MS-001`.**
-Ten frames, one connection, zero missing ACKs, zero errors. This is 6.35x the original
-1114 ms ceiling, and it is **visually accepted**: the operator watched the corners still
-alternating distinctly, so the panel keeps up at 5.7 fps. Where distinctness actually
-breaks down is above that and untested.
+**~109 ms per frame (9.15 frames/s), measured 2026-09-09 by `OPENDITOO-R2B-SPACING-10MS-001`.**
+Ten frames, one connection, 10/10 well-formed ACKs, zero errors, and **visually accepted**:
+the operator saw the corners alternating *clearly*, which is the load-bearing check here
+because a mis-assembled packet group would render a wrong image while still returning a
+valid ACK. **10.19x the original 1114 ms ceiling.**
 
-The ladder so far, all on the exact unit:
+The ladder, all measured on the exact unit, each step changing one variable:
 
-| Delay | Achieved | Rate | Residual above the delay |
-| --- | --- | --- | --- |
-| 1000 ms | 1114.1 ms | 0.90 fps | 114 ms |
-| 250 ms | 371.6 ms (3 runs) | 2.71 fps | 122 ms |
-| 50 ms | 175.4 ms | 5.70 fps | 125 ms |
+| Delay | Spacing | Achieved | Rate | Visual |
+| --- | --- | --- | --- | --- |
+| 1000 ms | 40 ms | 1114.1 ms | 0.90 fps | pending from M8 |
+| 250 ms | 40 ms | 371.6 ms (3 runs) | 2.71 fps | confirmed |
+| 50 ms | 40 ms | 175.4 ms | 5.70 fps | confirmed |
+| **50 ms** | **10 ms** | **109.3 ms** | **9.15 fps** | confirmed clean |
 
-The delay is very nearly pure overhead we chose to add: the residual barely moves as the
-rate rises. About **80 ms of the remaining ~125 ms is our own `SendSpacingMs`**, so
-removing it entirely projects ~95 ms per frame, about 10.5 fps. **The operator's 10 fps
-target therefore needs send spacing at or very near zero, not merely reduced** — which is
-exactly why R2b must measure 20 ms and 10 ms before anyone assumes zero is safe.
+Two things this settled:
+
+- **The stock app's 40 ms send spacing is not load-bearing** down to 10 ms. It was the
+  only timing value in the project taken from observed stock behaviour rather than chosen
+  by us, so it was the only one that might have encoded a device requirement. It did not.
+- **True device turnaround is about 27 ms**, measured directly once our own spacing
+  shrank. The "~105 ms ACK latency" quoted from M6 until R1 was almost entirely our own
+  inserted delay. The device was always far faster than this project assumed.
+
+**Recommended operating rate: 6-7 fps, not 9.15.** The activity display is change-only --
+it sent six frames in 300 seconds -- so rate affects only the crown pulse, which reads
+well anywhere from 5 to 9 fps. Below the wall there is jitter headroom; at it there is
+none. And at ~109 ms intervals the jitter is now dominated by Windows `Thread.Sleep`
+granularity (~15.6 ms steps were visible in the data), not by the device, so chasing the
+remaining ~2 fps would mean changing how we wait rather than what we ask of the Ditoo.
 
 **Correction carried by R1:** the `ackLatencyMs` recorded since M6 is
-`ackAt - frameStartedAt` and therefore **includes** the 80 ms of send spacing our own
-transport inserts between a frame's three packets. The familiar "~105 ms ACK latency" is
-80 ms of ours plus roughly 25-40 ms of real device turnaround. Anything reasoning about
-achievable rate must use the smaller number.
+`ackAt - frameStartedAt` and therefore **includes** the send spacing our own transport
+inserts between a frame's three packets. Anything reasoning about achievable rate must
+subtract it.
 
 This is still the rate *measured and accepted*, not the fastest possible; it is the only
 rate later display work may use without a new grant. The official app's observed 148 ms

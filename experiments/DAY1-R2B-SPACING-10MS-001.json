@@ -2,7 +2,7 @@
  "schema_version": 1,
  "experiment_id": "OPENDITOO-R2B-SPACING-10MS-001",
  "milestone": "R2b \u2014 is the stock-derived send spacing load-bearing?",
- "status": "pending_operator_grant",
+ "status": "completed_pass_authority_consumed",
  "objective": "Reduce the intra-frame send spacing from the stock-derived 40 ms to 10 ms, holding the delay at the proven 50 ms. Targets roughly 115 ms per frame, about 8.7 fps. The real question is not the rate: it is whether the 40 ms the stock app leaves between a frame's three packets is doing something the device needs.",
  "why_this_is_the_cheap_path": "ONE variable changes: send spacing 40 -> 10 ms. Same frames, frame count, packets, target, connection shape, stop policy, encoder and 50 ms delay. This is the LAST unknown on the path to the operator's 10 fps target: the arithmetic already shows 10 fps needs spacing at or near zero, so if 10 ms is safe the target is reachable with one ACK per frame and no pipelining. Going straight to 10 rather than via 20 is deliberate -- each run is under two seconds, every failure mode is bounded, and a failure usefully brackets the limit between 10 and 40 rather than wasting a run confirming a safe midpoint.",
  "target": {
@@ -108,13 +108,15 @@
  },
  "authority": {
   "transmission_authorized": false,
-  "authorization_consumed": false,
+  "authorization_consumed": true,
   "experiment_id": "OPENDITOO-R2B-SPACING-10MS-001",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "grant OPENDITOO-R2B-SPACING-10MS-001",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution: 10 frames, 30 packets, 710 application bytes, 50 ms inter-frame delay, 10 ms intra-frame send spacing, one connection, no retry, no reconnect. Not spacing below 10 ms, not a delay below 50 ms, not more frames, not the activity display.",
-  "note": "Grants nothing as written."
+  "note": "Grants nothing as written.",
+  "grant_scope": "ONE execution: 10 frames, 30 packets, 710 application bytes, 50 ms inter-frame delay, 10 ms intra-frame send spacing, one connection, no retry, no reconnect.",
+  "consumed_at": "2026-09-09T16:02Z"
  },
  "explicitly_out_of_scope": [
   "send spacing below 10 ms (that would be a further step, after this one is measured)",
@@ -141,5 +143,107 @@
   "installed_dll_sha256_verified": "444c47e6dc193ceaa63d3c960a09da8b11d5ec4f1ee917590fbc579237dcbd5b"
  },
  "why_this_value_matters": "Every other timing number in this project was chosen by us and has proven reducible: the inter-frame delay went 1000 -> 250 -> 50 ms with no ill effect. The 40 ms send spacing is the ONLY timing taken from observed stock-app behaviour, so it is the only one that might encode a real device requirement.",
- "result": null
+ "result": {
+  "status": "pass",
+  "frames_acked": 10,
+  "packets_sent_complete": 30,
+  "tx_bytes_sent_complete": 710,
+  "elapsed_ms": 1068,
+  "connections_attempted": 1,
+  "socket_closed": true,
+  "retry": false,
+  "reconnect": false,
+  "send_spacing_ms": 10,
+  "ack_payload_hex_ordered": [
+   "0xE4",
+   "0x4E",
+   "0xCB",
+   "0x52",
+   "0xAE",
+   "0x1F",
+   "0x96",
+   "0x88",
+   "0x4D",
+   "0xC6"
+  ],
+  "frame_start_offsets_ms": [
+   0,
+   110,
+   217,
+   340,
+   463,
+   569,
+   693,
+   785,
+   877,
+   984
+  ],
+  "reported_ack_latency_ms": [
+   49,
+   43,
+   60,
+   71,
+   42,
+   67,
+   42,
+   41,
+   45,
+   60
+  ],
+  "operator_visual_order": "confirmed_alternating_corners_clean"
+ },
+ "measurements": {
+  "achieved_inter_frame_interval_ms": {
+   "n": 9,
+   "mean": 109.3,
+   "min": 92,
+   "max": 124,
+   "pstdev": 11.6
+  },
+  "achieved_fps": 9.15,
+  "prediction_check": "predicted ~115 ms; achieved 109.3 ms, slightly BETTER than predicted.",
+  "vs_r2a": {
+   "r2a_mean_ms": 175.4,
+   "speedup": 1.6
+  },
+  "vs_original_ceiling": {
+   "original_ms": 1114.1,
+   "speedup": 10.19
+  },
+  "reported_ack_latency_ms": {
+   "n": 10,
+   "min": 41,
+   "median": 47.0,
+   "max": 71
+  },
+  "true_turnaround_ms": "Reported median 47 ms now contains only 20 ms of our spacing, so actual send plus ACK round-trip is about 27 ms. That independently confirms the 25-40 ms estimate R1 derived by arithmetic, from a direct measurement this time.",
+  "errors": 0,
+  "missing_acks": 0
+ },
+ "findings": [
+  {
+   "id": "STOCK-SEND-SPACING-IS-NOT-LOAD-BEARING-AT-10MS",
+   "confidence": "MATCHED",
+   "statement": "Reducing the intra-frame send spacing from the stock-observed 40 ms to 10 ms produced ten clean frames: 30/30 packets, 10/10 well-formed ACKs, zero errors, no missing ACKs. The device does not require the 40 ms gap the stock app leaves between a frame's three packets, at least down to 10 ms.",
+   "not_claimed": "that 0 ms is safe -- untested; and that 10 ms holds over long runs or under load -- ten frames in one second is a short sample. Visual correctness IS now confirmed."
+  },
+  {
+   "id": "TRUE-DEVICE-TURNAROUND-IS-ABOUT-27MS",
+   "confidence": "MATCHED",
+   "statement": "With only 20 ms of our own spacing inside the measurement, reported ACK latency fell to a 47 ms median, giving roughly 27 ms of real send-plus-ACK round trip. The figure this project quoted as '~105 ms ACK latency' from M6 until R1 was almost entirely our own inserted spacing.",
+   "consequence": "The device is far faster than the project assumed for its entire history before R1."
+  },
+  {
+   "id": "WINDOWS-SLEEP-GRANULARITY-NOW-DOMINATES-JITTER",
+   "confidence": "LEAD",
+   "statement": "Intervals clustered near 92, 107 and 123 ms -- steps of roughly 15 ms, which matches the default Windows timer/scheduler granularity of about 15.6 ms. Spread was 32 ms on a 109 ms mean (29 percent) against 6 percent at R1's slower rate.",
+   "why_it_matters": "At these intervals our own Thread.Sleep resolution, not the device, is becoming the main source of jitter. Further delay reduction buys less precision than the arithmetic suggests, and chasing the last few fps would mean changing how we wait, not what we ask the device for.",
+   "not_claimed": "that this is confirmed as the mechanism; the step size is suggestive, not proof."
+  }
+ ],
+ "acceptance": {
+  "transport_acceptance": "PASS \u2014 one connection, 30 packets, 710 bytes, 10/10 well-formed ACKs, clean close, no retry, no reconnect.",
+  "rate_acceptance": "PASS \u2014 109.3 ms mean, 9.15 fps, better than the 115 ms predicted.",
+  "visual_acceptance": "PASS \u2014 operator, watching the unit: \"yeah i can see them clearly bouncing from corner to corner\". This is the load-bearing check for this experiment: a packet group mis-assembled by the device at 10 ms spacing would have rendered a wrong or corrupt image while still returning a valid ACK. Ten frames rendered correctly, in order, at 9.15 fps."
+ }
 }
