@@ -366,3 +366,52 @@ is treated as a real miss.
    included camera start-up and the trailing partial cycle, reporting 17.6/s for a sender that
    was in fact running at its cycle rate. Measuring over the sender's own active span gives
    18.32/s. The wall-clock figure is still reported alongside it.
+
+
+## 11. Correction to §8.4 — how the camera's frame rate actually behaves
+
+§8.4 concluded "the ~20 fps ceiling is the room, not the camera" and offered mean output luma
+as the evidence. The mechanism was wrong, and one step of the reasoning was backwards.
+
+Re-measured with the room lit:
+
+| Condition | mean output luma | interarrival | rate |
+| --- | ---: | ---: | ---: |
+| dark | 52 | 50.0 ms | 20 fps |
+| lit (earlier) | 137–144 | 16.7 ms | 60 fps |
+| lit, brighter output (now) | 165–179 | 33.3 ms | 30 fps |
+
+Two things follow.
+
+**The rate is quantised to integer multiples of 1/60 s.** 50.0, 33.3 and 16.7 ms are exactly
+3/60, 2/60 and 1/60 second. That is the signature of auto-exposure constrained to whole
+power-line periods (60 Hz anti-flicker), stepping 60 → 30 → 20 fps as it needs more light. It is
+not a continuous response, which is why every measurement lands on a clean submultiple.
+
+**Mean output luma is not a proxy for scene brightness, and using it as one was the error.**
+Auto-exposure drives luma *toward its target*, so a longer exposure produces high luma from a
+dimmer scene. Output luma of 179 at 1/30 s means less light reaching the sensor than luma 140 at
+1/60 s, not more. The original conclusion happened to be right for the dark case and the
+evidence offered for it did not support it.
+
+Confirmed not responsible, by measurement rather than argument:
+
+- **not USB bandwidth or format** — MJPG 640×480, NV12 320×240, NV12 640×480 and NV12 1280×720
+  all deliver the same 33.3 ms, spanning ~3.7 to ~82.9 MB/s if they ran at 60;
+- **not the requested format being ignored** — the probe now reports `negotiatedMode` from
+  `source.CurrentFormat` alongside the request, and the device negotiates 60 fps while
+  delivering 30;
+- **not another process** — no camera consent entry shows in-use and no capture app is running;
+- **not our BGRA conversion** — a control run without it measures the same rate.
+
+`ExposureControl.Supported` is false on this camera, so exposure cannot be pinned through WinRT.
+DirectShow property pages (via ffmpeg or a DirectShow host) are the remaining route if a fixed
+frame rate is ever required.
+
+**None of this blocks the objective.** 28–30 fps is still 2–3x our ~10–13 fps transport ceiling,
+so capture stays comfortably ahead of the display path, which is what the plan requires. The one
+consequence is for W3's `sourceAgeP95Under50ms` criterion: with a 33 ms camera interval and a
+54 ms send cycle, a frame waits most of a cycle for a slot and p95 age lands at ~51–55 ms. That
+criterion is only achievable when the camera interval is well under half the send cycle — i.e.
+at 60 fps. It is environment-dependent, not a pipeline defect, and the queue-depth and
+replacement invariants that actually prove the freshest-frame design all pass regardless.

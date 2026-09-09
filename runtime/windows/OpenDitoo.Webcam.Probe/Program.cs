@@ -306,9 +306,18 @@ if (mode == "benchmark")
         command = "benchmark",
         deviceIo = false,
         ditooTouched = false,
-        mode = new { subtype = chosen.Subtype, width = chosen.VideoFormat.Width,
-                     height = chosen.VideoFormat.Height,
-                     fps = Math.Round((double)chosen.FrameRate.Numerator / chosen.FrameRate.Denominator, 3) },
+        requestedMode = new { subtype = chosen.Subtype, width = chosen.VideoFormat.Width,
+                             height = chosen.VideoFormat.Height,
+                             fps = Math.Round((double)chosen.FrameRate.Numerator / chosen.FrameRate.Denominator, 3) },
+        negotiatedMode = new
+        {
+            subtype = source.CurrentFormat.Subtype,
+            width = source.CurrentFormat.VideoFormat.Width,
+            height = source.CurrentFormat.VideoFormat.Height,
+            fps = source.CurrentFormat.FrameRate.Denominator == 0 ? 0d
+                  : Math.Round((double)source.CurrentFormat.FrameRate.Numerator
+                               / source.CurrentFormat.FrameRate.Denominator, 3),
+        },
         acquisitionMode = reader.AcquisitionMode.ToString(),
         exposureBefore,
         exposureAction,
@@ -561,7 +570,17 @@ if (mode == "pipeline")
         deviceIo = false,
         ditooTouched = false,
         note = "the transport is a delay, not a device; no Host token is held and no Ditoo is reachable",
-        mode = new { chosen.Subtype, chosen.VideoFormat.Width, chosen.VideoFormat.Height },
+        requestedMode = new { chosen.Subtype, chosen.VideoFormat.Width, chosen.VideoFormat.Height,
+                             fps = Math.Round((double)chosen.FrameRate.Numerator / chosen.FrameRate.Denominator, 3) },
+        negotiatedMode = new
+        {
+            subtype = source.CurrentFormat.Subtype,
+            width = source.CurrentFormat.VideoFormat.Width,
+            height = source.CurrentFormat.VideoFormat.Height,
+            fps = source.CurrentFormat.FrameRate.Denominator == 0 ? 0d
+                  : Math.Round((double)source.CurrentFormat.FrameRate.Numerator
+                               / source.CurrentFormat.FrameRate.Denominator, 3),
+        },
         preset = preset.Name,
         seconds,
         fakeAckMs,
