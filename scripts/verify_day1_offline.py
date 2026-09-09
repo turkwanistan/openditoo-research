@@ -291,6 +291,36 @@ def verify_product_runtime_boundary() -> None:
             fail(f"product bootstrap may mutate preserved runtime: {forbidden}")
 
 
+def verify_stream_boundary() -> None:
+    """The general frame-streaming path reuses the accepted transport, and is unarmed."""
+    manifests = sorted((ROOT / "experiments").glob("DAY1-S*-STREAM-*.json"))
+    if not manifests:
+        fail("the stream milestone has no experiment manifest")
+    for path in manifests:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        authority = data.get("authority", {})
+        if data.get("kind") != "frame_stream":
+            fail(f"{path.name} is not a frame_stream manifest")
+        if authority.get("transmission_authorized") is True and \
+                authority.get("authorization_consumed") is not True:
+            fail(f"{path.name} is armed in the repository; a grant is session-local")
+    module = (ROOT / "host/frame_stream.py").read_text(encoding="utf-8")
+    # Streaming must not grow a second Bluetooth stack, route or authority path: it
+    # renders frames and hands them to the one existing typed session client.
+    for forbidden in ("socket", "urllib", "http", "subprocess", "def release", "def unclaim"):
+        if forbidden in module:
+            fail(f"frame_stream reaches past the typed session transport: {forbidden}")
+    for needed in ("MAX_PALETTE_COLORS", "authority_blockers", "SessionClaim"):
+        if needed not in module:
+            fail(f"frame_stream lost a required boundary: {needed}")
+    cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+    block = cli[cli.index('sub.add_parser("stream-prepare"'):cli.index('sub.add_parser("product-check"')]
+    for forbidden in ("--lifetime", "--rate", "--interval", "--frames", "--target", "--force",
+                      "--loop"):
+        if forbidden in block:
+            fail(f"the stream CLI exposes a free-form operating argument: {forbidden}")
+
+
 def verify_consumed_runner() -> None:
     runner = (ROOT / "runtime/windows/OpenDitoo.M4.Runner/Program.cs").read_text(encoding="utf-8")
     if "M4_AUTHORITY_CONSUMED" not in runner:
@@ -331,6 +361,7 @@ def main() -> int:
     verify_collection_worker()
     verify_activation_boundary()
     verify_product_runtime_boundary()
+    verify_stream_boundary()
     verify_consumed_runner()
     verify_m5_runner_disarmed()
     print(

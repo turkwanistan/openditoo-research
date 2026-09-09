@@ -1581,6 +1581,7 @@ if __name__ == "__main__":
 from host import activity_session  # noqa: E402
 from host import product_runtime  # noqa: E402
 from host import product_runtime_v2  # noqa: E402
+from host import frame_stream  # noqa: E402
 
 HOST_DIR = ROOT / "runtime/windows/OpenDitoo.Day1.Host"
 
@@ -2646,3 +2647,207 @@ class N4SessionPreviewTests(unittest.TestCase):
             self.assertIn("HOST_SELFTEST_PASS", build["installed_identity_note"])
         else:
             self.assertIn("refresh_openditoo_day1_host.ps1 -Apply", build["installed_identity_note"])
+
+
+class S1FrameStreamTests(unittest.TestCase):
+    """The general bounded frame-streaming primitive, offline."""
+
+    MANIFEST = ROOT / "experiments/DAY1-S1-STREAM-SWEEP-001.json"
+    DEMO = ROOT / "examples/stream-demo/sweep-bar.rgb888"
+
+    # -- frame sets ----------------------------------------------------
+
+    def test_a_frame_blob_round_trips_and_a_misaligned_one_is_refused(self) -> None:
+        frames = frame_stream.frames_from_source(self.DEMO)
+        self.assertEqual(len(frames), 48)
+        self.assertTrue(all(len(f) == frame_stream.FRAME_BYTES for f in frames))
+        with tempfile.TemporaryDirectory() as tmp:
+            bad = Path(tmp) / "short.rgb888"
+            bad.write_bytes(b"\x00" * (frame_stream.FRAME_BYTES + 1))
+            with self.assertRaises(frame_stream.SessionError) as caught:
+                frame_stream.frames_from_source(bad)
+            self.assertEqual(caught.exception.code, "STREAM_SOURCE_NOT_FRAME_ALIGNED")
+
+    def test_a_png_directory_is_ordered_by_filename(self) -> None:
+        from host.activity_render import write_previews
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "frames"
+            for index, color in enumerate(((10, 0, 0), (0, 20, 0), (0, 0, 30))):
+                write_previews(source, bytes(color) * 256, scale=1)
+                (source / "activity-16.png").rename(source / f"{index:03d}.png")
+            frames = frame_stream.frames_from_source(source)
+        self.assertEqual([f[:3] for f in frames],
+                         [bytes((10, 0, 0)), bytes((0, 20, 0)), bytes((0, 0, 30))])
+
+    def test_an_over_full_palette_is_quantized_offline_not_at_send_time(self) -> None:
+        # 256 distinct colours is one more than the stock-derived encoder can carry, and
+        # any photographic 16x16 frame lands here.
+        rgb = bytes(itertools.chain.from_iterable((i, 255 - i, (i * 7) % 256) for i in range(256)))
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            frame_stream.build_frame_set([rgb])
+        self.assertEqual(caught.exception.code, "STREAM_FRAME_NOT_ENCODABLE")
+        reduced, colors = frame_stream.quantize_to_palette_limit(rgb)
+        self.assertLessEqual(colors, frame_stream.MAX_PALETTE_COLORS)
+        self.assertEqual(len(reduced), frame_stream.FRAME_BYTES)
+        # Deterministic from the source bytes alone, and already-small frames are untouched.
+        self.assertEqual(reduced, frame_stream.quantize_to_palette_limit(rgb)[0])
+        flat = bytes((1, 2, 3)) * 256
+        self.assertEqual(frame_stream.quantize_to_palette_limit(flat), (flat, 1))
+
+    def test_worst_case_frame_bytes_include_both_stock_preambles(self) -> None:
+        frame_set = frame_stream.build_frame_set(frame_stream.frames_from_source(self.DEMO))
+        widest = max(len(encode_rgb888_static_image(f)[0]) for f in frame_set.frames)
+        self.assertEqual(frame_set.max_frame_tx_bytes,
+                         widest + len(IMAGE_PREAMBLE_A) + len(IMAGE_PREAMBLE_B))
+
+    # -- playback ------------------------------------------------------
+
+    def _renderer(self, count: int = 3, interval: int = 200, loop: bool = False):
+        frames = [bytes((index + 1, 0, 0)) * 256 for index in range(count)]
+        return frame_stream.FrameSetRenderer(frame_stream.build_frame_set(frames), interval, loop)
+
+    def test_playback_follows_the_clock_and_holds_the_last_frame(self) -> None:
+        renderer = self._renderer()
+        self.assertEqual(renderer(0)[0][:1], b"\x01")
+        self.assertEqual(renderer(199)[0][:1], b"\x01")
+        self.assertEqual(renderer(200)[0][:1], b"\x02")
+        # A slow transport drops frames rather than stretching the clip.
+        self.assertEqual(renderer(400)[0][:1], b"\x03")
+        self.assertEqual(renderer(5_000)[0][:1], b"\x03")
+
+    def test_looping_playback_wraps(self) -> None:
+        renderer = self._renderer(loop=True)
+        self.assertEqual(renderer(600)[0][:1], b"\x01")
+        self.assertEqual(renderer(800)[0][:1], b"\x02")
+
+    def test_an_ack_advances_nothing_so_a_repeated_frame_cannot_stall_playback(self) -> None:
+        # An ACK-gated cursor would deadlock on two identical consecutive frames: the
+        # scheduler holds them as unchanged, so no ACK ever arrives to advance it.
+        frames = [bytes((1, 0, 0)) * 256, bytes((1, 0, 0)) * 256, bytes((2, 0, 0)) * 256]
+        renderer = frame_stream.FrameSetRenderer(frame_stream.build_frame_set(frames), 200)
+        renderer(0)
+        renderer.frame_sent()
+        self.assertEqual(renderer(400)[0][:1], b"\x02")
+
+    def test_no_frame_is_a_pulse_so_nothing_can_expire(self) -> None:
+        self.assertFalse(self._renderer()(0)[1])
+
+    # -- the reviewed manifest -----------------------------------------
+
+    def _raw(self) -> dict:
+        return json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+
+    def _load(self, mutate=None):
+        data = self._raw()
+        if mutate is not None:
+            mutate(data)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "s.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            return frame_stream.load_stream_manifest(path, require_authority=False)
+
+    def _refuses(self, code: str, mutate) -> None:
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            self._load(mutate)
+        self.assertEqual(caught.exception.code, code)
+
+    def test_the_committed_stream_manifest_reviews_but_is_not_authorized(self) -> None:
+        manifest, frame_set, stream = self._load()
+        self.assertEqual(manifest.experiment_id, "OPENDITOO-S1-STREAM-001")
+        self.assertEqual(frame_set.count, stream["frame_count"])
+        self.assertEqual(manifest.max_application_packets, manifest.max_frames * 3)
+        self.assertIn("TRANSMISSION_AUTHORITY_MISSING",
+                      frame_stream.authority_blockers(self.MANIFEST))
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            frame_stream.load_stream_manifest(self.MANIFEST)
+        self.assertEqual(caught.exception.code, "TRANSMISSION_AUTHORITY_MISSING")
+
+    def test_the_declared_frame_set_must_be_the_one_on_disk(self) -> None:
+        self._refuses("STREAM_FRAME_SET_HASH_DRIFT",
+                      lambda d: d["stream"].__setitem__("frame_set_sha256", "0" * 64))
+        self._refuses("STREAM_FRAME_COUNT_MISMATCH",
+                      lambda d: d["stream"].__setitem__("frame_count", 47))
+        self._refuses("STREAM_SOURCE_MISSING",
+                      lambda d: d["stream"].__setitem__("frame_set_file", "examples/nope.rgb888"))
+
+    def test_budgets_are_derived_from_the_content_and_the_lifetime(self) -> None:
+        self._refuses("BUDGET_FRAMES_EXCEED_CONTENT",
+                      lambda d: d["budgets"].update(max_frames=49, max_application_packets=147))
+        self._refuses("BUDGET_FRAMES_BELOW_CONTENT",
+                      lambda d: d["budgets"].update(max_frames=47, max_application_packets=141))
+        self._refuses("BUDGET_TX_BYTES_NOT_DERIVED",
+                      lambda d: d["budgets"].__setitem__("max_tx_bytes", 999_999))
+        self._refuses("BUDGET_PACKETS_NOT_DERIVED",
+                      lambda d: d["budgets"].__setitem__("max_application_packets", 48))
+        self._refuses("BUDGET_CONNECTION_ATTEMPTS_INVALID",
+                      lambda d: d["budgets"].__setitem__("connection_attempts", 2))
+
+    def test_a_cadence_the_shared_runner_would_round_up_is_refused(self) -> None:
+        # run_session dispatches no faster than MCP_CLIENT_FRAME_INTERVAL_MS, so a
+        # manifest may not claim a rate it would not actually get.
+        self._refuses("STREAM_PLAYBACK_INTERVAL_INVALID",
+                      lambda d: d["stream"].__setitem__("playback_interval_ms", 150))
+        self._refuses("SESSION_PACING_BELOW_ACCEPTED_CEILING",
+                      lambda d: d["session"].__setitem__("min_frame_interval_ms", 149))
+
+    def test_retry_reconnect_reclaim_and_replay_must_all_be_disabled(self) -> None:
+        for field, code in (("automatic_retry", "SESSION_RETRY_NOT_DISABLED"),
+                            ("automatic_reconnect", "SESSION_RECONNECT_NOT_DISABLED"),
+                            ("stock_screen_reclaim", "SESSION_RECLAIM_NOT_DISABLED"),
+                            ("replay_after_interruption", "SESSION_REPLAY_NOT_DISABLED")):
+            self._refuses(code, lambda d, f=field: d["session"].__setitem__(f, True))
+
+    def test_the_target_and_the_stream_code_identity_are_both_frozen(self) -> None:
+        self._refuses("MANIFEST_TARGET_MISMATCH",
+                      lambda d: d["target"].__setitem__("exact_unit_id", "11:75:58:C8:5E:FE"))
+        self._refuses("BUILD_CODE_HASH_DRIFT",
+                      lambda d: d["build"]["code_sha256"].__setitem__("encoder_sha256", "0" * 64))
+        self._refuses("BUILD_CODE_HASHES_INCOMPLETE",
+                      lambda d: d["build"]["code_sha256"].pop("frame_stream_sha256"))
+        self._refuses("MANIFEST_KIND_MISMATCH", lambda d: d.__setitem__("kind", "activity"))
+        self._refuses("AUTHORITY_EXPERIMENT_ID_MISMATCH",
+                      lambda d: d["authority"].__setitem__("experiment_id", "SOMETHING-ELSE"))
+
+    # -- the whole replayed stream -------------------------------------
+
+    def test_the_offline_replay_sends_exactly_what_the_budget_states(self) -> None:
+        manifest, frame_set, stream = self._load()
+        clock = {"ms": 0}
+        transport = activity_session.FakeSessionTransport()
+        result = activity_session.run_session(
+            manifest, transport, frame_stream.renderer_for(frame_set, stream),
+            lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + max(ms, 1)),
+            claim=None, max_iterations=manifest.lifetime_ms // manifest.poll_interval_ms + 8)
+        self.assertEqual(result["outcome"], "stopped_clean")
+        self.assertEqual(result["terminal_reason"], "lifetime_expired")
+        self.assertEqual(result["frames_sent"], manifest.max_frames)
+        self.assertEqual(result["packets_sent"], manifest.max_application_packets)
+        self.assertEqual(result["tx_bytes_sent"], transport.tx_bytes)
+        self.assertLessEqual(result["tx_bytes_sent"], manifest.max_tx_bytes)
+
+    def test_a_transport_fault_mid_stream_is_unknown_and_never_resent(self) -> None:
+        manifest, frame_set, stream = self._load()
+        clock = {"ms": 0}
+        transport = activity_session.FakeSessionTransport(fail_on_frame=5)
+        result = activity_session.run_session(
+            manifest, transport, frame_stream.renderer_for(frame_set, stream),
+            lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + max(ms, 1)),
+            claim=None, max_iterations=200)
+        self.assertEqual((result["terminal_reason"], result["outcome"]), ("transport_fault", "unknown"))
+        self.assertEqual(len(transport.frames), 4)
+
+    # -- boundary ------------------------------------------------------
+
+    def test_the_stream_surface_exposes_no_override_and_no_second_stack(self) -> None:
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        module = (ROOT / "host/frame_stream.py").read_text(encoding="utf-8")
+        for forbidden in ("--target", "--mac", "--raw", "--hex-send", "--rate", "--fps",
+                          "--frames", "--lifetime\"", "--no-authority", "--force"):
+            self.assertNotIn(forbidden, cli, msg=f"stream CLI must not expose {forbidden}")
+        # Live dispatch happens through the one existing typed session client only.
+        self.assertIn("_HostSessionTransport(token)", cli)
+        for forbidden in ("socket", "urllib", "http", "SESSION_FRAME_URL", "subprocess"):
+            self.assertNotIn(forbidden, module,
+                             msg=f"frame_stream must not reach the device itself: {forbidden}")
+        for forbidden in ("def release", "def unclaim", "def reset", "os.remove", "os.unlink"):
+            self.assertNotIn(forbidden, module)

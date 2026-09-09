@@ -4,7 +4,10 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## Current session route — 2026-09-09
 
-1. **Read `notes/OPENDITOO-STREAMING-HANDOFF-2026-09-09.md` first.** MCP Dashboard v1 is closed; this is the canonical route into streaming/other owner-selected objectives.
+0. **Read `notes/OPENDITOO-S1-STREAM-PRIMITIVE-2026-09-09.md` first.** It is the current
+   route: the general 16x16 frame-streaming primitive is implemented and offline-verified,
+   and its first live trial `OPENDITOO-S1-STREAM-001` is prepared but **not authorized**.
+1. Read `notes/OPENDITOO-STREAMING-HANDOFF-2026-09-09.md` for how streaming was scoped. MCP Dashboard v1 is closed.
 2. **Then read `notes/OPENDITOO-HANDOFF-2026-09-09.md` selectively for exact-unit transport/rate evidence and historical traps.** It carries
    current state, the authority position, and an explicit warning about environment
    capability that matters if you are running under WSL_MCP rather than a local session
@@ -26,6 +29,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | M0-M8 | complete; accepted evidence preserved |
 | M9 MCP activity application | complete; layout/activity/status/fault-display acceptance recorded |
 | R1-R5 rate ladder | complete; measured through 18.46 fps full-colour one-ACK-per-frame ceiling |
+| S1 general frame streaming | implemented + offline verified (187 tests); first live trial `OPENDITOO-S1-STREAM-001` prepared, UNAUTHORIZED, nothing transmitted |
 | A1 collection worker | installed/preserved; product owns collection while active |
 | P1 Runtime 001 | installed, standing local authority active, attach/reclaim/device-reconnect accepted |
 | P2 Runtime 002 | telemetry-only successor implemented/offline verified; committed template disabled; cutover requires its own named grant |
@@ -136,6 +140,24 @@ Physical device power-cycle reconnect is **PASS** under `OPENDITOO-PRODUCT-RUNTI
 ### Locked MCP product baseline — 2026-09-09
 
 The accepted MCP/product baseline is frozen in `notes/OPENDITOO-MCP-PRODUCT-BASELINE-FREEZE-2026-09-09.md`. Initial attach, stock-screen reclaim, device power-cycle reconnect, production green/yellow/red/grey aging, real WSL_MCP activity animation, and the simulated Lab fault-bar physical display path are accepted. `OPENDITOO-M9-ACTIVATION-009` is consumed. Standing `OPENDITOO-PRODUCT-RUNTIME-001` authority remains local and active. Do not modify hash-frozen product code in place. Windows reboot/logon autostart remains intentionally **PENDING** operator acceptance; a genuine source outage remains **NOT END-TO-END TESTED**. The live `product-status` `connecting`/stale-error issue is telemetry-only and is deferred to a fresh reviewed product revision.
+
+### S1 general frame-streaming primitive implemented — awaiting first grant
+
+The streaming transport already existed: `/v1/session/frame` takes an arbitrary 768-byte
+RGB888 frame, and `run_session` is already a generic ACK-gated loop. The missing half was
+the frame source, now `host/frame_stream.py` plus `stream-prepare` / `stream-preview` /
+`stream-run`. **No Windows Host change was needed or made** — repository and installed DLL
+verified byte-identical in-session at `fb750078...`. `host/activity_session.py` is
+hash-frozen by the live Runtime 002 policy and was imported, never modified; MCP Dashboard
+v1 is untouched.
+
+This primitive's cadence ceiling is 200 ms / 5 fps, set by `MCP_CLIENT_FRAME_INTERVAL_MS`
+inside that hash-frozen runner. Faster is a separate objective with its own boundary.
+
+Prepared and NOT armed: `experiments/DAY1-S1-STREAM-SWEEP-001.json` — 48 generated
+sweep-bar frames, 12 s, 144 packets, 3408 application bytes, one connection. The persistent
+product supervisor must be stopped for the trial and restarted after. Details:
+`notes/OPENDITOO-S1-STREAM-PRIMITIVE-2026-09-09.md`.
 
 ### MCP Dashboard v1 closed — Runtime 002 accepted
 

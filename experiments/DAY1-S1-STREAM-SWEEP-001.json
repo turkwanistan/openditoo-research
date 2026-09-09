@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "kind": "frame_stream",
+  "experiment_id": "OPENDITOO-S1-STREAM-001",
+  "milestone": "S1 general bounded 16x16 frame streaming",
+  "status": "pending_authority",
+  "objective": "Physically accept the general frame-streaming primitive: an arbitrary precomputed 16x16 RGB888 frame set played through the already-proven typed session transaction, with no new route, encoder, transport or Host build.",
+  "target": {
+    "exact_unit_id": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012",
+    "model": "Ditoo Plus",
+    "pairing_precheck": "authenticated exact target required before any socket is created"
+  },
+  "transport": {
+    "measured_endpoint": "Windows Classic RFCOMM channel 1",
+    "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+    "connection_shape": "one persistent RFCOMM connection for this bounded session; one ACK per frame; no retry, reconnect or pipelining",
+    "one_controller_rule": "the persistent MCP product supervisor must be stopped for this session and restarted immediately afterward; the Android Divoom app must stay disconnected; OpenTivoo runtime/task/port 8779 remain untouched",
+    "host_change": "none; /v1/session/frame already accepts an arbitrary 768-byte RGB888 frame"
+  },
+  "build": {
+    "code_sha256": {
+      "frame_stream_sha256": "5b824b479ec09809463b6c2638f53873ebcc5c3f6d983688c3a6ea75ea4332e4",
+      "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+      "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36"
+    },
+    "host_dll_sha256": "fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
+    "installed_dll_sha256_verified": "fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
+    "installed_identity_note": "Verified in-session 2026-09-09: the repository Release build and the deployed %LOCALAPPDATA%\\\\OpenDitoo\\\\Day1Host DLL are byte-identical at this hash. Streaming adds WSL Python only; no Windows rebuild."
+  },
+  "session": {
+    "lifetime_seconds": 12,
+    "min_frame_interval_ms": 150,
+    "poll_interval_ms": 50,
+    "automatic_retry": false,
+    "automatic_reconnect": false,
+    "stock_screen_reclaim": false,
+    "replay_after_interruption": false,
+    "shape": "one connection; 48 distinct frames dispatched at the 200 ms client cadence under the 150 ms Host floor; change-only scheduling holds nothing because every frame differs; then close",
+    "semantic_evidence": "No new device command semantics. Each frame is the same stock-derived Pixel Coloring image transaction already accepted at M5/M8/M9 and measured through R1-R5; only the pixel content varies."
+  },
+  "stream": {
+    "frame_set_file": "examples/stream-demo/sweep-bar.rgb888",
+    "frame_set_sha256": "6abd7a835fb243f705207384a0262910e21019222c5e409c8272acd3178fe20e",
+    "frame_count": 48,
+    "playback_interval_ms": 200,
+    "loop": false,
+    "source_description": "deterministic generated sweep-bar demo: a 1-pixel vertical bar crossing left to right once in red, once in green, once in blue, on black; generated offline by scripts/make_stream_demo_frames.py",
+    "palette_colors_per_frame": 2,
+    "image_packet_sha256_ordered": [
+      "8b1c9e20d4f148d0d4ed113640545269d739b8a54a9bafe82be12e1e8da3f7ca",
+      "aad4848e52e197d393e978810a14bb19f5efabe66a6b5e5356a17b98530ed6e7",
+      "05efb1562e3eaca243d788217bf3af6f7f00f261664684ebf7743de44c6242ea",
+      "ff95d2a249864310564fc38b818d0bf7dd1f0bfd249e38d77d66e65bfd6c4090",
+      "c98e6670288c05f257ff1b2788f71fdc3d4e9c9ba76c17a07e8507e111728129",
+      "6ebcbb52398f07ed4c5d6bad7cdc7772c0a9751c75c8ef5da9f11096eb609a4e",
+      "61a0d3e30083521416e085cfffe861de302c80fcd4089cfacdc6e69b084e4023",
+      "6654610474208192ca719a4a1c5374acbe48661ca071ddfd5474f13c061a7e1f",
+      "9808eb2df65d7501aec47398b44122d60e3c0f1a313ec18b5c93ba0c3d7c34a1",
+      "6edfeb0261b77e4e4841f3b12a72d507547a140e71796ba04e05ef2b3fdddf1d",
+      "71964673dca36bf1e771a3994a5f74b9774b55c0d680f4514f1fac05ad9a29d9",
+      "8c8d37f0496af8c3b2dc7cbc3c31ea1ddf148754b95c736a8a3ab52c32272294",
+      "aca1052965cb65241d4d6b926b1daea1b008bd10ce9eec3241d9fbcfe3f17092",
+      "9d70ce5d32e348ed20d6fb7448d21b645d09a5bc52921108ccffeb6692f5c762",
+      "a59c8c8abfe5e5c758eb11a9ce91d72fea4b463364bc89bdb04285f28110818d",
+      "ab443f3891c45ca4e4ce68c74449b487e5551d08ea8bd989aa60b43b3637c516",
+      "73fa2108dc677ca74385d966da7f3688b7f637f8abf8eef3de72b0453dd28a9a",
+      "03bbcc5131c8447e1793051fddcd4b08b0cd9f72c6333093ce09d4c68a19d582",
+      "a6d568725673c7858a873829f6267a2a55145dc78012a406cff1d01b685ebd15",
+      "1ff46821e7adb58fa4e6a8f8c5a3a6a0218ca90246af2c4ba437b10310c88032",
+      "59c50e21fc39a69a116ba9b602559307411d87c5825210e5fe67e25316987107",
+      "1329fb199c619bd4d56dc8b86bd816ad34627318504e9c792f104e023895c2a2",
+      "fbcc2a2f7fe95b40fd9032f3bae0f68fe821f0c6d7309f4169a6694cf4c129db",
+      "0cc965949fff38e6806740617132bc5d4781854953fbf798d21f8500d9ade783",
+      "e0c2fd357cc5a37cd48b5eb1a72df8dbe0dc391b8a33356ce9708baf03f5cb0b",
+      "52367ab114f21cbc38def185bbf554646c480235a38413e9f81167792d55c317",
+      "bfdfa98c2f671f47cbfcb8ce8a22f326cd9427e8f401bf6036674e9695cd81b1",
+      "f66187156e2866712c297a341015ac30dfcec2e8b4362059437582ae2e3b6aa2",
+      "8157d926a53ac48d9b3d52275c9dadcaef18a1020bda8610d49514c4a6960215",
+      "fd8c0edb5975be5405e13ad978166e2b41d3bcd6414f6ef9f14483b66a8ebe03",
+      "79a34e2f8ae66ef4f3446d2a24439c531ecc0f11282538f6078ba08ab868773f",
+      "0fb50ae758e473f25299013f609e5fb89310c392ecfd3fda65b61c0096288f85",
+      "48273591fa9b44a8ffa9fbc1c333908c2a642321a6113047bda713b3a2b359bd",
+      "ab3942e1f5c7f8ac9d37b969bf85555e4bdbec1039c9829f2b7884818e99009e",
+      "c0dae880763ab7e28b824c798f6eaa24132fc4ff7fad636d90a62c7c59d7fb0e",
+      "a7688ec39ee3604669f6ac47a002320f8645c5e2d89c45ba52dae2f287ba5488",
+      "c55dceea63313ad66aa3f7c8e7e85bf6f0e39feee76157d6da7b912201ffb7fe",
+      "b3c5fa0ffbafff87ef2078f11f7adf48b745a0e8a866f2d8e4930cc4eef950c4",
+      "a0c7c074768ac3e1e7ddd85ef98f512e003b257ad7274a22e1027f6fc4a6e8a8",
+      "7bc6c163db14d327e509b9ec5f250378f7a921d6d34a12d7c70b67d49115f4bf",
+      "c41028d9a8bb0dc160a2dfcf62b6985af284be8a17cb29d25b0a97d05269822a",
+      "9f150a0719af8eaea2a23df756019a8b73c90f38abd592a442a7bb824ccc1f27",
+      "72b6abdf2a6dd5959560f1552533b2279b06a4a2ce79f589a414bd71623b2b20",
+      "43de67bbe23fb477956be9bdcb8800530f2b15ed6e66c910fb163734f2d93b17",
+      "997f69eb35b1ff08e107bb0f90ce9f1086021cb49c3c9c6e955691a4b8f02898",
+      "879685d153786dbd1ade2c1dfd7499a4eb40948d98a76fa76a02c78247f44864",
+      "cf67017ffe2e180e513ea0b5042e30a610a5d41e97a66c90724f533610d2951c",
+      "6570ef6689023e9115eeaa080039f6daf229fd97a6c293ec4d4f1a6853f6d9ce"
+    ]
+  },
+  "budgets": {
+    "connection_attempts": 1,
+    "max_frames": 48,
+    "max_application_packets": 144,
+    "max_tx_bytes": 3408,
+    "ack_timeout_ms_per_frame": 5000,
+    "derivation": "48 distinct frames at 200 ms is 9.6 s of playback inside a 12 s lifetime, so the clip bounds the frame count, not the clock. 48 x 3 packets; worst-case 71 application bytes per frame (image packet plus both stock preambles) gives the byte ceiling."
+  },
+  "expected_observations": {
+    "transport": "one connection, 48 ACKed frames, 144 application packets, 3408 application bytes, clean lifetime_expired or budget_exhausted close",
+    "physical": "three visible left-to-right sweeps of a single-column bar -- red, then green, then blue -- over about 9.6 s, then the final blue column held until the lifetime ends",
+    "interpretation": "Proves the general precomputed-frame streaming path on the exact unit. It proves nothing about video preprocessing, live generation, audio sync, pipelining or rates above the tested cadence."
+  },
+  "persistence_analysis": {
+    "expected_effect": "volatile display state only",
+    "source_state_effect": "none; no MCP source collection runs in a stream session",
+    "product_policy_effect": "none; the product policy and its hash-frozen code are untouched"
+  },
+  "stop_policy": {
+    "stop_immediately_on": [
+      "unexpected target identity or pairing precheck failure",
+      "any unsolicited state report on the link (canvas is no longer ours)",
+      "any inbound bytes that do not parse as exactly one valid wrapped report",
+      "any ACK that is not our wrapped 0x44 shape with a single payload byte",
+      "any send that does not complete in full",
+      "ACK timeout on any frame",
+      "session lifetime reached",
+      "frame or byte budget reached",
+      "the worker falling silent for longer than the Host grace period"
+    ],
+    "on_ambiguous_outcome_resend": false,
+    "collection_continues_after_display_stop": true,
+    "on_ambiguous_outcome": "stop sending, close the link, record completed/unknown bytes and last known display state; never resend, reconnect or reclaim",
+    "recovery": "restart the already-authorized persistent product service after the stream returns"
+  },
+  "authority": {
+    "experiment_id": "OPENDITOO-S1-STREAM-001",
+    "transmission_authorized": false,
+    "authorization_consumed": false,
+    "grant_scope_requested": "ONE execution only of OPENDITOO-S1-STREAM-001: stop the persistent MCP product supervisor, stream the frozen 48-frame sweep-bar demo set (frame_set_sha256 6abd7a835fb243f705207384a0262910e21019222c5e409c8272acd3178fe20e) to exact Ditoo 11:75:58:CE:DE:C7 through the existing typed /v1/session/* transaction at a 200 ms client cadence over a 12 s bounded lifetime (48 frames, 144 packets, 3408 application bytes, one connection, one ACK per frame), then restart the persistent product supervisor; no retry, reconnect, reclaim, pipelining, raw send, target override, firmware or persistent write.",
+    "granted_by": null,
+    "grant_text": null,
+    "grant_scope": null,
+    "expires_at": null
+  },
+  "explicitly_out_of_scope": [
+    "video/MP4 preprocessing or playback",
+    "live or procedural frame generation",
+    "camera, game or screen capture sources",
+    "audio synchronization",
+    "pipelining, delta or partial-frame sends",
+    "cadence faster than the tested client dispatch rate",
+    "raw send, target selection or command enumeration",
+    "firmware, gallery or any persistent write",
+    "automatic retry, reconnect or reclaim",
+    "any target other than the exact unit"
+  ]
+}

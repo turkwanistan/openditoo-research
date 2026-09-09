@@ -1,0 +1,343 @@
+"""General bounded 16x16 RGB888 frame streaming.
+
+The device side of streaming already exists and is accepted evidence: the typed Host's
+`/v1/session/*` family takes an arbitrary 768-byte RGB888 frame per request, encodes it
+with the stock-derived encoder, and enforces lifetime, pacing floor and frame/byte
+budgets itself. `activity_session.run_session` already drives that transaction shape
+against an injected `render(now_ms)` callable. Nothing here adds a second Bluetooth
+stack, a route, or a transport: this module supplies
+
+1. a frozen frame SET (precomputed or generated offline, hashed as one file), and
+2. a time-indexed frame source that hands `run_session` the frame for the current
+   instant,
+
+so any 16x16 source -- procedural, video-derived, screen-derived -- becomes a reviewed
+stream by producing a `.rgb888` file, without touching the MCP dashboard's hash-frozen
+renderer or the Windows Host.
+
+`host/activity_session.py` is hash-frozen by the live product policy and is imported,
+never modified.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+import hashlib
+import json
+from pathlib import Path
+
+from host import activity_session as _session
+from host.ditoo_pixel_coloring import (IMAGE_PREAMBLE_A, IMAGE_PREAMBLE_B,
+                                       encode_rgb888_static_image, sha256_hex)
+from host.png16 import decode_png16_rgb
+
+ROOT = Path(__file__).resolve().parents[1]
+SCHEMA_VERSION = 1
+FRAME_BYTES = 16 * 16 * 3
+# The stock-derived encoder carries one palette per frame, so a frame is only sendable
+# with at most this many distinct colours. Arbitrary photographic 16x16 content routinely
+# exceeds it, which is why quantisation happens offline in prepare, never at send time.
+MAX_PALETTE_COLORS = 255
+# `run_session` runs its scheduler at max(manifest floor, MCP_CLIENT_FRAME_INTERVAL_MS).
+# A stream may therefore not ask for a cadence the shared runner would silently round up.
+MIN_PLAYBACK_INTERVAL_MS = _session.MCP_CLIENT_FRAME_INTERVAL_MS
+# Unused by a stream: no frame is a pulse, so nothing can expire. Present because the
+# shared manifest record requires it.
+_STREAM_PULSE_FRESHNESS_SECONDS = 30
+PREAMBLE_BYTES = len(IMAGE_PREAMBLE_A) + len(IMAGE_PREAMBLE_B)
+
+SessionError = _session.SessionError
+SessionClaim = _session.SessionClaim
+
+# What the stream path actually executes. The MCP renderer/collector hashes are
+# deliberately absent: a stream does not run them.
+HASHED_MODULES = {
+    "frame_stream_sha256": ROOT / "host" / "frame_stream.py",
+    "encoder_sha256": ROOT / "host" / "ditoo_pixel_coloring.py",
+    "session_sha256": ROOT / "host" / "activity_session.py",
+}
+
+
+def module_hashes() -> dict[str, str]:
+    return {name: _session.sha256_file(path) for name, path in HASHED_MODULES.items()}
+
+
+# --------------------------------------------------------------------------
+# Frame sets
+# --------------------------------------------------------------------------
+
+def quantize_to_palette_limit(rgb: bytes) -> tuple[bytes, int]:
+    """Reduce an arbitrary 16x16 frame to <=255 distinct colours, deterministically.
+
+    Channel low bits are dropped one step at a time until the frame fits. This is a
+    blunt instrument on purpose: it is exactly reproducible from the source bytes alone,
+    needs no dependency, and a 16x16 panel cannot show the difference a better quantiser
+    would buy. ponytail: uniform bit-depth reduction, swap in median-cut if 16x16
+    gradients ever visibly band.
+    """
+    if len(rgb) != FRAME_BYTES:
+        raise SessionError("STREAM_FRAME_LENGTH", f"expected {FRAME_BYTES} bytes, got {len(rgb)}")
+    for drop in range(0, 8):
+        mask = (0xFF << drop) & 0xFF
+        candidate = bytes(value & mask for value in rgb) if drop else rgb
+        colors = len({candidate[i:i + 3] for i in range(0, FRAME_BYTES, 3)})
+        if colors <= MAX_PALETTE_COLORS:
+            return candidate, colors
+    raise SessionError("STREAM_FRAME_UNQUANTIZABLE", "frame did not fit 255 colours at 1 bit/channel")
+
+
+def frames_from_source(source: Path) -> list[bytes]:
+    """Load an ordered frame set: one `.rgb888` blob, or a directory of 16x16 PNGs."""
+    source = Path(source)
+    if source.is_dir():
+        pngs = sorted(p for p in source.iterdir() if p.suffix.lower() == ".png")
+        if not pngs:
+            raise SessionError("STREAM_SOURCE_EMPTY", f"no PNG frames in {source}")
+        return [decode_png16_rgb(path) for path in pngs]
+    if not source.is_file():
+        raise SessionError("STREAM_SOURCE_MISSING", str(source))
+    blob = source.read_bytes()
+    if not blob or len(blob) % FRAME_BYTES:
+        raise SessionError("STREAM_SOURCE_NOT_FRAME_ALIGNED",
+                           f"{len(blob)} bytes is not a positive multiple of {FRAME_BYTES}")
+    return [blob[i:i + FRAME_BYTES] for i in range(0, len(blob), FRAME_BYTES)]
+
+
+@dataclass(frozen=True)
+class FrameSet:
+    frames: tuple[bytes, ...]
+    sha256: str
+    packet_sha256: tuple[str, ...]
+    palette_colors: tuple[int, ...]
+    max_frame_tx_bytes: int
+
+    @property
+    def count(self) -> int:
+        return len(self.frames)
+
+    def total_tx_bytes(self, frame_count: int) -> int:
+        return frame_count * self.max_frame_tx_bytes
+
+
+def build_frame_set(frames: list[bytes]) -> FrameSet:
+    """Encode every frame once, offline, so nothing is discovered mid-stream."""
+    packets, colors, widest = [], [], 0
+    for index, rgb in enumerate(frames, start=1):
+        if len(rgb) != FRAME_BYTES:
+            raise SessionError("STREAM_FRAME_LENGTH", f"frame {index} is {len(rgb)} bytes")
+        try:
+            wire, palette = encode_rgb888_static_image(rgb)
+        except ValueError as exc:
+            raise SessionError("STREAM_FRAME_NOT_ENCODABLE", f"frame {index}: {exc}") from exc
+        packets.append(sha256_hex(wire))
+        colors.append(palette)
+        widest = max(widest, len(wire) + PREAMBLE_BYTES)
+    blob = b"".join(frames)
+    return FrameSet(tuple(frames), hashlib.sha256(blob).hexdigest(),
+                    tuple(packets), tuple(colors), widest)
+
+
+def write_frame_set(frames: list[bytes], path: Path) -> FrameSet:
+    frame_set = build_frame_set(frames)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"".join(frame_set.frames))
+    return frame_set
+
+
+# --------------------------------------------------------------------------
+# The frame source handed to run_session
+# --------------------------------------------------------------------------
+
+class FrameSetRenderer:
+    """Time-indexed playback of a frozen frame set.
+
+    Indexing on the clock rather than on ACKs is what keeps playback honest: a slow
+    transport drops frames instead of stretching the clip, and two identical consecutive
+    frames simply hold (the shared scheduler sends nothing), rather than stalling an
+    ACK-gated cursor forever.
+    """
+
+    def __init__(self, frame_set: FrameSet, playback_interval_ms: int, loop: bool = False) -> None:
+        self.frame_set = frame_set
+        self.playback_interval_ms = playback_interval_ms
+        self.loop = loop
+        self.last_index = -1
+
+    def __call__(self, now_ms: int) -> tuple[bytes, bool]:
+        step = max(0, now_ms) // self.playback_interval_ms
+        index = step % self.frame_set.count if self.loop else min(step, self.frame_set.count - 1)
+        self.last_index = index
+        return self.frame_set.frames[index], False
+
+    def frame_sent(self) -> None:
+        """Playback follows the clock, so an ACK advances nothing."""
+
+
+# --------------------------------------------------------------------------
+# The reviewed stream manifest
+# --------------------------------------------------------------------------
+
+def authority_blockers(path: Path, now_epoch: float | None = None) -> list[str]:
+    return _session.authority_blockers(Path(path), now_epoch)
+
+
+def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
+                         require_authority: bool = True,
+                         now_epoch: float | None = None):
+    """Parse and validate one stream manifest into a shared SessionManifest, or refuse.
+
+    Returns `(manifest, frame_set, stream)`. Every refusal happens before any claim and
+    before the Host is contacted. Reviewing a manifest arms nothing.
+    """
+    require = _session._require
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SessionError("MANIFEST_UNREADABLE", str(exc)) from exc
+    require(isinstance(data, dict), "MANIFEST_UNREADABLE", "top level is not an object")
+    require(data.get("schema_version") == SCHEMA_VERSION, "MANIFEST_SCHEMA_VERSION",
+            f"expected {SCHEMA_VERSION}, got {data.get('schema_version')!r}")
+    require(data.get("kind") == "frame_stream", "MANIFEST_KIND_MISMATCH",
+            "a stream manifest must declare kind=frame_stream")
+
+    experiment_id = data.get("experiment_id")
+    require(isinstance(experiment_id, str) and experiment_id.strip() != "",
+            "MANIFEST_EXPERIMENT_ID_MISSING")
+
+    target = data.get("target") or {}
+    require(target.get("exact_unit_id") == _session.EXACT_UNIT_ID, "MANIFEST_TARGET_MISMATCH")
+    require(target.get("installed_firmware") == _session.INSTALLED_FIRMWARE, "MANIFEST_FIRMWARE_MISMATCH")
+    require(bool((data.get("transport") or {}).get("measured_endpoint")), "MANIFEST_ENDPOINT_UNBOUND")
+
+    session = data.get("session") or {}
+    stream = data.get("stream") or {}
+    budgets = data.get("budgets") or {}
+    authority = data.get("authority") or {}
+    build = data.get("build") or {}
+    stop_policy = data.get("stop_policy") or {}
+
+    # -- authority ---------------------------------------------------------
+    require(authority.get("experiment_id") == experiment_id, "AUTHORITY_EXPERIMENT_ID_MISMATCH",
+            "the grant must name the experiment it authorizes")
+    if require_authority:
+        blockers = authority_blockers(path, now_epoch)
+        require(not blockers, blockers[0] if blockers else "TRANSMISSION_AUTHORITY_MISSING",
+                ", ".join(blockers))
+
+    # -- lifetime and pacing ----------------------------------------------
+    lifetime = session.get("lifetime_seconds")
+    require(isinstance(lifetime, int) and 0 < lifetime <= _session.MAX_SESSION_LIFETIME_SECONDS,
+            "SESSION_LIFETIME_INVALID", f"1..{_session.MAX_SESSION_LIFETIME_SECONDS} s")
+    interval = session.get("min_frame_interval_ms")
+    require(isinstance(interval, int) and interval >= _session.ACCEPTED_MIN_FRAME_INTERVAL_MS,
+            "SESSION_PACING_BELOW_ACCEPTED_CEILING",
+            f"the Host floor is {_session.ACCEPTED_MIN_FRAME_INTERVAL_MS} ms per frame start")
+    poll_ms = session.get("poll_interval_ms")
+    require(isinstance(poll_ms, int) and 50 <= poll_ms <= interval, "SESSION_POLL_INTERVAL_INVALID")
+    require(session.get("automatic_retry") is False, "SESSION_RETRY_NOT_DISABLED")
+    require(session.get("automatic_reconnect") is False, "SESSION_RECONNECT_NOT_DISABLED")
+    require(session.get("stock_screen_reclaim") is False, "SESSION_RECLAIM_NOT_DISABLED")
+    require(session.get("replay_after_interruption") is False, "SESSION_REPLAY_NOT_DISABLED")
+
+    # -- the frozen frame set ---------------------------------------------
+    frame_file = stream.get("frame_set_file")
+    require(isinstance(frame_file, str) and frame_file, "STREAM_FRAME_SET_UNBOUND")
+    frame_path = (ROOT / frame_file) if not Path(frame_file).is_absolute() else Path(frame_file)
+    frame_set = build_frame_set(frames_from_source(frame_path))
+    require(stream.get("frame_set_sha256") == frame_set.sha256, "STREAM_FRAME_SET_HASH_DRIFT",
+            f"manifest {stream.get('frame_set_sha256')!r} != actual {frame_set.sha256}")
+    require(stream.get("frame_count") == frame_set.count, "STREAM_FRAME_COUNT_MISMATCH",
+            f"manifest {stream.get('frame_count')!r} != actual {frame_set.count}")
+    playback_ms = stream.get("playback_interval_ms")
+    require(isinstance(playback_ms, int) and playback_ms >= MIN_PLAYBACK_INTERVAL_MS,
+            "STREAM_PLAYBACK_INTERVAL_INVALID",
+            f"the shared runner dispatches no faster than {MIN_PLAYBACK_INTERVAL_MS} ms")
+    require(playback_ms >= interval, "STREAM_PLAYBACK_FASTER_THAN_FLOOR")
+    loop = stream.get("loop")
+    require(isinstance(loop, bool), "STREAM_LOOP_INVALID")
+    require(stream.get("source_description"), "STREAM_SOURCE_DESCRIPTION_MISSING")
+
+    # -- budgets: derived, not asserted ------------------------------------
+    # A distinct frame can only be sent once per playback step, so the clip -- or the
+    # lifetime, whichever ends first -- bounds the frame count. This is what stops a
+    # stream manifest from quietly buying a bigger budget than its content needs.
+    steps_in_lifetime = lifetime * 1000 // playback_ms + 1
+    expected_frames = steps_in_lifetime if loop else min(frame_set.count, steps_in_lifetime)
+    max_frames = budgets.get("max_frames")
+    require(isinstance(max_frames, int) and 0 < max_frames <= _session.MAX_SESSION_FRAMES,
+            "BUDGET_FRAME_COUNT_INVALID", f"1..{_session.MAX_SESSION_FRAMES}")
+    require(max_frames >= expected_frames, "BUDGET_FRAMES_BELOW_CONTENT",
+            f"{expected_frames} playback steps fit in this lifetime")
+    require(max_frames <= expected_frames, "BUDGET_FRAMES_EXCEED_CONTENT",
+            f"the content and lifetime admit at most {expected_frames} frames")
+    require(budgets.get("max_application_packets") == max_frames * _session.PACKETS_PER_FRAME,
+            "BUDGET_PACKETS_NOT_DERIVED", f"expected {max_frames * _session.PACKETS_PER_FRAME}")
+    max_tx = budgets.get("max_tx_bytes")
+    require(max_tx == frame_set.total_tx_bytes(max_frames), "BUDGET_TX_BYTES_NOT_DERIVED",
+            f"expected {frame_set.total_tx_bytes(max_frames)} "
+            f"({max_frames} x worst-case {frame_set.max_frame_tx_bytes} application bytes)")
+    require(budgets.get("connection_attempts") == 1, "BUDGET_CONNECTION_ATTEMPTS_INVALID")
+    ack_timeout = budgets.get("ack_timeout_ms_per_frame")
+    require(isinstance(ack_timeout, int) and 0 < ack_timeout <= 5000, "BUDGET_ACK_TIMEOUT_INVALID")
+
+    # -- frozen code and build identity ------------------------------------
+    code_hashes = build.get("code_sha256") or {}
+    require(set(code_hashes) == set(HASHED_MODULES), "BUILD_CODE_HASHES_INCOMPLETE",
+            f"expected {sorted(HASHED_MODULES)}")
+    if verify_code_hashes:
+        actual = module_hashes()
+        drift = {k: {"manifest": code_hashes[k], "actual": actual[k]}
+                 for k in actual if code_hashes[k] != actual[k]}
+        require(not drift, "BUILD_CODE_HASH_DRIFT", json.dumps(drift, sort_keys=True))
+    host_build = build.get("host_dll_sha256")
+    require(isinstance(host_build, str) and len(host_build) == 64, "BUILD_HOST_HASH_MISSING")
+
+    stop_conditions = stop_policy.get("stop_immediately_on")
+    require(isinstance(stop_conditions, list) and stop_conditions, "STOP_POLICY_MISSING")
+    require(stop_policy.get("on_ambiguous_outcome_resend") is False, "STOP_POLICY_PERMITS_RESEND")
+    require(stop_policy.get("collection_continues_after_display_stop") is True,
+            "STOP_POLICY_STOPS_COLLECTION")
+
+    manifest = _session.SessionManifest(
+        experiment_id=experiment_id,
+        lifetime_seconds=lifetime,
+        min_frame_interval_ms=interval,
+        pulse_freshness_seconds=_STREAM_PULSE_FRESHNESS_SECONDS,
+        poll_interval_ms=poll_ms,
+        max_frames=max_frames,
+        max_application_packets=budgets["max_application_packets"],
+        max_tx_bytes=max_tx,
+        ack_timeout_ms_per_frame=ack_timeout,
+        activation_source=stream["source_description"],
+        host_build_sha256=host_build,
+        code_hashes=dict(code_hashes),
+        stop_conditions=tuple(stop_conditions),
+        acceptance_profile=None,
+        path=Path(path),
+        raw=data,
+    )
+    return manifest, frame_set, dict(stream)
+
+
+def derived_budgets(frame_set: FrameSet, lifetime_seconds: int, playback_interval_ms: int,
+                    loop: bool) -> dict:
+    """The budget block a manifest for this content must state, so it is derived once."""
+    steps = lifetime_seconds * 1000 // playback_interval_ms + 1
+    frames = steps if loop else min(frame_set.count, steps)
+    return {
+        "connection_attempts": 1,
+        "max_frames": frames,
+        "max_application_packets": frames * _session.PACKETS_PER_FRAME,
+        "max_tx_bytes": frame_set.total_tx_bytes(frames),
+        "ack_timeout_ms_per_frame": 5000,
+    }
+
+
+def clip_lifetime_seconds(frame_set: FrameSet,
+                          playback_interval_ms: int = MIN_PLAYBACK_INTERVAL_MS) -> int:
+    """The shortest whole-second lifetime that still admits every frame of the clip."""
+    return -(-frame_set.count * playback_interval_ms // 1000)
+
+
+def renderer_for(frame_set: FrameSet, stream: dict) -> FrameSetRenderer:
+    return FrameSetRenderer(frame_set, int(stream["playback_interval_ms"]), bool(stream["loop"]))

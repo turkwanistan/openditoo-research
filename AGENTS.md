@@ -64,6 +64,16 @@ OpenDitoo must keep its Host port, token, state directory, target binding and pr
 
 The measured Ditoo transport and M5 image primitive are proven. The OpenDitoo Host exposes exactly the typed image routes documented in the repository: `/v1/image/show` (one static frame) and `/v1/image/sequence` (an ordered, already-hash-frozen frame list inside one connection). `/v1/status` advertises `status`, `image-show` and `image-sequence`. The sequence route is an accepted M8 capability — factually implemented, deployed and physically exercised under grants that are now consumed — and it is **not** ongoing authority. The M9 `/v1/session/open`, `/v1/session/frame`, `/v1/session/heartbeat`, `/v1/session/close` family was also physically exercised under consumed grants. It shares the single-operation gate with the image routes. Its authority is one-use and durable: the Host consumes the experiment id in an on-disk ledger **before** the socket exists, and the WSL CLI claims the same id with `O_EXCL`; neither claim can be released. The Host independently enforces lifetime, pacing and frame/byte budgets through a watchdog the caller cannot cancel. After the completed R1-R5 rate ladder, **future source uses a 150 ms frame-start floor (6.67 fps) and 10 ms activity-session packet spacing**; the historical M9 trials actually ran at 1118 ms and remain immutable evidence. The new rate integration is offline-verified source only until a capable environment builds and verifies the changed Windows Host. Every experimental manifest is consumed. **Persistent product authority `OPENDITOO-PRODUCT-RUNTIME-001` is currently granted only through the local git-ignored mode-0600 policy; it covers only the exact MCP product loop described above and remains in force until explicit uninstall/revocation.** Raw-send, target selection and generic Bluetooth operations remain prohibited, and no further route may be added without its own reviewed boundary.
 
+**Frame streaming (S1) adds no route and no second stack.** The general 16x16 RGB888
+streaming path (`host/frame_stream.py`, `stream-prepare` / `stream-preview` / `stream-run`)
+is a frame *source* only: it freezes and quantizes frames offline, then hands them to the
+existing typed `/v1/session/*` transaction through the same client, the same durable
+one-use experiment claim, the same Host-side watchdog, budgets and 150 ms floor. Its
+dispatch cadence is bounded by the hash-frozen runner at 200 ms. It confers no authority:
+every live stream needs its own reviewed `kind=frame_stream` manifest and an explicit
+operator grant naming that experiment id, and the persistent product supervisor must be
+stopped for the duration because one controller owns Ditoo at a time.
+
 **Sequence authority lifecycle:** the earlier manual-consumption gap is closed in the current source; `sequence-run` takes the same durable one-use experiment claim before dispatch. This does not revive any sequence authority: every existing sequence manifest is consumed.
 
 ## Discipline

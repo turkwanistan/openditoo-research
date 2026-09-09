@@ -30,6 +30,7 @@ from host import activity_render  # noqa: E402
 from host import btsnoop  # noqa: E402
 from host import mcp_activity  # noqa: E402
 from host import activity_session  # noqa: E402
+from host import frame_stream  # noqa: E402
 from host import product_runtime  # noqa: E402
 from host import product_runtime_v2  # noqa: E402
 
@@ -945,6 +946,154 @@ def manifest_check(args: argparse.Namespace) -> int:
     return EXIT_OK if not missing else EXIT_USAGE
 
 
+# --------------------------------------------------------------------------
+# General bounded 16x16 frame streaming
+# --------------------------------------------------------------------------
+
+def stream_prepare(args: argparse.Namespace) -> int:
+    """Offline: freeze any 16x16 source into one hashed `.rgb888` frame set.
+
+    Nothing here reaches the Host or the device. It also reports the exact budget block
+    a manifest for this content must state, so budgets stay derived rather than guessed.
+    """
+    try:
+        frames = frame_stream.frames_from_source(Path(args.source))
+    except frame_stream.SessionError as exc:
+        emit({"ok": False, "command": "stream-prepare", "device_io": False,
+              "error_code": exc.code, "detail": exc.detail})
+        return EXIT_USAGE
+    except Png16Error as exc:
+        emit({"ok": False, "command": "stream-prepare", "device_io": False,
+              "error_code": "STREAM_SOURCE_PNG_REJECTED", "detail": str(exc)})
+        return EXIT_USAGE
+
+    quantized = 0
+    if args.quantize:
+        prepared = []
+        for rgb in frames:
+            reduced, _ = frame_stream.quantize_to_palette_limit(rgb)
+            quantized += reduced != rgb
+            prepared.append(reduced)
+        frames = prepared
+
+    output = Path(args.output)
+    try:
+        frame_set = frame_stream.write_frame_set(frames, output)
+    except frame_stream.SessionError as exc:
+        emit({"ok": False, "command": "stream-prepare", "device_io": False,
+              "error_code": exc.code, "detail": exc.detail,
+              "hint": "re-run with --quantize to fit the 255-colour encoder limit"})
+        return EXIT_USAGE
+    emit({
+        "ok": True, "command": "stream-prepare", "device_io": False,
+        "source": str(args.source), "frame_set_file": str(output),
+        "frame_set_sha256": frame_set.sha256, "frame_count": frame_set.count,
+        "frames_quantized": quantized,
+        "palette_colors_min_max": [min(frame_set.palette_colors), max(frame_set.palette_colors)],
+        "max_frame_application_bytes": frame_set.max_frame_tx_bytes,
+        "image_packet_sha256_first": frame_set.packet_sha256[0],
+        "image_packet_sha256_last": frame_set.packet_sha256[-1],
+        "distinct_frames": len(set(frame_set.packet_sha256)),
+        "playback_interval_ms": frame_stream.MIN_PLAYBACK_INTERVAL_MS,
+        "clip_seconds": frame_set.count * frame_stream.MIN_PLAYBACK_INTERVAL_MS / 1000.0,
+        # Straight one-pass playback of this clip, which is what a stream manifest for it
+        # must state. Anything else (a longer lifetime, looping) is a different reviewed
+        # manifest and derives its own numbers from the same function.
+        "derived_budgets_single_pass": frame_stream.derived_budgets(
+            frame_set, frame_stream.clip_lifetime_seconds(frame_set),
+            frame_stream.MIN_PLAYBACK_INTERVAL_MS, False),
+        "code_sha256": frame_stream.module_hashes(),
+    })
+    return EXIT_OK
+
+
+def stream_preview(args: argparse.Namespace) -> int:
+    """Offline: review one stream manifest and replay it through a fake transport."""
+    try:
+        manifest, frame_set, stream = frame_stream.load_stream_manifest(
+            Path(args.manifest), require_authority=False)
+    except frame_stream.SessionError as exc:
+        emit({"ok": False, "command": "stream-preview", "device_io": False,
+              "execution_ready": False, "error_code": exc.code, "detail": exc.detail})
+        return EXIT_BLOCKED
+
+    claim = frame_stream.SessionClaim(manifest.experiment_id)
+    existing = claim.read()
+    blockers = frame_stream.authority_blockers(Path(args.manifest))
+    if existing is not None and "AUTHORITY_ALREADY_CONSUMED" not in blockers:
+        blockers.append("AUTHORITY_ALREADY_CONSUMED")
+
+    # A fake clock advanced by the runner's own sleeps replays the whole lifetime
+    # deterministically, in milliseconds, without waiting for it.
+    clock = {"ms": 0}
+    transport = activity_session.FakeSessionTransport()
+    result = activity_session.run_session(
+        manifest, transport, frame_stream.renderer_for(frame_set, stream),
+        lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + max(ms, 1)),
+        claim=None, max_iterations=manifest.lifetime_ms // manifest.poll_interval_ms + 8)
+    emit({
+        "ok": True, "command": "stream-preview", "device_io": False, "dispatched": False,
+        "execution_ready": not blockers, "execution_blockers": blockers,
+        "experiment_id": manifest.experiment_id,
+        "frame_set_sha256": frame_set.sha256, "frame_count": frame_set.count,
+        "playback_interval_ms": stream["playback_interval_ms"], "loop": stream["loop"],
+        "lifetime_seconds": manifest.lifetime_seconds,
+        "max_frames": manifest.max_frames, "max_tx_bytes": manifest.max_tx_bytes,
+        "frames_that_would_be_sent": len(transport.frames),
+        "packets_that_would_be_sent": transport.packets,
+        "tx_bytes_that_would_be_sent": transport.tx_bytes,
+        "host_build_sha256": manifest.host_build_sha256,
+        "repository_host_build_sha256": activity_session.sha256_file(activity_session.HOST_BUILD_DLL)
+        if activity_session.HOST_BUILD_DLL.is_file() else None,
+        "existing_claim": existing,
+        "result": result,
+    })
+    return EXIT_OK
+
+
+def stream_run(args: argparse.Namespace) -> int:
+    """Run ONE reviewed stream manifest, exactly as written.
+
+    No lifetime, rate, budget, loop or target arguments: everything comes from the
+    manifest. The experiment id is claimed durably here and again by the Host before
+    anything is dispatched, and neither claim can be released.
+    """
+    try:
+        manifest, frame_set, stream = frame_stream.load_stream_manifest(Path(args.manifest))
+        token = read_token()
+    except frame_stream.SessionError as exc:
+        emit({"ok": False, "command": "stream-run", "error_code": exc.code, "detail": exc.detail})
+        return EXIT_BLOCKED
+    except RuntimeError as exc:
+        emit({"ok": False, "command": "stream-run", "error_code": "LOCAL_AUTH_CONFIG",
+              "message": str(exc)})
+        return EXIT_CONFIG
+
+    claim = frame_stream.SessionClaim(manifest.experiment_id)
+    try:
+        claim.claim({"manifest_file": str(manifest.path), "code_hashes": manifest.code_hashes,
+                     "host_build_sha256": manifest.host_build_sha256,
+                     "frame_set_sha256": frame_set.sha256,
+                     "claimed_at": mcp_activity.iso(mcp_activity.utc_now())})
+    except frame_stream.SessionError as exc:
+        emit({"ok": False, "command": "stream-run", "error_code": exc.code, "detail": exc.detail})
+        return EXIT_BLOCKED
+
+    transport = _HostSessionTransport(token)
+    import time
+    started = time.monotonic()
+    result = activity_session.run_session(
+        manifest, transport, frame_stream.renderer_for(frame_set, stream),
+        lambda: int((time.monotonic() - started) * 1000),
+        lambda ms: time.sleep(ms / 1000.0),
+        claim=claim)
+    emit({"ok": result["outcome"] != "unknown", "command": "stream-run",
+          "manifest_file": str(manifest.path), "claim_file": str(claim.path),
+          "frame_set_sha256": frame_set.sha256, "frame_count": frame_set.count,
+          "host_session": transport.opened, **result})
+    return EXIT_OK if result["outcome"] != "unknown" else EXIT_DEVICE
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="openditoo", description="OpenDitoo typed CLI")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1003,6 +1152,18 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("activity-session", help="run one reviewed activation manifest against the fixed paired Ditoo")
     p.add_argument("--manifest", required=True)
     p.set_defaults(func=activity_session_run)
+    p = sub.add_parser("stream-prepare", help="offline: freeze a 16x16 frame source into one hashed frame set")
+    p.add_argument("--source", required=True, help="a .rgb888 frame blob, or a directory of 16x16 PNGs")
+    p.add_argument("--output", required=True, help="frame-set file to write")
+    p.add_argument("--quantize", action="store_true",
+                   help="reduce frames deterministically to the 255-colour encoder limit")
+    p.set_defaults(func=stream_prepare)
+    p = sub.add_parser("stream-preview", help="offline: review one stream manifest and replay it against a fake transport")
+    p.add_argument("--manifest", required=True)
+    p.set_defaults(func=stream_preview)
+    p = sub.add_parser("stream-run", help="run one reviewed frame-stream manifest against the fixed paired Ditoo")
+    p.add_argument("--manifest", required=True)
+    p.set_defaults(func=stream_run)
     p = sub.add_parser("product-check", help="offline fail-closed review of the persistent MCP product policy")
     p.add_argument("--policy", default=str(product_runtime.DEFAULT_POLICY))
     p.set_defaults(func=product_check)
