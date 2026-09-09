@@ -620,6 +620,29 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertEqual(lead["confidence"], "LEAD")
         self.assertIn("not_claimed", lead)
 
+    def test_rerun_reproduces_the_ceiling_and_narrows_the_ack_lead(self) -> None:
+        first = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))
+        rerun = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-002-RERUN.json").read_text(encoding="utf-8"))
+        self.assertEqual(rerun["experiment_id"], "OPENDITOO-M8-FINITE-LOOP-002")
+        self.assertNotEqual(rerun["experiment_id"], first["experiment_id"],
+                            msg="a repeat gets its own manifest; a consumed grant is never un-consumed")
+        self.assertTrue(first["authority"]["authorization_consumed"])
+        self.assertTrue(rerun["authority"]["authorization_consumed"])
+        # Same reviewed shape: nothing about packets, rate or budgets may differ.
+        self.assertEqual(rerun["budgets"], first["budgets"])
+        self.assertEqual(rerun["operation"]["frame_order"], first["operation"]["frame_order"])
+        result = rerun["result"]
+        self.assertEqual(result["frames_acked"], rerun["budgets"]["application_requests"])
+        self.assertLessEqual(result["elapsed_ms"], rerun["budgets"]["total_wall_clock_ms"])
+        # The time-derivation hypothesis is now a measured negative, not a shrug.
+        finding = rerun["findings"][0]
+        self.assertEqual(finding["confidence"], "MATCHED_NEGATIVE")
+        self.assertIn("RULED OUT", finding["statement"])
+        self.assertIn("not_claimed", finding)
+        # Two independent sessions started from different ACK values.
+        self.assertNotEqual(result["ack_payload_hex_ordered"][0],
+                            first["attempts"][1]["ack_payload_hex_ordered"][0])
+
     def test_finite_loop_attempt_1_failed_before_transmitting_anything(self) -> None:
         manifest = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))
         attempt = manifest["attempts"][0]
