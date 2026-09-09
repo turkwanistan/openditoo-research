@@ -13,6 +13,26 @@ def main() -> int:
     path = ROOT / "experiments/DAY1-WEBCAM-N980P-001.json"
     try:
         manifest, _, stream = frame_stream.load_stream_manifest(path, require_authority=False)
+        doc = manifest.raw
+        if (manifest.lifetime_seconds, manifest.min_frame_interval_ms, manifest.max_frames,
+                manifest.max_application_packets, manifest.max_tx_bytes) != (10, 40, 112, 336, 118048):
+            raise ValueError("webcam W6 budget envelope drift")
+        if (stream.get("source_kind"), stream.get("session_profile"), stream.get("playback_interval_ms")) != (
+                "live", "streaming_ack_clock", 90):
+            raise ValueError("webcam W6 pacing/source envelope drift")
+        adapter = doc.get("adapter", {})
+        expected_routes = ["/v1/status", "/v1/session/open", "/v1/session/frame", "/v1/session/close"]
+        if adapter.get("typed_origin") != "http://127.0.0.1:8796" or adapter.get("routes") != expected_routes:
+            raise ValueError("webcam typed adapter envelope drift")
+        if doc["readiness"].get("execution_ready") or doc["readiness"].get("grant_ready"):
+            raise ValueError("review envelope must remain unready until Windows verification completes")
+        required_pending = {
+            "WINDOWS_LOCAL_ADAPTER_STAGING_AND_SELFTEST_NOT_REVERIFIED",
+            "CAMERA_READY_BEFORE_CLAIM_HANDSHAKE_NOT_REVERIFIED",
+            "FIVE_MINUTE_ALLOCATION_SOAK_NOT_DEMONSTRATED",
+        }
+        if not required_pending.issubset(set(doc["readiness"].get("blockers", []))):
+            raise ValueError("webcam W6 readiness blockers drift")
         hashes = stream["live_source"]["producer_code_sha256"]
         for relative, expected in hashes.items():
             candidate = ROOT / relative

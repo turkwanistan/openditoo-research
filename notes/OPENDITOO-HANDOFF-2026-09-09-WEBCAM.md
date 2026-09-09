@@ -2,9 +2,13 @@
 
 The live repository is authoritative over this note. Re-verify rather than inherit.
 
-At handoff: `main` at `93636be`, worktree clean, `python3 scripts/verify_day1_offline.py` passes
-**234 tests**, and the MCP dashboard is live and healthy on the new Host build
-(`status=connected`, `last_error=null`, `runtime_revision=2`).
+This recovery started from committed baseline `da77b6f`; the interrupted W6 adapter work was
+recovered from the local Codex session and preserved as the next coherent checkpoint.
+`python3 scripts/verify_day1_offline.py` passes **236 tests** with `device_io=false`. The source
+session recorded a successful Windows Release build of `OpenDitoo.Webcam.Runner` with zero
+warnings/errors. This WSL_MCP sandbox does **not** expose `powershell.exe`, `/mnt/c`, or the
+Windows Host loopback, so it cannot honestly re-run Windows-local adapter/camera checks here.
+No webcam grant, experiment claim, or Ditoo transmission was created by the interrupted work.
 
 ## 0. Read in this order
 
@@ -107,9 +111,12 @@ refuses an unknown name. **The streaming profile has never been exercised live.*
 | W2 transform shootout | **harness done, default frozen, ranking outstanding** |
 | W3 freshest-frame pipeline | done — 3/4 exit criteria, 4th gated on camera rate |
 | W4 Host streaming profile | done, built, **deployed** |
-| W5 dry run | done — 5/6 thresholds, 6th a documented exception |
-| W6 freeze trial manifest | **not started** |
-| W7 first physical trial | blocked on W6 + a named grant |
+| W5 dry run + fault injection | **done** — healthy path + terminal fault boundaries verified offline |
+| W6 freeze trial manifest | **in progress** — adapter source/build checkpoint exists; Windows-local staging/selftests, pre-claim handshake verification, and 5-minute soak remain |
+| W7 first physical trial | blocked on W6 final freeze + a fresh named grant |
+| W8 near-ceiling ACK-clock trial | after W7 acceptance; one bounded identity, no new rate ladder |
+| W9 optical latency | after W8 if useful; camera and Ditoo filmed together, separate from ACK latency |
+| W10 product polish/authority | only after experimental acceptance; decide whether webcam gets separate standing product authority |
 
 Sidecar: `runtime/windows/OpenDitoo.Webcam.Probe` with modes `enumerate`, `benchmark`,
 `snapshot`, `pipeline`, `dryrun`, `transform-selftest`, `encoder-selftest`. It references no Host
@@ -124,17 +131,22 @@ device receives:
 
 ## 6. Next objective, in order
 
-1. **Fault injection in the sidecar** (the plan's remaining W5 offline tests): camera disconnect
-   before session open, camera disconnect mid-session → clean close with no retry, and a Host
-   fault → terminal `unknown`, fail closed. This is the last thing that should be proven without
-   a device.
-2. **W6** — freeze the first bounded physical webcam trial manifest: exact unit, `streaming_ack_clock`
-   profile, frozen producer code hashes (a live source freezes the *envelope*, not pixels — see
-   `source_kind: "live"` in `host/frame_stream.py`), lifetime, budgets, stop conditions.
-3. **Stop and present the grant string.** Do not transmit before an operator grant naming that
-   experiment id.
-4. Optional, owner-dependent: W2's seven-scene blind ranking (needs the owner in front of the
-   camera; capture command is in route note §9.3).
+1. **Finish W6 offline verification from a Windows-capable local WSL session.** Rebuild and stage
+   `OpenDitoo.Webcam.Runner` to `C:\temp\openditoo-webcam-runner`; run its adapter selftest,
+   transform parity and encoder parity; exercise the camera-ready-before-durable-claim handshake
+   without opening a Ditoo session; then run the five-minute camera/allocation soak. These are the
+   only remaining engineering blockers in the review envelope.
+2. **Freeze the final W6 hashes and re-run the review checker.** The corrected first-trial envelope
+   is a permanent **40 ms Host floor** plus a separate **90 ms client dispatch cadence**, 10 s,
+   at most **112 frames / 336 application packets / 118,048 application bytes**. The earlier
+   83 ms floor/cadence draft is superseded because it left no arrival-time margin.
+3. **Stop at the W7 boundary and present the exact grant string.** Do not create a claim, stop the
+   product controller for a trial, or transmit until the operator explicitly grants the final
+   reviewed `OPENDITOO-WEBCAM-N980P-001` identity.
+4. After W7 visual/transport acceptance: W8 one near-ceiling ACK-clock characterization, W9
+   optical latency if useful, then W10 operator-friendly product polish and a separate standing
+   webcam-authority decision. Optional owner-dependent W2 seven-scene blind ranking may happen
+   at any convenient point and is not a W6 safety blocker.
 
 ## 7. Working style that earned its keep
 

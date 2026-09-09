@@ -568,3 +568,93 @@ is reviewed**: `Grant OPENDITOO-WEBCAM-N980P-001`. No grant was requested or rec
 Final review verification: `verify_day1_offline.py` **236 tests PASS**; the W6 checker reports
 valid hashes/budgets and all readiness blockers. Product status remains connected with no
 errors or authority blockers and zero reconnects/reclaims. No experimental claim was created.
+
+
+## 15. Interrupted W6 adapter checkpoint — recovered 2026-09-09
+
+This section **supersedes §14's statement that the live adapter is missing**. The uploaded local
+Codex transcript and the preserved worktree show that implementation continued after `da77b6f`
+until the model token limit ended the session. The work was not a Ditoo experiment: there was no
+new grant, no durable experiment claim, no product-controller stop and no device transmission.
+
+### 15.1 What now exists
+
+A Windows-native adapter now connects the already-proven freshest-frame camera producer to the
+**existing typed Host session family only**:
+
+- `runtime/windows/OpenDitoo.Webcam.Probe/WebcamFrames.cs` — exact N980P capture + capacity-one
+  raw/ready slots + frozen transform;
+- `runtime/windows/OpenDitoo.Webcam.Runner/{Program,Trial,TypedSession,OfflineTests}.cs` and the
+  runner project — camera lifecycle, fixed typed Host requests, bounded sender and offline fake;
+- `host/webcam_trial.py` — WSL-side review/claim coordinator;
+- `cli/webcam.py` — one fixed-envelope execution entry point, with no target/rate/raw/retry knobs.
+
+The adapter has no second Bluetooth stack. Its live transport is fixed to
+`http://127.0.0.1:8796` and `/v1/status`, `/v1/session/open`, `/v1/session/frame`,
+`/v1/session/close`. It keeps exactly one frame in flight, never resends an ambiguous frame,
+never reconnects/reclaims, and verifies the Host-confirmed `streaming_ack_clock` profile.
+
+The important authority fix is a **camera-ready-before-claim handshake**. The Windows runner
+opens the exact NexiGo, obtains and encodes one fresh 16×16 frame, then emits a fresh nonce. Only
+a matching WSL `execute:<nonce>` after a new durable claim may cross into `/v1/session/open`.
+Camera missing/stale before that point therefore cannot consume the Ditoo experiment identity.
+
+The interrupted source session recorded a successful Release build of
+`OpenDitoo.Webcam.Runner`: **0 warnings, 0 errors**. That is useful build evidence, not a substitute
+for the remaining Windows-local verification below.
+
+### 15.2 Pacing correction made immediately before the token cutoff
+
+The earlier W6 draft overloaded `min_frame_interval_ms=83` as both Host floor and desired client
+cadence. That leaves essentially no arrival-time margin: a nominal 83 ms client dispatch can
+reach the Host slightly early and a pacing refusal is terminal.
+
+The recovered adapter separates the limits correctly:
+
+- Host profile floor: **40 ms** (unchanged `streaming_ack_clock` authority bound);
+- client minimum actual-dispatch cadence: **90 ms**;
+- ACK gate: previous frame must also have completed;
+- lifetime: **10 s**.
+
+The frozen maximums therefore become:
+
+`floor(10000 / 90) + 1 = 112 frames → 336 application packets → 112 × 1054 = 118,048 application bytes`.
+
+These numbers replace §14.1's 83 ms / 121 / 363 / 127,534 draft. They target roughly 11 fps for
+the first trial, inside the already-measured realistic 10–13 fps ACK-clock envelope while still
+leaving the Host's independent 40 ms bound intact.
+
+### 15.3 What is still unproven — and why W6 is not grant-ready
+
+The current WSL_MCP sandbox re-ran `python3 scripts/verify_day1_offline.py`: **236 tests PASS**,
+`device_io=false`. It can parse the recovered Python coordinator and validate the updated review
+manifest/hashes. However, this sandbox exposes neither `powershell.exe` nor `/mnt/c`, and its
+Host loopback is unavailable. It therefore cannot honestly reproduce Windows-local camera or
+runner execution.
+
+The remaining W6 blockers are exactly:
+
+1. rebuild/stage the runner to a local Windows path and run `selftest` plus both transform/encoder
+   parity fixtures;
+2. re-verify the camera-ready-before-durable-claim handshake without opening a Ditoo session;
+3. run the runner's **five-minute camera/allocation soak** against its in-memory typed Host and
+   record the bounded-memory/camera result;
+4. re-hash the final executing source/build artifacts and re-run `scripts/check_webcam_trial.py`.
+
+`experiments/DAY1-WEBCAM-N980P-001.json` remains deliberately
+`transmission_authorized=false`, `authorization_consumed=false`, `execution_ready=false` and
+`grant_ready=false`. **Do not request or act on its future grant string yet.** Once the four
+checks above pass and the final freeze is reviewed, W6 can close and the project stops at the W7
+named-grant boundary.
+
+### 15.4 Milestones after W6
+
+- **W7:** one 10-second exact-unit physical webcam acceptance trial under a fresh named grant;
+  judge transport cleanliness, freshness/orientation and owner-visible face/hand recognizability.
+- **W8:** one bounded near-ceiling ACK-clock characterization after W7; do not repeat R1–R5 or
+  invent a new protocol/rate ladder.
+- **W9:** if useful, measure actual optical scene→Ditoo latency by filming source and display
+  together; never report ACK time as optical latency.
+- **W10:** only after experimental acceptance, add operator-friendly start/stop/preview polish and
+  decide whether webcam merits its own separate standing product authority. Runtime 003 remains
+  the MCP dashboard authority and is not widened by this work.

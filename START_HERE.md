@@ -7,8 +7,10 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 0. **Read `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` first** — the current handoff. Then
    `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md`. The external N980P webcam
    plan is adopted as the route, with recorded amendments. Runtime 003 is deployed;
-   W5 fault injection is verified (route §13). W6 has a missing live-adapter prerequisite
-   (route §14), not just an operator-grant boundary. Then read
+   W5 fault injection is verified (route §13). The interrupted W6 adapter implementation has
+   been recovered: source plus a successful Windows build checkpoint exist, while Windows-local
+   staging/selftests, the pre-claim camera-ready handshake check and five-minute soak remain
+   (route §15). W6 is therefore still an offline-verification boundary, not yet a grant boundary. Then read
    `notes/OPENDITOO-S1-STREAM-PRIMITIVE-2026-09-09.md`. It is the current
    route: the general 16x16 frame-streaming primitive is implemented, offline-verified and
    physically exercised once. `OPENDITOO-S1-STREAM-001` is **consumed** and may never be
@@ -38,7 +40,11 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | W4 streaming session profile | deployed under Runtime 003; installed/repository Host hash `0da3a18b...`. Streaming profile has not been exercised live |
 | W5 fault injection | PASS: 11 camera-free cases + 5 real-camera/in-memory-Host controls; both parity fixtures pass; route §13 |
 | W2 visual ranking | owner-dependent; harness complete, `srgb_area` remains provisional |
-| W6 trial freeze | review-only envelope prepared; live adapter still missing; route §14 |
+| W6 trial freeze | **in progress**: adapter source/build checkpoint recovered; Windows-local selftests/handshake/5-minute soak and final hash freeze remain; route §15 |
+| W7 first webcam acceptance | blocked on W6 final freeze + fresh named grant; one 10 s exact-unit trial |
+| W8 near-ceiling webcam rate | after W7 acceptance; one bounded ACK-clock characterization, no new ladder |
+| W9 optical latency | after W8 if useful; physical scene→display measurement, not inferred from ACKs |
+| W10 webcam productization | after experimental acceptance; separate standing-authority decision |
 | S2 stream-rate measurement | `OPENDITOO-S2-STREAM-RATE-001` consumed. Measured dispatch→ACK: median 66 ms, p95 93 ms at 1039 bytes. Dispatching at the 150 ms Host floor is FATAL (HTTP 429 on frame 10) — client must add 50 ms margin, so ~5 fps is today's safe cadence. Higher rates need a Host pacing change + Runtime 003. See `notes/OPENDITOO-STREAM-PRODUCER-CONTRACT-2026-09-09.md` |
 | S1 general frame streaming | **accepted**; `OPENDITOO-S1-STREAM-001` consumed, transport PASS (42 frames / 126 packets / 2982 bytes, clean close) and operator visual PASS |
 | A1 collection worker | installed/preserved; product owns collection while active |
@@ -61,8 +67,9 @@ is superseded, and its grant must not be reused for the webcam.
 
 The MCP dashboard is already the owner's working everyday baseline. Do not reopen durability, firmware, MassBoot, ACK decoding, command enumeration, or speculative UI work as release blockers.
 
-P2/P3/P4 and Runtime 003 deployment are closed. Resolve the live-adapter gap before calling W6
-execution-ready. Do not claim, stop the product, or transmit while preparing it.
+P2/P3/P4 and Runtime 003 deployment are closed. Finish the recovered adapter's Windows-local
+verification, pre-claim handshake check, five-minute soak, and final hash freeze before calling
+W6 execution-ready. Do not claim, stop the product, or transmit while preparing it.
 
 Use `PRODUCT.md` for normal operation. The reliable startup design boundary remains current-user Windows logon / StartWhenAvailable; a real Windows reboot/login observation is intentionally deferred and is not to be invented as accepted evidence.
 

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../OpenDitoo.Webcam.Probe/FrameTransform.cs" Link="FrameTransform.cs" />
+    <Compile Include="../OpenDitoo.Webcam.Probe/DitooEncoder.cs" Link="DitooEncoder.cs" />
+    <Compile Include="../OpenDitoo.Webcam.Probe/LatestFrameSlot.cs" Link="LatestFrameSlot.cs" />
+    <Compile Include="../OpenDitoo.Webcam.Probe/WebcamFrames.cs" Link="WebcamFrames.cs" />
+  </ItemGroup>
+</Project>

@@ -3525,11 +3525,26 @@ class W6WebcamReviewTests(unittest.TestCase):
         self.assertIsNone(frames)
         self.assertEqual(stream["source_kind"], "live")
         self.assertEqual(stream["session_profile"], "streaming_ack_clock")
-        self.assertEqual(manifest.max_frames, 10_000 // 83 + 1)
-        self.assertEqual(manifest.max_application_packets, 363)
-        self.assertEqual(manifest.max_tx_bytes, 121 * frame_stream.worst_case_frame_tx_bytes())
+        # The Host's independent profile floor stays 40 ms. The first trial's producer
+        # dispatch cadence is separately frozen at 90 ms so arrival jitter cannot turn
+        # a nominally legal dispatch into a terminal pacing refusal.
+        self.assertEqual(manifest.min_frame_interval_ms, 40)
+        self.assertEqual(stream["playback_interval_ms"], 90)
+        self.assertEqual(manifest.max_frames, 10_000 // 90 + 1)
+        self.assertEqual(manifest.max_application_packets, 336)
+        self.assertEqual(manifest.max_tx_bytes, 112 * frame_stream.worst_case_frame_tx_bytes())
+        self.assertFalse(manifest.raw["readiness"]["execution_ready"])
         self.assertFalse(manifest.raw["readiness"]["grant_ready"])
-        self.assertIn("LIVE_CAMERA_HOST_ADAPTER_MISSING", manifest.raw["readiness"]["blockers"])
+        blockers = manifest.raw["readiness"]["blockers"]
+        self.assertNotIn("LIVE_CAMERA_HOST_ADAPTER_MISSING", blockers)
+        for blocker in ("WINDOWS_LOCAL_ADAPTER_STAGING_AND_SELFTEST_NOT_REVERIFIED",
+                        "CAMERA_READY_BEFORE_CLAIM_HANDSHAKE_NOT_REVERIFIED",
+                        "FIVE_MINUTE_ALLOCATION_SOAK_NOT_DEMONSTRATED"):
+            self.assertIn(blocker, blockers)
+        adapter = manifest.raw["adapter"]
+        self.assertEqual(adapter["typed_origin"], "http://127.0.0.1:8796")
+        self.assertEqual(adapter["routes"], ["/v1/status", "/v1/session/open",
+                                             "/v1/session/frame", "/v1/session/close"])
 
     def test_review_does_not_grant_or_rearm_authority(self) -> None:
         with self.assertRaises(frame_stream.SessionError) as caught:

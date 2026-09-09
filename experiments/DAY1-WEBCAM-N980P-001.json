@@ -2,18 +2,18 @@
   "schema_version": 1,
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-N980P-001",
-  "milestone": "W6 review envelope; execution blocked",
-  "status": "review_only_live_adapter_missing",
-  "objective": "One bounded first physical webcam trial; future pixels are not frozen. This review artifact is not grant-ready until the live adapter exists, is tested and is included in the hash freeze.",
+  "milestone": "W6 review envelope; adapter implemented, Windows verification pending",
+  "status": "review_only_adapter_verification_pending",
+  "objective": "One bounded first physical webcam trial; future pixels are not frozen. The live adapter source now exists and compiled successfully once in the interrupted local Windows-capable session, but this review artifact remains unarmed and not grant-ready until Windows-local staging/selftests and the five-minute allocation soak are completed.",
   "readiness": {
     "execution_ready": false,
     "grant_ready": false,
     "blockers": [
-      "LIVE_CAMERA_HOST_ADAPTER_MISSING",
-      "ADAPTER_CODE_AND_BUILD_NOT_FROZEN",
+      "WINDOWS_LOCAL_ADAPTER_STAGING_AND_SELFTEST_NOT_REVERIFIED",
+      "CAMERA_READY_BEFORE_CLAIM_HANDSHAKE_NOT_REVERIFIED",
       "FIVE_MINUTE_ALLOCATION_SOAK_NOT_DEMONSTRATED"
     ],
-    "required_followup": "Implement and test the Windows camera-to-existing-typed-Host adapter offline, including camera readiness before the durable claim, paced ACK clock and clean/unknown terminal handling. Re-review this never-armed envelope with all executing hashes before requesting a grant."
+    "required_followup": "From a Windows-capable local WSL session, rebuild and stage the frozen runner to C:\\temp\\openditoo-webcam-runner, run adapter selftests plus both parity fixtures, verify the camera-ready-before-claim handshake without opening a Ditoo session, and complete the five-minute camera/allocation soak. Then re-hash the executing artifacts and re-review this never-armed envelope before requesting a grant."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -35,41 +35,45 @@
     },
     "host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
     "installed_dll_sha256_verified": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
-    "source_checkpoint": "581c72e",
-    "identity_note": "Installed DLL re-read in this session and matched repository Release build. No Host build or deploy performed."
+    "source_checkpoint": "da77b6f + interrupted W6 adapter checkpoint",
+    "identity_note": "Runtime 003 Host identity was verified before the interrupted adapter work. The adapter itself compiled successfully with zero warnings/errors in the uploaded local Codex session; no Host build/deploy or Ditoo transmission was performed. Current WSL_MCP cannot expose the Windows bridge, so Windows-local verification remains explicit rather than inferred."
   },
   "session": {
     "lifetime_seconds": 10,
-    "min_frame_interval_ms": 83,
+    "min_frame_interval_ms": 40,
     "poll_interval_ms": 10,
     "automatic_retry": false,
     "automatic_reconnect": false,
     "stock_screen_reclaim": false,
     "replay_after_interruption": false,
-    "shape": "First trial uses the plan's conservative 83 ms session interval, above the named profile's permanent 40 ms minimum. The missing adapter must pace locally from actual dispatch AND wait for each ACK; pure unpaced ACK-clock code is not sufficient for this envelope."
+    "shape": "The Host profile keeps its permanent 40 ms floor. The adapter separately enforces a 90 ms client dispatch cadence and waits for each prior ACK. Keeping these distinct avoids the earlier 83 ms floor/cadence trap and preserves arrival-time margin without changing the Host profile."
   },
   "stream": {
     "source_kind": "live",
     "session_profile": "streaming_ack_clock",
-    "playback_interval_ms": 83,
+    "playback_interval_ms": 90,
     "loop": false,
     "source_description": "NexiGo VID_0C45 PID_2690 live camera; WinRT Realtime freshest-frame slots; fixed srgb_area transform and deterministic 255-colour guard",
     "live_source": {
-      "producer_description": "Current camera/transform/encoder producer and tested dry-run binary only. No live adapter exists or is implied by these hashes.",
+      "producer_description": "Windows-native camera/transform/encoder + typed-session adapter. Source and the repository build produced by the interrupted Windows-capable session are frozen here; Windows-local staging/selftest and soak remain blockers.",
       "producer_code_sha256": {
         "runtime/windows/OpenDitoo.Webcam.Probe/DitooEncoder.cs": "a543919336212deed5fc7de354b932cadc68829eb848aee8043e1303cd0bfbb8",
-        "runtime/windows/OpenDitoo.Webcam.Probe/DryRunSession.cs": "b2edacbc1427b322ec5e3adb12e6e91dad1357bfea6a810aa18807207b6d24d5",
-        "runtime/windows/OpenDitoo.Webcam.Probe/FakeTypedHostSession.cs": "b8186f60d7f666e360f48370f9b7a01de04005261269df3d00a214aefc52c2d9",
         "runtime/windows/OpenDitoo.Webcam.Probe/FrameTransform.cs": "2d703b7dd7630dff071813c728862b33a0c5e68f245ee277ce0c7f9c8c85d623",
         "runtime/windows/OpenDitoo.Webcam.Probe/LatestFrameSlot.cs": "878df26656f479a120f18ed40d03a638e4d860161cf6b45f21fc32f7b1a0adab",
-        "runtime/windows/OpenDitoo.Webcam.Probe/Program.cs": "16d40cc703707e0a467e4e4235610240ce301eabbfdb94f9d28f2dd2cd943761",
-        "runtime/windows/OpenDitoo.Webcam.Probe/OpenDitoo.Webcam.Probe.csproj": "5888d5e6ff77057d8eb10b9a153a75b69d55310a89f0b3da85f9b08dbefc2bd1",
-        "runtime/windows/OpenDitoo.Webcam.Probe/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
-        "runtime/windows/OpenDitoo.Webcam.Probe/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Probe.deps.json": "16af5aeb87071a59cd85c743b6d786f1ef317956d66d00518767ba6a7ad4d1ec",
-        "runtime/windows/OpenDitoo.Webcam.Probe/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Probe.dll": "6058114e09d5275bc2b805899439fce0789828c3f6ec3c4ff1db079193742836",
-        "runtime/windows/OpenDitoo.Webcam.Probe/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Probe.exe": "f879b1c1288b9ee627b6e561ffb8945dc538861f603da7639577fe2cb8b3100e",
-        "runtime/windows/OpenDitoo.Webcam.Probe/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Probe.runtimeconfig.json": "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2",
-        "runtime/windows/OpenDitoo.Webcam.Probe/bin/Release/net8.0-windows10.0.19041.0/WinRT.Runtime.dll": "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
+        "runtime/windows/OpenDitoo.Webcam.Probe/WebcamFrames.cs": "e6c185b611ec6cf3b62beb442e0c50adfd99ed33a8a0cb9ab038c523eef437df",
+        "runtime/windows/OpenDitoo.Webcam.Runner/OpenDitoo.Webcam.Runner.csproj": "9f24533116e85541f0519684c2ccbac1fbb91d9a98eafeef9459c0e31d801587",
+        "runtime/windows/OpenDitoo.Webcam.Runner/Program.cs": "7ddfbf9f9a139e032156fafaa43f9fa7a3e9f6554b068c248e8a92b834bec16f",
+        "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs": "496a6d9fdc156b7e9eb7a286b413e8678a2f600d1515d357ba642042d0db920a",
+        "runtime/windows/OpenDitoo.Webcam.Runner/TypedSession.cs": "b91997fdbab54de3830dc426aaa2dced7a4cb0310d91b10f3989cce7b0517736",
+        "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs": "87912443268fd3e5c0f970b923b8d3ee71716f8fee3955c4e0f2182ec3a347ea",
+        "host/webcam_trial.py": "14c161219acda407e5c9824f50255506173d7f460d3f9cdeb1b1f42205d96448",
+        "cli/webcam.py": "1dbed50b2533c76bb72ad2c4313365c8756a316d4fd06029b0299bc7583f528f",
+        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
+        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.deps.json": "8848608ffa3024a9cb91318ec0df04be5e8872e3b8ced952ea17e681e64774f8",
+        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.dll": "2ef9e14323a45aaa514abd6d1efdd4f32f987ac638cabd226d74368bfab811c1",
+        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.exe": "7e7694d8e09aba87285238426f9221b360c9ebc6b70acb6563b9ad63ce175b53",
+        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.runtimeconfig.json": "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2",
+        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/WinRT.Runtime.dll": "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
       },
       "camera": {
         "device_description": "NexiGo HD Webcam",
@@ -103,11 +107,11 @@
   },
   "budgets": {
     "connection_attempts": 1,
-    "max_frames": 121,
-    "max_application_packets": 363,
-    "max_tx_bytes": 127534,
+    "max_frames": 112,
+    "max_application_packets": 336,
+    "max_tx_bytes": 118048,
     "ack_timeout_ms_per_frame": 5000,
-    "derivation": "min(floor(10000 / 83) + 1, 500) = 121 frames; 121 * 3 = 363 packets; canonical encoder worst-case is 1054 application bytes including both preambles, so 121 * 1054 = 127534 bytes."
+    "derivation": "min(floor(10000 / 90) + 1, 500) = 112 frames; 112 * 3 = 336 packets; canonical encoder worst-case is 1054 application bytes including both preambles, so 112 * 1054 = 118048 bytes."
   },
   "stop_policy": {
     "stop_immediately_on": [
@@ -131,7 +135,7 @@
     "transport": "bounded clean close; zero retries, reconnects, pacing refusals or encoder-hash mismatches; queue depth at most one",
     "visual": "owner judges face/hand recognizability and orientation; W2 seven-scene ranking remains outstanding",
     "latency": "report measured source age and ACK timing separately; do not claim optical latency from an ACK",
-    "allocation": "five-minute soak remains a preflight blocker until measured or explicitly amended"
+    "allocation": "five-minute soak remains a preflight blocker until measured from the Windows-local runner; the interrupted session only proved that the runner builds"
   },
   "persistence_analysis": {
     "expected_effect": "volatile display only",
@@ -146,6 +150,19 @@
     "grant_text": null,
     "expires_at": null,
     "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-N980P-001",
-    "grant_scope_requested": "ONE 10-second live-camera execution to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile, 83 ms session interval, at most 121 frames / 363 packets / 127534 application bytes; one connection and one frame in flight, no retry/reconnect/reclaim; suspend and restore the MCP controller separately. This scope is not currently grant-ready."
+    "grant_scope_requested": "ONE 10-second live-camera execution to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile, 40 ms Host floor plus 90 ms client dispatch cadence, at most 112 frames / 336 packets / 118048 application bytes; one connection and one frame in flight, no retry/reconnect/reclaim; suspend and restore the MCP controller separately. This scope is not currently grant-ready."
+  },
+  "adapter": {
+    "kind": "windows_native_camera_to_typed_session",
+    "windows_executable": "C:\\temp\\openditoo-webcam-runner\\OpenDitoo.Webcam.Runner.exe",
+    "typed_origin": "http://127.0.0.1:8796",
+    "routes": [
+      "/v1/status",
+      "/v1/session/open",
+      "/v1/session/frame",
+      "/v1/session/close"
+    ],
+    "claim_handshake": "Runner must produce one fresh valid 16x16 frame and emit camera_ready + nonce before WSL creates the durable one-use claim; only execute:<nonce> may cross the claim boundary.",
+    "deployment_state": "source and repository build frozen below; Windows-local staging/selftest pending"
   }
 }
