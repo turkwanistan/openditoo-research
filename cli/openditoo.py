@@ -39,6 +39,10 @@ SESSION_FRAME_URL = f"{HOST_ORIGIN}/v1/session/frame"
 SESSION_HEARTBEAT_URL = f"{HOST_ORIGIN}/v1/session/heartbeat"
 SESSION_CLOSE_URL = f"{HOST_ORIGIN}/v1/session/close"
 MIN_TOKEN_CHARS = 32
+# Responses scale with frame count: a 512-frame sequence returns per-frame timings, ACKs
+# and packet hashes, which came to 90 KB and silently overran the old 64 KB read. Still
+# bounded, and truncation is now detected rather than surfacing as a parse error.
+MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 
 EXIT_OK = 0
 EXIT_USAGE = 2
@@ -57,6 +61,19 @@ def local_dir() -> Path:
 
 def token_file() -> Path:
     return local_dir() / "host.token"
+
+
+def read_json_response(response) -> dict:
+    """Read one bounded JSON response, refusing a truncated read instead of misparsing it.
+
+    Reading a fixed cap and parsing whatever came back turns an oversized response into a
+    JSONDecodeError, which the callers then report as HOST_UNAVAILABLE -- a successful
+    512-frame run was misreported as a transport failure exactly this way.
+    """
+    body = response.read(MAX_RESPONSE_BYTES + 1)
+    if len(body) > MAX_RESPONSE_BYTES:
+        raise ValueError(f"RESPONSE_TOO_LARGE: over {MAX_RESPONSE_BYTES} bytes")
+    return json.loads(body.decode("utf-8"))
 
 
 def emit(value: object) -> None:
@@ -109,7 +126,7 @@ def host_status(_: argparse.Namespace) -> int:
     )
     try:
         with urllib.request.urlopen(request, timeout=3.0) as response:
-            body = json.loads(response.read(65537).decode("utf-8"))
+            body = read_json_response(response)
     except urllib.error.HTTPError as exc:
         emit({"ok": False, "command": "status", "error_code": "HOST_AUTH_REJECTED" if exc.code == 401 else "HOST_PROTOCOL", "http_status": exc.code})
         return EXIT_AUTH if exc.code == 401 else EXIT_PROTOCOL
@@ -252,7 +269,7 @@ def image_show(args: argparse.Namespace) -> int:
     )
     try:
         with urllib.request.urlopen(request, timeout=25.0) as response:
-            result = json.loads(response.read(65537).decode("utf-8"))
+            result = read_json_response(response)
     except urllib.error.HTTPError as exc:
         try:
             detail = json.loads(exc.read(65537).decode("utf-8"))
@@ -395,7 +412,7 @@ def sequence_run(args: argparse.Namespace) -> int:
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            result = json.loads(response.read(65537).decode("utf-8"))
+            result = read_json_response(response)
     except urllib.error.HTTPError as exc:
         try:
             detail = json.loads(exc.read(65537).decode("utf-8"))
@@ -569,7 +586,7 @@ def _post(url: str, body: dict, token: str, timeout: float) -> dict:
         headers={"Authorization": f"Bearer {token}", "Accept": "application/json",
                  "Content-Type": "application/json", "User-Agent": f"OpenDitoo-CLI/{CLI_VERSION}"})
     with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read(65537).decode("utf-8"))
+        return read_json_response(response)
 
 
 class _HostSessionTransport:

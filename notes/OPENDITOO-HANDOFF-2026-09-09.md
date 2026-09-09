@@ -45,36 +45,37 @@ Two live commands exist, both operator-invoked, neither able to retry or reconne
 
 ### Accepted operating ceiling
 
-**~109 ms per frame (9.15 frames/s), measured 2026-09-09 by `OPENDITOO-R2B-SPACING-10MS-001`.**
-Ten frames, one connection, 10/10 well-formed ACKs, zero errors, and **visually accepted**:
-the operator saw the corners alternating *clearly*, which is the load-bearing check here
-because a mis-assembled packet group would render a wrong image while still returning a
-valid ACK. **10.19x the original 1114 ms ceiling.**
+**Sustained: ~131 ms per frame (7.63 fps) at full RGB888 colour**, measured by
+`OPENDITOO-R4-MOTION-SUSTAINED-001`: 512 frames, 1536 packets, 536,576 bytes over 67
+seconds on one connection, 512/512 ACKs, zero errors, clean close, operator-confirmed
+smooth motion throughout.
 
-The ladder, all measured on the exact unit, each step changing one variable:
-
-| Delay | Spacing | Achieved | Rate | Visual |
+| Run | Frames | Bytes/frame | Interval | Rate |
 | --- | --- | --- | --- | --- |
-| 1000 ms | 40 ms | 1114.1 ms | 0.90 fps | pending from M8 |
-| 250 ms | 40 ms | 371.6 ms (3 runs) | 2.71 fps | confirmed |
-| 50 ms | 40 ms | 175.4 ms | 5.70 fps | confirmed |
-| **50 ms** | **10 ms** | **109.3 ms** | **9.15 fps** | confirmed clean |
+| M8 baseline | 10 | 71 | 1114.1 ms | 0.90 fps |
+| R1 (250 ms delay) | 10 x3 | 71 | 371.6 ms | 2.71 fps |
+| R2a (50 ms delay) | 10 | 71 | 175.4 ms | 5.70 fps |
+| R2b (10 ms spacing) | 10 | 71 | 109.3 ms | 9.15 fps |
+| R3 (full colour) | 10 | 1054 | 118.2 ms | 8.46 fps |
+| **R4 (sustained)** | **512** | **1048** | **131.0 ms** | **7.63 fps** |
 
-Two things this settled:
+Four things these settled, in order of importance to a streaming product:
 
-- **The stock app's 40 ms send spacing is not load-bearing** down to 10 ms. It was the
-  only timing value in the project taken from observed stock behaviour rather than chosen
-  by us, so it was the only one that might have encoded a device requirement. It did not.
-- **True device turnaround is about 27 ms**, measured directly once our own spacing
-  shrank. The "~105 ms ACK latency" quoted from M6 until R1 was almost entirely our own
-  inserted delay. The device was always far faster than this project assumed.
+- **Full-colour frames are nearly free.** 14.8x the bytes cost 8.9 ms per frame. Marginal
+  throughput is about 107 KB/s, so at 16x16 even a maximum-palette frame is not the
+  constraint. Bytes were never the bottleneck; our own pacing was.
+- **Sustained streaming holds.** 67 seconds continuous with quarter means of 130.5, 128.5,
+  132.4 and 132.7 ms and flat ACK medians. No throttling, no degradation. Nothing is
+  claimed beyond one minute.
+- **Short bursts overstate the sustainable rate by about 11 %** (131.0 vs 118.2 ms at
+  identical timing). Budget streaming at **7.6 fps**, not 8.5.
+- **The stock 40 ms send spacing is not load-bearing** down to 10 ms. It was the only
+  timing value taken from observed stock behaviour rather than chosen by us.
 
-**Recommended operating rate: 6-7 fps, not 9.15.** The activity display is change-only --
-it sent six frames in 300 seconds -- so rate affects only the crown pulse, which reads
-well anywhere from 5 to 9 fps. Below the wall there is jitter headroom; at it there is
-none. And at ~109 ms intervals the jitter is now dominated by Windows `Thread.Sleep`
-granularity (~15.6 ms steps were visible in the data), not by the device, so chasing the
-remaining ~2 fps would mean changing how we wait rather than what we ask of the Ditoo.
+**Recommended operating rate: 6-7 fps** for the activity display, which is change-only and
+sent six frames in 300 seconds. Streaming can use the full 7.6 fps, but at ~131 ms the
+jitter is now dominated by Windows `Thread.Sleep` granularity (~15.6 ms), so further gains
+mean not sleeping at all -- letting the ACK be the clock -- rather than sleeping less.
 
 **Correction carried by R1:** the `ackLatencyMs` recorded since M6 is
 `ackAt - frameStartedAt` and therefore **includes** the send spacing our own transport

@@ -1882,6 +1882,20 @@ class N5PostTrialRegressionTests(unittest.TestCase):
         self.assertEqual(result["outcome"], "stopped_clean")   # not an inferred fault
         self.assertEqual(len(transport.frames), 1)
 
+    def test_a_response_too_large_to_read_is_not_reported_as_a_dead_host(self) -> None:
+        # A 512-frame sequence returns ~90 KB of per-frame timings, ACKs and hashes. The
+        # old fixed 64 KB read truncated it, json.loads raised, and the caller reported
+        # HOST_UNAVAILABLE -- a fully successful run misreported as a transport failure.
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        self.assertIn("MAX_RESPONSE_BYTES", cli)
+        self.assertIn("RESPONSE_TOO_LARGE", cli)
+        block = cli[cli.index("def read_json_response("):cli.index("def emit(")]
+        self.assertIn("MAX_RESPONSE_BYTES + 1", block, msg="must read one past the cap to detect overrun")
+        # No response-body read may still use the old fixed cap.
+        for line in cli.splitlines():
+            if ".read(65537)" in line and "exc.read" not in line:
+                self.fail(f"fixed 64 KB response read remains: {line.strip()}")
+
     def test_sequence_run_now_claims_authority_durably_before_dispatch(self) -> None:
         # The documented enforcement-depth gap: sequence-run used to check only the
         # manifest's own flags, so a crash mid-run left the authority looking re-usable

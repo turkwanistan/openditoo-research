@@ -203,9 +203,12 @@ produced the wrong conclusion below.
 
 | Step | Change | Result | Risk |
 | --- | --- | --- | --- |
-| **R1** | inter-frame delay 1000 -> 250 ms | **DONE: 368.6 ms, 2.71 fps, 3.02x** | none realised — no code change, no drift, ACK behaviour unchanged |
-| R2 | `SendSpacingMs` 40 -> 20 -> 10, and lower the Host's 250 ms delay floor | projected ~109 ms, **~9.2 fps** at spacing 10 / delay 50 | low-med — the spacing is the one value taken from stock capture rather than chosen by us |
-| R3 | pipeline past the ACK | **probably unnecessary** | would abandon per-frame confirmation |
+| **R1** | delay 1000 -> 250 ms | **DONE: 371.6 ms, 2.71 fps** | none realised |
+| **R2a** | delay 250 -> 50 ms | **DONE: 175.4 ms, 5.70 fps** | none realised |
+| **R2b** | spacing 40 -> 10 ms | **DONE: 109.3 ms, 9.15 fps** | none realised; the stock spacing was not load-bearing |
+| **R3** | frame size 71 -> 1054 B | **DONE: 118.2 ms, 8.46 fps** | none realised; full colour costs 8.9 ms |
+| **R4** | 512 frames over 67 s | **DONE: 131.0 ms, 7.63 fps, no drift** | none realised on the device; the CLI misread its own result |
+| R5? | pipeline past the ACK | **not needed** for anything asked for so far | would abandon per-frame confirmation |
 
 **Correction.** This note previously said 10 fps was unreachable without R3, because
 100 ms per frame sat "below the observed median ACK latency alone". That compared against

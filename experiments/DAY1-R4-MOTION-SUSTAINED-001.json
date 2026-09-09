@@ -2,7 +2,7 @@
  "schema_version": 1,
  "experiment_id": "OPENDITOO-R4-MOTION-SUSTAINED-001",
  "milestone": "R4 \u2014 motion quality and sustained operation",
- "status": "pending_operator_grant",
+ "status": "completed_pass_authority_consumed",
  "objective": "Two questions one run answers: does motion look smooth or choppy at 8.5 fps, and does the device hold up over a minute of continuous full-colour streaming? A black 2x2 box travels a circle over a 253-colour sweep, sixteen laps, about 60 seconds.",
  "target": {
   "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -820,13 +820,15 @@
  },
  "authority": {
   "transmission_authorized": false,
-  "authorization_consumed": false,
+  "authorization_consumed": true,
   "experiment_id": "OPENDITOO-R4-MOTION-SUSTAINED-001",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "grant OPENDITOO-R4-MOTION-SUSTAINED-001",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution: 512 frames, 1536 packets, 536576 application bytes, about 60 seconds of continuous transmission, 50 ms delay, 10 ms spacing, one connection, no retry, no reconnect. Not continuous or unattended display, not a higher rate.",
-  "note": "Grants nothing as written."
+  "note": "Grants nothing as written.",
+  "grant_scope": "ONE execution: 512 frames, 1536 packets, 536576 application bytes, about 60 seconds of continuous transmission, 50 ms delay, 10 ms spacing, one connection, no retry, no reconnect.",
+  "consumed_at": "2026-09-09T16:41:42Z"
  },
  "explicitly_out_of_scope": [
   "any timing change; spacing and delay are held at R3's measured values",
@@ -857,5 +859,90 @@
   "why_it_is_still_bounded": "Any malformed or missing ACK, any incomplete send, any ACK timeout or the wall-clock ceiling stops the run immediately with no retry and no reconnect. The failure mode is a stopped experiment, not an unbounded one. It remains supervised throughout.",
   "operator_abort": "60 seconds is long enough that watching matters. If the display looks wrong, stalls or the unit behaves oddly, power it off rather than letting the run finish; a stopped run is a recorded result, and the manifest is consumed either way."
  },
- "result": null
+ "result": {
+  "status": "pass",
+  "operation_id": "426f869e6f2d",
+  "frames_acked": 512,
+  "packets_sent_complete": 1536,
+  "packets_planned": 1536,
+  "tx_bytes_sent_complete": 536576,
+  "tx_bytes_planned": 536576,
+  "duration_ms": 67160,
+  "connections_attempted": 1,
+  "socket_closed": true,
+  "retry": false,
+  "last_completed_stage": "ack",
+  "host_error_code": null,
+  "operator_visual": "confirmed_smooth",
+  "evidence_source": "Recovered from the Host's own diagnostics via /v1/status. The CLI transmitted the run successfully but could not READ its own result -- see the defect below -- so the worker-side record says unknown while the Host's says ok. The Host is authoritative here: it holds packets_sent_complete == packets_planned and a clean close."
+ },
+ "measurements": {
+  "achieved_inter_frame_interval_ms": {
+   "n": 511,
+   "mean": 131.0,
+   "min": 104,
+   "median": 122,
+   "max": 245,
+   "pstdev": 24.0
+  },
+  "achieved_fps": 7.63,
+  "sustained_throughput_kb_s": 7.8,
+  "drift_by_quarter_ms": [
+   130.5,
+   128.5,
+   132.4,
+   132.7
+  ],
+  "drift_verdict": "NONE detectable. Quarter means 130.5, 128.5, 132.4, 132.7 ms across 67 seconds, a spread of 4.2 ms or about 3 percent, with no monotonic trend. ACK latency medians were 64, 63, 64 and 62 ms -- flat. The device does not degrade over a minute of continuous full-colour streaming.",
+  "reported_ack_latency_ms": {
+   "n": 512,
+   "min": 50,
+   "median": 63.5,
+   "max": 184
+  },
+  "vs_ten_frame_burst": {
+   "r3_burst_ms": 118.2,
+   "r3_burst_fps": 8.46,
+   "sustained_ms": 131.0,
+   "sustained_fps": 7.63,
+   "statement": "Sustained is 131.0 ms against the ten-frame burst's 118.2 ms -- about 11 percent slower. Short bursts OVERSTATE the sustainable rate, so streaming budgets should use 7.6 fps, not 8.5."
+  },
+  "outliers": "max interval 245 ms and max ACK 184 ms against medians of 122 and 64 ms. Occasional spikes exist; the median is stable and no frame was lost.",
+  "errors": 0,
+  "missing_acks": 0
+ },
+ "findings": [
+  {
+   "id": "SUSTAINED-FULL-COLOUR-STREAMING-WORKS",
+   "confidence": "MATCHED",
+   "statement": "512 full-colour frames, 1536 packets and 536,576 application bytes streamed over one connection for 67 seconds with 512/512 ACKs, zero errors, zero retries and a clean close. The operator confirmed the motion was smooth throughout.",
+   "significance": "The previous longest transmission was 10 frames in 1.2 s. This is roughly 50x the frames and 500x the bytes, and nothing degraded."
+  },
+  {
+   "id": "NO-DRIFT-OVER-A-MINUTE",
+   "confidence": "MATCHED",
+   "statement": "Quarter-by-quarter interval means were 130.5, 128.5, 132.4, 132.7 ms with ACK medians of 64, 63, 64 and 62 ms. No thermal throttling, no queue growth, no slow degradation over 67 seconds of continuous streaming.",
+   "not_claimed": "behaviour beyond one minute; this says nothing about ten minutes or an hour."
+  },
+  {
+   "id": "SHORT-BURSTS-OVERSTATE-THE-SUSTAINABLE-RATE",
+   "confidence": "MATCHED",
+   "statement": "Sustained 131.0 ms per frame against 118.2 ms measured over ten frames at identical timing and comparable frame size -- an 11 percent gap. Ten-frame samples are optimistic.",
+   "consequence": "Streaming design should budget 7.6 fps at full colour, not the 8.5 fps a burst suggests."
+  },
+  {
+   "id": "CLIENT-MISREPORTED-A-SUCCESSFUL-RUN-AS-A-DEAD-HOST",
+   "confidence": "MATCHED",
+   "statement": "The CLI capped every response read at 65,537 bytes. A 512-frame result is about 90 KB, so the read truncated, json.loads raised, and the handler reported HOST_UNAVAILABLE with exit 20 for a run that had fully succeeded. The durable claim was finished as `unknown` on that false basis.",
+   "root_cause": "A fixed response bound that does not scale with frame count, combined with parsing whatever came back instead of detecting the truncation.",
+   "fix": "Reads are now bounded at 8 MB and read one byte past the cap, so an oversized response raises RESPONSE_TOO_LARGE instead of masquerading as a parse failure. A test forbids the old fixed cap.",
+   "why_it_matters_beyond_this_run": "A worker that misreads success as failure is worse than one that fails outright: it consumed real authority and recorded an outcome that was not true. The claim file is deliberately NOT rewritten -- it records what the worker believed -- and the reconciliation lives here, exactly as it did when worker and Host disagreed in M9-ACTIVATION-001."
+  }
+ ],
+ "acceptance": {
+  "transport_acceptance": "PASS \u2014 1536/1536 packets, 536576/536576 bytes, 512/512 ACKs, clean close, no retry, no reconnect, per the Host's own record.",
+  "sustained_acceptance": "PASS \u2014 67 seconds continuous with no measurable drift in interval or ACK latency.",
+  "motion_acceptance": "PASS \u2014 operator, watching the full minute: \"its really smooth looks great\".",
+  "client_acceptance": "FAIL \u2014 the CLI could not read its own result and misreported the run. Fixed; the failure was client-side only and touched no device behaviour."
+ }
 }
