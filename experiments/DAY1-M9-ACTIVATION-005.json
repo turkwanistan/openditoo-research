@@ -2,7 +2,7 @@
  "schema_version": 2,
  "experiment_id": "OPENDITOO-M9-ACTIVATION-005",
  "milestone": "MCP dashboard acceptance \u2014 corrected dispatch timestamp",
- "status": "pending_operator_grant",
+ "status": "authorized_pending_execution",
  "objective": "Physically accept the four-stage MCP activity pulse and stock-yield after fixing the stale pre-render dispatch timestamp exposed by 003/004.",
  "why_this_shape": "Same bounded dashboard/session/Host protocol as 004. Only the WSL runner timing bug is fixed: send cadence is now measured from actual dispatch time after source collection. Host hard floor remains 150 ms; client nominal cadence remains 200 ms; render tick remains 50 ms.",
  "target": {
@@ -102,14 +102,14 @@
   "operator present and watching the unit"
  ],
  "authority": {
-  "transmission_authorized": false,
+  "transmission_authorized": true,
   "authorization_consumed": false,
   "experiment_id": "OPENDITOO-M9-ACTIVATION-005",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "Grant OPENDITOO-M9-ACTIVATION-005",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution only: up to 60 seconds; change-only MCP dashboard; 50 ms render tick; client dispatch nominally no faster than 200 ms measured from actual dispatch; Host hard floor 150 ms; at most 301 frames / 903 packets / 61103 application bytes; one RFCOMM connection; one ACK per frame; fixed 10 ms intra-frame spacing; no retry, reconnect, reclaim, pipelining, streaming, unattended operation, or second attempt.",
-  "grant_scope": null
+  "grant_scope": "ONE execution only: up to 60 seconds; change-only MCP dashboard; 50 ms render tick; client dispatch nominally no faster than 200 ms measured from actual dispatch; Host hard floor 150 ms; at most 301 frames / 903 packets / 61103 application bytes; one RFCOMM connection; one ACK per frame; fixed 10 ms intra-frame spacing; no retry, reconnect, reclaim, pipelining, streaming, unattended operation, or second attempt."
  },
  "explicitly_out_of_scope": [
   "streaming or video milestone work",
