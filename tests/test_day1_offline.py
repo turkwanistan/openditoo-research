@@ -3584,6 +3584,10 @@ class W6WebcamReviewTests(unittest.TestCase):
         self.assertNotIn("cli/webcam.py", script)
         self.assertNotIn("SessionClaim", script)
         self.assertIn("claim_created=false host_session_io=false device_io=false", script)
+        self.assertIn("producer_code_sha256.PSObject.Properties", script)
+        self.assertIn("Get-FileHash -Algorithm SHA256 $sourcePath", script)
+        project = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/OpenDitoo.Webcam.Runner.csproj").read_text(encoding="utf-8")
+        self.assertIn("<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>", project)
 
     def test_review_does_not_grant_or_rearm_authority(self) -> None:
         with self.assertRaises(frame_stream.SessionError) as caught:

@@ -54,6 +54,15 @@ $doc.authority.authorization_consumed = $false
 $doc.authority.granted_by = 'OFFLINE_HANDSHAKE_SELFTEST_ONLY'
 $doc.authority.grant_text = 'Grant ' + $offlineId
 $doc.authority.expires_at = (Get-Date).ToUniversalTime().AddMinutes(10).ToString('o')
+# The synthetic negative-control manifest must describe the artifacts built by THIS invocation,
+# not the older W6 review freeze. Recompute every producer hash from the live repository after
+# the Release build/stage above; the authoritative W6 manifest itself remains untouched until
+# the whole verifier (including soak) passes and the final freeze is performed separately.
+foreach ($property in $doc.stream.live_source.producer_code_sha256.PSObject.Properties) {
+    $sourcePath = Join-Path $repo ($property.Name -replace '/', '\\')
+    Require (Test-Path $sourcePath) ('W6_SYNTHETIC_PRODUCER_MISSING ' + $property.Name)
+    $property.Value = (Get-FileHash -Algorithm SHA256 $sourcePath).Hash.ToLowerInvariant()
+}
 $doc | ConvertTo-Json -Depth 30 | Set-Content -Path $offlineManifest -Encoding UTF8
 $manifestSha = (Get-FileHash -Algorithm SHA256 $offlineManifest).Hash.ToLowerInvariant()
 $claimPath = Join-Path $repo ('.openditoo-local\session-claims\' + $offlineId + '.json')
@@ -75,7 +84,8 @@ try {
     Require ($lineTask.Wait([TimeSpan]::FromSeconds(20))) 'W6_CAMERA_READY_TIMEOUT'
     $readyLine = $lineTask.Result
     $ready = $readyLine | ConvertFrom-Json
-    Require ($ready.kind -eq 'camera_ready') 'W6_CAMERA_READY_KIND_MISMATCH'
+    if ($ready.kind -eq 'error') { throw ('W6_CAMERA_READY_RUNNER_ERROR ' + $ready.error) }
+    Require ($ready.kind -eq 'camera_ready') ('W6_CAMERA_READY_KIND_MISMATCH line=' + $readyLine)
     Require ($ready.experiment_id -eq $offlineId) 'W6_CAMERA_READY_ID_MISMATCH'
     Require ($ready.manifest_sha256 -eq $manifestSha) 'W6_CAMERA_READY_MANIFEST_HASH_MISMATCH'
     Require ($ready.nonce -match '^[a-f0-9]{32}$') 'W6_CAMERA_READY_NONCE_INVALID'
