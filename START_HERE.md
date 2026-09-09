@@ -26,36 +26,39 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | M6 static runtime + diagnostics | complete; physically accepted; pixel geometry proven |
 | M7 keyboard/button mapping | complete as a **bounded negative**; no usable physical navigation |
 | M8 repeated frames | complete; historical loops ran ~1118 ms/frame; later R1-R5 measured the same one-ACK-per-frame shape through 18.46 fps |
-| M9 activity application | N1-N4 complete: authority lifecycle, takeover-aware receive, change-only scheduling, sources and offline preview. N5 complete — 002 PASS over its full 300 s; both grants consumed. |
+| M9 activity application | complete through 008: deterministic trigger, repeated activity animation, stock takeover detection, and physical green → yellow → red → grey status acceptance all PASS; fault-bar remains opportunistic only |
 
 | Rate ladder R1-R5 | complete; **0.90 → 18.46 fps** sustained at full colour, all operator-confirmed |
-| A1 collection worker | installed and running; collection only, cannot transmit |
+| A1 collection worker | installed collection-only baseline; product installer will transactionally pause it while product runtime owns source cursors and restore its prior state on uninstall |
+| P1 persistent MCP product runtime | implemented and offline-hardened; disabled committed policy template; persistent local authority/install not yet granted |
 
 ### Authority state
 
-**`OPENDITOO-M9-ACTIVATION-004` is currently authorized for ONE bounded execution only.** `OPENDITOO-M9-ACTIVATION-003` is consumed after its one-frame HTTP 429 pacing-edge partial and must never be re-armed. The live 004 grant is limited to the exact frozen 60 s MCP-dashboard envelope; no retry, reconnect, reclaim, streaming, pipelining, unattended operation, or second attempt.
+**Nothing is currently authorized.** Every activation 001–008 is consumed. The persistent product runtime is implemented but its committed policy template, `product/OPENDITOO-PRODUCT-RUNTIME-001.json`, is deliberately disabled and carries no standing authority. A live product install requires a new explicit persistent grant naming `OPENDITOO-PRODUCT-RUNTIME-001`, followed by creation of a local mode-0600 policy under `.openditoo-local/`; never commit that local authorized policy.
 
-### Next objective
+### Next objective — plug-and-play product activation
 
-**Rate integration is complete offline.** Future activity-session source uses a **150 ms
-frame-start floor (6.67 fps)**, the accepted 10 ms intra-frame spacing, and the approved
-four ACK-gated cyan/blue/light-blue/cyan stages. See
-`notes/OPENDITOO-ACTIVITY-RATE-INTEGRATION-2026-09-09.md`.
+008 physically accepted production status rendering: green <5 min, yellow 5–20 min, red >=20 min, grey for no usable activity data. The dashboard/product surface is therefore ready for the new persistent authority shape. See `notes/OPENDITOO-PRODUCT-RUNTIME-HARDENING-2026-09-09.md`.
 
-That capable-environment boundary is now closed for activation 003: the changed Windows
-Host built and deployed successfully, repository and installed DLL hashes match exactly,
-`/v1/status` is healthy with `activity-session`, and all three MCP activity sources are
-reachable from normal WSL. `OPENDITOO-M9-ACTIVATION-003` is now the sole live grant and is
-ready for one supervised execution. No consumed manifest may be re-armed.
+Prepared product behavior:
 
-Offline commands that remain safe without a grant include the verifier, `session-check`,
-`session-preview`, `activity-status` without a transmitting action, and `activity-preview`.
-The old `DAY1-M9-ACTIVATION-001/002` manifests are consumed historical evidence, not
-activation templates.
+- Windows user logon starts the existing `OpenDitoo Day1 Host` and a separate owned `OpenDitoo Product Runtime` bootstrap;
+- the bootstrap starts the WSL `openditoo-product.service`;
+- product service collects MCP state itself, using the same approved renderer and bounded Host sessions;
+- if Ditoo/Host is unavailable, reconnect uses bounded 1/2/5/10/30 s backoff and keeps collecting while waiting;
+- if a physical input causes `canvas_invalidated`, the supervisor immediately starts a fresh bounded session and restores the current MCP dashboard; a storm guard adds a 1 s cooldown only after >8 takeovers in 10 s;
+- routine bounded-session renewal is automatic and uses a fresh globally unique Host-ledger ID each epoch;
+- SIGTERM/Windows shutdown requests a clean session close;
+- the standalone collection timer is transactionally paused during product install and its exact prior enabled/active state is restored on rollback/uninstall;
+- uninstall revokes the local persistent policy.
+
+The reliable Windows startup boundary is **current-user logon / StartWhenAvailable**, not pre-login kernel boot, because the WSL distro and its systemd user service are user-scoped. The bootstrap itself starts WSL, so no terminal or manual WSL launch is required.
+
+Offline commands remain safe without authority: verifier, `product-check`, `product-status`, `session-check`, `session-preview`, `activity-status` without a transmitting action, and `activity-preview`. `product-runtime` refuses without a valid local persistent policy.
 
 ## Current objective
 
-M0-M5 are complete through a visibly successful custom 16x16 frame. Current objective is the bounded product runtime:
+M0-M5 are complete through a visibly successful custom 16x16 frame. Current objective is the hardened plug-and-play MCP product runtime:
 
 `exact local 16x16 PNG -> deterministic RGB888 decode -> stock-derived image packet -> authenticated fixed-target Windows Host -> Ditoo`
 

@@ -221,6 +221,66 @@ def verify_activation_boundary() -> None:
             fail(f"session surface gained a forbidden recovery path: {forbidden}")
 
 
+def verify_product_runtime_boundary() -> None:
+    """Persistent product mode is a separate, disabled-by-default authority shape."""
+    policy_path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-001.json"
+    policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    if policy.get("product_id") != "OPENDITOO-MCP-DASHBOARD-V1":
+        fail("product policy id drifted")
+    target = policy.get("target", {})
+    if target.get("exact_unit_id") != "11:75:58:CE:DE:C7" or target.get("rfcomm_channel") != 1:
+        fail("product policy target/channel is not exact-unit bound")
+    behavior = policy.get("behavior", {})
+    if behavior.get("automatic_reconnect") is not True or behavior.get("reclaim_on_canvas_invalidated") is not True:
+        fail("product policy lost plug-and-play reconnect/reclaim semantics")
+    if behavior.get("raw_send_enabled") is not False or behavior.get("target_override_enabled") is not False:
+        fail("product policy exposes raw send or target override")
+    authority = policy.get("authority", {})
+    if authority.get("persistent_runtime_authorized") is not False or authority.get("grant_scope") is not None:
+        fail("committed product policy must never carry standing authority")
+
+    product_py = (ROOT / "host/product_runtime.py").read_text(encoding="utf-8")
+    if "activity_session.run_session" not in product_py:
+        fail("product supervisor no longer reuses bounded activity sessions")
+    if "canvas_invalidated" not in product_py or "reconnect_backoff_seconds" not in product_py:
+        fail("product supervisor lost reclaim/backoff recovery")
+    for forbidden in ("import socket", "BluetoothAddress", "send_hex", "packetHex"):
+        if forbidden in product_py:
+            fail(f"product supervisor gained a transport/raw-send escape: {forbidden}")
+
+    unit = (ROOT / "runtime/wsl/openditoo-product.service").read_text(encoding="utf-8")
+    exec_lines = [line for line in unit.splitlines() if line.startswith("ExecStart=")]
+    if len(exec_lines) != 1 or "product-runtime" not in exec_lines[0] or "product-runtime-policy.json" not in exec_lines[0]:
+        fail("product systemd service does not run exactly the typed product runtime")
+    for required in ("Restart=on-failure", "KillSignal=SIGTERM", "NoNewPrivileges=true", "UMask=0077"):
+        if required not in unit:
+            fail(f"product systemd hardening missing: {required}")
+    if any(line.strip().startswith("PrivateTmp=") for line in unit.splitlines()):
+        fail("PrivateTmp breaks ssh-backed MCP activity sources in product mode")
+
+    wsl_install = (ROOT / "runtime/wsl/install_openditoo_product.sh").read_text(encoding="utf-8")
+    for required in ('--prepare)', '--rollback)', '--uninstall)', 'restore_collector',
+                     'disable --now "$COLLECT_TIMER"', 'persistent_runtime_authorized'):
+        if required not in wsl_install:
+            fail(f"product WSL lifecycle lost transactional boundary: {required}")
+    prepare = wsl_install[wsl_install.index('--prepare)'):wsl_install.index('--start)')]
+    if 'systemctl --user start "$PRODUCT_SERVICE"' in prepare:
+        fail("product PREPARE may start transmission before Windows task registration")
+
+    ps = (ROOT / "runtime/windows/install_openditoo_product_runtime.ps1").read_text(encoding="utf-8")
+    for required in ("$TaskName = 'OpenDitoo Product Runtime'", "$HostTaskName = 'OpenDitoo Day1 Host'",
+                     "$OpenTivooTaskName = 'OpenTivoo Product Runtime'", "New-ScheduledTaskTrigger -AtLogOn",
+                     "Invoke-WslProduct '--prepare'", "Invoke-WslProduct '--rollback'"):
+        if required not in ps:
+            fail(f"Windows product bootstrap missing boundary: {required}")
+    for forbidden in ("Stop-ScheduledTask -TaskName $HostTaskName",
+                      "Unregister-ScheduledTask -TaskName $HostTaskName",
+                      "Stop-ScheduledTask -TaskName $OpenTivooTaskName",
+                      "Unregister-ScheduledTask -TaskName $OpenTivooTaskName"):
+        if forbidden in ps:
+            fail(f"product bootstrap may mutate preserved runtime: {forbidden}")
+
+
 def verify_consumed_runner() -> None:
     runner = (ROOT / "runtime/windows/OpenDitoo.M4.Runner/Program.cs").read_text(encoding="utf-8")
     if "M4_AUTHORITY_CONSUMED" not in runner:
@@ -260,13 +320,14 @@ def main() -> int:
     verify_activity_ui()
     verify_collection_worker()
     verify_activation_boundary()
+    verify_product_runtime_boundary()
     verify_consumed_runner()
     verify_m5_runner_disarmed()
     print(
         "DAY1_OFFLINE_PASS "
         f"artifacts={artifact_count} tests={test_count} host=typed_image port=8796 "
         "device_io=false m4_completed=true m4_authorized=false m5_authorized=false ui=approved_mcp_page "
-        f"m9_activation_authorized={str(_m9_armed()).lower()}"
+        f"m9_activation_authorized={str(_m9_armed()).lower()} product_policy_authorized=false"
     )
     return 0
 

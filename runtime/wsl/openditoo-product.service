@@ -1,0 +1,26 @@
+[Unit]
+Description=OpenDitoo persistent MCP dashboard product runtime
+Documentation=file://%h/Projects/openditoo-research/notes/OPENDITOO-HANDOFF-2026-09-09.md
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+WorkingDirectory=__REPO__
+ExecStart=/usr/bin/env python3 __REPO__/cli/openditoo.py product-runtime --policy __REPO__/.openditoo-local/product-runtime-policy.json --state-file __REPO__/.openditoo-local/product-runtime-state.json
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=20s
+KillSignal=SIGTERM
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+UMask=0077
+Environment=PYTHONUNBUFFERED=1
+
+# Do NOT add PrivateTmp=true. The MCP collector inside this service uses ssh for the
+# OptiPlex sources, and that setting was isolated as the cause of ssh config ownership
+# failures in the already-accepted collection worker.
+
+[Install]
+WantedBy=default.target

@@ -3,19 +3,16 @@
 **The repository is authoritative; this note is a map, not a transcript.** Where this note
 and the code disagree, the code wins.
 
-Snapshot: `main` @ `4f93141`, clean.
-`DAY1_OFFLINE_PASS artifacts=19 tests=148 host=typed_image port=8796 device_io=false
-m4_completed=true m4_authorized=false m5_authorized=false ui=approved_mcp_page
-m9_activation_authorized=false`
+Routing refreshed after activation 008 and product-runtime hardening. Always run `git status` and `python3 scripts/verify_day1_offline.py`; do not inherit the old snapshot/hash text from historical sections.
+
 
 ## 0. Read this first if you are the next session
 
-**`OPENDITOO-M9-ACTIVATION-003` is currently authorized for ONE execution.** The prior
-live experiments remain consumed. This grant names only the fresh 003 manifest: a 60 s
-supervised MCP-dashboard acceptance at a 150 ms frame-start floor, fixed 10 ms packet
-spacing, one connection, ACK-per-frame, no retry/reconnect/reclaim/pipelining. Never
-re-arm a consumed manifest: un-consuming destroys the record of
-what happened, and the durable claim would refuse anyway.
+**Nothing is currently authorized. Activations 001–008 are consumed.** 008 is a physical PASS: exactly four changed frames rendered green → yellow → red → grey over 15 s and the operator confirmed every transition looked good. Production semantics remain green <5 min, yellow 5–20 min, red >=20 min, grey for no usable activity data.
+
+The current objective is **persistent plug-and-play MCP product runtime**. Offline implementation is prepared under `product/OPENDITOO-PRODUCT-RUNTIME-001.json`, but the committed template is deliberately disabled. Do not start `product-runtime`, install the product service, or materialize a local authorized policy until the operator explicitly grants `OPENDITOO-PRODUCT-RUNTIME-001`. After such a grant, persistent authority belongs only to the local mode-0600 policy and exact scope described in `AGENTS.md`; experimental manifests remain one-use/consumed.
+
+Prepared behavior: Windows logon bootstrap → WSL product service → bounded typed activity sessions → automatic bounded reconnect when Ditoo returns → immediate fresh-session MCP-screen reclaim after `canvas_invalidated`. No new Host route or raw Bluetooth surface was added. `OpenDitoo Day1 Host` and OpenTivoo remain separately owned/preserved. See `notes/OPENDITOO-PRODUCT-RUNTIME-HARDENING-2026-09-09.md`.
 
 ### If you are running under WSL_MCP, expect to do offline work only
 

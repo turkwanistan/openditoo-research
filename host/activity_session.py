@@ -484,7 +484,8 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
                 render: Callable[[int], tuple[bytes, bool]],
                 clock: Callable[[], int], sleep: Callable[[int], None],
                 claim: SessionClaim | None = None,
-                max_iterations: int = 100_000) -> dict:
+                max_iterations: int = 100_000,
+                stop_requested: Callable[[], bool] | None = None) -> dict:
     """Drive one bounded activation to a terminal or explicitly unknown result.
 
     `render(now_ms)` returns the current 16x16 RGB888 frame and whether new activity
@@ -547,6 +548,8 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
     try:
         for _ in range(max_iterations):
             now = clock()
+            if stop_requested is not None and stop_requested():
+                return finish("operator_stop", "stopped_clean", "supervisor stop requested")
             if now >= deadline_ms:
                 break
 

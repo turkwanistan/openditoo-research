@@ -1570,6 +1570,7 @@ if __name__ == "__main__":
 # --------------------------------------------------------------------------
 
 from host import activity_session  # noqa: E402
+from host import product_runtime  # noqa: E402
 
 HOST_DIR = ROOT / "runtime/windows/OpenDitoo.Day1.Host"
 
@@ -1835,6 +1836,188 @@ class N3ReceiveFramingTests(unittest.TestCase):
         for payload in (0x12, 0x75, 0xF0, 0xE5, 0x33, 0x00):
             self.assertEqual(activity_session.classify_report(
                 encode_candidate_normal(0x04, bytes([0x44, 0x55, payload]))), "ack")
+
+
+class ProductRuntimeTests(unittest.TestCase):
+    def _policy_raw(self, authorized: bool = False) -> dict:
+        scope = ("Persistent unattended MCP dashboard on exact Ditoo 11:75:58:CE:DE:C7; "
+                 "automatic reconnect; reclaim MCP screen after stock takeover; typed activity-session only; "
+                 "no raw send, target override, firmware, or generic Bluetooth surface.")
+        return {
+            "schema_version": 1,
+            "product_id": product_runtime.PRODUCT_ID,
+            "target": {"exact_unit_id": activity_session.EXACT_UNIT_ID,
+                       "installed_firmware": activity_session.INSTALLED_FIRMWARE},
+            "build": {"code_sha256": product_runtime.runtime_hashes(),
+                      "host_dll_sha256": activity_session.sha256_file(activity_session.HOST_BUILD_DLL)},
+            "session": {"lifetime_seconds": 60, "min_frame_interval_ms": 150,
+                        "poll_interval_ms": 50, "pulse_freshness_seconds": 30,
+                        "max_frames": 401, "max_tx_bytes": 81403},
+            "behavior": {"automatic_reconnect": True, "reclaim_on_canvas_invalidated": True,
+                         "raw_send_enabled": False, "target_override_enabled": False,
+                         "start_at_windows_logon": True,
+                         "reconnect_backoff_seconds": [1, 2, 5, 10, 30]},
+            "authority": {"persistent_runtime_authorized": authorized, "revoked": False,
+                          "granted_by": "operator" if authorized else None,
+                          "grant_text": "Grant OPENDITOO-PRODUCT-RUNTIME-001" if authorized else None,
+                          "grant_scope_requested": scope,
+                          "grant_scope": scope if authorized else None},
+        }
+
+    def test_product_policy_is_fail_closed_until_persistent_authority_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "policy.json"
+            path.write_text(json.dumps(self._policy_raw(False)), encoding="utf-8")
+            reviewed = product_runtime.load_policy(path, require_authority=False)
+            self.assertEqual(reviewed.product_id, product_runtime.PRODUCT_ID)
+            self.assertIn("PRODUCT_AUTHORITY_MISSING", product_runtime.authority_blockers(path))
+            with self.assertRaises(product_runtime.ProductPolicyError) as blocked:
+                product_runtime.load_policy(path, require_authority=True)
+            self.assertEqual(blocked.exception.code, "PRODUCT_AUTHORITY_MISSING")
+            path.write_text(json.dumps(self._policy_raw(True)), encoding="utf-8")
+            armed = product_runtime.load_policy(path, require_authority=True)
+            self.assertTrue(armed.automatic_reconnect)
+            self.assertTrue(armed.reclaim_on_canvas_invalidated)
+
+    def test_product_policy_cannot_change_target_or_enable_raw_send(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "policy.json"
+            raw = self._policy_raw(True)
+            raw["target"]["exact_unit_id"] = "00:00:00:00:00:00"
+            path.write_text(json.dumps(raw), encoding="utf-8")
+            with self.assertRaises(product_runtime.ProductPolicyError) as wrong_target:
+                product_runtime.load_policy(path)
+            self.assertEqual(wrong_target.exception.code, "PRODUCT_TARGET_MISMATCH")
+            raw = self._policy_raw(True)
+            raw["behavior"]["raw_send_enabled"] = True
+            path.write_text(json.dumps(raw), encoding="utf-8")
+            with self.assertRaises(product_runtime.ProductPolicyError) as raw_send:
+                product_runtime.load_policy(path)
+            self.assertEqual(raw_send.exception.code, "PRODUCT_RAW_SEND_FORBIDDEN")
+
+    def test_supervisor_reclaims_immediately_but_backs_off_on_transport_failure(self) -> None:
+        policy = product_runtime.ProductPolicy(
+            path=Path("policy.json"), product_id=product_runtime.PRODUCT_ID,
+            session_lifetime_seconds=60, min_frame_interval_ms=150, poll_interval_ms=50,
+            pulse_freshness_seconds=30, max_frames_per_session=401,
+            max_tx_bytes_per_session=81403, reconnect_backoff_seconds=(1, 2, 5, 10, 30),
+            reclaim_on_canvas_invalidated=True, automatic_reconnect=True,
+            start_at_windows_logon=True, code_hashes={}, host_build_sha256="0" * 64,
+            authority_grant_text="Grant OPENDITOO-PRODUCT-RUNTIME-001")
+        clock = {"s": 0.0}
+        starts = []
+        transports = [
+            activity_session.FakeSessionTransport(reports={1: [{"kind": "session_ended",
+                "reason": "canvas_invalidated", "outcome": "stopped_yielded_to_stock"}]}),
+            activity_session.FakeSessionTransport(fail_on_frame=1),
+            activity_session.FakeSessionTransport(),
+        ]
+
+        def factory():
+            starts.append(clock["s"])
+            return transports[len(starts) - 1]
+
+        class StaticRenderer:
+            def __call__(self, _now):
+                return bytes([0, 255, 0]) * 256, False
+            def frame_sent(self):
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            result = product_runtime.run_product(
+                policy, factory, max_sessions=3,
+                config={"poll_seconds": 2.0, "sources": {}},
+                activity_state=mcp_activity.blank_state(),
+                state_file=Path(tmp) / "state.json",
+                renderer_factory=lambda _c, _s, _m: StaticRenderer(),
+                waiting_collector=lambda _c, _s: None,
+                monotonic=lambda: clock["s"],
+                sleep=lambda sec: clock.__setitem__("s", clock["s"] + sec),
+            )
+        self.assertEqual(result["reclaims"], 1)
+        self.assertEqual(result["reconnects"], 1)
+        self.assertEqual(result["connected_sessions"], 2)
+        self.assertLess(starts[1] - starts[0], 1.0, msg="button takeover should reclaim without disconnect backoff")
+        self.assertGreaterEqual(starts[2] - starts[1], 1.0, msg="transport failure must use bounded backoff")
+        self.assertEqual(result["status"], "stopped")
+
+    def test_run_session_honors_supervisor_stop_and_closes_transport(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "m.json"
+            raw = _valid_manifest()
+            path.write_text(json.dumps(raw), encoding="utf-8")
+            manifest = activity_session.load_session_manifest(path)
+            transport = activity_session.FakeSessionTransport()
+            clock = {"ms": 0}
+            result = activity_session.run_session(
+                manifest, transport, lambda _now: (bytes([0, 255, 0]) * 256, False),
+                lambda: clock["ms"],
+                lambda ms: clock.__setitem__("ms", clock["ms"] + ms),
+                stop_requested=lambda: clock["ms"] >= 200,
+            )
+            self.assertEqual(result["terminal_reason"], "operator_stop")
+            self.assertEqual(result["outcome"], "stopped_clean")
+            self.assertEqual(transport.closed_reason, "operator_stop")
+
+
+class ProductInstallationBoundaryTests(unittest.TestCase):
+    def test_committed_product_policy_is_disabled_but_hash_complete(self) -> None:
+        path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-001.json"
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        self.assertFalse(raw["authority"]["persistent_runtime_authorized"])
+        self.assertIsNone(raw["authority"]["grant_scope"])
+        self.assertEqual(raw["target"]["exact_unit_id"], activity_session.EXACT_UNIT_ID)
+        self.assertFalse(raw["behavior"]["raw_send_enabled"])
+        self.assertFalse(raw["behavior"]["target_override_enabled"])
+        reviewed = product_runtime.load_policy(path, require_authority=False)
+        self.assertTrue(reviewed.automatic_reconnect)
+        self.assertTrue(reviewed.reclaim_on_canvas_invalidated)
+        self.assertIn("PRODUCT_AUTHORITY_MISSING", product_runtime.authority_blockers(path))
+
+    def test_product_systemd_service_is_narrow_and_restartable(self) -> None:
+        unit = (ROOT / "runtime/wsl/openditoo-product.service").read_text(encoding="utf-8")
+        exec_lines = [line for line in unit.splitlines() if line.startswith("ExecStart=")]
+        self.assertEqual(len(exec_lines), 1)
+        self.assertIn("product-runtime", exec_lines[0])
+        self.assertIn(".openditoo-local/product-runtime-policy.json", exec_lines[0])
+        self.assertIn("Restart=on-failure", unit)
+        self.assertIn("KillSignal=SIGTERM", unit)
+        self.assertIn("NoNewPrivileges=true", unit)
+        self.assertIn("UMask=0077", unit)
+        self.assertFalse(any(line.strip().startswith("PrivateTmp=")
+                             for line in unit.splitlines()))
+        for forbidden in ("image-show", "sequence-run", "send_hex", "packetHex", "--target"):
+            self.assertNotIn(forbidden, exec_lines[0])
+
+    def test_wsl_product_installer_is_transactional_and_restores_collector(self) -> None:
+        script = (ROOT / "runtime/wsl/install_openditoo_product.sh").read_text(encoding="utf-8")
+        self.assertIn('systemctl --user disable --now "$COLLECT_TIMER"', script)
+        self.assertIn('restore_collector', script)
+        self.assertIn('--prepare)', script)
+        self.assertIn('--rollback)', script)
+        self.assertIn('--uninstall)', script)
+        prepare = script[script.index('--prepare)'):script.index('--start)')]
+        self.assertIn('systemctl --user enable "$PRODUCT_SERVICE"', prepare)
+        self.assertNotIn('systemctl --user start "$PRODUCT_SERVICE"', prepare,
+                         msg="prepare must perform zero product transmission")
+        uninstall = script[script.index('--uninstall)'):]
+        self.assertIn("persistent_runtime_authorized", uninstall)
+        self.assertIn("revoked", uninstall)
+
+    def test_windows_bootstrap_owns_only_its_task_and_preserves_host_and_opentivoo(self) -> None:
+        ps = (ROOT / "runtime/windows/install_openditoo_product_runtime.ps1").read_text(encoding="utf-8")
+        self.assertIn("$TaskName = 'OpenDitoo Product Runtime'", ps)
+        self.assertIn("$HostTaskName = 'OpenDitoo Day1 Host'", ps)
+        self.assertIn("$OpenTivooTaskName = 'OpenTivoo Product Runtime'", ps)
+        self.assertIn("New-ScheduledTaskTrigger -AtLogOn", ps)
+        self.assertIn("-StartWhenAvailable", ps)
+        self.assertIn("Invoke-WslProduct '--prepare'", ps)
+        self.assertIn("Invoke-WslProduct '--rollback'", ps)
+        self.assertIn("Start-ScheduledTask -TaskName $TaskName", ps)
+        self.assertNotIn("Stop-ScheduledTask -TaskName $HostTaskName", ps)
+        self.assertNotIn("Unregister-ScheduledTask -TaskName $HostTaskName", ps)
+        self.assertNotIn("Stop-ScheduledTask -TaskName $OpenTivooTaskName", ps)
+        self.assertNotIn("Unregister-ScheduledTask -TaskName $OpenTivooTaskName", ps)
 
 
 class N3SessionRunTests(unittest.TestCase):

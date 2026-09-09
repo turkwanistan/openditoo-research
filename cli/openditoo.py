@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Typed OpenDitoo CLI.
 
-The live surface is intentionally narrow: a fixed authenticated Host may show one
-validated 16x16 PNG on the exact paired Ditoo. There is no target selector, raw
-packet send, generic Bluetooth command, automatic retry, or firmware path.
+The live surface is intentionally narrow and exact-target bound. Experimental/manual
+commands retain one-shot authority and no automatic retry. A separate persistent
+`product-runtime` supervisor may reconnect/reclaim only when a locally authorized,
+hash-frozen product policy explicitly grants that behavior. Neither surface exposes a
+target selector, raw packet send, generic Bluetooth command, or firmware path.
 """
 from __future__ import annotations
 
@@ -28,8 +30,9 @@ from host import activity_render  # noqa: E402
 from host import btsnoop  # noqa: E402
 from host import mcp_activity  # noqa: E402
 from host import activity_session  # noqa: E402
+from host import product_runtime  # noqa: E402
 
-CLI_VERSION = "0.2.0-static-image"
+CLI_VERSION = "0.3.0-mcp-product"
 HOST_ORIGIN = "http://127.0.0.1:8796"
 STATUS_URL = f"{HOST_ORIGIN}/v1/status"
 IMAGE_SHOW_URL = f"{HOST_ORIGIN}/v1/image/show"
@@ -803,6 +806,87 @@ def activity_session_run(args: argparse.Namespace) -> int:
     return EXIT_OK if result["outcome"] != "unknown" else EXIT_DEVICE
 
 
+def product_check(args: argparse.Namespace) -> int:
+    """Offline review of the persistent product policy. Never touches the Host/device."""
+    path = Path(args.policy)
+    try:
+        policy = product_runtime.load_policy(path, require_authority=False)
+    except product_runtime.ProductPolicyError as exc:
+        emit({"ok": False, "command": "product-check", "device_io": False,
+              "execution_ready": False, "error_code": exc.code, "detail": exc.detail})
+        return EXIT_BLOCKED
+    blockers = product_runtime.authority_blockers(path)
+    emit({
+        "ok": True, "command": "product-check", "device_io": False,
+        "execution_ready": not blockers, "execution_blockers": blockers,
+        "product_id": policy.product_id, "policy_file": str(path),
+        "exact_unit_id": product_runtime.EXACT_UNIT_ID,
+        "session_lifetime_seconds": policy.session_lifetime_seconds,
+        "min_frame_interval_ms": policy.min_frame_interval_ms,
+        "max_frames_per_session": policy.max_frames_per_session,
+        "max_tx_bytes_per_session": policy.max_tx_bytes_per_session,
+        "automatic_reconnect": policy.automatic_reconnect,
+        "reclaim_on_canvas_invalidated": policy.reclaim_on_canvas_invalidated,
+        "start_at_windows_logon": policy.start_at_windows_logon,
+        "reconnect_backoff_seconds": list(policy.reconnect_backoff_seconds),
+        "code_hashes_verified": True,
+        "host_build_sha256": policy.host_build_sha256,
+    })
+    return EXIT_OK
+
+
+def product_status(args: argparse.Namespace) -> int:
+    state = product_runtime.read_runtime_state(Path(args.state_file))
+    policy_path = Path(args.policy)
+    blockers = product_runtime.authority_blockers(policy_path) if policy_path.exists() else ["PRODUCT_POLICY_MISSING"]
+    emit({"ok": True, "command": "product-status", "device_io": False,
+          "policy_file": str(policy_path), "authority_blockers": blockers,
+          "runtime": state})
+    return EXIT_OK
+
+
+def product_runtime_run(args: argparse.Namespace) -> int:
+    """Persistent product supervisor. Only an explicitly authorized local policy may run."""
+    path = Path(args.policy)
+    try:
+        policy = product_runtime.load_policy(path, require_authority=True)
+        token = read_token()
+        config = _activity_config()
+    except product_runtime.ProductPolicyError as exc:
+        emit({"ok": False, "command": "product-runtime", "error_code": exc.code,
+              "detail": exc.detail, "device_io": False})
+        return EXIT_BLOCKED
+    except (RuntimeError, mcp_activity.SourceError) as exc:
+        emit({"ok": False, "command": "product-runtime", "error_code": "PRODUCT_CONFIG_INVALID",
+              "detail": str(exc), "device_io": False})
+        return EXIT_CONFIG
+
+    import signal
+    import threading
+    stop = threading.Event()
+
+    def request_stop(_signum, _frame):
+        stop.set()
+
+    previous = {}
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        previous[sig] = signal.getsignal(sig)
+        signal.signal(sig, request_stop)
+    try:
+        state = product_runtime.run_product(
+            policy, lambda: _HostSessionTransport(token),
+            stop_requested=stop.is_set,
+            config=config,
+            state_file=Path(args.state_file),
+        )
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+    emit({"ok": True, "command": "product-runtime", "device_io": True,
+          "stopped": True, "runtime": state})
+    return EXIT_OK
+
+
 def manifest_check(args: argparse.Namespace) -> int:
     path = Path(args.file)
     try:
@@ -903,6 +987,17 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("activity-session", help="run one reviewed activation manifest against the fixed paired Ditoo")
     p.add_argument("--manifest", required=True)
     p.set_defaults(func=activity_session_run)
+    p = sub.add_parser("product-check", help="offline fail-closed review of the persistent MCP product policy")
+    p.add_argument("--policy", default=str(product_runtime.DEFAULT_POLICY))
+    p.set_defaults(func=product_check)
+    p = sub.add_parser("product-status", help="read persistent MCP product supervisor state; no device I/O")
+    p.add_argument("--policy", default=str(product_runtime.DEFAULT_POLICY))
+    p.add_argument("--state-file", default=str(product_runtime.STATE_FILE))
+    p.set_defaults(func=product_status)
+    p = sub.add_parser("product-runtime", help="run the explicitly-authorized persistent MCP dashboard supervisor")
+    p.add_argument("--policy", default=str(product_runtime.DEFAULT_POLICY))
+    p.add_argument("--state-file", default=str(product_runtime.STATE_FILE))
+    p.set_defaults(func=product_runtime_run)
     p = sub.add_parser("manifest-check", help="fail-closed review of a Day-1 experiment manifest")
     p.add_argument("--file", required=True)
     p.set_defaults(func=manifest_check)
