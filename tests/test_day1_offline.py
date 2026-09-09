@@ -1829,6 +1829,20 @@ class N5PostTrialRegressionTests(unittest.TestCase):
         self.assertEqual(result["outcome"], "stopped_clean")   # not an inferred fault
         self.assertEqual(len(transport.frames), 1)
 
+    def test_sequence_run_now_claims_authority_durably_before_dispatch(self) -> None:
+        # The documented enforcement-depth gap: sequence-run used to check only the
+        # manifest's own flags, so a crash mid-run left the authority looking re-usable
+        # and consumption was manual bookkeeping after the fact.
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        block = cli[cli.index("def sequence_run("):cli.index("def capture_parse(")]
+        self.assertIn("activity_session.SessionClaim(experiment_id)", block)
+        # Claimed before the Host is contacted, like the session route.
+        self.assertLess(block.index("claim.claim("), block.index("urllib.request.urlopen"))
+        # Every exit after the claim records a terminal, success or not.
+        self.assertGreaterEqual(block.count("claim.finish("), 4)
+        self.assertIn('claim.finish("stopped_clean"', block)
+        self.assertIn('claim.finish("unknown"', block)
+
     def test_closing_an_already_terminated_session_is_not_an_error(self) -> None:
         # A session that runs its full lifetime is terminated Host-side a moment before
         # the worker calls close, so the 409 means "already closed cleanly". Recording it
@@ -1919,6 +1933,54 @@ class N3HostBoundaryTests(unittest.TestCase):
         self.assertIn('p.add_argument("--manifest", required=True)', block)
         for forbidden in ("--lifetime", "--rate", "--interval", "--frames", "--target", "--force"):
             self.assertNotIn(forbidden, block)
+
+
+class A1CollectionWorkerTests(unittest.TestCase):
+    """The installed worker collects and can never transmit."""
+
+    WSL = ROOT / "runtime/wsl"
+
+    def test_the_unit_can_only_run_the_collect_command(self) -> None:
+        unit = (self.WSL / "openditoo-collect.service").read_text(encoding="utf-8")
+        exec_lines = [l for l in unit.splitlines() if l.startswith("ExecStart")]
+        self.assertEqual(len(exec_lines), 1)
+        self.assertIn("activity-status --collect", exec_lines[0])
+        # Startup runs collection only. Nothing that reaches the device may appear.
+        for forbidden in ("activity-session", "image-show", "sequence-run",
+                          "image/show", "image/sequence", "session/open"):
+            self.assertNotIn(forbidden, unit, msg=f"the worker must never be able to {forbidden}")
+
+    def test_the_installer_refuses_to_install_a_transmitting_unit(self) -> None:
+        script = (self.WSL / "install_openditoo_collector.sh").read_text(encoding="utf-8")
+        self.assertIn("refusing to install", script)
+        self.assertIn("collection must never transmit", script)
+        for forbidden in ("activity-session", "image-show", "sequence-run"):
+            self.assertIn(forbidden, script, msg="the installer's guard list must cover " + forbidden)
+
+    def test_uninstall_preserves_evidence_and_opentivoo(self) -> None:
+        script = (self.WSL / "install_openditoo_collector.sh").read_text(encoding="utf-8")
+        block = script[script.index("--uninstall)"):script.index("install) ;;")]
+        # It removes its own two units and nothing else.
+        self.assertIn("rm -f \"$UNIT_DIR/$TIMER\" \"$UNIT_DIR/$SERVICE\"", block)
+        for preserved in (".openditoo-local", "captures/", "OpenTivoo"):
+            self.assertIn(preserved, block, msg=f"uninstall must state it preserves {preserved}")
+        for forbidden in ("rm -rf", "session-claims", "session-ledger"):
+            self.assertNotIn(forbidden, block,
+                             msg="uninstalling a poller must never destroy evidence or un-consume authority")
+
+    def test_private_tmp_stays_off_with_its_reason_recorded(self) -> None:
+        # It reads as free hardening and is not: under PrivateTmp the unit gets its own
+        # mount namespace, where ssh rejects /etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf
+        # -- a symlink into /usr/lib -- and both remote sources go unavailable.
+        unit = (self.WSL / "openditoo-collect.service").read_text(encoding="utf-8")
+        active = [l for l in unit.splitlines() if l.strip().startswith("PrivateTmp")]
+        self.assertEqual(active, [], msg="PrivateTmp breaks ssh to the OptiPlex sources")
+        self.assertIn("Bad owner or permissions", unit, msg="the reason must stay recorded")
+
+    def test_the_timer_polls_without_claiming_it_cannot_miss_events(self) -> None:
+        timer = (self.WSL / "openditoo-collect.timer").read_text(encoding="utf-8")
+        self.assertIn("OnUnitActiveSec=", timer)
+        self.assertIn("cursor-based", timer)
 
 
 class N4SessionPreviewTests(unittest.TestCase):

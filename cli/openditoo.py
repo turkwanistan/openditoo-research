@@ -318,6 +318,10 @@ def sequence_run(args: argparse.Namespace) -> int:
               "experiment_id": manifest.get("experiment_id"),
               "message": "this manifest has already been executed; a repeat needs a new grant"})
         return EXIT_BLOCKED
+    experiment_id = manifest.get("experiment_id")
+    if not isinstance(experiment_id, str) or not experiment_id.strip():
+        emit({"ok": False, "command": "sequence-run", "error_code": "MANIFEST_EXPERIMENT_ID_MISSING"})
+        return EXIT_USAGE
 
     operation = manifest.get("operation", {})
     sources = operation.get("source_frames", {})
@@ -362,6 +366,19 @@ def sequence_run(args: argparse.Namespace) -> int:
         emit({"ok": False, "command": "sequence-run", "error_code": "LOCAL_AUTH_CONFIG", "message": str(exc)})
         return EXIT_CONFIG
 
+    # Durable one-use authority, claimed BEFORE dispatch and never releasable -- the same
+    # gate the activity session uses. Until this existed, sequence-run only checked the
+    # manifest's own flags and consumption was manual bookkeeping after the fact, so a
+    # crash mid-run left the authority looking re-usable.
+    claim = activity_session.SessionClaim(experiment_id)
+    try:
+        claim.claim({"manifest_file": str(path), "command": "sequence-run",
+                     "claimed_at": mcp_activity.iso(mcp_activity.utc_now())})
+    except activity_session.SessionError as exc:
+        emit({"ok": False, "command": "sequence-run", "error_code": exc.code,
+              "experiment_id": experiment_id, "detail": exc.detail})
+        return EXIT_BLOCKED
+
     delay_ms = int(budgets.get("inter_frame_delay_ms", 0))
     total_budget_ms = int(budgets.get("total_wall_clock_ms", 0))
     body = json.dumps({"frames": frames, "interFrameDelayMs": delay_ms, "totalBudgetMs": total_budget_ms},
@@ -380,9 +397,11 @@ def sequence_run(args: argparse.Namespace) -> int:
             detail = json.loads(exc.read(65537).decode("utf-8"))
         except Exception:
             detail = {"http_status": exc.code}
+        claim.finish("unknown", {"terminal_reason": "host_rejected", "http_status": exc.code})
         emit({"ok": False, "command": "sequence-run", "error_code": "HOST_REJECTED", "http_status": exc.code, "detail": detail})
         return EXIT_AUTH if exc.code == 401 else (EXIT_BLOCKED if exc.code in {400, 409} else EXIT_DEVICE)
     except Exception as exc:
+        claim.finish("unknown", {"terminal_reason": "host_unavailable"})
         emit({"ok": False, "command": "sequence-run", "error_code": "HOST_UNAVAILABLE", "message": f"{type(exc).__name__}: {exc}"})
         return EXIT_HOST_UNAVAILABLE
 
@@ -403,11 +422,16 @@ def sequence_run(args: argparse.Namespace) -> int:
     mismatch = {key: {"expected": value, "actual": result.get(key)}
                 for key, value in expected.items() if result.get(key) != value}
     if mismatch:
+        claim.finish("unknown", {"terminal_reason": "budget_or_result_mismatch", "mismatch": mismatch})
         emit({"ok": False, "command": "sequence-run", "error_code": "BUDGET_OR_RESULT_MISMATCH",
               "mismatch": mismatch, "detail": result})
         return EXIT_PROTOCOL
-    emit({"ok": True, "command": "sequence-run", "experiment_id": manifest.get("experiment_id"),
-          "manifest_file": str(path), **result})
+    claim.finish("stopped_clean", {"terminal_reason": "sequence_complete",
+                                   "frames_sent": result.get("frameCount"),
+                                   "packets_sent": result.get("packetCount"),
+                                   "tx_bytes_sent": result.get("txBytesTotal")})
+    emit({"ok": True, "command": "sequence-run", "experiment_id": experiment_id,
+          "claim_file": str(claim.path), "manifest_file": str(path), **result})
     return EXIT_OK
 
 

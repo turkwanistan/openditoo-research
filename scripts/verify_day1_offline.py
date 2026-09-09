@@ -139,6 +139,19 @@ def verify_activity_ui() -> None:
             fail(f"approved UI reference frame missing: {name}")
 
 
+def verify_collection_worker() -> None:
+    """The installed collection worker must be structurally incapable of transmitting."""
+    unit = (ROOT / "runtime/wsl/openditoo-collect.service").read_text(encoding="utf-8")
+    exec_lines = [line for line in unit.splitlines() if line.startswith("ExecStart")]
+    if len(exec_lines) != 1 or "activity-status --collect" not in exec_lines[0]:
+        fail("the collection worker runs something other than activity-status --collect")
+    for forbidden in ("activity-session", "image-show", "sequence-run", "session/open"):
+        if forbidden in unit:
+            fail(f"the collection worker could reach the device: {forbidden}")
+    if any(line.strip().startswith("PrivateTmp") for line in unit.splitlines()):
+        fail("PrivateTmp breaks ssh to the remote activity sources")
+
+
 def verify_activation_boundary() -> None:
     """The M9 session surface must stay bounded, one-use and unauthorized."""
     manifest_path = ROOT / "experiments" / "DAY1-M9-ACTIVATION-001.json"
@@ -243,6 +256,7 @@ def main() -> int:
     verify_manifests()
     verify_host_boundary()
     verify_activity_ui()
+    verify_collection_worker()
     verify_activation_boundary()
     verify_consumed_runner()
     verify_m5_runner_disarmed()

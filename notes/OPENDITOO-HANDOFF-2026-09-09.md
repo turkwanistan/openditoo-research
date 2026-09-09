@@ -291,7 +291,36 @@ the open part.
 Nothing is currently authorized. A third trial — for stock yield, the fault bar, or a
 longer session — needs a new manifest with a new id under a new grant.
 
+## 8b. A1 collection worker — installed 2026-09-09
+
+A systemd **user** timer runs `activity-status --collect` every 30 s. Collection only:
+the unit cannot transmit, the installer refuses to install one that could, and the
+offline verifier fails if a transmitting command or `PrivateTmp` ever appears in it.
+Login, boot and restart produce zero Bluetooth operations. Uninstall preserves
+`.openditoo-local`, `captures/` and OpenTivoo. Details in section 9 of the N2-N4 note.
+
+## 8c. Prepared and awaiting a grant
+
+- `experiments/DAY1-R1-RATE-250MS-001-PENDING.json` — the first rate step. Ten A/B
+  frames at a 250 ms inter-frame delay against the identical shape already proven twice
+  at 1000 ms, changing exactly one variable. **No code change, rebuild or reinstall:**
+  250 ms is already the installed Host's `MinInterFrameDelayMs` and ten frames is already
+  its `MaxSequenceFrames`. Ten frames also gives nine intervals — the same sample that
+  produced the accepted 1114.1 ms mean — so the runs are directly comparable. Predicted
+  ~365-435 ms per frame, about 2.3-2.7 fps.
+- A stock-yield and fault-bar trial: still unwritten. Both are `NOT TESTED` after 002,
+  and neither can be forced — they need the operator to touch a control, or a source to
+  actually fail, during a live session.
+
+`sequence-run` now takes the same durable one-use claim as the activity session, closing
+the enforcement-depth gap recorded in section 5. That gap is no longer open.
+
 ## 9. Traps — do not redo these
+
+- `PrivateTmp=true` on a systemd unit that uses `ssh` breaks it: inside the mount
+  namespace `ssh` rejects `/etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf` with
+  `Bad owner or permissions` and exits 255. It cost two of three activity sources and
+  looked like routine hardening.
 
 - Do not re-run a consumed manifest by flipping `authorization_consumed`. Cut a new
   manifest with its own id; un-consuming destroys the record of what happened.

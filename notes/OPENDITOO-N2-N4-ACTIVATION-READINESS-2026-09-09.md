@@ -216,3 +216,47 @@ Two things that are *not* evidence for 10 fps here:
 R1 alone is a 6x improvement for almost no risk and would make animation viable. Each step
 needs its own manifest, grant and ~30-frame measurement. None is authorized, and the
 accepted ceiling remains 1118 ms until one of them passes.
+
+## 9. A1 — installed collection worker (2026-09-09)
+
+Installed and running. **Collection only: it holds no transmission authority and cannot
+acquire one.** Login, boot and restart all produce zero Bluetooth operations.
+
+Native supervision, near-zero new code: a systemd **user** timer firing a `oneshot`
+service that runs exactly `activity-status --collect`. systemd owns single-instance
+execution, restart-on-boot and log rotation, so none of that is reimplemented.
+
+- `runtime/wsl/openditoo-collect.service` / `.timer`, installed by
+  `runtime/wsl/install_openditoo_collector.sh` (`--status`, `--uninstall`).
+- 30 s period. The adapters are cursor-based, so a longer period costs freshness and
+  never correctness; a display session does its own per-second collection while it runs.
+- `stdout` goes to `/dev/null` deliberately — the state file is the source of truth, and
+  logging it every tick would copy source cursors into the journal for no benefit. Only
+  failures are logged.
+- The installer refuses to install a unit mentioning any transmitting command, and the
+  offline verifier fails if one ever appears.
+- Uninstall removes the two units and explicitly preserves `.openditoo-local` (claims,
+  ledger, cursors, token), `captures/`, and everything OpenTivoo owns.
+
+Verified after install: all three sources healthy, `bluetoothTouched=false`, zero device
+operations, and OpenTivoo's three user services (`opentivoo-codex-usage`,
+`opentivoo-tv-web`, `opentivoo-usage-dashboard`) still enabled and running.
+
+### Trap found while doing it: `PrivateTmp=true` breaks the remote sources
+
+Added as routine hardening; it silently took out two of the three sources. `PrivateTmp`
+gives the unit its own mount namespace, and inside it `ssh` rejects
+`/etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf` — a symlink into `/usr/lib` — with
+`Bad owner or permissions`, exiting 255 in about 45 ms.
+
+Isolated by a clean comparison rather than guessed: direct `ssh`, plain `systemd-run`,
+and `systemd-run -p NoNewPrivileges=true` all succeed in 130-250 ms; adding `PrivateTmp`
+alone fails. Two earlier theories — a missing ssh agent, and a cold-connection timeout —
+were both wrong and both discarded against evidence.
+
+The unit reads audit logs and writes `.openditoo-local`; it needs nothing from `/tmp`, so
+the setting bought no isolation and cost two sources. It is removed, the reason is
+recorded in the unit file, and a test and the verifier both fail if it returns.
+
+Note this also made the display *correct* while it was broken: the two dead sources
+rendered as unavailable, which is exactly what the fault bar is for.

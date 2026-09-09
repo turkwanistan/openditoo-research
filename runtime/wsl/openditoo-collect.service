@@ -1,0 +1,34 @@
+[Unit]
+Description=OpenDitoo MCP activity collection (collection only; never transmits)
+Documentation=file://%h/Projects/openditoo-research/notes/OPENDITOO-HANDOFF-2026-09-09.md
+
+# Collection is read-only and local. It reads audit logs and a journal; it opens no
+# socket to the Ditoo, contacts no Windows Host, and holds no transmission authority.
+# The ONLY command this unit may run is `activity-status --collect`. A display session
+# is started by an operator, by hand, against a reviewed manifest under a named grant --
+# never by this unit, and never at login.
+
+[Service]
+Type=oneshot
+WorkingDirectory=__REPO__
+ExecStart=/usr/bin/env python3 __REPO__/cli/openditoo.py activity-status --collect
+
+# The normalized state file is the source of truth and is read with
+# `activity-status` (no --collect). Sending stdout to the journal would copy source
+# cursors there on every tick for no benefit, so only failures are logged.
+StandardOutput=null
+StandardError=journal
+
+# A poll that hangs must not stack up behind the next one.
+TimeoutStartSec=60
+
+NoNewPrivileges=true
+
+# NOT PrivateTmp=true. It looks like free hardening and it is not: PrivateTmp gives the
+# unit its own mount namespace, and in there ssh rejects
+# /etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf -- a symlink into /usr/lib -- with
+# "Bad owner or permissions", so both OptiPlex sources go unavailable while the local
+# one stays healthy. Isolated on 2026-09-09: direct ssh, plain systemd-run and
+# NoNewPrivileges all succeed; adding PrivateTmp alone fails in ~45 ms with rc=255.
+# This unit reads audit logs and writes .openditoo-local; it needs nothing from /tmp,
+# so the setting bought no isolation and cost two of the three sources.

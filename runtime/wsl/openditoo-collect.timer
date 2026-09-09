@@ -1,0 +1,17 @@
+[Unit]
+Description=Poll the OpenDitoo MCP activity sources
+Documentation=file://%h/Projects/openditoo-research/notes/OPENDITOO-HANDOFF-2026-09-09.md
+
+[Timer]
+# Collection exists to keep "when did this last happen" current between display
+# sessions. The adapters are cursor-based, so no event is missed at any interval --
+# a longer period costs freshness, never correctness. A display session does its own
+# per-second collection while it runs.
+OnBootSec=30s
+OnUnitActiveSec=30s
+AccuracySec=5s
+Unit=openditoo-collect.service
+
+# systemd owns single-instance execution: a tick cannot overlap the previous one.
+[Install]
+WantedBy=timers.target
