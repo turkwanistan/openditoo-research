@@ -1,0 +1,127 @@
+{
+  "schema_version": 2,
+  "experiment_id": "OPENDITOO-M9-ACTIVATION-008",
+  "milestone": "MCP dashboard accelerated status-colour transition acceptance",
+  "status": "pending_operator_grant",
+  "objective": "Physically verify the production green/yellow/red/grey dashboard states on the exact Ditoo using a test-only virtual clock; production 5/20-minute thresholds remain unchanged.",
+  "why_this_shape": "006 was a clean idle-hold pass but no source event occurred, so animation was not exercised. 007 keeps the same accepted transport/pacing envelope and changes only the test procedure: after the operator starts the session, the assistant performs one harmless read-only WSL_MCP call, which appends a genuine completed WSL_MCP audit record that the existing collector should observe.",
+  "target": {
+    "exact_unit_id": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012",
+    "model": "Ditoo Plus",
+    "pairing_precheck": "authenticated exact target required before any socket is created"
+  },
+  "transport": {
+    "measured_endpoint": "Windows Classic RFCOMM channel 1",
+    "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+    "connection_shape": "one persistent RFCOMM connection for this bounded session; one ACK per frame; no retry or reconnect",
+    "one_controller_rule": "the Android Divoom app must be disconnected for the whole session; OpenTivoo runtime/task/port 8779 remain untouched"
+  },
+  "operation": {
+    "kind": "bounded_activity_session",
+    "application": "MCP dashboard",
+    "device_io": true
+  },
+  "build": {
+    "code_sha256": {
+      "renderer_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+      "ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+      "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+      "session_sha256": "b603624529caeb084d1ec624f2788a5c928b7f9a54814e006c9a1196de9bb2f3"
+    },
+    "host_dll_sha256": "fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
+    "host_exe_repository_sha256": "53356e15acdac4076a15e33224cb74d6b87346c4263942236db3ac4a42032310",
+    "installed_dll_sha256_verified": "fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
+    "installed_identity_note": "Carried forward from verified deployment immediately before 003/004: repository and installed DLL byte-identical at this hash. 005 changes WSL Python only; Windows Host source/binary is unchanged, so no rebuild is required."
+  },
+  "session": {
+    "lifetime_seconds": 15,
+    "min_frame_interval_ms": 150,
+    "poll_interval_ms": 50,
+    "pulse_freshness_seconds": 30,
+    "activation_source": "test-only virtual clock through the production activity_render.status_for logic; no MCP source collection",
+    "shape": "one connection; deterministic green 0-3 s, yellow 3-6 s, red 6-9 s, grey from 9 s onward; change-only sends; Host hard floor 150 ms; nominal client cadence 200 ms; then close",
+    "automatic_retry": false,
+    "automatic_reconnect": false,
+    "stock_screen_reclaim": false,
+    "replay_after_interruption": false,
+    "semantic_evidence": "No new device command semantics. The acceptance renderer feeds representative virtual ages into the unchanged production status renderer; grey is produced by removing usable activity data, not by inventing a fourth age threshold."
+  },
+  "budgets": {
+    "connection_attempts": 1,
+    "max_frames": 8,
+    "max_application_packets": 24,
+    "max_tx_bytes": 1624,
+    "ack_timeout_ms_per_frame": 5000,
+    "derivation": "Expected exactly 4 changed frames (green/yellow/red/grey). Hard ceiling 8 frames; 8 * 3 packets; worst-case 203 application bytes per frame gives 1624 bytes.",
+    "expected_realistic_frames": "exactly 4 unless the session is interrupted by stock takeover or transport fault"
+  },
+  "stop_policy": {
+    "stop_immediately_on": [
+      "any unsolicited state report on the link (canvas is no longer ours)",
+      "any inbound bytes that do not parse as exactly one valid wrapped report",
+      "any ACK that is not our wrapped 0x44 shape with a single payload byte",
+      "any send that does not complete in full",
+      "ACK timeout on any frame",
+      "session lifetime reached",
+      "frame or byte budget reached",
+      "pairing precheck failure or any conflicting controller on the link",
+      "the worker falling silent for longer than the Host grace period"
+    ],
+    "on_ambiguous_outcome_resend": false,
+    "collection_continues_after_display_stop": true,
+    "on_ambiguous_outcome": "stop sending, close the link, record completed/unknown bytes and last known display state; never resend, reconnect, or reclaim",
+    "recovery": "operator-initiated only after outcome is recorded; returning to stock is never a command we send"
+  },
+  "expected_observations": {
+    "physical": "approved L/mushroom, O/bunny, W/skull dashboard; on activity, that column crown + letter + icon accent visibly cycle cyan -> blue -> light blue -> cyan over four ACKed stages (~0.60 s) then return to status colour",
+    "stock_yield": "after the operator has seen a full pulse, one physical Ditoo control is pressed; the session should stop immediately, send no reclaim frame, and report unknown_not_ours / stopped_yielded_to_stock",
+    "idle_silence": "unchanged scene sends zero packets",
+    "fault_bar": "if a source genuinely becomes unavailable, its crown row shows the red fault bar and no activity crown; otherwise remains NOT TESTED",
+    "ack_payload": "recorded per frame, never treated as a success constant",
+    "animation_expectation": "one activity event visibly sweeps cyan \u2192 blue \u2192 light-blue \u2192 cyan three times over about 2 seconds, with crown + identity letter + icon accent changing together"
+  },
+  "acceptance_criteria": {
+    "green": "operator clearly sees all three source columns in production green for about 3 seconds",
+    "yellow": "operator clearly sees all three source columns change to production yellow for about 3 seconds",
+    "red": "operator clearly sees all three source columns change to production red for about 3 seconds",
+    "grey": "operator clearly sees all three source columns change to production grey; this stage means no usable activity data, not age > red",
+    "order": "visual order is green -> yellow -> red -> grey with no unexpected intermediate colours",
+    "transport": "one connection; one wrapped 0x44 ACK per completed changed frame; no 429 pacing fault; clean close",
+    "production_semantics": "production RECENT_LIMIT=5 min and WARM_LIMIT=20 min remain unchanged; acceptance uses only virtual time / no-data state",
+    "authority_is_consumed": "WSL claim and Host ledger make this experiment id one-use"
+  },
+  "preconditions": [
+    "operator grant naming OPENDITOO-M9-ACTIVATION-008",
+    "installed Host DLL remains the previously verified byte-identical build",
+    "Android Divoom app disconnected",
+    "offline verifier PASS at the commit being run",
+    "operator present and watching the unit"
+  ],
+  "authority": {
+    "transmission_authorized": false,
+    "authorization_consumed": false,
+    "experiment_id": "OPENDITOO-M9-ACTIVATION-008",
+    "granted_by": null,
+    "grant_text": null,
+    "expires_at": null,
+    "grant_scope_requested": "ONE execution only: up to 15 seconds; deterministic MCP dashboard status-colour acceptance using the test-only virtual clock profile; exactly production rendering semantics; expected 4 changed frames and hard ceiling 8 frames / 24 packets / 1624 application bytes; one RFCOMM connection; ACK per frame; no MCP source collection, retry, reconnect, reclaim, pipelining, streaming, unattended operation, or second attempt.",
+    "grant_scope": null
+  },
+  "explicitly_out_of_scope": [
+    "streaming or video milestone work",
+    "pipelining or more than one frame in flight",
+    "any frame-start policy faster than 150 ms",
+    "unattended or installation-time transmission",
+    "retry/reconnect/reclaim after fault or takeover",
+    "delta/partial-frame discovery",
+    "new command enumeration/raw sends",
+    "firmware update, persistent upload, service/MassBoot, teardown"
+  ],
+  "supersedes": {
+    "experiment_id": "OPENDITOO-M9-ACTIVATION-005",
+    "why": "005 grant is consumed; 006 is a fresh visual-only trial for the operator-requested longer animation."
+  },
+  "result": null,
+  "acceptance_profile": "status_age_colors_v1"
+}

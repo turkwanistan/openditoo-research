@@ -499,3 +499,7 @@ Operator product decision: each activity event should cycle a few times. Source 
 ### Activation 007 deterministic trigger result — 2026-09-09
 
 `OPENDITOO-M9-ACTIVATION-007` is consumed after a clean deterministic live-trigger run: 31 ACKed frames / 93 packets / 4743 bytes over the full 30 s lifetime, zero dropped pulses and no pacing refusal. A genuine `wsl_mcp` audit event at 18:00:41Z occurred inside the session after the assistant's harmless read-only WSL_MCP call; the operator reported "yes the skull flashed". Deterministic trigger and visible animation are PASS. Individual cyan/blue/light-blue order remains PARTIAL because the operator did not explicitly confirm every color. Stock-yield remains PASS from 005; fault-bar remains NOT TESTED because no genuine source failure occurred. **Nothing is currently authorized.**
+
+### Activation 008 pending — accelerated green/yellow/red/grey acceptance
+
+Production status semantics remain green <5 min, yellow 5-20 min, red >=20 min, and grey for no usable activity data. A test-only virtual-clock profile now lets the exact device show those states as green 0-3 s -> yellow 3-6 s -> red 6-9 s -> grey from 9 s onward without changing production thresholds or persisted source state. Offline suite: **157 tests PASS**. Fresh pending manifest: `experiments/DAY1-M9-ACTIVATION-008.json`; expected four changed frames, hard ceiling 8. **Nothing is currently authorized.** See `notes/OPENDITOO-MCP-STATUS-TRANSITION-ACCEPTANCE-2026-09-09.md`.

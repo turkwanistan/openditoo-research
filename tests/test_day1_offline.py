@@ -1081,6 +1081,48 @@ class M9RendererTests(unittest.TestCase):
         self.assertEqual(activity_render.status_for(
             {"source_health": "healthy", "last_activity_at": None}, self.now), "grey")
 
+    def test_status_transition_acceptance_uses_production_colours_on_a_virtual_clock(self) -> None:
+        from host import activity_session as session_mod
+        class Manifest:
+            acceptance_profile = session_mod.STATUS_TRANSITION_ACCEPTANCE_PROFILE
+
+        persisted = self._state(self.MIXED)
+        original = json.loads(json.dumps(persisted))
+        renderer = session_mod.live_renderer({}, persisted, Manifest())
+        expected_times = (
+            (0, "green"), (2999, "green"),
+            (3000, "yellow"), (5999, "yellow"),
+            (6000, "red"), (8999, "red"),
+            (9000, "grey"), (12000, "grey"),
+        )
+        for now_ms, status in expected_times:
+            with self.subTest(now_ms=now_ms, status=status):
+                rgb, from_pulse = renderer(now_ms)
+                self.assertFalse(from_pulse)
+                expected = activity_render.render_rgb888(
+                    self._state({sid: status for sid in mcp_activity.SOURCE_IDS}), self.now)
+                self.assertEqual(rgb, expected)
+        self.assertEqual(persisted, original, msg="acceptance profile must not mutate persisted activity state")
+
+    def test_status_transition_acceptance_never_collects_or_saves_sources(self) -> None:
+        from host import activity_session as session_mod
+        class Manifest:
+            acceptance_profile = session_mod.STATUS_TRANSITION_ACCEPTANCE_PROFILE
+
+        original_collect = mcp_activity.collect_once
+        original_save = mcp_activity.save_state
+        try:
+            mcp_activity.collect_once = lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not collect"))
+            mcp_activity.save_state = lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not save"))
+            renderer = session_mod.live_renderer({}, self._state(self.MIXED), Manifest())
+            for now_ms in (0, 3000, 6000, 9000):
+                rgb, pulse = renderer(now_ms)
+                self.assertEqual(len(rgb), 16 * 16 * 3)
+                self.assertFalse(pulse)
+        finally:
+            mcp_activity.collect_once = original_collect
+            mcp_activity.save_state = original_save
+
     def test_a_future_stamp_is_skew_and_never_renders_as_fresh(self) -> None:
         ahead = {"source_health": "healthy",
                  "last_activity_at": mcp_activity.iso(self.now + timedelta(minutes=5))}
@@ -1613,6 +1655,12 @@ class N2SessionManifestTests(unittest.TestCase):
     def test_a_lifetime_beyond_the_supervised_ceiling_is_refused(self) -> None:
         self._refuses("SESSION_LIFETIME_INVALID", **{"session.lifetime_seconds": 100_000})
 
+    def test_only_the_named_status_transition_acceptance_profile_is_allowed(self) -> None:
+        self._refuses("SESSION_ACCEPTANCE_PROFILE_INVALID",
+                      **{"acceptance_profile": "invented_profile"})
+        manifest = self._load(**{"acceptance_profile": activity_session.STATUS_TRANSITION_ACCEPTANCE_PROFILE})
+        self.assertEqual(manifest.acceptance_profile, activity_session.STATUS_TRANSITION_ACCEPTANCE_PROFILE)
+
     def test_retry_reconnect_reclaim_and_replay_must_all_be_disabled(self) -> None:
         for field, code in (("automatic_retry", "SESSION_RETRY_NOT_DISABLED"),
                             ("automatic_reconnect", "SESSION_RECONNECT_NOT_DISABLED"),
@@ -1839,6 +1887,27 @@ class N3SessionRunTests(unittest.TestCase):
         # 40 render ticks at 100 ms cannot admit more frame starts than 150 ms allows.
         self.assertLessEqual(len(transport.frames), 4_000 // 150 + 1)
         self.assertIn("pacing", result["holds"])
+
+    def test_status_transition_acceptance_dispatches_only_four_changed_frames(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._manifest(tmp,
+                **{"acceptance_profile": activity_session.STATUS_TRANSITION_ACCEPTANCE_PROFILE,
+                   "session": {**_valid_manifest()["session"], "lifetime_seconds": 15,
+                               "poll_interval_ms": 50},
+                   "budgets": {**_valid_manifest()["budgets"], "max_frames": 8,
+                               "max_application_packets": 24, "max_tx_bytes": 8 * 203}})
+            transport = activity_session.FakeSessionTransport()
+            renderer = activity_session.StatusTransitionAcceptanceRenderer()
+            clock = {"ms": 0}
+            result = activity_session.run_session(
+                manifest, transport, renderer, lambda: clock["ms"],
+                lambda ms: clock.__setitem__("ms", clock["ms"] + ms),
+                max_iterations=400)
+            self.assertEqual(result["outcome"], "stopped_clean")
+            self.assertEqual(result["terminal_reason"], "lifetime_expired")
+            self.assertEqual(result["frames_sent"], 4)
+            self.assertEqual(len(transport.frames), 4)
+            self.assertGreater(result["holds"].get("unchanged", 0), 200)
 
     def test_live_dashboard_adds_cross_process_pacing_headroom_above_the_host_floor(self) -> None:
         # 003 proved that dispatching exactly at the Host's 150 ms arrival floor can race:

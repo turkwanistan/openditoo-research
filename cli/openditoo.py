@@ -767,11 +767,16 @@ def activity_session_run(args: argparse.Namespace) -> int:
         emit({"ok": False, "command": "activity-session", "error_code": "LOCAL_AUTH_CONFIG", "message": str(exc)})
         return EXIT_CONFIG
 
-    try:
-        config = _activity_config()
-    except mcp_activity.SourceError as exc:
-        emit({"ok": False, "command": "activity-session", "error_code": str(exc)})
-        return EXIT_SOURCE
+    if manifest.acceptance_profile is None:
+        try:
+            config = _activity_config()
+        except mcp_activity.SourceError as exc:
+            emit({"ok": False, "command": "activity-session", "error_code": str(exc)})
+            return EXIT_SOURCE
+    else:
+        # A reviewed visual-acceptance profile is deterministic and must not depend on
+        # private source endpoints, source reachability, or collection side effects.
+        config = {}
 
     claim = activity_session.SessionClaim(manifest.experiment_id)
     try:
@@ -783,7 +788,7 @@ def activity_session_run(args: argparse.Namespace) -> int:
         return EXIT_BLOCKED
 
     state = mcp_activity.load_state()
-    render = activity_session.live_renderer(config, state)
+    render = activity_session.live_renderer(config, state, manifest)
     transport = _HostSessionTransport(token)
     import time
     started = time.monotonic()

@@ -23,6 +23,7 @@ transport, which is a fake in every test and in the offline preview.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import os
@@ -55,6 +56,20 @@ MCP_CLIENT_FRAME_INTERVAL_MS = 200
 # repeating stage 0 there would therefore be held as "unchanged" and could not advance
 # an ACK-gated state machine. Collapse those duplicate boundaries explicitly.
 ACTIVITY_PULSE_PROGRAM = (0, 1, 2, 3, 1, 2, 3, 1, 2, 3)
+
+# Real-device acceptance profile for status colours. Production thresholds remain exactly
+# 5/20 minutes in activity_render.status_for(); this profile accelerates only the TEST
+# CLOCK presented to that production function. The first three stages use representative
+# production ages, then the final stage removes usable activity data so grey retains its
+# real meaning instead of becoming a fake age bucket.
+STATUS_TRANSITION_ACCEPTANCE_PROFILE = "status_age_colors_v1"
+STATUS_TRANSITION_STEP_MS = 3000
+STATUS_TRANSITION_VIRTUAL_AGES = (
+    timedelta(minutes=1),   # green: under 5 min
+    timedelta(minutes=10),  # yellow: 5-20 min
+    timedelta(minutes=30),  # red: over 20 min
+    None,                   # grey: no usable activity data
+)
 # A first bounded activation is supervised. Anything longer is a different authority
 # shape and needs its own evidence, not a bigger number here.
 MAX_SESSION_LIFETIME_SECONDS = 900
@@ -108,6 +123,7 @@ class SessionManifest:
     host_build_sha256: str
     code_hashes: dict[str, str]
     stop_conditions: tuple[str, ...]
+    acceptance_profile: str | None
     path: Path
     raw: dict = field(repr=False, default_factory=dict)
 
@@ -214,6 +230,10 @@ def load_session_manifest(path: Path, *, verify_code_hashes: bool = True,
     _require(isinstance(poll_ms, int) and 50 <= poll_ms <= interval, "SESSION_POLL_INTERVAL_INVALID",
              "the render tick must run at least as often as a frame may be sent")
     _require(bool(session.get("activation_source")), "SESSION_ACTIVATION_SOURCE_MISSING")
+    acceptance_profile = data.get("acceptance_profile")
+    _require(acceptance_profile in (None, STATUS_TRANSITION_ACCEPTANCE_PROFILE),
+             "SESSION_ACCEPTANCE_PROFILE_INVALID",
+             f"allowed: {STATUS_TRANSITION_ACCEPTANCE_PROFILE}")
     _require(session.get("automatic_retry") is False, "SESSION_RETRY_NOT_DISABLED")
     _require(session.get("automatic_reconnect") is False, "SESSION_RECONNECT_NOT_DISABLED")
     _require(session.get("stock_screen_reclaim") is False, "SESSION_RECLAIM_NOT_DISABLED")
@@ -267,6 +287,7 @@ def load_session_manifest(path: Path, *, verify_code_hashes: bool = True,
         host_build_sha256=host_build,
         code_hashes=dict(code_hashes),
         stop_conditions=tuple(stop_conditions),
+        acceptance_profile=acceptance_profile,
         path=Path(path),
         raw=data,
     )
@@ -648,7 +669,40 @@ class LiveActivityRenderer:
             self.pulse_sources.clear()
 
 
-def live_renderer(config: dict, state: dict) -> LiveActivityRenderer:
+class StatusTransitionAcceptanceRenderer:
+    """Test-only real-device renderer for green -> yellow -> red -> grey acceptance.
+
+    It never collects sources and never writes the persisted activity state. Instead it
+    feeds representative virtual ages into the unchanged production status renderer:
+    1 minute, 10 minutes, 30 minutes, then no usable activity timestamp. Each visual
+    state is held for three real seconds so a human can inspect it on the 16x16 panel.
+    """
+
+    VIRTUAL_NOW = datetime(2026, 9, 9, 12, 0, 0, tzinfo=timezone.utc)
+
+    def __init__(self) -> None:
+        self.state = mcp_activity.blank_state()
+        for source in self.state["sources"].values():
+            source["source_health"] = "healthy"
+            source["last_observed_at"] = mcp_activity.iso(self.VIRTUAL_NOW)
+            source["history_complete"] = True
+
+    def __call__(self, now_ms: int) -> tuple[bytes, bool]:
+        step = min(max(0, now_ms // STATUS_TRANSITION_STEP_MS),
+                   len(STATUS_TRANSITION_VIRTUAL_AGES) - 1)
+        age = STATUS_TRANSITION_VIRTUAL_AGES[step]
+        for source in self.state["sources"].values():
+            source["last_activity_at"] = (
+                None if age is None else mcp_activity.iso(self.VIRTUAL_NOW - age))
+        return activity_render.render_rgb888(self.state, now=self.VIRTUAL_NOW), False
+
+    def frame_sent(self) -> None:
+        return
+
+
+def live_renderer(config: dict, state: dict, manifest: SessionManifest | None = None):
+    if manifest is not None and manifest.acceptance_profile == STATUS_TRANSITION_ACCEPTANCE_PROFILE:
+        return StatusTransitionAcceptanceRenderer()
     return LiveActivityRenderer(config, state)
 
 
