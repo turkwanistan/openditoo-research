@@ -1250,6 +1250,17 @@ class M9RendererTests(unittest.TestCase):
             self.assertEqual(decode_png16_rgb(Path(outputs["exact_png"])), rgb)
             self.assertTrue(Path(outputs["preview_png"]).is_file())
 
+    def test_the_outbound_opentivoo_note_is_sanitised(self) -> None:
+        """It is written to leave this repository, so it must carry nothing private."""
+        note = (ROOT / "notes/SHARED-RATE-FINDINGS-FOR-OPENTIVOO-2026-09-09.md").read_text(encoding="utf-8")
+        for secret in ("11:75:58:CE:DE:C7", "11:75:58", "192.168.", "/home/", "C:\\Users",
+                       ".openditoo-local", "host.token", "Bearer ", "@192", "8796"):
+            self.assertNotIn(secret, note, msg=f"outbound note leaks {secret!r}")
+        # And it must not invite OpenTivoo to inherit numbers that were never measured there.
+        self.assertIn("does not transfer", note.lower())
+        self.assertIn("hypothesis", note.lower())
+        self.assertIn("What we did not establish", note)
+
     def test_example_source_config_carries_no_real_endpoints(self) -> None:
         example = json.loads((ROOT / "examples/activity-sources.example.json").read_text(encoding="utf-8"))
         self.assertEqual(sorted(example["sources"]), sorted(mcp_activity.SOURCE_IDS))
