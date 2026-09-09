@@ -4,7 +4,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## Current session route — 2026-09-09
 
-0. **Read `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md` first.** The external N980P webcam
+0. **Read `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` first** — the current handoff. Then
+   `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md`. The external N980P webcam
    plan is adopted as the route, with recorded amendments; its W0/W4 are done offline and the
    Host streaming profile is built but **not deployed**. Then read
    `notes/OPENDITOO-S1-STREAM-PRIMITIVE-2026-09-09.md`. It is the current
