@@ -21,17 +21,21 @@ static class DitooStaticImageProtocol
     // ceilings, not the operating rate.
     // Tracks the largest reviewed manifest rather than being an arbitrary number: it was
     // 2 while only the A->B sequence was proven, 10 for OPENDITOO-M8-FINITE-LOOP-001, and
-    // 512 for OPENDITOO-R4-MOTION-SUSTAINED-001, which needs sixteen 32-frame laps to
-    // judge motion smoothness and to hold the link open for a minute. A test asserts the
+    // 512 for OPENDITOO-R4-MOTION-SUSTAINED-001, and 1024 for R5, which needs twice the
+    // frames to cover the same ~60 seconds at roughly twice the rate. A test asserts the
     // cap equals what some manifest in experiments/ actually asks for.
-    internal const int MaxSequenceFrames = 512;
+    internal const int MaxSequenceFrames = 1024;
     internal const int MaxInterFrameDelayMs = 5_000;
     // The floor tracks measured evidence, not ambition. 1000 ms was the conservative
     // starting point; 250 ms was measured three times by OPENDITOO-R1-RATE-250MS-001/2/3
     // (368.6 / 370.9 / 375.2 ms achieved, zero errors, operator-confirmed rendering).
-    // 50 ms is the next step down and is what R2a exists to measure. Frames still carry
-    // one ACK each, and the delay is only the part WE add on top of that.
-    internal const int MinInterFrameDelayMs = 50;
+    // 50 ms was measured by OPENDITOO-R2A-DELAY-50MS-001 (175.4 ms achieved) and held
+    // through R3 and R4's 67-second sustained run. 0 is the floor: with no inter-frame
+    // sleep the ACK becomes the clock and the achieved rate IS the device's own pace,
+    // which is what OPENDITOO-R5-NOSLEEP-CEILING-001 exists to find. There is nothing
+    // below 0 -- going faster would require abandoning one ACK per frame, which is a
+    // different protocol shape and is not authorized by anything here.
+    internal const int MinInterFrameDelayMs = 0;
     internal const int RgbBytes = 16 * 16 * 3;
     internal static readonly byte[] ImagePreambleA = Convert.FromHexString("0103009FA20002");
     internal static readonly byte[] ImagePreambleB = Convert.FromHexString("010400BD31F20002");

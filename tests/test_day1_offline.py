@@ -537,16 +537,19 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertIn("IMAGE_SEQUENCE_DELAY_REJECTED", transport)
         self.assertNotIn("Reconnect", transport)
         protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooStaticImageProtocol.cs").read_text(encoding="utf-8")
-        # The floor tracks measured evidence: 250 ms was measured three times under
-        # OPENDITOO-R1-RATE-250MS-001/2/3 before it was lowered to 50 for R2a.
-        self.assertIn("MinInterFrameDelayMs = 50", protocol)
+        # The floor tracks measured evidence, and each step down must cite the run that
+        # earned the previous one. 0 is the absolute floor: with no inter-frame sleep the
+        # ACK is the clock, and going faster would mean abandoning one ACK per frame.
+        self.assertIn("MinInterFrameDelayMs = 0;", protocol)
+        self.assertNotIn("MinInterFrameDelayMs = -", protocol, msg="there is nothing below zero")
         # Send spacing may be lowered by a reviewed manifest to measure whether the
         # stock-derived 40 ms is load-bearing; it may never be raised above it.
         self.assertIn("DefaultSendSpacingMs = 40", protocol)
         self.assertIn("MaxSendSpacingMs = 40", protocol)
         self.assertIn("IMAGE_SEND_SPACING_REJECTED", transport)
-        self.assertIn("OPENDITOO-R1-RATE-250MS", protocol,
-                      msg="lowering the floor must cite the run that earned the previous one")
+        for earned_by in ("OPENDITOO-R1-RATE-250MS", "OPENDITOO-R2A-DELAY-50MS", "OPENDITOO-R5-NOSLEEP"):
+            self.assertIn(earned_by, protocol,
+                          msg=f"each step down in the floor must cite its experiment: {earned_by}")
 
     def test_sequence_cli_is_manifest_driven_with_no_free_form_arguments(self) -> None:
         cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
