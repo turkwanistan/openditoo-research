@@ -2,7 +2,7 @@
  "schema_version": 2,
  "experiment_id": "OPENDITOO-M9-ACTIVATION-006",
  "milestone": "MCP dashboard three-sweep visual acceptance",
- "status": "pending_operator_grant",
+ "status": "authorized_pending_execution",
  "objective": "Visually accept the operator-requested three-sweep activity animation after 005 proved stock-yield and corrected pacing.",
  "why_this_shape": "005 proved transport, pacing and stock-yield, but the single sweep was too brief to read. 006 changes only the activity animation program to three visible sweeps; no new command, transport or Host behavior.",
  "target": {
@@ -102,14 +102,14 @@
   "operator present and watching the unit"
  ],
  "authority": {
-  "transmission_authorized": false,
+  "transmission_authorized": true,
   "authorization_consumed": false,
   "experiment_id": "OPENDITOO-M9-ACTIVATION-006",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "Grant OPENDITOO-M9-ACTIVATION-006",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution only: up to 30 seconds; MCP dashboard visual acceptance; 50 ms render tick; nominal 200 ms changed-frame dispatch from actual dispatch time; Host hard floor 150 ms; max 151 frames / 453 packets / 30653 application bytes; one RFCOMM connection; ACK per frame; no retry/reconnect/reclaim/pipelining/streaming/unattended operation/second attempt.",
-  "grant_scope": null
+  "grant_scope": "ONE execution only: up to 30 seconds; MCP dashboard visual acceptance; 50 ms render tick; nominal 200 ms changed-frame dispatch from actual dispatch time; Host hard floor 150 ms; max 151 frames / 453 packets / 30653 application bytes; one RFCOMM connection; ACK per frame; no retry/reconnect/reclaim/pipelining/streaming/unattended operation/second attempt."
  },
  "explicitly_out_of_scope": [
   "streaming or video milestone work",
