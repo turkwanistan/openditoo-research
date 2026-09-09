@@ -3247,3 +3247,117 @@ class ProductRuntime003CutoverTests(unittest.TestCase):
         self.assertIn("own reviewed manifest", scope)
         self.assertFalse(raw["behavior"]["raw_send_enabled"])
         self.assertFalse(raw["behavior"]["target_override_enabled"])
+
+
+class W2FrameTransformTests(unittest.TestCase):
+    """The reference 16x16 transform. The C# sidecar must match it bit for bit."""
+
+    FIXTURE = ROOT / "tests/frame_transform_cases.json"
+
+    @staticmethod
+    def _gradient(h, w):
+        import numpy as np
+        y, x = np.mgrid[0:h, 0:w]
+        return np.stack([(x * 255 // max(1, w - 1)), (y * 255 // max(1, h - 1)),
+                         ((x + y) * 255 // max(1, w + h - 2))], axis=2).astype(np.uint8)
+
+    @staticmethod
+    def _checks(h, w):
+        import numpy as np
+        y, x = np.mgrid[0:h, 0:w]
+        on = ((x // 7 + y // 7) % 2).astype(np.uint8) * 255
+        return np.stack([on, 255 - on, (x * 3 % 256).astype(np.uint8)], axis=2)
+
+    def _source(self, name):
+        kind, size = name.rsplit("_", 1)
+        width, height = (int(part) for part in size.split("x"))
+        return {"gradient": self._gradient, "checks": self._checks}[kind](height, width)
+
+    def test_every_fixture_case_reproduces_exactly(self) -> None:
+        import hashlib
+        from host import frame_transform
+        doc = json.loads(self.FIXTURE.read_text(encoding="utf-8"))
+        self.assertTrue(doc["cases"])
+        for case in doc["cases"]:
+            preset = frame_transform.Preset(**case["preset"])
+            frame = frame_transform.transform(self._source(case["source"]), preset)
+            self.assertEqual(len(frame), 768)
+            self.assertEqual(hashlib.sha256(frame).hexdigest(), case["output_sha256"],
+                             f"{case['source']} / {preset.name}")
+            self.assertLessEqual(case["distinct_colors"], 255)
+
+    def test_output_is_deterministic_and_time_independent(self) -> None:
+        from host import frame_transform
+        src = self._gradient(480, 640)
+        first = frame_transform.transform(src, frame_transform.DEFAULT)
+        for _ in range(3):
+            self.assertEqual(frame_transform.transform(src, frame_transform.DEFAULT), first)
+
+    def test_the_crop_is_square_clamped_and_zoom_bounded(self) -> None:
+        from host import frame_transform as ft
+        top, left, side = ft.square_roi(480, 640, ft.DEFAULT)
+        self.assertEqual(side, 480)
+        self.assertEqual((top, left), (0, 80))
+        # Extreme offsets must clamp inside the frame rather than reading out of bounds.
+        for ox, oy in ((-5.0, -5.0), (5.0, 5.0)):
+            t, l, s = ft.square_roi(480, 640, dataclasses.replace(ft.DEFAULT, zoom=0.5,
+                                                                  offset_x=ox, offset_y=oy))
+            self.assertGreaterEqual(t, 0)
+            self.assertGreaterEqual(l, 0)
+            self.assertLessEqual(t + s, 480)
+            self.assertLessEqual(l + s, 640)
+        # Absurd zooms clamp to a usable square, never below the panel size.
+        self.assertGreaterEqual(ft.square_roi(480, 640, dataclasses.replace(ft.DEFAULT, zoom=0.0))[2],
+                                ft.SIZE)
+        self.assertEqual(ft.square_roi(480, 640, dataclasses.replace(ft.DEFAULT, zoom=9.0))[2], 480)
+
+    def test_mirror_and_rotation_are_real_and_reversible(self) -> None:
+        import numpy as np
+        from host import frame_transform as ft
+        src = self._gradient(480, 640)
+        plain = ft.transform(src, dataclasses.replace(ft.DEFAULT, mirror=False))
+        mirrored = ft.transform(src, dataclasses.replace(ft.DEFAULT, mirror=True))
+        self.assertNotEqual(plain, mirrored)
+        rows = np.frombuffer(plain, dtype=np.uint8).reshape(16, 16, 3)
+        flipped = np.frombuffer(mirrored, dtype=np.uint8).reshape(16, 16, 3)
+        self.assertTrue(np.array_equal(rows[:, ::-1], flipped))
+        # A full turn is identity; a quarter turn is not.
+        upright = ft.transform(src, dataclasses.replace(ft.DEFAULT, quarter_turns=0))
+        self.assertEqual(ft.transform(src, dataclasses.replace(ft.DEFAULT, quarter_turns=4)),
+                         upright)
+        self.assertNotEqual(ft.transform(src, dataclasses.replace(ft.DEFAULT, quarter_turns=1)),
+                            upright)
+
+    def test_a_source_smaller_than_the_panel_is_refused(self) -> None:
+        import numpy as np
+        from host import frame_transform as ft
+        with self.assertRaises(ValueError):
+            ft.transform(np.zeros((8, 8, 3), dtype=np.uint8), ft.DEFAULT)
+
+    def test_the_area_average_covers_every_source_pixel_exactly_once(self) -> None:
+        # An off-by-one in the cell edges silently drops or double-counts the right and
+        # bottom edges, which is invisible in a preview and wrong in every frame.
+        import numpy as np
+        from host import frame_transform as ft
+        for side in (480, 337, 271, 16, 17):
+            rows = np.linspace(0, side, ft.SIZE + 1).round().astype(int)
+            self.assertEqual(rows[0], 0)
+            self.assertEqual(rows[-1], side)
+            self.assertTrue((np.diff(rows) >= 1).all(), side)
+
+    def test_auto_levels_presets_are_flagged_and_are_not_the_default(self) -> None:
+        from host import frame_transform as ft
+        # Plan 7.3 bars per-frame auto-levels in v1 because it pumps brightness temporally,
+        # which a still contact sheet cannot reveal.
+        self.assertFalse(ft.DEFAULT.violates_v1_preprocessing_policy)
+        flagged = [p for p in ft.CANDIDATES if p.violates_v1_preprocessing_policy]
+        self.assertTrue(flagged)
+        for preset in flagged:
+            self.assertTrue(preset.name.startswith("BENCHMARK_ONLY_"), preset.name)
+
+    def test_the_frozen_default_is_the_plans_provisional_winner(self) -> None:
+        from host import frame_transform as ft
+        self.assertEqual(ft.DEFAULT.name, "srgb_area")
+        self.assertEqual(ft.DEFAULT.resampler, "area")
+        self.assertFalse(ft.DEFAULT.linear_light)
+        self.assertEqual((ft.DEFAULT.saturation, ft.DEFAULT.gamma, ft.DEFAULT.zoom), (1.0, 1.0, 1.0))

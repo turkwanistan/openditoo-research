@@ -251,3 +251,65 @@ Follow-ups, neither on the critical path:
 a 480×480 square crop still gives 30 source pixels per Ditoo pixel before zoom.
 
 Stills for the W2 shootout: `C:\temp\openditoo-stills` — deliberately outside the repository.
+
+## 9. W2 results — transform harness complete, default frozen, ranking outstanding
+
+`host/frame_transform.py` is the reference transform; `tests/frame_transform_cases.json` is the
+shared fixture the C# sidecar must reproduce, since a preview that does not equal what the
+device receives makes every visual acceptance unverifiable. Sources in the fixture are
+*generated from documented integer formulas* rather than stored, so both languages build them
+identically.
+
+Order: square ROI → optional quarter-turn → mirror → area average in linear light → optional
+fixed adjustment → **palette guard last** (anything after it could reintroduce a 256th colour).
+
+### 9.1 Measured, on the owner's PC, over real captured stills
+
+| Candidate (plan §7.2) | p50 ms | p95 ms | rule 1 (p95 ≤ 5 ms) |
+| --- | ---: | ---: | --- |
+| A `srgb_area` (provisional default) | 1.83 | 4.25 | PASS |
+| B `linear_area` | 3.18 | 4.45 | PASS |
+| C `linear_bicubic` | 4.32 | 5.57 | **REJECT** |
+| D `linear_lanczos` | 4.97 | 6.19 | **REJECT** |
+| E `linear_area32_bicubic` | 3.34 | 4.64 | PASS |
+
+Two optimisations were needed to get there, and both belong in the sidecar too:
+
+- the area average is two `reduceat` passes, not a 256-iteration loop (verified equal to the
+  per-cell mean for sides 480/337/271/16/17, including sides not divisible by 16);
+- sRGB→linear is a **256-entry lookup**, since the source is uint8. That alone took the
+  linear-light presets from ~15 ms to ~3 ms.
+
+### 9.2 Decision: sRGB area stays the default
+
+C and D are rejected on time. No remaining challenger clearly wins on a static scene — A and B
+are near-indistinguishable at 16×16 — so the plan's rule applies: *if no challenger clearly
+wins, keep sRGB area.* `frame_transform.DEFAULT` is frozen to it and a test asserts it.
+
+**The auto-levels presets are deliberately not promoted despite looking best on a contact
+sheet.** Plan §7.3 bars per-frame auto-levels in v1 because they pump brightness temporally —
+and a still image is precisely the artefact that cannot show pumping. They are retained, named
+`BENCHMARK_ONLY_*`, and carry a `violates_v1_preprocessing_policy` flag that a test enforces.
+This is the one place where eyeballing the contact sheet would have picked the wrong winner.
+
+### 9.3 What is still outstanding
+
+The plan requires a blind rank across **seven scene classes** plus a motion/flicker class, with
+a few seconds of footage each. That needs the owner in front of the camera; it cannot be
+synthesised. Until then the default is frozen but the ranking is not done, so W2 is
+**harness-complete, decision provisional**.
+
+To capture a scene (repeat per class: desk-distance face, close face, hand/motion, colourful,
+high-contrast, low light, fine detail/text):
+
+```powershell
+cd C:\temp\openditoo-webcam-probe
+.\OpenDitoo.Webcam.Probe.exe snapshot NV12 640 480 60 12 C:\temp\openditoo-scenes\<scene-name>
+```
+
+### 9.4 Incidental findings
+
+- The camera was mounted rotated during the first capture, which is why `quarter_turns` exists.
+  The owner has since righted it, so the default stays 0 — but a mount-orientation knob is
+  clearly load-bearing for a physical webcam and is kept.
+- Scene mean luma is now ~152/255 with the room lit, against ~52 in the dark.

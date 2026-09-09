@@ -1,0 +1,460 @@
+{
+  "note": "Shared transform fixture. The Windows sidecar's C# transform must reproduce every output_sha256 here from the same generated source and preset, or offline previews stop predicting what the device is sent. Sources are generated, not stored, so both sides build them from the formulas below.",
+  "source_formulas": {
+    "gradient": "r = x*255//(w-1), g = y*255//(h-1), b = (x+y)*255//(w+h-2), integer division",
+    "checks": "on = ((x//7 + y//7) % 2)*255; r = on, g = 255-on, b = (x*3) % 256"
+  },
+  "default_preset": "srgb_area",
+  "cases": [
+    {
+      "source": "gradient_640x480",
+      "preset": {
+        "name": "srgb_area",
+        "linear_light": false,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": false,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 1.0
+      },
+      "output_sha256": "91134594a18bc4178bc59d818b65527df6e2814eb8a9d0074a60b16e56421c44",
+      "distinct_colors": 255,
+      "first_pixel_rgb": [
+        217,
+        7,
+        127
+      ],
+      "last_pixel_rgb": [
+        37,
+        247,
+        127
+      ]
+    },
+    {
+      "source": "gradient_640x480",
+      "preset": {
+        "name": "linear_area",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": false,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 1.0
+      },
+      "output_sha256": "b9fbba4536f7df84f1ab93305d48bfc69d08d504a3b25cdb70abb10663ef8347",
+      "distinct_colors": 255,
+      "first_pixel_rgb": [
+        217,
+        7,
+        127
+      ],
+      "last_pixel_rgb": [
+        37,
+        247,
+        127
+      ]
+    },
+    {
+      "source": "gradient_640x480",
+      "preset": {
+        "name": "linear_area_contrast108",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": false,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 0.95
+      },
+      "output_sha256": "d52777d938aecbe5999c363b8d53887d34b69ac335d7fdd5caa12890a0bf272d",
+      "distinct_colors": 255,
+      "first_pixel_rgb": [
+        219,
+        10,
+        132
+      ],
+      "last_pixel_rgb": [
+        42,
+        247,
+        132
+      ]
+    },
+    {
+      "source": "gradient_640x480",
+      "preset": {
+        "name": "BENCHMARK_ONLY_linear_area_normalized",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": true,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 1.0
+      },
+      "output_sha256": "b1f9ed6525dd71023518d32efbdcf2bdf3ea41026206eaf641a1f9f9189d91aa",
+      "distinct_colors": 255,
+      "first_pixel_rgb": [
+        242,
+        0,
+        139
+      ],
+      "last_pixel_rgb": [
+        4,
+        255,
+        139
+      ]
+    },
+    {
+      "source": "gradient_640x480",
+      "preset": {
+        "name": "BENCHMARK_ONLY_linear_area_normalized_sat",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": true,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.1,
+        "gamma": 1.0
+      },
+      "output_sha256": "764dc0298c3bb8ab1d9dc6ac070149d2b94daec3127ab280b8fdb6fcab3a9f7d",
+      "distinct_colors": 252,
+      "first_pixel_rgb": [
+        250,
+        0,
+        140
+      ],
+      "last_pixel_rgb": [
+        0,
+        255,
+        126
+      ]
+    },
+    {
+      "source": "checks_640x480",
+      "preset": {
+        "name": "srgb_area",
+        "linear_light": false,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": false,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 1.0
+      },
+      "output_sha256": "8573479cf992cb16e90b168c6332f6b4853de6eff58b9e2dc5df25bc679f6429",
+      "distinct_colors": 44,
+      "first_pixel_rgb": [
+        128,
+        127,
+        98
+      ],
+      "last_pixel_rgb": [
+        128,
+        127,
+        79
+      ]
+    },
+    {
+      "source": "checks_640x480",
+      "preset": {
+        "name": "linear_area",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": false,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 1.0
+      },
+      "output_sha256": "d26a622015b507c9374bd5fe5e80a3bcd53a8079a07e43b5337c09c9139bc64e",
+      "distinct_colors": 44,
+      "first_pixel_rgb": [
+        188,
+        187,
+        102
+      ],
+      "last_pixel_rgb": [
+        188,
+        187,
+        125
+      ]
+    },
+    {
+      "source": "checks_640x480",
+      "preset": {
+        "name": "linear_area_contrast108",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": false,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 0.95
+      },
+      "output_sha256": "1b8dd8789981d4deeb6f7c904e502e8aa8ffa7cf553e65020d00b00e9acf9ede",
+      "distinct_colors": 44,
+      "first_pixel_rgb": [
+        191,
+        190,
+        107
+      ],
+      "last_pixel_rgb": [
+        191,
+        190,
+        130
+      ]
+    },
+    {
+      "source": "checks_640x480",
+      "preset": {
+        "name": "BENCHMARK_ONLY_linear_area_normalized",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": true,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 1.0
+      },
+      "output_sha256": "569205e7206aaba444cbd56da65eca94909fb6dc30ad4adcccce8853318beee3",
+      "distinct_colors": 6,
+      "first_pixel_rgb": [
+        231,
+        218,
+        0
+      ],
+      "last_pixel_rgb": [
+        231,
+        218,
+        0
+      ]
+    },
+    {
+      "source": "checks_640x480",
+      "preset": {
+        "name": "BENCHMARK_ONLY_linear_area_normalized_sat",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": true,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.1,
+        "gamma": 1.0
+      },
+      "output_sha256": "7724093e2f1ba08713e7b2136c3d757a9cc13549e16060225d5900f964f91c67",
+      "distinct_colors": 6,
+      "first_pixel_rgb": [
+        232,
+        218,
+        0
+      ],
+      "last_pixel_rgb": [
+        232,
+        218,
+        0
+      ]
+    },
+    {
+      "source": "gradient_337x337",
+      "preset": {
+        "name": "srgb_area",
+        "linear_light": false,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": false,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 1.0
+      },
+      "output_sha256": "c07a2f9db42b7cb44c3cbe0e2b965c9af07b8c43a76ae63deebeb029ce1aa0fc",
+      "distinct_colors": 255,
+      "first_pixel_rgb": [
+        247,
+        7,
+        127
+      ],
+      "last_pixel_rgb": [
+        7,
+        247,
+        127
+      ]
+    },
+    {
+      "source": "gradient_337x337",
+      "preset": {
+        "name": "linear_area",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": false,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 1.0
+      },
+      "output_sha256": "c07a2f9db42b7cb44c3cbe0e2b965c9af07b8c43a76ae63deebeb029ce1aa0fc",
+      "distinct_colors": 255,
+      "first_pixel_rgb": [
+        247,
+        7,
+        127
+      ],
+      "last_pixel_rgb": [
+        7,
+        247,
+        127
+      ]
+    },
+    {
+      "source": "gradient_337x337",
+      "preset": {
+        "name": "linear_area_contrast108",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": false,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 0.95
+      },
+      "output_sha256": "8dd93425d4724d5eaae7a77e60be9c829e30780b5066cb099c7eccb93ddcc4b3",
+      "distinct_colors": 255,
+      "first_pixel_rgb": [
+        247,
+        10,
+        132
+      ],
+      "last_pixel_rgb": [
+        10,
+        247,
+        132
+      ]
+    },
+    {
+      "source": "gradient_337x337",
+      "preset": {
+        "name": "BENCHMARK_ONLY_linear_area_normalized",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": true,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.0,
+        "gamma": 1.0
+      },
+      "output_sha256": "d16136151734329d138b5f1be7f936da1fa3edb6e8d62ab34748f9d2a8204849",
+      "distinct_colors": 253,
+      "first_pixel_rgb": [
+        255,
+        0,
+        137
+      ],
+      "last_pixel_rgb": [
+        0,
+        255,
+        137
+      ]
+    },
+    {
+      "source": "gradient_337x337",
+      "preset": {
+        "name": "BENCHMARK_ONLY_linear_area_normalized_sat",
+        "linear_light": true,
+        "zoom": 1.0,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "mirror": true,
+        "quarter_turns": 0,
+        "resampler": "area",
+        "normalize": true,
+        "low_percentile": 2.0,
+        "high_percentile": 98.0,
+        "saturation": 1.1,
+        "gamma": 1.0
+      },
+      "output_sha256": "222aac2bdf7da0d632df03a1fe1c1c64023e44c322c19403d90b04a63c6ac569",
+      "distinct_colors": 250,
+      "first_pixel_rgb": [
+        255,
+        0,
+        138
+      ],
+      "last_pixel_rgb": [
+        0,
+        255,
+        124
+      ]
+    }
+  ]
+}
