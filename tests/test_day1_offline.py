@@ -1016,6 +1016,25 @@ class M9RendererTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, msg=proc.stdout + proc.stderr)
         self.assertIn("ACTIVITY_UI_DATA_OK", proc.stdout)
 
+    @staticmethod
+    def _flip(rgb: bytes) -> bytes:
+        """Apply the operator's letter/icon swap to an approved mockup.
+
+        Imported from the generator so there is exactly ONE definition of the transform:
+        this asserts the renderer reproduces the approved artwork with precisely that
+        change applied, and nothing else drifting alongside it.
+        """
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "gen_ui", ROOT / "scripts/generate_activity_ui_data.py")
+        gen = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gen)
+        out = bytearray(len(rgb))
+        for index in range(256):
+            target = gen.flip_index(index)
+            out[target * 3:target * 3 + 3] = rgb[index * 3:index * 3 + 3]
+        return bytes(out)
+
     def test_every_approved_mockup_is_reproduced_pixel_for_pixel(self) -> None:
         cases = [(f"all_{s}_16x16.png", {k: s for k in mcp_activity.SOURCE_IDS}, set())
                  for s in ("green", "yellow", "red", "grey")]
@@ -1025,7 +1044,7 @@ class M9RendererTests(unittest.TestCase):
             cases.append((f"{prefix}_activity_blue_override_16x16.png", self.MIXED, {source_id}))
         for name, statuses, pulses in cases:
             with self.subTest(name):
-                expected = decode_png16_rgb(self.REFERENCE / name)
+                expected = self._flip(decode_png16_rgb(self.REFERENCE / name))
                 actual = activity_render.render_rgb888(self._state(statuses), self.now, pulses)
                 self.assertEqual(actual, expected)
 
@@ -1055,6 +1074,21 @@ class M9RendererTests(unittest.TestCase):
         self.assertTrue(view["fault"])
         self.assertEqual(view["source_health"], "unavailable")
         self.assertIn("fault", activity_render.LEGEND)
+
+    def test_letters_are_on_the_bottom_and_icons_in_the_middle(self) -> None:
+        # Operator change: the approved mockups put letters above icons; the two 5-row
+        # blocks are swapped. The crown, spacer and divider rows are untouched.
+        import importlib
+        data = importlib.import_module("host.activity_ui_data")
+        letter_rows = {i // 16 for i in data.ROLE_PIXELS["accent"]}
+        cap_rows = {i // 16 for r in ("cap_base", "cap_dark", "cap_light")
+                    for i in data.ROLE_PIXELS[r]}
+        self.assertTrue(cap_rows <= {5, 6, 7}, msg=f"mushroom cap should be mid-band, got {cap_rows}")
+        self.assertTrue({11, 12, 13, 14, 15} <= letter_rows, msg="letters should occupy rows 11-15")
+        # Row 7 is the bunny/skull eyes, which share the accent role and live with the icons.
+        self.assertEqual(letter_rows - {11, 12, 13, 14, 15}, {7})
+        self.assertIn("5-9 icon", activity_render.LEGEND["rows"])
+        self.assertIn("11-15 identity letter", activity_render.LEGEND["rows"])
 
     def test_the_layout_keeps_its_approved_geometry(self) -> None:
         rgb = activity_render.render_rgb888(self._state(self.MIXED), self.now)
@@ -1089,8 +1123,8 @@ class M9RendererTests(unittest.TestCase):
         state = self._state(self.MIXED)
         rgb = activity_render.render_rgb888(state, self.now, {"optiplex_lab"})
         override = bytes(activity_render.OVERRIDE_RGB)
-        letter_l = (5 * 16 + 1) * 3        # L stem, active column
-        letter_o = (5 * 16 + 6) * 3        # O, untouched column
+        letter_l = (11 * 16 + 1) * 3       # L stem on the bottom band, active column
+        letter_o = (11 * 16 + 6) * 3       # O, untouched column
         self.assertEqual(rgb[letter_l:letter_l + 3], override)
         self.assertEqual(rgb[letter_o:letter_o + 3], bytes((255, 255, 0)))
 

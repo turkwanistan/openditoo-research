@@ -192,30 +192,30 @@ The mockups are therefore executable acceptance criteria: if a pixel moves, a te
 The operator wants ~10 fps eventually. Recording the evidence now so nobody re-derives it,
 and so nobody mistakes the target for an earned rate.
 
-**Where the current 1118 ms actually goes:** ~80 ms of packet spacing (`SendSpacingMs`
-40 ms x 2 gaps) plus ~105 ms median ACK latency, inside a deliberately conservative
-1000 ms inter-frame delay. The delay, not the device, is the bulk of it.
+**Where the current 1118 ms actually goes** — *corrected by R1 on 2026-09-09:* a
+deliberately conservative 1000 ms inter-frame delay, plus ~80 ms of packet spacing
+(`SendSpacingMs` 40 ms x 2 gaps), plus roughly **25-40 ms** of actual device turnaround.
 
-| Step | Change | Expected | Risk |
+The `ackLatencyMs` this project has recorded since M6 is measured as
+`ackAt - frameStartedAt`, so it **includes** our own 80 ms of send spacing. The
+"~105 ms ACK latency" was never the device's turnaround, and treating it as such is what
+produced the wrong conclusion below.
+
+| Step | Change | Result | Risk |
 | --- | --- | --- | --- |
-| R1 | drop the 1000 ms inter-frame delay; send on ACK | ~185 ms, **~5.4 fps** | low — same shape, same packets |
-| R2 | `SendSpacingMs` 40 -> 10 | ~125 ms, **~8 fps** | low-med — the spacing was derived from stock capture and may exist for a reason |
-| R3 | pipeline: do not wait for ACK N before frame N+1 | **10 fps+** | real — abandons the per-frame confirmation everything currently depends on |
+| **R1** | inter-frame delay 1000 -> 250 ms | **DONE: 368.6 ms, 2.71 fps, 3.02x** | none realised — no code change, no drift, ACK behaviour unchanged |
+| R2 | `SendSpacingMs` 40 -> 20 -> 10, and lower the Host's 250 ms delay floor | projected ~109 ms, **~9.2 fps** at spacing 10 / delay 50 | low-med — the spacing is the one value taken from stock capture rather than chosen by us |
+| R3 | pipeline past the ACK | **probably unnecessary** | would abandon per-frame confirmation |
 
-**10 fps is 100 ms per frame, which is below the observed median ACK latency alone
-(105 ms, range 99-124).** So it is unreachable with a confirm-every-frame design on this
-unit: R3 is not an optimisation but a different protocol shape, and it would remove the
-evidence that each frame was accepted.
+**Correction.** This note previously said 10 fps was unreachable without R3, because
+100 ms per frame sat "below the observed median ACK latency alone". That compared against
+the wrong number: ~105 ms was mostly our own send spacing. With the spacing reduced and
+the delay floor lowered, **10 fps is reachable while keeping one ACK per frame**, so R3
+is very likely not needed at all.
 
-Two things that are *not* evidence for 10 fps here:
-
-- OpenTivoo's 10 fps is class-5 comparative prior art on a different device.
-- The stock app's 148 ms floor is an observation about that app on our unit, not a rate
-  we have earned. Even it is only ~6.8 fps.
-
-R1 alone is a 6x improvement for almost no risk and would make animation viable. Each step
-needs its own manifest, grant and ~30-frame measurement. None is authorized, and the
-accepted ceiling remains 1118 ms until one of them passes.
+Two things that remain *not* evidence for any rate here: OpenTivoo's 10 fps is class-5
+prior art on a different device, and the stock app's 148 ms floor is an observation about
+that app. R1 earned 250 ms by measuring it; R2 must earn the next step the same way.
 
 ## 9. A1 — installed collection worker (2026-09-09)
 

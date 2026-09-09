@@ -1,8 +1,10 @@
 """16x16 renderer for the approved three-MCP activity page.
 
-The layout is the operator-approved design: an activity crown across rows 0-2, identity
-letters L / O / W on rows 5-9, and 5x5 mushroom / bunny / skull icons on rows 11-15, one
-5-pixel column per source with x=15 spare.
+The layout is the operator-approved design with one operator change: an activity crown
+across rows 0-2, the 5x5 mushroom / bunny / skull icons on rows 5-9, and the identity
+letters L / O / W on rows 11-15, one 5-pixel column per source with x=15 spare. The
+supplied mockups place the letters above the icons; the two blocks are swapped, as an
+explicit transform in the generator rather than by editing pixels.
 
 Every pixel and colour comes from `host/activity_ui_data.py`, which is *derived* from the
 approved mockups in `assets/ui/reference/` rather than transcribed. The offline suite
@@ -180,8 +182,8 @@ def write_previews(output_dir: Path, rgb: bytes, scale: int = 16) -> dict[str, s
 
 
 LEGEND = {
-    "columns": "x0-4 OptiPlex Lab (L, mushroom), x5-9 OptiPlex MCP (O, bunny), x10-14 WSL MCP (W, skull), x15 spare",
-    "rows": "0-2 activity crown, 3-4 spacer, 5-9 identity letter, 10 divider, 11-15 icon",
+    "columns": "x0-4 OptiPlex Lab (mushroom over L), x5-9 OptiPlex MCP (bunny over O), x10-14 WSL MCP (skull over W), x15 spare",
+    "rows": "0-2 activity crown, 3-4 spacer, 5-9 icon, 10 divider, 11-15 identity letter",
     "status": {"green": "last activity under 5 min", "yellow": "5-20 min", "red": "over 20 min",
                "grey": "no usable data: idle, unreadable or disconnected"},
     "activity": "the active column's crown, letter and icon accent all take the blue override together, then fall back to its status colour",

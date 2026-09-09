@@ -45,12 +45,20 @@ Two live commands exist, both operator-invoked, neither able to retry or reconne
 
 ### Accepted operating ceiling
 
-**~1118 ms per frame (0.894 frames/s), measured twice.** ACK latency 99-124 ms, median
-105 ms, no drift across 20 frames in two sessions, zero missing ACKs, zero errors.
+**~368.6 ms per frame (2.71 frames/s), measured 2026-09-09 by `OPENDITOO-R1-RATE-250MS-001`.**
+Ten frames, one connection, zero missing ACKs, zero errors, population stdev 7.8 ms, no
+drift. This supersedes the earlier ~1118 ms ceiling, which was never a device limit but a
+deliberately conservative 1000 ms delay we chose.
 
-This is the rate *measured and accepted*, not the fastest possible. It is the only rate
-later automatic display work may use without a new grant. The official app's observed
-148 ms floor is an observation about that app, not an earned rate.
+**Correction carried by R1:** the `ackLatencyMs` recorded since M6 is
+`ackAt - frameStartedAt` and therefore **includes** the 80 ms of send spacing our own
+transport inserts between a frame's three packets. The familiar "~105 ms ACK latency" is
+80 ms of ours plus roughly 25-40 ms of real device turnaround. Anything reasoning about
+achievable rate must use the smaller number.
+
+This is still the rate *measured and accepted*, not the fastest possible; it is the only
+rate later display work may use without a new grant. The official app's observed 148 ms
+floor remains an observation about that app, not an earned rate.
 
 ## 2. Findings, with their confidence
 
@@ -301,7 +309,10 @@ Login, boot and restart produce zero Bluetooth operations. Uninstall preserves
 
 ## 8c. Prepared and awaiting a grant
 
-- `experiments/DAY1-R1-RATE-250MS-001-PENDING.json` — the first rate step. Ten A/B
+- **R1 is DONE** (see the ceiling above). Next is R2: reduce `SendSpacingMs` in steps and
+  lower the Host's 250 ms delay floor. Both are code changes needing a rebuild, reinstall,
+  new manifest and new grant. Projected ~9.2 fps at spacing 10 / delay 50.
+- Superseded, kept for the record — `DAY1-R1-RATE-250MS-001.json` was the first rate step. Ten A/B
   frames at a 250 ms inter-frame delay against the identical shape already proven twice
   at 1000 ms, changing exactly one variable. **No code change, rebuild or reinstall:**
   250 ms is already the installed Host's `MinInterFrameDelayMs` and ten frames is already

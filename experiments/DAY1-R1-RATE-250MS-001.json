@@ -2,7 +2,7 @@
  "schema_version": 1,
  "experiment_id": "OPENDITOO-R1-RATE-250MS-001",
  "milestone": "R1 \u2014 first step of the frame-rate ladder",
- "status": "pending_operator_grant",
+ "status": "completed_pass_authority_consumed",
  "objective": "Measure the achievable frame interval at the Host's existing 250 ms minimum inter-frame delay, against the identical ten-frame A/B shape already proven twice at 1000 ms. This is the first step toward the operator's ~10 fps target.",
  "why_this_is_the_cheap_path": "Exactly ONE variable changes: inter_frame_delay_ms, 1000 -> 250. Same frames, same frame count, same packets, same target, same connection shape, same stop policy, same encoder. 250 ms is already the installed Host's MinInterFrameDelayMs and ten frames is already its MaxSequenceFrames, so NO code change, rebuild or reinstall is required. Ten frames also yields nine inter-ACK intervals -- the exact sample size that produced the accepted 1114.1 ms mean -- so the two runs are directly comparable.",
  "target": {
@@ -107,13 +107,21 @@
  },
  "authority": {
   "transmission_authorized": false,
-  "authorization_consumed": false,
+  "authorization_consumed": true,
   "experiment_id": "OPENDITOO-R1-RATE-250MS-001",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "i grant it",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution: 10 frames, 30 packets, 710 application bytes, 250 ms inter-frame delay, one connection, no retry, no reconnect. Not continuous display, not a rate below 250 ms, not a new command, not the activity display.",
-  "note": "Grants nothing as written. sequence-run exits 30 until an operator fills the grant fields."
+  "note": "Grants nothing as written. sequence-run exits 30 until an operator fills the grant fields.",
+  "grant_attribution": "Given in direct answer to a message asking for exactly one thing: a grant naming OPENDITOO-R1-RATE-250MS-001. No other experiment was on offer, so 'it' is unambiguous and is recorded against this id.",
+  "grant_scope": "ONE execution: 10 frames, 30 packets, 710 application bytes, 250 ms inter-frame delay, one connection, no retry, no reconnect. NOT a rate below 250 ms, not more frames, not the activity display, not a new command.",
+  "preconditions_confirmed": {
+   "android_app_disconnected": "operator confirmed, unchanged since 002",
+   "operator_watching": "yes",
+   "host_installed": "9c4abe8f48765407706cfcdf0f8cd08923a17927a6989290ffd4a78c3799a582"
+  },
+  "consumed_at": "2026-09-09T15:30:56Z"
  },
  "explicitly_out_of_scope": [
   "any inter-frame delay below 250 ms (that is R2, and needs a Host change)",
@@ -130,5 +138,109 @@
   "what_would_falsify_the_model": "an achieved interval materially above ~450 ms would mean the device, not our delay, is the limit at this rate -- which would cap the whole ladder and is worth knowing before any further step",
   "not_authorized_by_this": "R2 (lowering the Host's 250 ms floor) and R3 (pipelining past the ACK) each need their own manifest, grant and code review. 10 fps is 100 ms per frame, which is below the observed median ACK latency alone, so it is NOT reachable by shortening a delay."
  },
- "result": null
+ "result": {
+  "status": "pass",
+  "operation_id": "f90108c5c3ab",
+  "connections_attempted": 1,
+  "frames_acked": 10,
+  "packets_sent_complete": 30,
+  "tx_bytes_sent_complete": 710,
+  "elapsed_ms": 3446,
+  "socket_closed": true,
+  "retry": false,
+  "reconnect": false,
+  "last_completed_stage": "ack",
+  "budgets_respected": true,
+  "ack_payload_hex_ordered": [
+   "0x0F",
+   "0x7D",
+   "0xF5",
+   "0x64",
+   "0xCD",
+   "0x39",
+   "0xA6",
+   "0x20",
+   "0x95",
+   "0x08"
+  ],
+  "frame_start_offsets_ms": [
+   0,
+   359,
+   737,
+   1102,
+   1466,
+   1830,
+   2194,
+   2573,
+   2936,
+   3317
+  ],
+  "reported_ack_latency_ms": [
+   105,
+   124,
+   102,
+   103,
+   103,
+   103,
+   115,
+   100,
+   117,
+   105
+  ]
+ },
+ "measurements": {
+  "achieved_inter_frame_interval_ms": {
+   "n": 9,
+   "mean": 368.6,
+   "min": 359,
+   "max": 381,
+   "pstdev": 7.8
+  },
+  "achieved_fps": 2.71,
+  "baseline_m8_002": {
+   "interval_ms": 1114.1,
+   "fps": 0.9
+  },
+  "speedup": "3.02x",
+  "prediction_check": "predicted 365-435 ms before the run; achieved 368.6 ms, at the fast end. Model holds.",
+  "drift": "none. First interval 359 ms, last 381 ms, population stdev 7.8 ms across nine intervals.",
+  "reported_ack_latency_ms": {
+   "n": 10,
+   "min": 100,
+   "median": 104.0,
+   "max": 124
+  },
+  "reported_ack_latency_vs_baseline": "Baseline at 1000 ms delay was min 99 / median 105 / max 120. Statistically unchanged at three times the frame rate: the device is not straining.",
+  "errors": 0,
+  "missing_acks": 0
+ },
+ "findings": [
+  {
+   "id": "RATE-250MS-SUSTAINED",
+   "confidence": "MATCHED",
+   "statement": "The exact unit sustains a 368.6 ms mean frame interval (2.71 fps) for ten frames in one connection with zero missing ACKs, zero errors, no drift (pstdev 7.8 ms) and unchanged ACK behaviour. This is 3.02x the previously accepted rate.",
+   "supersedes": "The ~1118 ms accepted ceiling was never a device limit; it was a deliberately conservative 1000 ms delay we chose. 250 ms is now measured and accepted."
+  },
+  {
+   "id": "ACK-LATENCY-WAS-NEVER-DEVICE-TURNAROUND",
+   "confidence": "MATCHED",
+   "statement": "The `ackLatencyMs` recorded since M6 is measured as ackAt - frameStartedAt, so it INCLUDES the two 40 ms Thread.Sleep gaps our own transport inserts between the three packets of a frame. The ~105 ms figure is 80 ms of our deliberate send spacing plus roughly 25-40 ms of actual device turnaround. Derived here: the measured interval is 368.6 ms at a 250 ms delay, so the per-frame cost above the delay is 118.6 ms, of which 80 ms is ours, leaving about 38.6 ms.",
+   "why_it_matters": "It reverses the conclusion drawn before this run. 10 fps is 100 ms per frame, which was judged unreachable because it sat 'below the median ACK latency alone'. That comparison was against the wrong number. With send spacing reduced and the delay floor lowered, 10 fps is reachable while KEEPING one ACK per frame -- pipelining (R3) is not required.",
+   "not_claimed": "That the 40 ms send spacing is safe to reduce. It was derived from stock app capture and may exist for a reason; that is exactly what R2 must test, in steps."
+  }
+ ],
+ "acceptance": {
+  "transport_acceptance": "PASS \u2014 one connection, 30 packets, 710 bytes, 10/10 ACKs, clean close, no retry, no reconnect, budgets respected.",
+  "rate_acceptance": "PASS \u2014 368.6 ms mean interval, within the predicted band, no drift.",
+  "visual_acceptance": "pending operator confirmation that the alternation ran visibly faster and without stutter."
+ },
+ "next_step_evidence": {
+  "r2_scope": "Reduce SendSpacingMs (40 ms) and the Host's MinInterFrameDelayMs floor (250 ms). Both are code changes needing a rebuild, reinstall, new manifest and new grant.",
+  "projected": {
+   "spacing_10_delay_50": "108.6 ms/frame = 9.2 fps",
+   "spacing_0_delay_50": "88.6 ms/frame = 11.3 fps",
+   "spacing_0_delay_0": "38.6 ms/frame = 25.9 fps (theoretical; unlikely to be safe or useful)"
+  },
+  "recommended": "Step the spacing 40 -> 20 -> 10 rather than to zero. The spacing is the one value taken from stock behaviour rather than chosen by us, so it is the one most likely to matter."
+ }
 }
