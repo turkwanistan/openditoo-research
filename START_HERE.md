@@ -38,17 +38,21 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | M8 bounded repeated frames | **not started**; needs its own experiment manifest and authority |
 | M9 three-MCP activity application | sources discovered, collector + renderer + previews **complete and tested offline**; worker install and physical updates wait on M8 |
 
-**Exact next action** — M6 is closed; the next gated step is M8, which needs a
-reviewed experiment manifest and explicit authority before any A→B sequence runs.
-Available without new authority:
+**Exact next action** — M6 is fully closed: physical acceptance and pixel geometry
+are both confirmed (2026-09-09). One cheap operator check remains before M8, because
+M8 and M9 both assume displayed frames are volatile:
 
-- M7 operator capture using `notes/OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md`
+- **Persistence check.** Power-cycle the Ditoo and report what the screen shows. No
+  new authority needed — it is an observation, not a transmission. If the custom frame
+  survives a power cycle, the volatility assumption behind M8/M9 is wrong and must be
+  revisited before any repeated-frame work.
+
+Then, in either order:
+
+- **M7 operator capture** using `notes/OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md`
   (stock observation only, one controller at a time).
-- Three cheap follow-ups to the M6.4 acceptance, each one operator-invoked
-  `image-show` under the existing per-invocation rule: confirm where the fixture's
-  top-left yellow mark appears (orientation), confirm colour rendition, and check
-  whether the frame survives a power cycle (persistence). None of these needs new
-  protocol semantics.
+- **M8 experiment manifest** for a frozen A→B sequence, which needs explicit authority
+  before it runs.
 
 Offline, with no device involved:
 

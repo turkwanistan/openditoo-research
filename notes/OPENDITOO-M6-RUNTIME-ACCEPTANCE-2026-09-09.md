@@ -112,14 +112,13 @@ The Host's new diagnostics recorded the transaction end to end:
 against `imagePacketSha256 e4fe7ff4…37ea`, matching the frozen offline preparation
 exactly, so the Python encoder and the C# encoder agreed before any Bluetooth I/O.
 
-### Two operations, not one
+### Two operations — resolved
 
-`operationsCompletedSinceHostStart` is **2**: `b7f8f263e448` at 04:05:47 UTC and
-`7026e693402d` at 04:05:59 UTC, 12.5 s apart, same image packet. Both were separate
-inbound requests, each with exactly one connection. Neither the Host nor the CLI can
-retry or reconnect, so this is not an automatic replay — but only one invocation was
-reported, so the origin of the second is **unconfirmed and recorded as an open
-question**, not assumed to be a second manual run.
+`operationsCompletedSinceHostStart` was **2**: `b7f8f263e448` at 04:05:47 UTC and
+`7026e693402d` at 04:05:59 UTC, 12.5 s apart, same image packet. The operator confirmed
+both were deliberate manual invocations. Each performed exactly one connection, and
+neither the Host nor the CLI can retry or reconnect — consistent with the no-retry
+boundary, with no unexplained traffic.
 
 ### Finding: the ACK payload is not a success constant
 
@@ -136,15 +135,26 @@ all still open. The CLI already gates on `ok`, packet count, packet hash, palett
 count, connection count, socket close and `retry`, and deliberately not on the ACK
 value; `test_cli_does_not_treat_the_ack_payload_as_a_success_constant` pins that.
 
+### Finding: pixel geometry is physically confirmed
+
+The fixture carries a 3-pixel yellow L-shaped asymmetry mark at `(1,1) (1,2) (2,1)`.
+The operator reports **exactly 3 yellow pixels in the top-left corner**, with the frame
+reading as an upright smile.
+
+Corner plus pixel count excludes horizontal flip, vertical flip and 180° rotation. The
+mark's L-shape is invariant under transposition, so it cannot exclude that on its own —
+but a transposed, anti-transposed or 90°/270°-rotated smile would read as a sideways
+"C", and it does not. **MATCHED:** all eight dihedral orientations are excluded, and the
+encoder's row-major top-left-origin geometry is correct end to end.
+
 ### Still open after acceptance
 
-- **Orientation** — the fixture carries a yellow asymmetry mark at the top-left
-  (row 0, columns 1-2 plus row 1, column 1). Where it actually appeared was not
-  reported, so a flip or transpose is not yet excluded by physical evidence.
-- **Colour rendition** — not reported.
+- **Colour rendition** — partial. Yellow renders as yellow; magenta and cyan were not
+  separately reported.
 - **Persistence** — untested. A successful ACK and a visible frame say nothing about
   whether anything was written to the device, or whether the frame survives a power
-  cycle or a stock page change.
+  cycle or a stock page change. This is the one remaining unknown in the static
+  primitive and it matters for M8/M9, which assume frames are volatile.
 
 ## M6 exit criteria status
 

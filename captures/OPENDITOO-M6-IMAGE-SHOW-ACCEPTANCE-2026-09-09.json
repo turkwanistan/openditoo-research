@@ -26,7 +26,7 @@
     "rgb888_sha256": "fbed71941831927c926c15f897f3335de45d9becc53c28793c9fefa146f96067",
     "image_packet_sha256": "e4fe7ff42632495cdcb5eceb9131a720eb77fccad2183dc98dcf0e881b2e37ea",
     "palette_colors": 4,
-    "content": "magenta smile, two cyan eyes, one yellow asymmetry mark at row 0 columns 1-2 / row 1 column 1"
+    "content": "magenta smile (9 px), two cyan eyes (4 px at row 5 cols 4-5 and 10-11), and a 3 px yellow L-shaped asymmetry mark at rows/cols (1,1) (1,2) (2,1), top-left"
   },
   "operations": [
     {
@@ -64,13 +64,15 @@
       "automatic_retry": false
     }
   ],
-  "operation_count_note": "The Host recorded two completed operations 12.5 s apart with distinct operation ids. Both were separate inbound requests; no automatic retry or reconnect exists in the Host or CLI, and each performed exactly one connection. Only one invocation was reported by the operator, so the origin of the second is unconfirmed and is recorded as an open question rather than assumed.",
+  "operation_count_note": "The Host recorded two completed operations 12.5 s apart with distinct operation ids. The operator confirmed on 2026-09-09 that they invoked image-show twice; both were separate deliberate invocations, each performing exactly one connection. RESOLVED: not an automatic retry, and consistent with the no-retry boundary in the Host and CLI.",
   "operator_observation": {
-    "visual_result": "smile visible on the exact unit",
-    "orientation_confirmed": "unconfirmed",
-    "colors_confirmed": "unconfirmed",
+    "visual_result": "smile visible on the exact unit, reading upright",
+    "orientation_confirmed": "confirmed",
+    "orientation_evidence": "Operator reports exactly 3 yellow pixels in the top-left corner, matching the fixture's 3 px L-shaped mark at (1,1) (1,2) (2,1). The corner and pixel count exclude horizontal flip, vertical flip and 180 deg rotation; the image reading as an upright smile excludes the transpose, anti-transpose, 90 deg and 270 deg cases. All eight dihedral orientations are therefore excluded.",
+    "colors_confirmed": "partial",
+    "colors_evidence": "Yellow renders as yellow. Magenta and cyan rendition were not separately reported.",
     "persistence_after_power_cycle": "untested",
-    "note": "The operator reported seeing the smile. Where the yellow asymmetry mark appeared, exact colour rendition, and whether the frame survives a power cycle were not reported and remain open."
+    "note": "Row-major top-left-origin pixel geometry is now physically confirmed end to end."
   },
   "findings": [
     {
@@ -84,6 +86,12 @@
       "id": "TYPED-RUNTIME-END-TO-END-PROVEN",
       "confidence": "MATCHED",
       "statement": "exact local 16x16 PNG -> deterministic RGB888 decode -> stock-derived image packet -> Python/C# hash agreement -> authenticated fixed-target Host -> Ditoo produced a visible custom frame, with the Host's stage diagnostics reporting ack and a clean close."
+    },
+    {
+      "id": "PIXEL-GEOMETRY-ROW-MAJOR-TOP-LEFT-ORIGIN",
+      "confidence": "MATCHED",
+      "statement": "The encoder's row-major, top-left-origin 16x16 pixel geometry is physically correct on the exact unit: a 3 px asymmetry mark placed at rows 1-2 / columns 1-2 of the source PNG appeared in the top-left corner of the device, with the frame reading upright.",
+      "not_claimed": "Nothing about persistence, refresh behaviour, or the device's own scan order below the application layer."
     }
   ],
   "device_io": true,

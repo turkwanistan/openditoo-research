@@ -435,7 +435,10 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
             self.assertFalse(operation["in_flight_packet_bytes_unknown"])
             acks.add(operation["ack_payload_hex"])
         self.assertGreater(len(acks), 1, msg="the differing ACK payloads are the point of this record")
-        self.assertEqual(data["operator_observation"]["orientation_confirmed"], "unconfirmed")
+        self.assertEqual(data["operator_observation"]["orientation_confirmed"], "confirmed")
+        self.assertEqual(data["operator_observation"]["persistence_after_power_cycle"], "untested")
+        self.assertIn("PIXEL-GEOMETRY-ROW-MAJOR-TOP-LEFT-ORIGIN",
+                      [finding["id"] for finding in data["findings"]])
 
     def test_status_reports_host_health_not_device_connectivity(self) -> None:
         program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
