@@ -9,27 +9,28 @@ not runnable from this document.
 One controller owns the Ditoo at a time. Before any trial the OpenDitoo Host must be
 idle (`python3 cli/openditoo.py status` → `diagnostics.operationInProgress: false`).
 
-## M7.1 Control inventory
+## M7.1 Control inventory — operator-confirmed 2026-09-09
 
-Position-based IDs, assigned left→right, back row→front row as seen by a user facing
-the device with the screen upright. Symbols are read from the exact-model FCC external
-photos (`artifacts/fcc/5058743_external_photos.pdf`, page with the open-keyboard
-three-quarter view) — they are photo-derived, not firmware-derived, and the operator
-must confirm them against the purchased unit before any trial is recorded as exact.
+Position-based IDs, left→right, back row→front row, as seen by a user facing the device
+with the screen upright. **Confirmed against the exact purchased unit by the operator.**
 
-| ID | Position | Visible symbol / colour | Notes |
+| ID | Position | Symbol | Status |
 | --- | --- | --- | --- |
-| `K-B1` | back row, left | `m` — pink keycap, the only non-green key | Manual: hold = keyboard backlight toggle. Family evidence associates M with the boot-time test-mode selector; **never press at power-on.** |
-| `K-B2` | back row, centre | `+` | plausibly volume/brightness up — unproven |
-| `K-B3` | back row, right | sun / brightness glyph | unproven |
-| `K-F1` | front row, left | left-pointing arrow | plausibly back/previous — unproven |
-| `K-F2` | front row, centre | `−` | plausibly volume/brightness down — unproven |
-| `K-F3` | front row, right | wave / tilde-like glyph (low confidence from photo) | **operator must confirm the printed symbol** |
-| `J-R1` | right of the keyboard well | copper joystick/lever | throw directions and whether it clicks are unconfirmed |
-| `P-S1` | right side panel, between microSD and USB-C | round `ON/OFF` button | Manual: press = battery status; **double press = disconnects Bluetooth**; hold = power state change |
+| `K-B1` | back row, left | `M` (pink keycap, the only non-green key) | confirmed |
+| `K-B2` | back row, centre | `+` | confirmed |
+| `K-B3` | back row, right | sun / brightness | confirmed |
+| `K-F1` | front row, left | left arrow | confirmed |
+| `K-F2` | front row, centre | `−` (minus) | confirmed |
+| `K-F3` | front row, right | **right arrow** | confirmed — corrects an earlier misread |
+| `J-R1` | right of the keyboard well | joystick lever | confirmed; throw directions and whether it clicks still unknown |
+| `P-S1` | right side panel, between microSD and USB-C | round `ON/OFF` button | from FCC photos and the manual |
 
-Confirm or correct this table first. If a symbol cannot be established, add one front
-and one top photo of the purchased unit rather than guessing a label.
+**Correction on record:** `K-F3` was read from the FCC external photos as a
+"wave / tilde-like glyph (low confidence)". The exact unit shows a **right arrow**. The
+photo reading was wrong and the exact-unit observation replaces it, per the evidence
+hierarchy. This matters beyond a label: `K-F1` and `K-F3` form a symmetric
+left/right pair, which is exactly the shape M9's page cycle needs, so the two arrows are
+the highest-value keys to characterise first.
 
 ### Known manual side effects — distinguish, do not invoke as gestures
 
@@ -41,6 +42,13 @@ and one top photo of the purchased unit rather than guessing a label.
 Excluded from the whole sweep: any power-on key combination, `P-S1` double press,
 test mode, MassBoot, USB vendor paths, teardown, and pressing more than one control at
 once except in the single justified `K7` pair.
+
+**On `K-B1` (`M`):** an earlier draft of this worksheet said not to press it at all.
+That was over-cautious and is corrected here. The documented hazards are *holding* it
+(keyboard backlight) and the family-evidence association with a **boot-time** test-mode
+selector, which is only evaluated at startup. A short press during normal running is
+ordinary stock operation. It is still ordered **last** in the sweep, because if it does
+change the stock page it must not contaminate the earlier trials.
 
 ## M7.2 Capture procedure
 
@@ -155,13 +163,13 @@ negative M7 does not block the product.
 
 ## Exit criteria tracking
 
-| ID | Tested | Context | Event result | Side effects | Classification |
-| --- | --- | --- | --- | --- | --- |
-| `K-B1` | no | | | | |
-| `K-B2` | no | | | | |
-| `K-B3` | no | | | | |
-| `K-F1` | no | | | | |
-| `K-F2` | no | | | | |
-| `K-F3` | no | | | | |
-| `J-R1` | no | | | | |
-| `P-S1` | no | manual-documented only | | battery / BT disconnect / power | not a candidate input |
+| ID | Symbol | Tested | Context | Event result | Side effects | Classification |
+| --- | --- | --- | --- | --- | --- | --- |
+| `K-F1` | left arrow | no | | | | |
+| `K-F3` | right arrow | no | | | | |
+| `K-F2` | minus | no | | | | |
+| `K-B2` | plus | no | | | | |
+| `K-B3` | brightness | no | | | | |
+| `J-R1` | joystick | no | | | | |
+| `K-B1` | M | no | | | | |
+| `P-S1` | power | n/a | manual-documented only | | battery / BT disconnect / power | not a candidate input |
