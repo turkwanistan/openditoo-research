@@ -2,51 +2,21 @@
 
 OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit evidence and preserved artifacts outrank family resemblance, plans, and chat history.
 
-## Current session route — 2026-09-09 (post-handoff, N1 reconciled)
+## Current session route — 2026-09-09
 
-The current sequence is **N1-N5** in `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`. M0-M8 are
-complete and must not be re-proposed or repeated; the notes under `notes/` are dated
-evidence, not an open backlog.
-
-1. **Read `notes/OPENDITOO-HANDOFF-2026-09-09.md` first.** It carries current accepted
-   work, findings with confidence levels, authority state, open questions, the next
-   objective and the traps not to repeat.
-2. Read `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md` for the forward sequence:
-   - **N1** reconcile current state and acceptance gaps — *done 2026-09-09; this route,
-     `AGENTS.md` and the notes below are its output*;
-   - **N2** bounded activity-session authority lifecycle — **in progress by another
-     worker**; do not duplicate it;
-   - **N3** takeover-aware receive handling and change-only scheduling;
-   - **N4** qualify the three sources and preview the real session offline;
-   - **N5** first bounded M9 activation and stock-yield acceptance (new manifest + named
-     grant required).
-3. Read `AGENTS.md` for the execution/authority boundary. Its `image-show` carve-out is
-   superseded: every live operation needs a new reviewed manifest and a grant naming its
-   experiment id.
+1. **Read `notes/OPENDITOO-HANDOFF-2026-09-09.md` first, especially section 0.** It carries
+   current state, the authority position, and an explicit warning about environment
+   capability that matters if you are running under WSL_MCP rather than a local session
+   with a Windows bridge.
+2. Run the three read-only capability checks in handoff section 0 **in your own session**.
+   Do not inherit either previous session's answers; two sessions got opposite results on
+   the same day.
+3. Read `AGENTS.md` for the execution and authority boundary.
 4. Run `python3 scripts/verify_day1_offline.py` before changing or executing anything.
-5. Read the milestone evidence only as needed — **historical, dated, closed**:
-   - `notes/OPENDITOO-M6-RUNTIME-ACCEPTANCE-2026-09-09.md` — runtime, diagnostics, physical acceptance
-   - `notes/OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md` + `captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json` — physical input result
-   - `notes/OPENDITOO-M7-OPENTIVOO-COMPARISON-2026-09-09.md` — comparative prior art, class 5
-   - `notes/OPENDITOO-M8-SEQUENCE-EVIDENCE-2026-09-09.md` — repeated frames and the rate ceiling
-   - `notes/OPENDITOO-M9-SOURCE-DISCOVERY-2026-09-09.md` — the three MCP sources and the collector
-   - `notes/OPENDITOO-N2-N4-ACTIVATION-READINESS-2026-09-09.md` — the bounded activation
-     lifecycle, takeover-aware receive, change-only scheduling, and what each verification
-     level does and does not prove
-   - `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md` — the M0-M5 trail
-6. `PROJECT_STATE.md` and the MassBoot/update reconstruction research are **historical
-   static/reconnaissance base**. Their service-mode priorities are superseded by the
-   application-first route and are not current work.
-7. Treat `artifacts/` plus `artifacts/SHA256SUMS` and provenance JSON as authoritative
-   for acquired artifacts, and preserve the MATCHED / RELATED / LEAD calibration.
-
-### Verified this session (2026-09-09, N1)
-
-`git rev-parse --short HEAD` = `d957bda`, worktree clean apart from the untracked forward
-roadmap. `python3 scripts/verify_day1_offline.py` →
-`DAY1_OFFLINE_PASS artifacts=19 tests=79 host=typed_image port=8796 device_io=false`.
-That is offline verification only — not a Windows build, not installed-identity
-re-verification, not transport acceptance, not visual acceptance.
+5. Read `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md` for the N/A/L sequence. N1-N5 and the
+   R1-R5 rate ladder are complete; A1 is installed. See handoff section 8d for what is
+   genuinely still open.
+6. Read milestone evidence only as needed:
 
 ### Milestone state
 
@@ -57,6 +27,9 @@ re-verification, not transport acceptance, not visual acceptance.
 | M7 keyboard/button mapping | complete as a **bounded negative**; no usable physical navigation |
 | M8 repeated frames | complete; accepted ceiling ~1118 ms/frame, measured twice |
 | M9 activity application | N1-N4 complete: authority lifecycle, takeover-aware receive, change-only scheduling, sources and offline preview. N5 complete — 002 PASS over its full 300 s; both grants consumed. |
+
+| Rate ladder R1-R5 | complete; **0.90 → 18.46 fps** sustained at full colour, all operator-confirmed |
+| A1 collection worker | installed and running; collection only, cannot transmit |
 
 ### Authority state
 

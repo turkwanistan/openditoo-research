@@ -1,22 +1,59 @@
 # OpenDitoo handoff — 2026-09-09
 
-Written for a fresh session that will decide the next milestones from the repository.
-**The repository is authoritative; this note is a map, not a transcript.** Where this
-note and the code disagree, the code wins.
+**The repository is authoritative; this note is a map, not a transcript.** Where this note
+and the code disagree, the code wins.
 
-Snapshot, re-verified 2026-09-09 during the N1 documentation pass: `main` @ `d957bda`,
-worktree clean apart from the untracked `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`.
-`DAY1_OFFLINE_PASS artifacts=19 tests=79 host=typed_image port=8796 device_io=false`
+Snapshot: `main` @ `4f93141`, clean.
+`DAY1_OFFLINE_PASS artifacts=19 tests=148 host=typed_image port=8796 device_io=false
+m4_completed=true m4_authorized=false m5_authorized=false ui=approved_mcp_page
+m9_activation_authorized=false`
 
-The earlier snapshot line said `b86dfcb` / 78 tests. That was stale. The two commits after
-`b86dfcb` (`cfedb2f`, `d957bda`) concern handoff preparation, routing and capability
-wording only — **no M9 activation was completed**, and no new device evidence was added.
-Offline verification is all that line asserts: not a Windows build, not installed-identity
-re-verification, not transport acceptance, not visual acceptance.
+## 0. Read this first if you are the next session
 
-Forward routing: the current sequence is **N1-N5** in
-`OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`. N1-N4 are done; N5 is armed and awaiting
-execution under the live grant in section 5. M0-M8 are complete and are not to be repeated.
+**Nothing is currently authorized. Every manifest is consumed.** Eleven live experiments
+ran on 2026-09-09, each under its own operator grant naming its experiment id, each
+consumed on execution. A new live operation needs a NEW manifest with a NEW id and a NEW
+grant that names it. Never re-arm a consumed manifest: un-consuming destroys the record of
+what happened, and the durable claim would refuse anyway.
+
+### If you are running under WSL_MCP, expect to do offline work only
+
+The session that produced this handoff was a local Claude Code session in WSL with a
+Windows bridge. **WSL_MCP is a different environment and historically has less.** Under it,
+assume these may fail until you prove otherwise in your own session:
+
+- `powershell.exe` / `dotnet.exe` — so **no builds, no installs, no Host refresh**
+- reaching the Host on `127.0.0.1:8796` — so **no `status`, no transmission of any kind**
+- `ssh` to the OptiPlex — so **two of the three activity sources go unavailable**, and the
+  display will honestly render fault bars for them
+
+Three cheap read-only checks settle it in seconds, and none touches the device:
+
+```sh
+command -v powershell.exe
+python3 cli/openditoo.py status
+python3 cli/openditoo.py activity-probe
+```
+
+**Verify; do not inherit.** Two sessions ran exactly these three checks on 2026-09-09 and
+got opposite results — one found everything reachable, the other found none of it. That is
+the whole reason they are re-run rather than assumed. A 504 is not proof the Host is down,
+and a reachable Host is not proof of anything about the device.
+
+**Self-observation:** the M9 collector reads WSL_MCP's own audit log as the `wsl_mcp`
+source. Your own tool calls will appear there as genuine activity. It is not a feedback
+loop — the collector reads a file and never calls an MCP server — but do not mistake your
+own footprint for a user signal.
+
+### What is fully available offline, whatever your environment
+
+Repository work needs none of the above: parsing, fixtures, rendering, previews, the
+generated UI data, the offline suite and `scripts/verify_day1_offline.py`. So are
+`session-check`, `session-preview`, `manifest-check`, `image-prepare`, `frame-preview`,
+`capture-parse` and `activity-status`/`activity-preview` without `--collect`.
+
+**Bluetooth transmission is gated for authority reasons in every environment, never
+tooling.** A session that *can* build and deploy still may not transmit.
 
 ## 1. What is accepted and proven
 
@@ -344,27 +381,55 @@ offline verifier fails if a transmitting command or `PrivateTmp` ever appears in
 Login, boot and restart produce zero Bluetooth operations. Uninstall preserves
 `.openditoo-local`, `captures/` and OpenTivoo. Details in section 9 of the N2-N4 note.
 
-## 8c. Prepared and awaiting a grant
+## 8c. The rate ladder — complete, and where it stopped
 
-- **R1 is DONE** (see the ceiling above). Next is R2: reduce `SendSpacingMs` in steps and
-  lower the Host's 250 ms delay floor. Both are code changes needing a rebuild, reinstall,
-  new manifest and new grant. Projected ~9.2 fps at spacing 10 / delay 50.
-- Superseded, kept for the record — `DAY1-R1-RATE-250MS-001.json` was the first rate step. Ten A/B
-  frames at a 250 ms inter-frame delay against the identical shape already proven twice
-  at 1000 ms, changing exactly one variable. **No code change, rebuild or reinstall:**
-  250 ms is already the installed Host's `MinInterFrameDelayMs` and ten frames is already
-  its `MaxSequenceFrames`. Ten frames also gives nine intervals — the same sample that
-  produced the accepted 1114.1 ms mean — so the runs are directly comparable. Predicted
-  ~365-435 ms per frame, about 2.3-2.7 fps.
-- A stock-yield and fault-bar trial: still unwritten. Both are `NOT TESTED` after 002,
-  and neither can be forced — they need the operator to touch a control, or a source to
-  actually fail, during a live session.
+R1 through R5 all ran and were accepted on 2026-09-09. Full records in `experiments/`.
+The ladder is **finished for this protocol shape**: at 54 ms the interval *is* the ACK
+round trip, so nothing remains to remove without abandoning one ACK per frame.
+
+Going faster would mean pipelining — sending frame N+1 before frame N is acknowledged.
+That is a different protocol shape, it discards the per-frame confirmation every safety
+property here depends on, and **nothing has asked for it**. It is not prepared and should
+not be prepared speculatively.
 
 `sequence-run` now takes the same durable one-use claim as the activity session, closing
-the enforcement-depth gap recorded in section 5. That gap is no longer open.
+the enforcement-depth gap this note used to record as open.
+
+## 8d. Genuinely open, in rough value order
+
+1. **Wire the measured rate into the activity display.** The scheduler still enforces the
+   old 1118 ms floor, so the product cannot yet use anything the ladder earned. This is
+   pure offline work and needs no grant. It is the change that turns the rate findings
+   into product value, and it is what makes the approved crown-pulse animation possible
+   at all.
+2. **Stock yield and the fault bar — both still `NOT TESTED` on hardware.** Neither can be
+   forced: they need the operator to touch a physical control during a live session, or a
+   source to genuinely fail. Do not manufacture a fake failure to close them; that would
+   test the mock, not the device. Ride them along on a future authorized session.
+3. **Streaming beyond one minute.** The longest run is 56 s. Ten minutes is a different
+   question — thermal behaviour, drift, resource growth — and has not been asked.
+4. **`operator_visual_order` on the two M8 loop manifests** is still `pending`. One glance
+   closes it; if the operator cannot recall, leave it pending rather than recording a
+   recollection as evidence.
+
+Parked and explicitly not to be revived without a trigger: L1-L3 in the forward roadmap,
+MassBoot and service-mode research, and any delta or partial-frame command (finding one
+means command enumeration, which is prohibited).
 
 ## 9. Traps — do not redo these
 
+- **Do not compare an ACK latency against a rate budget without subtracting your own
+  sleeps.** `ackLatencyMs` is `ackAt - frameStartedAt` and includes the inter-packet send
+  spacing. Believing it was device turnaround produced a confidently wrong conclusion that
+  10 fps required abandoning per-frame acknowledgement. It did not.
+- **Do not size a response read by a fixed constant.** A 512-frame result is ~90 KB; a
+  64 KB cap truncated it, `json.loads` raised, and a fully successful run was reported as
+  `HOST_UNAVAILABLE`, consuming real authority against an outcome that was false. Reads
+  are now bounded at 8 MB and detect truncation explicitly.
+- **Do not trust a ten-frame sample as a sustainable rate.** Bursts overstate it by ~11 %.
+- **A photograph is evidence of layout and change, not of colour.** A phone
+  auto-white-balancing a dark scene against saturated LEDs shifted neutral greys to blue
+  and nearly produced a phantom finding; the operator's eye settled it in one glance.
 - `PrivateTmp=true` on a systemd unit that uses `ssh` breaks it: inside the mount
   namespace `ssh` rejects `/etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf` with
   `Bad owner or permissions` and exits 255. It cost two of three activity sources and
