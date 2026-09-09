@@ -536,3 +536,7 @@ Physical device power-cycle reconnect is **PASS** under `OPENDITOO-PRODUCT-RUNTI
 ### Locked MCP product baseline — 2026-09-09
 
 The accepted MCP/product baseline is frozen in `notes/OPENDITOO-MCP-PRODUCT-BASELINE-FREEZE-2026-09-09.md`. Initial attach, stock-screen reclaim, device power-cycle reconnect, production green/yellow/red/grey aging, real WSL_MCP activity animation, and the simulated Lab fault-bar physical display path are accepted. `OPENDITOO-M9-ACTIVATION-009` is consumed. Standing `OPENDITOO-PRODUCT-RUNTIME-001` authority remains local and active. Do not modify hash-frozen product code in place. Windows reboot/logon autostart remains intentionally **PENDING** operator acceptance; a genuine source outage remains **NOT END-TO-END TESTED**. The live `product-status` `connecting`/stale-error issue is telemetry-only and is deferred to a fresh reviewed product revision.
+
+### MCP Dashboard v1 final closure — Runtime 002 PASS
+
+Runtime 002 is live and accepted after a deliberate service restart. `product-status` reported `runtime_revision=2`, `status=connected`, `current_session_frames_acked=1`, `current_session_opened_at=2026-09-09T19:41:10.987925Z`, `last_frame_acked_at=2026-09-09T19:41:11.256180Z`, and `last_error=null` under run nonce `b46bbd1f`. P2/P3/P4 are complete. Do not continue MCP dashboard hardening absent a regression; next route is streaming/other objectives. Windows reboot/login autostart remains deferred/non-blocking.

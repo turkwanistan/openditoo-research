@@ -88,3 +88,10 @@ Runtime 001 is the physically accepted baseline. Runtime 002 is the telemetry-on
 A real Windows reboot/login autostart observation is intentionally deferred until convenient. The task is installed and ordinary product start/restart has been accepted, but the project does not claim a physical reboot/login acceptance that has not happened.
 
 See `notes/OPENDITOO-MCP-DASHBOARD-V1-RELEASE-2026-09-09.md` for the release evidence boundary.
+
+## Final product status
+
+- Runtime 002 live acceptance: PASS (`status=connected`, first frame ACKed, stale error cleared).
+- MCP Dashboard v1 productization: CLOSED.
+- Windows reboot/login autostart observation: deferred, non-blocking.
+- Next route: streaming and other OpenDitoo objectives.

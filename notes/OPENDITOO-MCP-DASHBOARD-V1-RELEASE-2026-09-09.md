@@ -59,3 +59,8 @@ No additional physical animation/reclaim/reconnect replay is required for a tele
 - A naturally occurring genuine source outage may add evidence later; a forced Lab outage is waived.
 
 Neither blocks the owner's v1 wrap-up.
+## Runtime 002 live acceptance — 2026-09-09
+
+Operator cutover to `OPENDITOO-PRODUCT-RUNTIME-002` is PASS. After one deliberate restart of `openditoo-product.service`, `product-status` reported `runtime_revision=2`, `status=connected`, `current_session_frames_acked=1`, `current_session_opened_at=2026-09-09T19:41:10.987925Z`, `last_frame_acked_at=2026-09-09T19:41:11.256180Z`, and `last_error=null`. The new run nonce was `b46bbd1f`. This closes the known Runtime 001 live-observability defect without changing the accepted Host bytes, transport shape, reclaim policy, reconnect policy, pacing, renderer, or exact-target boundary.
+
+P2/P3/P4 are therefore complete. MCP Dashboard v1 productization is closed. Windows reboot/login autostart observation remains intentionally deferred and non-blocking. The next project route is streaming and other OpenDitoo objectives; do not continue expanding MCP dashboard hardening absent a concrete regression.
