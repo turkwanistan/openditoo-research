@@ -462,3 +462,10 @@ means command enumeration, which is prohibited).
 - `journalctl -o json` is incompatible with `--show-cursor`; use each entry's `__CURSOR`.
 - L2CAP signalling identifiers are reused and CIDs are recycled after disconnect. Both
   bugs produced plausible-looking phantom frames in the btsnoop parser.
+
+
+## 8e. MCP dashboard rate-integrated activation — prepared 2026-09-09
+
+Windows deployment and preconditions are now verified for source commit `d1d72d8`: `WINDOWS_BUILD=PASS`, `REFRESH_STATUS=PASS_TYPED_IMAGE`, OpenTivoo preserved; repository and installed Host DLL are byte-identical at `fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f`; normal WSL `/v1/status` is healthy with `activity-session`; all three MCP sources are reachable.
+
+Fresh pending manifest: `experiments/DAY1-M9-ACTIVATION-003.json`, experiment id **`OPENDITOO-M9-ACTIVATION-003`**. It is a 60 s supervised MCP-dashboard acceptance at the current 150 ms frame-start floor and fixed 10 ms packet spacing, max 401 frames / 1203 packets / 81403 bytes, one connection, ACK-per-frame, no retry/reconnect/reclaim. It specifically asks the operator to observe one complete four-stage pulse and then press one physical Ditoo control to test stock-yield. **Nothing is authorized yet.** Streaming/pipelining is tabled until the dashboard milestone is complete.

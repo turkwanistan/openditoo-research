@@ -263,3 +263,8 @@ recorded in the unit file, and a test and the verifier both fail if it returns.
 
 Note this also made the display *correct* while it was broken: the two dead sources
 rendered as unavailable, which is exactly what the fault bar is for.
+
+
+## 10. Rate-integrated MCP dashboard activation 003 — ready for grant
+
+The post-rate-integration Windows boundary is now closed: changed Host build/deploy PASS, installed DLL == repository DLL (`fb750078e9...af70f`), `/v1/status` healthy with `activity-session`, and all three activity sources reachable from normal WSL. `DAY1-M9-ACTIVATION-003.json` freezes the current renderer/collector/session hashes and a 60 s, 150 ms, one-ACK-per-frame envelope. It remains pending explicit operator grant; no Bluetooth/device I/O was performed while preparing it. Streaming and pipelining are deliberately deferred to later milestones.

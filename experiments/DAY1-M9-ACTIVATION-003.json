@@ -1,0 +1,126 @@
+{
+ "schema_version": 2,
+ "experiment_id": "OPENDITOO-M9-ACTIVATION-003",
+ "milestone": "MCP dashboard final bounded acceptance \u2014 rate-integrated pulse and stock-yield",
+ "status": "pending_operator_grant",
+ "objective": "Physically accept the installed 150 ms / 10 ms MCP dashboard path on the exact unit: verify the four ACK-gated cyan/blue/light-blue/cyan activity pulse and intentionally exercise stock-yield with one physical control after the pulse is observed.",
+ "why_this_shape": "Streaming is explicitly tabled. This is a short supervised product-acceptance run using the same reusable persistent RFCOMM session transport, with the MCP-specific 150 ms policy. It does not test higher-rate streaming or pipelining.",
+ "target": {
+  "exact_unit_id": "11:75:58:CE:DE:C7",
+  "installed_firmware": "v42012",
+  "model": "Ditoo Plus",
+  "pairing_precheck": "authenticated exact target required before any socket is created"
+ },
+ "transport": {
+  "measured_endpoint": "Windows Classic RFCOMM channel 1",
+  "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+  "connection_shape": "one persistent RFCOMM connection for this bounded session; one ACK per frame; no retry or reconnect",
+  "one_controller_rule": "the Android Divoom app must be disconnected for the whole session; OpenTivoo runtime/task/port 8779 remain untouched"
+ },
+ "operation": {
+  "kind": "bounded_activity_session",
+  "application": "MCP dashboard",
+  "device_io": true
+ },
+ "build": {
+  "code_sha256": {
+   "renderer_sha256": "e418fc17f084291e76658b32d823ef3016a31253d25ba54bdc9817fa43c19cb4",
+   "ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+   "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+   "session_sha256": "8dd12ff803d45f0918fa0180a3ba230fd2fda1270b1710adc474688cc6309f70"
+  },
+  "host_dll_sha256": "fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
+  "host_exe_repository_sha256": "53356e15acdac4076a15e33224cb74d6b87346c4263942236db3ac4a42032310",
+  "installed_dll_sha256_verified": "fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
+  "installed_identity_note": "VERIFIED 2026-09-09 after refresh_openditoo_day1_host.ps1 -Apply: WINDOWS_BUILD=PASS, REFRESH_STATUS=PASS_TYPED_IMAGE, OPENTIVOO_TASK=preserved. Operator-provided SHA-256 shows repository Release DLL and installed DLL are byte-identical. Normal WSL /v1/status returned ok=true and advertised activity-session."
+ },
+ "session": {
+  "lifetime_seconds": 60,
+  "min_frame_interval_ms": 150,
+  "poll_interval_ms": 150,
+  "pulse_freshness_seconds": 30,
+  "activation_source": "the three MCP audit sources (optiplex_lab, optiplex_mcp, wsl_mcp), rendered by host/activity_render.py as the approved MCP page",
+  "shape": "one connection; render tick every 150 ms; source collection remains at configured multi-second cadence; send only when rendered frame changes; four activity stages advance only after ACK; observe link while idle; close on terminal",
+  "automatic_retry": false,
+  "automatic_reconnect": false,
+  "stock_screen_reclaim": false,
+  "replay_after_interruption": false,
+  "semantic_evidence": "No new command semantics. Every frame uses the accepted stock-derived three-packet 0x44 image transaction; only pixels and accepted pacing differ."
+ },
+ "budgets": {
+  "connection_attempts": 1,
+  "max_frames": 401,
+  "max_application_packets": 1203,
+  "max_tx_bytes": 81403,
+  "ack_timeout_ms_per_frame": 5000,
+  "derivation": "60 s at a 150 ms minimum frame-start interval admits at most 401 frame starts. Three application packets per frame. Exhaustive current renderer enumeration including status/health combinations and all four live pulse stages confirms a 203-byte worst-case frame group (188-byte image packet plus 15 bytes of stock preambles), therefore 401 * 203 = 81403 bytes. Change-only operation should send far less.",
+  "expected_realistic_frames": "single digits to low tens; four frames per observed activity pulse plus status transitions"
+ },
+ "stop_policy": {
+  "stop_immediately_on": [
+   "any unsolicited state report on the link (canvas is no longer ours)",
+   "any inbound bytes that do not parse as exactly one valid wrapped report",
+   "any ACK that is not our wrapped 0x44 shape with a single payload byte",
+   "any send that does not complete in full",
+   "ACK timeout on any frame",
+   "session lifetime reached",
+   "frame or byte budget reached",
+   "pairing precheck failure or any conflicting controller on the link",
+   "the worker falling silent for longer than the Host grace period"
+  ],
+  "on_ambiguous_outcome_resend": false,
+  "collection_continues_after_display_stop": true,
+  "on_ambiguous_outcome": "stop sending, close the link, record completed/unknown bytes and last known display state; never resend, reconnect, or reclaim",
+  "recovery": "operator-initiated only after outcome is recorded; returning to stock is never a command we send"
+ },
+ "expected_observations": {
+  "physical": "approved L/mushroom, O/bunny, W/skull dashboard; on activity, that column crown + letter + icon accent visibly cycle cyan -> blue -> light blue -> cyan over four ACKed stages (~0.60 s) then return to status colour",
+  "stock_yield": "after the operator has seen a full pulse, one physical Ditoo control is pressed; the session should stop immediately, send no reclaim frame, and report unknown_not_ours / stopped_yielded_to_stock",
+  "idle_silence": "unchanged scene sends zero packets",
+  "fault_bar": "if a source genuinely becomes unavailable, its crown row shows the red fault bar and no activity crown; otherwise remains NOT TESTED",
+  "ack_payload": "recorded per frame, never treated as a success constant"
+ },
+ "acceptance_criteria": {
+  "visual_pulse": "operator sees at least one complete four-stage pulse on crown + letter + icon accent and confirms it returns to base status colour",
+  "pacing": "Host enforces no frame starts under 150 ms and each frame remains ACK-gated",
+  "stock_yield": "after one intentional physical control, session terminates without retry/reconnect/reclaim and no later frame is sent",
+  "transport": "one connection, three packets per sent frame, one wrapped 0x44 ACK per completed frame, bounded accounting agrees",
+  "collection_survives": "after display stop, activity-status still collects",
+  "authority_is_consumed": "both WSL claim and Host ledger make this experiment id one-use",
+  "fault_signal": "only claim PASS if a real source failure occurs; otherwise record NOT TESTED"
+ },
+ "preconditions": [
+  "operator grant naming OPENDITOO-M9-ACTIVATION-003",
+  "DONE 2026-09-09: changed Windows Host built and deployed with REFRESH_STATUS=PASS_TYPED_IMAGE while OpenTivoo was preserved",
+  "DONE 2026-09-09: repository and installed DLL SHA-256 both FB750078E9F5D8E763E57E2F58D8A79B1FAFF1D886D2D04946274A29DD9AF70F",
+  "DONE 2026-09-09: normal WSL status returned ok=true with activity-session capability",
+  "DONE 2026-09-09: activity-probe returned reachable=true for optiplex_lab, optiplex_mcp and wsl_mcp",
+  "Android Divoom app disconnected",
+  "offline verifier PASS at the commit being run",
+  "operator present and watching the unit"
+ ],
+ "authority": {
+  "transmission_authorized": false,
+  "authorization_consumed": false,
+  "experiment_id": "OPENDITOO-M9-ACTIVATION-003",
+  "granted_by": null,
+  "grant_text": null,
+  "expires_at": null,
+  "grant_scope_requested": "ONE execution only: up to 60 seconds; change-only MCP dashboard frames no faster than one frame start per 150 ms; at most 401 frames / 1203 packets / 81403 application bytes; one RFCOMM connection; one ACK per frame; 10 ms intra-frame packet spacing; no retry, reconnect, reclaim, pipelining, higher-rate streaming, unattended operation, or second attempt.",
+  "grant_scope": null
+ },
+ "explicitly_out_of_scope": [
+  "streaming or video milestone work",
+  "pipelining or more than one frame in flight",
+  "any frame-start policy faster than 150 ms",
+  "unattended or installation-time transmission",
+  "retry/reconnect/reclaim after fault or takeover",
+  "delta/partial-frame discovery",
+  "new command enumeration/raw sends",
+  "firmware update, persistent upload, service/MassBoot, teardown"
+ ],
+ "supersedes": {
+  "experiment_id": "OPENDITOO-M9-ACTIVATION-002",
+  "why": "002 is consumed and records the historical 1118 ms activity acceptance. 003 is a new manifest for the installed rate-integrated source, never a re-arm."
+ }
+}
