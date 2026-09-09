@@ -1971,9 +1971,15 @@ class ProductRuntimeTests(unittest.TestCase):
             self.assertEqual(transport.closed_reason, "operator_stop")
 
 
+# The newest committed product template. Older revisions stay in the repository as records of
+# what was reviewed against a superseded Host build, and are deliberately NOT hash-valid any
+# more -- re-validating them would mean pretending an old policy still describes this binary.
+CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-003.json"
+
+
 class ProductRuntimeV2Tests(unittest.TestCase):
     def _policy_raw(self, authorized: bool = False) -> dict:
-        raw = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-002.json").read_text(encoding="utf-8"))
+        raw = json.loads(CURRENT_PRODUCT_TEMPLATE.read_text(encoding="utf-8"))
         raw["build"]["code_sha256"] = product_runtime_v2.runtime_hashes()
         if authorized:
             scope = raw["authority"]["grant_scope_requested"]
@@ -1990,8 +1996,8 @@ class ProductRuntimeV2Tests(unittest.TestCase):
         self.assertEqual(historical["build"]["code_sha256"], product_runtime.runtime_hashes())
         self.assertFalse(historical["authority"]["persistent_runtime_authorized"])
 
-    def test_runtime_002_policy_is_disabled_and_hash_complete(self) -> None:
-        path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-002.json"
+    def test_the_current_committed_policy_is_disabled_and_hash_complete(self) -> None:
+        path = CURRENT_PRODUCT_TEMPLATE
         reviewed = product_runtime_v2.load_policy(path, require_authority=False)
         self.assertEqual(reviewed.product_id, product_runtime_v2.PRODUCT_ID)
         self.assertIn("PRODUCT_AUTHORITY_MISSING", product_runtime_v2.authority_blockers(path))
@@ -2073,13 +2079,16 @@ class ProductInstallationBoundaryTests(unittest.TestCase):
         self.assertEqual(raw["target"]["exact_unit_id"], activity_session.EXACT_UNIT_ID)
         self.assertFalse(raw["behavior"]["raw_send_enabled"])
         self.assertFalse(raw["behavior"]["target_override_enabled"])
-        reviewed = product_runtime.load_policy(path, require_authority=False)
-        self.assertTrue(reviewed.automatic_reconnect)
-        self.assertTrue(reviewed.reclaim_on_canvas_invalidated)
         self.assertIn("PRODUCT_AUTHORITY_MISSING", product_runtime.authority_blockers(path))
+        # Runtime 001 reviewed a Host build that is no longer deployed, so it is kept as a
+        # record and is deliberately not re-validatable. Its structural boundaries above still
+        # hold and are what this test guards.
+        with self.assertRaises(product_runtime.ProductPolicyError) as caught:
+            product_runtime.load_policy(path, require_authority=False)
+        self.assertEqual(caught.exception.code, "PRODUCT_HOST_HASH_MISMATCH")
 
-    def test_runtime_002_committed_template_is_disabled_and_hash_complete(self) -> None:
-        path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-002.json"
+    def test_the_current_committed_template_is_disabled_and_hash_complete(self) -> None:
+        path = CURRENT_PRODUCT_TEMPLATE
         raw = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(raw["runtime_revision"], 2)
         self.assertFalse(raw["authority"]["persistent_runtime_authorized"])
@@ -3209,3 +3218,32 @@ class W3LiveSourceTests(unittest.TestCase):
                                         activity_session.FakeSessionTransport(),
                                         lambda: 0, lambda ms: None, claim=None)
         self.assertEqual(caught.exception.code, "STREAM_NO_SOURCE")
+
+
+class ProductRuntime003CutoverTests(unittest.TestCase):
+    """Runtime 003 re-binds the standing policy to the session-profile Host build."""
+
+    def test_superseded_templates_are_kept_but_no_longer_describe_this_binary(self) -> None:
+        # Deliberately not hash-valid any more: an old policy must not be re-validatable
+        # against a Host binary it never reviewed.
+        old = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-002.json"
+        self.assertTrue(old.is_file(), "the superseded revision stays as a record")
+        with self.assertRaises(product_runtime_v2.ProductPolicyError) as caught:
+            product_runtime_v2.load_policy(old, require_authority=False)
+        self.assertEqual(caught.exception.code, "PRODUCT_HOST_HASH_MISMATCH")
+
+    def test_the_current_template_names_the_deployed_host_build(self) -> None:
+        raw = json.loads(CURRENT_PRODUCT_TEMPLATE.read_text(encoding="utf-8"))
+        self.assertEqual(raw["build"]["host_dll_sha256"],
+                         activity_session.sha256_file(activity_session.HOST_BUILD_DLL))
+        # The dashboard's own operating numbers must be untouched by the streaming work.
+        self.assertEqual(raw["session"]["min_frame_interval_ms"],
+                         activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
+
+    def test_the_product_policy_grants_no_streaming_authority(self) -> None:
+        raw = json.loads(CURRENT_PRODUCT_TEMPLATE.read_text(encoding="utf-8"))
+        scope = raw["authority"]["grant_scope_requested"]
+        self.assertIn("streaming_ack_clock", scope)
+        self.assertIn("own reviewed manifest", scope)
+        self.assertFalse(raw["behavior"]["raw_send_enabled"])
+        self.assertFalse(raw["behavior"]["target_override_enabled"])

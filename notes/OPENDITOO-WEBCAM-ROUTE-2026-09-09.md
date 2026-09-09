@@ -86,20 +86,42 @@ exists on the owner's unit before any downstream work assumes it.
 weighted distance, same scan-order tie-break. Otherwise offline previews stop predicting what
 the device is sent, and every visual acceptance becomes unverifiable.
 
-## 4. Two gates that remain closed
+## 4. Gate 1 CLOSED OUT — Runtime 003 cutover is live
 
-Everything above is offline. Two things have **not** happened and each needs its own explicit
-operator decision:
+The operator authorized the Host deployment in-session ("deploy the host binary down. its ok if
+it goes down for a bit, we'll get it back up."), and it is done.
 
-1. **Deploying the new Host binary.** It replaces the DLL the live MCP dashboard runs on and
-   invalidates the standing `OPENDITOO-PRODUCT-RUNTIME-002` policy hash, so it requires a
-   reviewed **Runtime 003** policy naming the new build, plus a brief dashboard outage during
-   cutover. Uninstall/rollback is `bin/Release/net8.0` plus the existing Runtime 002 policy,
-   both untouched.
-2. **Any live streaming transmission**, which needs a new reviewed manifest and a grant naming
-   its experiment id, per `AGENTS.md`. No blanket pre-authorization is valid for this.
+- `refresh_openditoo_day1_host.ps1 -Apply` rebuilt and redeployed with its own staging, backup
+  and automatic rollback: `WINDOWS_BUILD=PASS`, `REFRESH_STATUS=PASS_TYPED_IMAGE`,
+  `OPENTIVOO_TASK=preserved`.
+- Repository and installed DLL are byte-identical at
+  `0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb`.
+- `/v1/status` now reports `sessionProfile=activity`, `sendSpacingMs=10` — the profile plumbing
+  is live and defaults to the dashboard's existing behaviour.
+- **Runtime 003 policy** (`product/OPENDITOO-PRODUCT-RUNTIME-003.json` committed and deliberately
+  unauthorized; the authorized copy is the local mode-0600 policy). It differs from Runtime 002
+  only in the trusted Host hash: `runtime_revision` stays 2 because the Python supervisor is
+  byte-identical, and every dashboard operating number — 150 ms floor, 200 ms cadence, budgets,
+  reconnect/reclaim, no raw send, no target override — is unchanged. Its scope explicitly grants
+  no streaming authority.
+- Dashboard verified back up on the new binary: `status=connected`, 33 frames ACKed,
+  `last_error=null`, `reconnects=0`, `reclaims=0`.
 
-## 5. Where the plan's milestones now stand
+Rollback, if ever needed: `.openditoo-local/rollback-runtime-002/` holds the previous DLL
+(`fb750078...`) and the previous local policy.
+
+Runtimes 001 and 002 remain committed as records of what was reviewed against superseded Host
+builds, and are deliberately no longer hash-valid — re-validating them would mean pretending an
+old policy describes this binary. Tests assert exactly that.
+
+## 5. Gate 2 — the only one still closed
+
+**Any live streaming transmission** needs a new reviewed manifest and a grant naming its
+experiment id, per `AGENTS.md`. No blanket pre-authorization is valid for this, including a
+general "yolo mode" instruction: the rule exists precisely so that transmission authority cannot
+be inherited from enthusiasm or from build/deploy capability.
+
+## 5b. Where the plan's milestones now stand
 
 | Milestone | State |
 | --- | --- |

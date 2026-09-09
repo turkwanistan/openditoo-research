@@ -1,0 +1,71 @@
+{
+  "authority": {
+    "grant_scope": null,
+    "grant_scope_requested": "Re-bind the standing persistent MCP dashboard product runtime to Host build 0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb (named session profiles). Dashboard behaviour, target, pacing, budgets, reconnect/reclaim semantics and the absence of raw-send/target-selection are all unchanged from Runtime 002; only the trusted Host binary changes. Grants no streaming authority: the streaming_ack_clock profile requires its own reviewed manifest and grant.",
+    "grant_text": null,
+    "granted_by": null,
+    "persistent_runtime_authorized": false,
+    "policy_id": "OPENDITOO-PRODUCT-RUNTIME-003",
+    "revocation": "runtime/wsl/install_openditoo_product.sh --uninstall stops/disables product service, restores prior collector state, and moves a revoked policy record under .openditoo-local/revoked/",
+    "revoked": false,
+    "supersedes": "OPENDITOO-PRODUCT-RUNTIME-002"
+  },
+  "behavior": {
+    "automatic_reconnect": true,
+    "collector_ownership": "product runtime collects while connected and while backing off; standalone collector timer is transactionally disabled and restored on uninstall",
+    "raw_send_enabled": false,
+    "reclaim_on_canvas_invalidated": true,
+    "reclaim_storm_guard": {
+      "cooldown_seconds": 1,
+      "max_immediate_reclaims": 8,
+      "window_seconds": 10
+    },
+    "reconnect_backoff_seconds": [
+      1,
+      2,
+      5,
+      10,
+      30
+    ],
+    "start_at_windows_logon": true,
+    "target_override_enabled": false
+  },
+  "build": {
+    "code_sha256": {
+      "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+      "product_runtime_sha256": "85b6ca70a1340bd53cc69441034c780d39d62db985cf6d61a10c1bccb0483e0d",
+      "renderer_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+      "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+      "ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb"
+    },
+    "host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
+    "host_note": "Runtime 003 trusts the Host build that adds NAMED SESSION PROFILES. The dashboard's own behaviour is unchanged: an absent profile resolves to 'activity', which keeps the 150 ms Host floor and 10 ms packet spacing exactly as Runtime 002 had them, and the supervisor does not request a profile. The new 'streaming_ack_clock' profile exists in the binary but is reachable only by a separately reviewed streaming manifest, never by this product policy. The Host also now returns hostFrameElapsedMs per frame. Python supervisor code is byte-identical to Runtime 002, so runtime_revision stays 2."
+  },
+  "description": "Persistent plug-and-play MCP activity dashboard for the owner's exact Ditoo Plus; Runtime 002 adds telemetry-only live session observability. Runtime 003 re-binds the policy to the session-profile Host build.",
+  "install": {
+    "host_task": "OpenDitoo Day1 Host (preserved)",
+    "local_policy": ".openditoo-local/product-runtime-policy.json",
+    "opentivoo_task": "OpenTivoo Product Runtime (preserved)",
+    "startup_boundary": "Windows user logon / StartWhenAvailable; WSL is user-scoped, so this is the reliable Windows startup boundary",
+    "windows_task": "OpenDitoo Product Runtime",
+    "wsl_service": "openditoo-product.service"
+  },
+  "product_id": "OPENDITOO-MCP-DASHBOARD-V1",
+  "runtime_revision": 2,
+  "schema_version": 1,
+  "session": {
+    "lifetime_seconds": 600,
+    "max_frames": 500,
+    "max_tx_bytes": 101500,
+    "min_frame_interval_ms": 150,
+    "poll_interval_ms": 50,
+    "pulse_freshness_seconds": 30,
+    "renewal": "fresh unique Host session after lifetime/budget; displayed frame persists across brief socket rollover"
+  },
+  "target": {
+    "exact_unit_id": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012",
+    "rfcomm_channel": 1,
+    "target_override_enabled": false
+  }
+}
