@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "kind": "frame_stream",
+  "experiment_id": "OPENDITOO-S2-STREAM-RATE-001",
+  "milestone": "S2 realized stream-rate ceiling of the client path",
+  "status": "pending_authority",
+  "objective": "Measure what fraction of the accepted R5 ceiling our WSL -> HTTP -> Host -> RFCOMM path actually realizes, at the 150 ms Host floor, with webcam-representative full-palette payloads and per-frame dispatch-to-ACK timing. R1-R5 measured the DEVICE; this measures OUR OVERHEAD, which is the unknown that a live webcam pipeline has to be designed against.",
+  "target": {
+    "exact_unit_id": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012",
+    "model": "Ditoo Plus",
+    "pairing_precheck": "authenticated exact target required before any socket is created"
+  },
+  "transport": {
+    "measured_endpoint": "Windows Classic RFCOMM channel 1",
+    "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+    "connection_shape": "one persistent RFCOMM connection; one ACK per frame; strictly synchronous; no retry, reconnect or pipelining",
+    "one_controller_rule": "the persistent MCP product supervisor must be stopped for the full 60 s and restarted immediately afterward; the Android Divoom app must stay disconnected; OpenTivoo runtime/task/port 8779 remain untouched",
+    "host_change": "none; the Host build and its 150 ms floor are unchanged at fb750078..."
+  },
+  "build": {
+    "code_sha256": {
+      "frame_stream_sha256": "547f0abafb552ca2d725427f2ade925bd454a0f38cb8802addaa5b82ed1cc44e",
+      "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+      "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36"
+    },
+    "host_dll_sha256": "fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
+    "installed_dll_sha256_verified": "fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
+    "installed_identity_note": "Verified in-session 2026-09-09: repository Release build and deployed DLL byte-identical. This trial changes WSL Python only."
+  },
+  "session": {
+    "lifetime_seconds": 60,
+    "min_frame_interval_ms": 150,
+    "poll_interval_ms": 50,
+    "automatic_retry": false,
+    "automatic_reconnect": false,
+    "stock_screen_reclaim": false,
+    "replay_after_interruption": false,
+    "shape": "one connection; the 60-frame clip loops at the 150 ms Host floor for 60 s; every consecutive frame differs so nothing is held as unchanged; then close",
+    "semantic_evidence": "No new device command semantics and no new rate territory: R4 sustained 131 ms/frame and R5 reached 54.2 ms/frame on this unit at this payload size. 150 ms is slower than both. Only the measurement is new."
+  },
+  "stream": {
+    "frame_set_file": "examples/stream-demo/fullcolour-field.rgb888",
+    "frame_set_sha256": "c8200bb34ddd65fc32238c894c7bd215e1118a576528dafdda4d7a6a7b66f280",
+    "frame_count": 60,
+    "playback_interval_ms": 150,
+    "loop": true,
+    "source_description": "deterministic generated near-full-palette rotating field, 250 colours and 1039 application bytes per frame, matching the R4/R5 measured payload and the worst case a 16x16 webcam frame can reach; generated offline by scripts/make_stream_demo_frames.py fullcolour",
+    "palette_colors_per_frame": 250
+  },
+  "budgets": {
+    "connection_attempts": 1,
+    "max_frames": 401,
+    "max_application_packets": 1203,
+    "max_tx_bytes": 416639,
+    "ack_timeout_ms_per_frame": 5000,
+    "derivation": "60 s at 150 ms admits 401 frame starts, and the 60-frame clip loops so the clock bounds the count. 401 x 3 packets; worst-case 1039 application bytes per frame (250-colour image packet plus both stock preambles) gives 416639 bytes. Payload matches the accepted R4/R5 ladder, which sent 1048 application bytes per frame."
+  },
+  "measurement_plan": {
+    "captured_per_frame": [
+      "playback_index",
+      "since_start_ms",
+      "ack_latency_ms",
+      "palette_colors",
+      "application_bytes"
+    ],
+    "derived": [
+      "realized_fps",
+      "mean_frame_interval_ms",
+      "ack_latency_ms min/median/p95/max",
+      "playback_steps_dropped"
+    ],
+    "already_measured_offline": {
+      "client_cpu_per_frame_ms": 0.24,
+      "wsl_to_host_loopback_rtt_ms": 2.17,
+      "note": "measured this session with no device I/O; together ~2.5 ms, so anything beyond that is wire time"
+    },
+    "question_answered": "whether our path can hold the 150 ms floor with zero dropped steps, and how much of each 150 ms window is wire time -- which sets the target for any future Host-floor lift",
+    "explicitly_not_a_rate_ladder_rerun": "R1-R5 are complete and are not repeated. This runs SLOWER than both R4 and R5 and adds instrumentation only."
+  },
+  "expected_observations": {
+    "transport": "one connection, up to 401 ACKed frames, 1203 packets, 416639 application bytes, clean lifetime_expired",
+    "physical": "a continuously shifting full-colour field for 60 s with no visible stall, tear or freeze; individual frames are not separately identifiable by eye at 6.67 fps and are not expected to be",
+    "interpretation": "Establishes the realized ceiling of the CURRENT client path at the CURRENT Host floor. It does not establish a new device ceiling and does not authorize a faster one."
+  },
+  "persistence_analysis": {
+    "expected_effect": "volatile display state only",
+    "source_state_effect": "none",
+    "product_policy_effect": "none; policy and frozen code untouched"
+  },
+  "stop_policy": {
+    "stop_immediately_on": [
+      "unexpected target identity or pairing precheck failure",
+      "any unsolicited state report on the link (canvas is no longer ours)",
+      "any inbound bytes that do not parse as exactly one valid wrapped report",
+      "any ACK that is not our wrapped 0x44 shape with a single payload byte",
+      "any send that does not complete in full",
+      "ACK timeout on any frame",
+      "session lifetime reached",
+      "frame or byte budget reached",
+      "the worker falling silent for longer than the Host grace period"
+    ],
+    "on_ambiguous_outcome_resend": false,
+    "collection_continues_after_display_stop": true,
+    "on_ambiguous_outcome": "stop sending, close the link, record completed/unknown bytes and last known display state; never resend, reconnect or reclaim",
+    "recovery": "restart the already-authorized persistent product service after the stream returns"
+  },
+  "authority": {
+    "experiment_id": "OPENDITOO-S2-STREAM-RATE-001",
+    "transmission_authorized": false,
+    "authorization_consumed": false,
+    "grant_scope_requested": "ONE execution only of OPENDITOO-S2-STREAM-RATE-001: stop the persistent MCP product supervisor, stream the frozen 60-frame near-full-palette field (frame_set_sha256 c8200bb34ddd65fc32238c894c7bd215e1118a576528dafdda4d7a6a7b66f280) on loop to exact Ditoo 11:75:58:CE:DE:C7 through the existing typed /v1/session/* transaction at the 150 ms Host floor for a 60 s bounded lifetime (401 frames, 1203 packets, 416639 application bytes, one connection, one ACK per frame), capturing per-frame dispatch-to-ACK timing, then restart the persistent product supervisor; no retry, reconnect, reclaim, pipelining, raw send, target override, firmware or persistent write, and no change to the Windows Host build.",
+    "granted_by": null,
+    "grant_text": null,
+    "grant_scope": null,
+    "expires_at": null
+  },
+  "explicitly_out_of_scope": [
+    "lowering the Windows Host 150 ms floor (needs a Host rebuild and a Runtime 003 product policy)",
+    "pipelining, delta or partial-frame sends",
+    "any rate above the accepted R5 ceiling",
+    "live webcam or camera capture",
+    "audio synchronization",
+    "raw send, target selection or command enumeration",
+    "firmware, gallery or any persistent write",
+    "automatic retry, reconnect or reclaim",
+    "any target other than the exact unit"
+  ]
+}

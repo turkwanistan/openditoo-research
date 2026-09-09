@@ -37,9 +37,12 @@ FRAME_BYTES = 16 * 16 * 3
 # with at most this many distinct colours. Arbitrary photographic 16x16 content routinely
 # exceeds it, which is why quantisation happens offline in prepare, never at send time.
 MAX_PALETTE_COLORS = 255
-# `run_session` runs its scheduler at max(manifest floor, MCP_CLIENT_FRAME_INTERVAL_MS).
-# A stream may therefore not ask for a cadence the shared runner would silently round up.
-MIN_PLAYBACK_INTERVAL_MS = _session.MCP_CLIENT_FRAME_INTERVAL_MS
+# The Host's own hard floor, and the real one. `run_session` additionally rounds every
+# client up to MCP_CLIENT_FRAME_INTERVAL_MS (200 ms), which is a dashboard policy: a
+# change-only display gains nothing from going faster. A stream does, so `stream_session`
+# below dispatches on the manifest's floor instead. Nothing may ask for less than the Host
+# will accept, whatever it claims.
+MIN_PLAYBACK_INTERVAL_MS = _session.ACCEPTED_MIN_FRAME_INTERVAL_MS
 # Unused by a stream: no frame is a pulse, so nothing can expire. Present because the
 # shared manifest record requires it.
 _STREAM_PULSE_FRESHNESS_SECONDS = 30
@@ -331,6 +334,127 @@ def derived_budgets(frame_set: FrameSet, lifetime_seconds: int, playback_interva
         "max_tx_bytes": frame_set.total_tx_bytes(frames),
         "ack_timeout_ms_per_frame": 5000,
     }
+
+
+# --------------------------------------------------------------------------
+# Stream dispatch
+# --------------------------------------------------------------------------
+# `run_session` is the MCP dashboard's loop and is hash-frozen by the live product
+# policy, so it can be imported but not changed -- and two of its properties are wrong
+# for a stream: it floors every client at 200 ms, and it records no per-frame timing.
+# This loop reuses the frozen ChangeOnlyScheduler, claim and transport unchanged, and
+# differs only in dispatching on the manifest's own floor and measuring what it did.
+
+def stream_session(manifest, frame_set: FrameSet, stream: dict, transport,
+                   clock, sleep, claim: SessionClaim | None = None) -> dict:
+    """Drive one bounded stream to a terminal or explicitly unknown result.
+
+    Semantics are deliberately identical to `run_session` wherever they overlap: an
+    ambiguous or failed frame ends the session as `unknown` with no resend, no reconnect
+    and no reclaim frame; an unsolicited report means the canvas is no longer ours.
+    """
+    renderer = renderer_for(frame_set, stream)
+    interval_ms = renderer.playback_interval_ms
+    scheduler = _session.ChangeOnlyScheduler(interval_ms, manifest.pulse_freshness_ms)
+    started_ms = clock()
+    deadline_ms = started_ms + manifest.lifetime_ms
+    timings: list[dict] = []
+    result = {"experiment_id": manifest.experiment_id, "frames_sent": 0, "packets_sent": 0,
+              "tx_bytes_sent": 0, "holds": {}, "terminal_reason": None, "outcome": "unknown",
+              "acks": [], "frame_timings": timings, "playback_steps_dropped": 0}
+
+    def hold(reason: str) -> None:
+        result["holds"][reason] = result["holds"].get(reason, 0) + 1
+
+    def finish(reason: str, outcome: str, detail: str = "") -> dict:
+        elapsed = clock() - started_ms
+        result.update(terminal_reason=reason, outcome=outcome, detail=detail,
+                      display_state=scheduler.display_state(), elapsed_ms=elapsed)
+        sent = result["frames_sent"]
+        result["realized_fps"] = round(sent / (elapsed / 1000.0), 3) if elapsed > 0 else 0.0
+        result["mean_frame_interval_ms"] = round(elapsed / sent, 2) if sent else None
+        if timings:
+            ordered = sorted(item["ack_latency_ms"] for item in timings)
+            result["ack_latency_ms"] = {
+                "min": ordered[0], "median": ordered[len(ordered) // 2], "max": ordered[-1],
+                "p95": ordered[min(len(ordered) - 1, int(len(ordered) * 0.95))]}
+        if claim is not None:
+            claim.finish(outcome, {"terminal_reason": reason, "detail": detail,
+                                   "frames_sent": sent, "packets_sent": result["packets_sent"],
+                                   "tx_bytes_sent": result["tx_bytes_sent"],
+                                   "realized_fps": result["realized_fps"],
+                                   "display_state": result["display_state"]})
+        return result
+
+    try:
+        transport.open(manifest)
+    except Exception as exc:
+        return finish("open_failed", "unknown", f"{type(exc).__name__}: {exc}")
+
+    try:
+        last_index = -1
+        while True:
+            now = clock()
+            if now >= deadline_ms:
+                return finish("lifetime_expired", "stopped_clean", "")
+
+            for report in transport.poll_reports():
+                kind = report.get("kind")
+                if kind == "session_ended":
+                    reason = report.get("reason") or "session_ended"
+                    if reason == "canvas_invalidated":
+                        scheduler.invalidate_canvas(reason)
+                    return finish(reason, report.get("outcome") or "unknown",
+                                  json.dumps(report, sort_keys=True))
+                if kind != "ack":
+                    scheduler.invalidate_canvas(kind or "unexpected_report")
+                    return finish("canvas_invalidated", "stopped_yielded_to_stock",
+                                  json.dumps(report, sort_keys=True))
+
+            rgb, _ = renderer(now)
+            # A step the clock passed over while we were sending is a dropped frame, not a
+            # delayed one. Count it: for a live source this is the headroom measurement.
+            if renderer.last_index > last_index + 1:
+                result["playback_steps_dropped"] += renderer.last_index - last_index - 1
+            last_index = renderer.last_index
+
+            scheduler.observe(clock(), rgb)
+            action, reason = scheduler.next_action(clock())
+            if action == "hold":
+                hold(reason)
+                # Wake at the next playback step rather than on a poll grid: there is
+                # nothing else for a stream to do between frames.
+                sleep(max(1, interval_ms - (clock() - started_ms) % interval_ms))
+                continue
+
+            desired = scheduler.sending(clock())
+            wire, palette_colors = encode_rgb888_static_image(desired.rgb)
+            packet_sha = sha256_hex(wire)
+            frame_bytes = len(wire) + PREAMBLE_BYTES
+            if result["frames_sent"] + 1 > manifest.max_frames or \
+                    result["tx_bytes_sent"] + frame_bytes > manifest.max_tx_bytes:
+                return finish("budget_exhausted", "stopped_clean", "local budget ceiling reached")
+            dispatched_ms = clock()
+            try:
+                ack = transport.send_frame(desired.rgb, packet_sha)
+            except Exception as exc:
+                return finish("transport_fault", "unknown", f"{type(exc).__name__}: {exc}")
+            acked_ms = clock()
+            scheduler.sent()
+            result["frames_sent"] = scheduler.frames_sent
+            result["packets_sent"] += _session.PACKETS_PER_FRAME
+            result["tx_bytes_sent"] += frame_bytes
+            result["acks"].append(ack.get("ackPayloadHex"))
+            timings.append({"frame": result["frames_sent"], "playback_index": renderer.last_index,
+                            "since_start_ms": dispatched_ms - started_ms,
+                            "ack_latency_ms": acked_ms - dispatched_ms,
+                            "palette_colors": palette_colors,
+                            "application_bytes": frame_bytes})
+    finally:
+        try:
+            transport.close(result.get("terminal_reason") or "runner_exit")
+        except Exception:
+            result.setdefault("close_error", True)
 
 
 def clip_lifetime_seconds(frame_set: FrameSet,

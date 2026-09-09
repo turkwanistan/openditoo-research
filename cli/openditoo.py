@@ -1027,10 +1027,10 @@ def stream_preview(args: argparse.Namespace) -> int:
     # deterministically, in milliseconds, without waiting for it.
     clock = {"ms": 0}
     transport = activity_session.FakeSessionTransport()
-    result = activity_session.run_session(
-        manifest, transport, frame_stream.renderer_for(frame_set, stream),
+    result = frame_stream.stream_session(
+        manifest, frame_set, stream, transport,
         lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + max(ms, 1)),
-        claim=None, max_iterations=manifest.lifetime_ms // manifest.poll_interval_ms + 8)
+        claim=None)
     emit({
         "ok": True, "command": "stream-preview", "device_io": False, "dispatched": False,
         "execution_ready": not blockers, "execution_blockers": blockers,
@@ -1082,8 +1082,8 @@ def stream_run(args: argparse.Namespace) -> int:
     transport = _HostSessionTransport(token)
     import time
     started = time.monotonic()
-    result = activity_session.run_session(
-        manifest, transport, frame_stream.renderer_for(frame_set, stream),
+    result = frame_stream.stream_session(
+        manifest, frame_set, stream, transport,
         lambda: int((time.monotonic() - started) * 1000),
         lambda ms: time.sleep(ms / 1000.0),
         claim=claim)

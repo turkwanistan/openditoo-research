@@ -2737,14 +2737,18 @@ class S1FrameStreamTests(unittest.TestCase):
     def _raw(self) -> dict:
         return json.loads(self.MANIFEST.read_text(encoding="utf-8"))
 
-    def _load(self, mutate=None):
+    def _load(self, mutate=None, verify_code_hashes: bool = False):
+        # The committed manifest is CONSUMED: its frozen hashes are immutable evidence of
+        # the code that actually ran, so later drift is expected and is asserted
+        # separately rather than breaking every structural test.
         data = self._raw()
         if mutate is not None:
             mutate(data)
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "s.json"
             path.write_text(json.dumps(data), encoding="utf-8")
-            return frame_stream.load_stream_manifest(path, require_authority=False)
+            return frame_stream.load_stream_manifest(
+                path, require_authority=False, verify_code_hashes=verify_code_hashes)
 
     def _refuses(self, code: str, mutate) -> None:
         with self.assertRaises(frame_stream.SessionError) as caught:
@@ -2806,13 +2810,16 @@ class S1FrameStreamTests(unittest.TestCase):
         self._refuses("BUDGET_CONNECTION_ATTEMPTS_INVALID",
                       lambda d: d["budgets"].__setitem__("connection_attempts", 2))
 
-    def test_a_cadence_the_shared_runner_would_round_up_is_refused(self) -> None:
-        # run_session dispatches no faster than MCP_CLIENT_FRAME_INTERVAL_MS, so a
+    def test_a_cadence_below_the_host_floor_is_refused(self) -> None:
+        # The Host refuses anything under its own floor whatever the caller asks, so a
         # manifest may not claim a rate it would not actually get.
         self._refuses("STREAM_PLAYBACK_INTERVAL_INVALID",
-                      lambda d: d["stream"].__setitem__("playback_interval_ms", 150))
+                      lambda d: d["stream"].__setitem__("playback_interval_ms", 149))
         self._refuses("SESSION_PACING_BELOW_ACCEPTED_CEILING",
                       lambda d: d["session"].__setitem__("min_frame_interval_ms", 149))
+        self._refuses("STREAM_PLAYBACK_FASTER_THAN_FLOOR",
+                      lambda d: (d["session"].__setitem__("min_frame_interval_ms", 250),
+                                 d["session"].__setitem__("poll_interval_ms", 50)))
 
     def test_retry_reconnect_reclaim_and_replay_must_all_be_disabled(self) -> None:
         for field, code in (("automatic_retry", "SESSION_RETRY_NOT_DISABLED"),
@@ -2824,8 +2831,10 @@ class S1FrameStreamTests(unittest.TestCase):
     def test_the_target_and_the_stream_code_identity_are_both_frozen(self) -> None:
         self._refuses("MANIFEST_TARGET_MISMATCH",
                       lambda d: d["target"].__setitem__("exact_unit_id", "11:75:58:C8:5E:FE"))
-        self._refuses("BUILD_CODE_HASH_DRIFT",
-                      lambda d: d["build"]["code_sha256"].__setitem__("encoder_sha256", "0" * 64))
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            self._load(lambda d: d["build"]["code_sha256"].__setitem__("encoder_sha256", "0" * 64),
+                       verify_code_hashes=True)
+        self.assertEqual(caught.exception.code, "BUILD_CODE_HASH_DRIFT")
         self._refuses("BUILD_CODE_HASHES_INCOMPLETE",
                       lambda d: d["build"]["code_sha256"].pop("frame_stream_sha256"))
         self._refuses("MANIFEST_KIND_MISMATCH", lambda d: d.__setitem__("kind", "activity"))
@@ -2834,31 +2843,69 @@ class S1FrameStreamTests(unittest.TestCase):
 
     # -- the whole replayed stream -------------------------------------
 
-    def test_the_offline_replay_sends_exactly_what_the_budget_states(self) -> None:
-        manifest, frame_set, stream = self._load()
+    def _replay(self, mutate=None, **kwargs):
+        manifest, frame_set, stream = self._load(mutate)
         clock = {"ms": 0}
-        transport = activity_session.FakeSessionTransport()
-        result = activity_session.run_session(
-            manifest, transport, frame_stream.renderer_for(frame_set, stream),
+        transport = activity_session.FakeSessionTransport(**kwargs)
+        result = frame_stream.stream_session(
+            manifest, frame_set, stream, transport,
             lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + max(ms, 1)),
-            claim=None, max_iterations=manifest.lifetime_ms // manifest.poll_interval_ms + 8)
+            claim=None)
+        return manifest, transport, result
+
+    def test_the_offline_replay_sends_exactly_what_the_budget_states(self) -> None:
+        manifest, transport, result = self._replay()
         self.assertEqual(result["outcome"], "stopped_clean")
         self.assertEqual(result["terminal_reason"], "lifetime_expired")
         self.assertEqual(result["frames_sent"], manifest.max_frames)
         self.assertEqual(result["packets_sent"], manifest.max_application_packets)
         self.assertEqual(result["tx_bytes_sent"], transport.tx_bytes)
         self.assertLessEqual(result["tx_bytes_sent"], manifest.max_tx_bytes)
+        self.assertEqual(result["playback_steps_dropped"], 0)
+
+    def test_the_replay_reports_per_frame_timing_and_realized_rate(self) -> None:
+        _, _, result = self._replay()
+        self.assertEqual(len(result["frame_timings"]), result["frames_sent"])
+        first = result["frame_timings"][0]
+        self.assertEqual(set(first), {"frame", "playback_index", "since_start_ms",
+                                      "ack_latency_ms", "palette_colors", "application_bytes"})
+        # A fake transport costs no wall clock, so a fake replay is the arithmetic ceiling.
+        self.assertGreater(result["realized_fps"], 0)
+        self.assertEqual(sorted(item["playback_index"] for item in result["frame_timings"]),
+                         [item["playback_index"] for item in result["frame_timings"]])
 
     def test_a_transport_fault_mid_stream_is_unknown_and_never_resent(self) -> None:
-        manifest, frame_set, stream = self._load()
-        clock = {"ms": 0}
-        transport = activity_session.FakeSessionTransport(fail_on_frame=5)
-        result = activity_session.run_session(
-            manifest, transport, frame_stream.renderer_for(frame_set, stream),
-            lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + max(ms, 1)),
-            claim=None, max_iterations=200)
+        _, transport, result = self._replay(fail_on_frame=5)
         self.assertEqual((result["terminal_reason"], result["outcome"]), ("transport_fault", "unknown"))
         self.assertEqual(len(transport.frames), 4)
+
+    def test_an_unsolicited_report_yields_the_canvas_and_never_reclaims(self) -> None:
+        _, _, result = self._replay(reports={3: [{"kind": "button_state_report"}]})
+        self.assertEqual((result["terminal_reason"], result["outcome"]),
+                         ("canvas_invalidated", "stopped_yielded_to_stock"))
+        self.assertEqual(result["display_state"], "unknown_not_ours")
+        self.assertEqual(result["frames_sent"], 3)
+
+    def test_the_stream_loop_dispatches_on_the_manifest_floor_not_the_dashboard_floor(self) -> None:
+        # This is the whole reason the loop exists: run_session rounds every client up to
+        # the 200 ms dashboard cadence, which a stream must not inherit.
+        self.assertEqual(frame_stream.MIN_PLAYBACK_INTERVAL_MS,
+                         activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
+        self.assertLess(frame_stream.MIN_PLAYBACK_INTERVAL_MS,
+                        activity_session.MCP_CLIENT_FRAME_INTERVAL_MS)
+        manifest, frame_set, stream = self._load(
+            lambda d: (d["stream"].__setitem__("playback_interval_ms", 150),
+                       d["budgets"].update(max_frames=48, max_application_packets=144)))
+        clock = {"ms": 0}
+        transport = activity_session.FakeSessionTransport()
+        result = frame_stream.stream_session(
+            manifest, frame_set, stream, transport,
+            lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + max(ms, 1)),
+            claim=None)
+        self.assertEqual(result["frames_sent"], 48)
+        intervals = [b["since_start_ms"] - a["since_start_ms"]
+                     for a, b in zip(result["frame_timings"], result["frame_timings"][1:])]
+        self.assertTrue(all(gap == 150 for gap in intervals), intervals)
 
     # -- boundary ------------------------------------------------------
 
