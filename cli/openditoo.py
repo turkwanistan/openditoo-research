@@ -310,7 +310,8 @@ def capture_parse(args: argparse.Namespace) -> int:
             return EXIT_USAGE
     try:
         view, frames, errors = btsnoop.read(path, peer_bdaddr=args.peer_bdaddr,
-                                            server_channel=args.server_channel, reveal_commands=reveal)
+                                            server_channel=args.server_channel, reveal_commands=reveal,
+                                            zip_entry=args.zip_entry)
     except btsnoop.BtsnoopError as exc:
         emit({"ok": False, "command": "capture-parse", "error_code": "INVALID_BTSNOOP", "message": str(exc)})
         return EXIT_USAGE
@@ -322,8 +323,6 @@ def capture_parse(args: argparse.Namespace) -> int:
         "ok": True,
         "command": "capture-parse",
         "device_io": False,
-        "source_file": str(path),
-        "source_sha256": pixel_sha256_hex(path.read_bytes()),
         "peer_bdaddr": args.peer_bdaddr,
         "rfcomm_server_channel": args.server_channel,
         **summary,
@@ -478,7 +477,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--png", required=True)
     p.set_defaults(func=image_show)
     p = sub.add_parser("capture-parse", help="offline: filter a raw btsnoop capture to Ditoo serial-port application evidence")
-    p.add_argument("--btsnoop", required=True)
+    p.add_argument("--capture", "--btsnoop", dest="btsnoop", required=True,
+                   help="an Android bugreport .zip, or an already-extracted btsnoop log")
+    p.add_argument("--zip-entry", help="which log inside the archive (default: the current btsnoop_hci.log)")
     # Offline analysis filter over a local file. This selects which captured peer to
     # report on; it is not a device target and reaches nothing.
     p.add_argument("--peer-bdaddr", default="11:75:58:CE:DE:C7")

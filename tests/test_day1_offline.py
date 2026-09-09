@@ -894,6 +894,28 @@ class BtsnoopParserTests(unittest.TestCase):
         self.assertTrue(summary["payloads_withheld_by_default"])
         self.assertNotIn(wire.hex(), json.dumps(summary))
 
+    def test_accepts_a_bugreport_zip_and_records_both_hashes(self) -> None:
+        import zipfile as _zipfile
+
+        wire = encode_candidate_normal(0x58, bytes.fromhex("ffffff016a"))
+        records = self._open_rfcomm(1, 0x0041, 0x0044)
+        records.append(("tx", _h4_acl(self.HANDLE, 2, _l2cap(0x0044, _rfcomm_uih(2, wire)))))
+        blob = self._capture(records)
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = Path(tmp) / "bugreport-test.zip"
+            with _zipfile.ZipFile(archive, "w") as handle:
+                handle.writestr(btsnoop.BUGREPORT_SNOOP_CURRENT, blob)
+                handle.writestr(btsnoop.BUGREPORT_SNOOP_PREVIOUS, b"btsnoop\x00" + b"\x00" * 8)
+            view, frames, _ = btsnoop.read(archive, peer_bdaddr=self.PEER, reveal_commands={0x58})
+        self.assertEqual([frame.hex for frame in frames], [wire.hex()])
+        provenance = view.provenance
+        self.assertEqual(provenance["container"], "android_bugreport_zip")
+        self.assertEqual(provenance["zip_entry"], btsnoop.BUGREPORT_SNOOP_CURRENT)
+        # Both hashes matter: the archive for provenance, the log for evidence identity.
+        self.assertEqual(provenance["btsnoop_sha256"], __import__("hashlib").sha256(blob).hexdigest())
+        self.assertNotEqual(provenance["source_sha256"], provenance["btsnoop_sha256"])
+        self.assertEqual(provenance["other_btsnoop_entries"], [btsnoop.BUGREPORT_SNOOP_PREVIOUS])
+
     def test_rejects_a_file_that_is_not_btsnoop(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "bad.bin"

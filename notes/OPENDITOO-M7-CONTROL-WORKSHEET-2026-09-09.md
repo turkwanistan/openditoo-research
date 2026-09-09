@@ -90,7 +90,24 @@ Therefore:
 
 ### Per trial, record before anything else
 
-`trial id | UTC start | stock page shown | app screen | audio state (idle/playing/profile) | firmware v42012 | controller (Android app / none) | connection identity | raw bugreport SHA-256 | extracted btsnoop_hci.log SHA-256`
+`trial id | UTC start | stock page shown | app screen | audio state (idle/playing/profile) | firmware v42012 | controller (Android app / none) | connection identity`
+
+Hashes are **not** recorded by hand: `capture-parse` takes the bugreport `.zip`
+directly and emits both the archive SHA-256 and the inner `btsnoop_hci.log` SHA-256 in
+its `provenance` block.
+
+```sh
+python3 cli/openditoo.py capture-parse \
+  --capture ~/Downloads/bugreport-<device>-<build>-<timestamp>.zip \
+  --output captures/private/trial-K1.json
+```
+
+Payloads stay withheld unless a command id is named with `--reveal 58` and similar.
+Note that a bugreport also contains `btsnoop_hci.log.last`, the previous rotation; if a
+trial window falls before a rotation, re-run with
+`--zip-entry FS/data/misc/bluetooth/logs/btsnoop_hci.log.last`. The command lists the
+other available entries in its `provenance` block so a rotation is visible rather than
+silently missed.
 
 Then run the block, and record the filtered TX/RX with direction/profile/channel, the
 before/after stock state, and any gap in the capture.
