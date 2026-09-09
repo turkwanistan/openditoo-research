@@ -2,62 +2,50 @@
 
 OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit evidence and preserved artifacts outrank family resemblance, plans, and chat history.
 
-## Current session route — 2026-09-09
+## Current session route — 2026-09-09 (handoff)
 
-1. Read `AGENTS.md` for the execution/authority boundary.
-2. Read `notes/OPENDITOO-M6-RUNTIME-ACCEPTANCE-2026-09-09.md` — installed-Host
-   reconciliation, honest status diagnostics, and the one open operator gate.
-3. Read `notes/OPENDITOO-M9-SOURCE-DISCOVERY-2026-09-09.md` — the three MCP activity
-   sources, the collector/renderer, and what is deliberately not built yet.
-4. Read `notes/OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md` before any keyboard work.
-5. Read `notes/OPENDITOO-POST-M5-TYPED-IMAGE-RUNTIME-2026-09-08.md` and
-   `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md` for the M0-M5 evidence trail.
-6. Read `PROJECT_STATE.md` for the comprehensive static/reconnaissance evidence base.
-7. Treat `artifacts/` plus `artifacts/SHA256SUMS`, provenance JSON and raw evidence as
-   authoritative for acquired artifacts.
-8. Before changing or executing project code, run:
-
-   ```sh
-   python3 scripts/verify_day1_offline.py
-   ```
-
-9. Preserve the MATCHED / RELATED / LEAD evidence calibration in `PROJECT_STATE.md`;
-   related Tivoo/Divoom behavior is not exact Ditoo Plus or exact purchased-unit truth.
-10. The proven product `image-show` command is authorized only by an operator's explicit
-    invocation for that one validated PNG. Any new protocol family/semantic, persistence
-    behavior, streaming mode, retry behavior or target must return to the
-    experiment/authority gate in `AGENTS.md`.
+1. **Read `notes/OPENDITOO-HANDOFF-2026-09-09.md` first.** It carries current accepted
+   work, findings with confidence levels, authority state, open questions, the next
+   objective and the traps not to repeat.
+2. Read `AGENTS.md` for the execution/authority boundary.
+3. Run `python3 scripts/verify_day1_offline.py` before changing or executing anything.
+4. Read the milestone evidence only as needed:
+   - `notes/OPENDITOO-M6-RUNTIME-ACCEPTANCE-2026-09-09.md` — runtime, diagnostics, physical acceptance
+   - `notes/OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md` + `captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json` — physical input result
+   - `notes/OPENDITOO-M7-OPENTIVOO-COMPARISON-2026-09-09.md` — comparative prior art, class 5
+   - `notes/OPENDITOO-M8-SEQUENCE-EVIDENCE-2026-09-09.md` — repeated frames and the rate ceiling
+   - `notes/OPENDITOO-M9-SOURCE-DISCOVERY-2026-09-09.md` — the three MCP sources and the collector
+   - `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md` — the M0-M5 trail
+5. `PROJECT_STATE.md` is the static/reconnaissance base. Its service-mode priorities are
+   superseded by the application-first route.
+6. Treat `artifacts/` plus `artifacts/SHA256SUMS` and provenance JSON as authoritative
+   for acquired artifacts, and preserve the MATCHED / RELATED / LEAD calibration.
 
 ### Milestone state
 
 | Milestone | State |
 | --- | --- |
-| M0-M5 | complete; authority consumed |
-| M6 static runtime acceptance + diagnostics | **complete** — code, build, deployment, offline verification and operator-confirmed physical PNG acceptance (2026-09-09) |
-| M7 keyboard/button mapping | worksheet prepared; **blocked on operator capture** |
-| M8 bounded repeated frames | **not started**; needs its own experiment manifest and authority |
-| M9 three-MCP activity application | sources discovered, collector + renderer + previews **complete and tested offline**; worker install and physical updates wait on M8 |
+| M0-M5 | complete; authorities consumed |
+| M6 static runtime + diagnostics | complete; physically accepted; pixel geometry proven |
+| M7 keyboard/button mapping | complete as a **bounded negative**; no usable physical navigation |
+| M8 repeated frames | complete; accepted ceiling ~1118 ms/frame, measured twice |
+| M9 activity application | offline half complete and tested; display activation not started |
 
-**Exact next action** — M6 is fully closed: physical acceptance and pixel geometry
-are both confirmed (2026-09-09). One cheap operator check remains before M8, because
-M8 and M9 both assume displayed frames are volatile:
+### Authority state
 
-- **Persistence check.** Power-cycle the Ditoo and report what the screen shows. No
-  new authority needed — it is an observation, not a transmission. If the custom frame
-  survives a power cycle, the volatility assumption behind M8/M9 is wrong and must be
-  revisited before any repeated-frame work.
+**Nothing is currently authorized.** Every experiment manifest is consumed;
+`sequence-run` exits 30 on all of them. Any live operation needs a new manifest and an
+explicit operator grant naming its experiment id. Continuous or unattended display is a
+larger authority shape than any bounded run so far.
 
-Then, in either order:
+### Next objective
 
-- **M7 operator capture** using `notes/OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md`
-  (stock observation only, one controller at a time).
-- **M8 experiment manifest** for a frozen A→B sequence, which needs explicit authority
-  before it runs.
-
-Offline, with no device involved:
+M9 display activation — see section 8 of the handoff note for what its manifest must
+cover. Offline work available without any grant:
 
 ```sh
 python3 cli/openditoo.py activity-probe
+python3 cli/openditoo.py activity-status --collect
 python3 cli/openditoo.py activity-preview --collect
 ```
 

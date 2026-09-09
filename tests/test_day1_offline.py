@@ -696,6 +696,31 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertIn("RESOLVED", result["residual"])
         self.assertIn("bounded by stock takeover", result["frame_lifetime_note"])
 
+    def test_handoff_and_routing_match_the_real_authority_state(self) -> None:
+        # A stale handoff is how a physical experiment gets repeated. Pin the claims
+        # that would cause that to the actual manifests.
+        handoff = (ROOT / "notes/OPENDITOO-HANDOFF-2026-09-09.md").read_text(encoding="utf-8")
+        start_here = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
+        self.assertIn("OPENDITOO-HANDOFF-2026-09-09.md", start_here)
+        for document in (handoff, start_here):
+            self.assertIn("nothing is currently authorized", document.lower())
+        for path in sorted((ROOT / "experiments").glob("DAY1-M*.json")):
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            authority = manifest.get("authority")
+            if authority is None:
+                continue
+            self.assertFalse(authority["transmission_authorized"],
+                             msg=f"{path.name} is live but the handoff says nothing is authorized")
+        # Every note the routing sends a reader to must exist.
+        for name in ("OPENDITOO-M6-RUNTIME-ACCEPTANCE-2026-09-09.md",
+                     "OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md",
+                     "OPENDITOO-M7-OPENTIVOO-COMPARISON-2026-09-09.md",
+                     "OPENDITOO-M8-SEQUENCE-EVIDENCE-2026-09-09.md",
+                     "OPENDITOO-M9-SOURCE-DISCOVERY-2026-09-09.md",
+                     "OPENDITOO-HANDOFF-2026-09-09.md"):
+            self.assertTrue((ROOT / "notes" / name).is_file(), msg=f"routing points at a missing note: {name}")
+        self.assertTrue((ROOT / "captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json").is_file())
+
     def test_status_reports_host_health_not_device_connectivity(self) -> None:
         program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
         status = program[program.index('app.MapGet("/v1/status"'):program.index('app.MapPost("/v1/image/show"')]
