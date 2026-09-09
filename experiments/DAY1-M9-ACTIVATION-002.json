@@ -2,7 +2,7 @@
  "schema_version": 2,
  "experiment_id": "OPENDITOO-M9-ACTIVATION-002",
  "milestone": "N5 second bounded activation \u2014 full lifetime, approved UI, corrected liveness",
- "status": "pending_operator_grant",
+ "status": "completed_pass_authority_consumed",
  "objective": "Complete what OPENDITOO-M9-ACTIVATION-001 could not: a full-lifetime bounded session on the exact unit, driving the operator-approved three-MCP page, with the worker-liveness defect fixed. Adds live evidence for change-only pacing and coalescing, and a stock-yield case if a control is touched.",
  "why_this_shape": "001 proved the display renders (operator-confirmed) but ended at 30.4 s on our own defect, so the interesting behaviour was never exercised. This changes two things deliberately: the corrected heartbeat liveness path, and the approved UI. Rate, packets, target, connection shape and stop policy are unchanged from the accepted values.",
  "target": {
@@ -117,13 +117,23 @@
  },
  "authority": {
   "transmission_authorized": false,
-  "authorization_consumed": false,
+  "authorization_consumed": true,
   "experiment_id": "OPENDITOO-M9-ACTIVATION-002",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "Grant OPENDITOO-M9-ACTIVATION-002",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution of this exact bounded session: up to 300 seconds, change-only frames at no faster than one frame start per 1118 ms, at most 269 frames / 807 packets / 54607 application bytes, one connection, no retry, no reconnect, no reclaim. Not continuous display, not unattended operation, not installation-time transmission, not a higher rate, not a second attempt.",
-  "note": "Grants nothing as written. `session-check` reports TRANSMISSION_AUTHORITY_MISSING and `activity-session` exits 30 until an operator fills granted_by, grant_text and expires_at."
+  "note": "Granted in answer to an explicit scope question naming this experiment id, after the operator confirmed the Android app was disconnected. A failed, partial or ambiguous outcome does NOT re-authorize: it needs a new manifest with a new id under a new grant.",
+  "grant_scope": "ONE execution of this exact bounded session: up to 300 seconds, change-only frames at no faster than one frame start per 1118 ms, at most 269 frames / 807 packets / 54607 application bytes, one connection, no retry, no reconnect, no reclaim. Explicitly NOT authorized: any higher rate, unattended or installation-time transmission, a longer session, or a second attempt.",
+  "preconditions_confirmed": {
+   "android_app_disconnected": "operator confirmed 2026-09-09",
+   "host_installed_and_verified": "9c4abe8f48765407706cfcdf0f8cd08923a17927a6989290ffd4a78c3799a582",
+   "sources_reachable": "all three, activity-probe 2026-09-09",
+   "offline_verifier": "DAY1_OFFLINE_PASS tests=138",
+   "git": "clean at 829dbdb"
+  },
+  "consumed_at": "2026-09-09T14:58:46Z",
+  "consumption_note": "Executed once, to its full granted lifetime. The grant is spent. A further trial needs a new manifest with a new experiment id under a new grant."
  },
  "explicitly_out_of_scope": [
   "any rate above the accepted ceiling",
@@ -135,7 +145,74 @@
   "firmware update, persistent upload, service/MassBoot entry or teardown",
   "any frame rate above the accepted ~1118 ms ceiling; the R1-R3 rate ladder is parked research and each step needs its own manifest, grant and measurement"
  ],
- "result": null,
+ "result": {
+  "status": "pass",
+  "session_id": "73b71c545022",
+  "opened_at": "2026-09-09T14:58:46.371560Z",
+  "terminal_at": "2026-09-09T15:03:46.488842Z",
+  "elapsed_ms": 300320,
+  "connections_attempted": 1,
+  "frames_sent": 6,
+  "packets_sent_complete": 18,
+  "tx_bytes_sent_complete": 1032,
+  "ack_payload_hex_ordered": [
+   "0x96",
+   "0x9F",
+   "0x36",
+   "0x48",
+   "0x22",
+   "0x3C"
+  ],
+  "holds": {
+   "unchanged": 248
+  },
+  "retry": false,
+  "reconnect": false,
+  "reclaim": false,
+  "socket_closed": true,
+  "terminal_reason": "lifetime_expired",
+  "terminal_outcome": "stopped_clean",
+  "display_state_at_terminal": "ours_last_acked",
+  "worker_and_host_agree": "Both sides independently recorded 6 frames / 18 packets / 1032 bytes / lifetime_expired / stopped_clean. In 001 they disagreed on both the byte count and the terminal reason; both defects are confirmed fixed on hardware.",
+  "acceptance": {
+   "transport_acceptance": "PASS \u2014 one connection, 6 frames, 18 packets, 1032 bytes, six wrapped 0x44 ACKs, ran the full 300 s granted lifetime and closed cleanly. Zero retries, zero reconnects.",
+   "visual_acceptance": "PASS \u2014 operator, watching the unit: \"I could see the skull animate blue when signal came through. looks great.\" A photograph of the unit shows the approved page: L O W letters in per-source status colour with the mushroom, bunny and skull icons below. ACKs do not establish this; operator observation does.",
+   "change_only_acceptance": "PASS \u2014 6 frames against 248 unchanged holds across 300 s, and the operator observed a change happen live. 1032 bytes against a 54607-byte ceiling, under 2 percent.",
+   "pacing_acceptance": "PASS BY ENFORCEMENT, not by measurement. The Host rejects any frame closer than 1118 ms with SESSION_PACING_VIOLATION (429) and none occurred. Per-frame start timings are NOT recorded for the session route \u2014 see residual_gaps.",
+   "liveness_regression": "PASS \u2014 this is the specific 001 defect under test. The session ended `lifetime_expired`, NOT `worker_silent`, despite 248 consecutive polls that sent nothing. Change-only silence is no longer mistaken for a dead worker.",
+   "stock_yield_acceptance": "NOT TESTED \u2014 no physical control was used and no unsolicited state report was observed.",
+   "fault_signal_acceptance": "NOT TESTED \u2014 no source became unreadable during the session, so the red fault bar was never exercised on hardware.",
+   "collection_survives": "PASS \u2014 activity-status collected normally after the display stopped.",
+   "authority_is_consumed": "PASS \u2014 verified by attempting a second run while the manifest was STILL armed: the durable claim refused with AUTHORITY_ALREADY_CONSUMED, exit 30, before any transport contact."
+  },
+  "new_findings": [
+   {
+    "id": "NEUTRAL-GREYS-PHOTOGRAPH-BLUE",
+    "confidence": "OPEN_QUESTION",
+    "statement": "The frame on screen when the unit was photographed contained pure neutral values \u2014 the idle L letter at (85,85,85), the mushroom cap at (170,170,170), the skull bones at (255,255,255) \u2014 yet all three appear distinctly blue-white in the photograph. Our data was neutral, so the cast is introduced by the panel, the camera, or both.",
+    "why_it_matters": "Grey means idle and blue means activity in this design. If grey reads as blue, the two most semantically distinct states converge. This is exactly the class of defect that only a look at hardware can find.",
+    "not_claimed": "Whether the bias is in the panel or in the camera's white balance. A phone auto-white-balancing a dark scene against saturated red and green LEDs will push neutrals blue on its own. One glance by the operator settles it; no experiment needed.",
+    "cost_to_close": "one glance"
+   },
+   {
+    "id": "BYTE-ACCOUNTING-AGREES",
+    "confidence": "MATCHED",
+    "statement": "Worker and Host independently recorded 1032 application bytes. In 001 they disagreed by 15 bytes per frame because the worker omitted the two stock preambles. Confirmed fixed on hardware."
+   }
+  ],
+  "residual_gaps": [
+   "The session route records no per-frame start timings, so pacing is evidenced by Host enforcement rather than measurement. The sequence route does record them. Worth closing in A2.",
+   "The worker's close raced the Host's own lifetime terminal and returned 409, recorded as close_error. Benign \u2014 the Host had already closed cleanly \u2014 but misleading noise in the record.",
+   "Stock yield and the fault bar are both still untested on hardware."
+  ],
+  "not_claimed": [
+   "any rate above the accepted ~1118 ms ceiling",
+   "unattended or installation-time transmission",
+   "sessions longer than 300 s",
+   "absence of non-volatile writes",
+   "that the four-stage blue pulse animates \u2014 it is deliberately not animated at this rate"
+  ]
+ },
  "supersedes": {
   "experiment_id": "OPENDITOO-M9-ACTIVATION-001",
   "why": "Its grant is consumed and its frozen code hashes are history. This is a NEW manifest with a new id, not a re-arming of that one.",

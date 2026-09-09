@@ -56,7 +56,7 @@ re-verification, not transport acceptance, not visual acceptance.
 | M6 static runtime + diagnostics | complete; physically accepted; pixel geometry proven |
 | M7 keyboard/button mapping | complete as a **bounded negative**; no usable physical navigation |
 | M8 repeated frames | complete; accepted ceiling ~1118 ms/frame, measured twice |
-| M9 activity application | N1-N4 complete: authority lifecycle, takeover-aware receive, change-only scheduling, sources and offline preview. N5 executed once — visual **PASS**, transport **partial**; grant consumed. |
+| M9 activity application | N1-N4 complete: authority lifecycle, takeover-aware receive, change-only scheduling, sources and offline preview. N5 complete — 002 PASS over its full 300 s; both grants consumed. |
 
 ### Authority state
 

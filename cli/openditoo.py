@@ -598,10 +598,22 @@ class _HostSessionTransport:
                  "tx_bytes_sent": session.get("txBytesSent")}]
 
     def close(self, reason: str) -> dict:
+        """Close, tolerating the Host having already closed it.
+
+        The Host enforces the lifetime with its own watchdog, so a session that runs to
+        its full lifetime is normally terminated Host-side a moment before the worker
+        gets here. That 409 means "already closed cleanly", not a fault, and recording it
+        as a close error made a clean run look ambiguous.
+        """
         if self.session_id is None:
             return {"closed": False}
-        return _post(SESSION_CLOSE_URL, {"sessionId": self.session_id, "reason": reason},
-                     self.token, timeout=15.0)
+        try:
+            return _post(SESSION_CLOSE_URL, {"sessionId": self.session_id, "reason": reason},
+                         self.token, timeout=15.0)
+        except urllib.error.HTTPError as exc:
+            if exc.code == 409:
+                return {"closed": True, "already_terminated": True}
+            raise
 
 
 def session_check(args: argparse.Namespace) -> int:

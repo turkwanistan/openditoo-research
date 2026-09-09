@@ -1829,6 +1829,16 @@ class N5PostTrialRegressionTests(unittest.TestCase):
         self.assertEqual(result["outcome"], "stopped_clean")   # not an inferred fault
         self.assertEqual(len(transport.frames), 1)
 
+    def test_closing_an_already_terminated_session_is_not_an_error(self) -> None:
+        # A session that runs its full lifetime is terminated Host-side a moment before
+        # the worker calls close, so the 409 means "already closed cleanly". Recording it
+        # as a close error made trial 002's clean run look ambiguous.
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        block = cli[cli.index("    def close(self, reason: str) -> dict:"):]
+        block = block[:block.index("\ndef ")]
+        self.assertIn("exc.code == 409", block)
+        self.assertIn('"already_terminated": True', block)
+
     def test_the_byte_budget_counts_the_whole_three_packet_group(self) -> None:
         # The trial recorded 132 bytes locally against the Host's 147: the local counter
         # omitted the two stock preambles while sharing the Host's ceiling.

@@ -28,7 +28,7 @@ M0-M8 are complete on the exact purchased Ditoo Plus (`11:75:58:CE:DE:C7`, v4201
 | M6 static runtime + diagnostics | complete; physically accepted; pixel geometry proven |
 | M7 keyboard/button mapping | complete **as a bounded negative**; no usable navigation input |
 | M8 repeated frames | complete; rate ceiling measured and reproduced |
-| M9 activity application | N1-N4 complete; N5 executed once — **visual PASS, transport partial**, grant consumed |
+| M9 activity application | N1-N5 complete. 002 PASS: full 300 s, change-only, operator-confirmed. Stock yield and fault bar still untested |
 
 ### The product primitive
 
@@ -166,11 +166,10 @@ exactly why they are re-run, never inherited.**
 
 ## 5. Authority state — nothing is currently authorized
 
-`OPENDITOO-M9-ACTIVATION-001` was granted and **executed once** on 2026-09-09. It is
-consumed. It ended early on an implementation defect of ours — not a device fault and not
-a takeover — and that changes nothing: a spent grant is spent. Any further trial needs a
-new manifest with a new experiment id under a new grant. See section 8a for what it
-proved and what it did not.
+`OPENDITOO-M9-ACTIVATION-001` and `-002` were each granted and executed once on
+2026-09-09. Both are consumed. 002 passed to its full lifetime; a spent grant is spent
+either way. Any further trial needs a new manifest with a new experiment id under a new
+grant. See section 8a for what they proved and what they did not.
 
 Every experiment manifest is now consumed. `manifest-check` on any of them reports
 `execution_ready: false` with `transmission_authority_missing`, and `sequence-run`
@@ -243,96 +242,54 @@ Verified on 2026-09-09, and kept distinct:
 unchanged; `HOST_SELFTEST_PASS cases=9 failures=0`. **No transport acceptance and no
 visual acceptance** — neither was attempted.
 
-## 8a. N5 first activation — executed 2026-09-09, partial
+## 8a. N5 activation — two trials, complete
 
-`experiments/DAY1-M9-ACTIVATION-001.json` carries the full record. Summary:
+Full records in `experiments/DAY1-M9-ACTIVATION-001.json` and `-002.json`.
 
-| Result | State |
+**001 (2026-09-09, partial).** Visual acceptance PASS, but the session ended at 30.4 s on
+our own defect: `WorkerSilenceGraceMs` inferred worker liveness from *frames*, and a
+change-only display legitimately sends none. Thirty seconds of correct silence read as a
+dead worker. The worker, which could only learn the session state by sending, then polled
+127 s longer believing the display was live. A second defect: the worker counted 132
+application bytes per frame to the Host's 147, omitting the two stock preambles.
+
+**002 (2026-09-09, PASS).** Ran its full 300 s granted lifetime and closed cleanly.
+
+| Criterion | Result |
 | --- | --- |
-| Visual acceptance | **PASS** — operator, watching the unit: "i can see the icons and their rails". This is the only thing that establishes it; the ACK does not. |
-| Transport acceptance | **PARTIAL** — one connection, three packets, one wrapped `0x44` ACK (`0x9E`), clean Host-side close, zero retries, zero reconnects. It did **not** run its granted 300 s. |
-| Change-only | **PARTIAL** — 1 frame against 134 unchanged holds proves silence on an unchanged scene. Coalescing, pacing under change and pulse expiry are still untested live. |
-| Stock yield | **NOT TESTED** — no control was touched, no unsolicited report observed. |
-| Collection survives | **PASS** — kept collecting for all 158 s, including 127 s after the link had closed. |
-| Authority | **consumed** — recorded in both the WSL claim file and the Host ledger. |
+| Transport | **PASS** — 1 connection, 6 frames, 18 packets, 1032 bytes, six wrapped `0x44` ACKs, clean close, zero retries/reconnects |
+| Visual | **PASS** — operator: *"I could see the skull animate blue when signal came through. looks great."* Photograph shows the approved page rendering |
+| Change-only | **PASS** — 6 frames against 248 unchanged holds over 300 s; 1032 bytes against a 54 607 ceiling, under 2% |
+| Pacing | **PASS by enforcement** — the Host 429s anything under 1118 ms and none occurred. Not measured: the session route records no per-frame timings |
+| Liveness regression | **PASS** — ended `lifetime_expired`, not `worker_silent`, through 248 silent polls. The 001 defect is fixed on hardware |
+| Stock yield | **NOT TESTED** — no control touched |
+| Fault bar | **NOT TESTED** — no source failed during the session |
+| Collection survives | **PASS** |
+| Authority consumed | **PASS** — a second run was attempted while the manifest was *still armed*; the durable claim refused with `AUTHORITY_ALREADY_CONSUMED`, exit 30, before any transport contact |
 
-### Root cause — ours, and now fixed
+Worker and Host independently recorded identical figures this time. In 001 they disagreed
+on both the byte count and the terminal reason; both are confirmed fixed on the device.
 
-The Host closed the session at **30.4 s** with `worker_silent` / `stopped_clean`. It did
-exactly what it was written to do; what it was written to do was wrong.
-`WorkerSilenceGraceMs` inferred worker liveness from **frames**, but a change-only display
-legitimately sends none while the scene is unchanged. Thirty seconds of *correct* silence
-read as a dead worker.
+### Open question from 002 — one glance to close
 
-Compounding it: the worker could only learn the session state by **sending**, so it polled
-for a further 127 s believing the display was live, and finally reported an inferred
-`transport_fault` / `unknown` for what the Host had already recorded as `stopped_clean`.
+The frame on screen when the unit was photographed contained **pure neutral values**: the
+idle `L` at `(85,85,85)`, the mushroom cap at `(170,170,170)`, the skull bones at
+`(255,255,255)`. All three appear distinctly **blue-white** in the photograph.
 
-A second, smaller defect surfaced in the same record: the Host counted 147 application
-bytes per frame (image packet plus both stock preambles) while the worker counted 132
-(image only) against the *same* ceiling.
+Grey means idle and blue means activity in this design, so if grey genuinely reads as
+blue the two most semantically distinct states converge. But a phone auto-white-balancing
+a dark scene against saturated red and green LEDs will push neutrals blue on its own, so
+**this photograph cannot separate panel bias from camera white balance.** Ask the operator
+whether the idle column looks blue or neutral to the eye. No experiment is needed.
 
-Fixed, with four regression tests pinning them:
+This also bears on the long-standing "complete colour rendition NOT confirmed" caveat from
+M6: yellow, red and green are now all confirmed rendering as themselves, and neutrals are
+the open part.
 
-- `/v1/session/heartbeat` — proves liveness with **no device I/O and no send**, and
-  returns the session's own state, so the worker learns a terminal within one poll.
-- The worker adopts the Host's terminal reason and outcome instead of inferring a fault.
-- The worker counts the whole three-packet group, derived from the preamble constants.
+### Both trials' grants are consumed
 
-### The renderer was replaced after the trial
-
-The operator supplied the approved three-MCP page design (`assets/ui/`), so the display
-is no longer the three-band renderer that trial 001 showed. It is now L/mushroom,
-O/bunny, W/skull with a blue activity override. The pixel data is derived from the
-supplied mockups, and the offline suite re-renders all eight of them pixel-for-pixel.
-Section 7 of the N2-N4 readiness note covers what is not obvious: the blue pulse is not
-animated at our rate, a dim red fault bar in the crown row now separates unreachable from
-merely idle (operator decision, superseding the spec's merged grey), and RGB222 is gone —
-the exact unit's stock `0x44` path is plain RGB888 and the artwork's palette is design,
-not a limit. Section 8 records the parked frame-rate ladder toward the operator's ~10 fps
-target, including why 10 fps needs a different protocol shape rather than a smaller delay.
-
-`experiments/DAY1-M9-ACTIVATION-002-PENDING.json` is cut and unarmed for the next trial,
-with budgets rederived for the new page (203 bytes/frame worst case, up from 191).
-
-### Preconditions for the next trial — all but two are DONE
-
-Completed 2026-09-09, none of which is transmission authority:
-
-- Host rebuilt with the heartbeat fix, reinstalled (`REFRESH_STATUS=PASS_TYPED_IMAGE`,
-  `OPENTIVOO_TASK=preserved`), installed DLL `9c4abe8f…9a582` byte-identical to the
-  repository build.
-- The exact **installed** binary passes the shared receive fixture:
-  `HOST_SELFTEST_PASS cases=9 failures=0`.
-- `/v1/status` advertises `activity-session`; `/v1/session/heartbeat` answers live with
-  `deviceIo=false` — the route whose absence ended 001, now confirmed reachable without
-  touching the device.
-- **Consumed authority survives a Host reinstall**, verified: both the Host ledger and
-  the WSL claim for `OPENDITOO-M9-ACTIVATION-001` are intact afterwards. The ledger lives
-  in `.openditoo-local/`, not in the Windows install directory, so replacing the binary
-  cannot un-consume a grant.
-
-Still outstanding: **an operator grant naming `OPENDITOO-M9-ACTIVATION-002`**, and the
-Android Divoom app disconnected.
-
-**Consequence for the next trial:** the corrected code and the new page are unproven on
-the device. Everything reachable without a grant has now been done. A second
-activation is worth doing — it is the only way to get a full-lifetime session, live
-coalescing/pacing evidence, and a stock-yield case — but it needs a **new manifest and a
-new grant**, and its frozen code hashes will differ from the consumed one's.
-
-### After N5
-
-A1 installs collection (never display authority) under native supervision; A2 qualifies
-faults and incrementally longer sessions under their own grants; A3 packages the
-exact-unit release. L1-L3 stay parked.
-
-Deliberately still not built, and why:
-
-- No installed worker yet — startup would restore collection only, and there is nothing
-  to supervise until an activation is accepted.
-- No M7.4 custom receive window — it buys nothing until there is something to navigate.
-- No rate above the accepted ceiling, and no reconnect policy.
+Nothing is currently authorized. A third trial — for stock yield, the fault bar, or a
+longer session — needs a new manifest with a new id under a new grant.
 
 ## 9. Traps — do not redo these
 
