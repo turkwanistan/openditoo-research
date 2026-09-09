@@ -493,7 +493,6 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         # Physical render order was observed, but which frame came first was not
         # reported; that stays an explicit residual rather than an assumption.
         self.assertIn("residual", result)
-        self.assertIn("reversed order would also read as corner-to-corner", result["residual"])
         for flag in ("automatic_retry", "automatic_reconnect", "target_override", "raw_packet_override"):
             self.assertFalse(manifest["operation"][flag])
         budgets = manifest["budgets"]
@@ -598,6 +597,29 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         manifest = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))
         self.assertGreater(manifest["budgets"]["application_requests"], 2)
         self.assertIn("MaxSequenceFrames must be raised", manifest["implementation_gate"]["host_change_required"])
+
+    def test_m7_sweep_evidence_separates_state_reports_from_keystrokes(self) -> None:
+        data = json.loads((ROOT / "captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json").read_text(encoding="utf-8"))
+        self.assertFalse(data["device_io"])
+        self.assertFalse(data["privacy"]["raw_bugreport_committed"])
+        ids = {finding["id"]: finding for finding in data["findings"]}
+        # The central discipline: these are state reports, never synthesised keystrokes.
+        self.assertIn("REPORTS-ARE-STATE-NOT-KEYSTROKES", ids)
+        self.assertIn("must never be synthesised", ids["REPORTS-ARE-STATE-NOT-KEYSTROKES"]["consequence"])
+        # A silent control is "not observed here", never "handled internally".
+        self.assertIn("NOT proof of internal-only handling", data["silent_controls"]["explicit_limit"])
+        self.assertEqual(ids["NAVIGATION-KEYS-ARE-SILENT"]["confidence"], "MATCHED_UNDER_TESTED_CONTEXT")
+        # Tivoo 0x46 semantics must not be imported on the strength of a shared number.
+        self.assertIn("No OpenTivoo 0x46 semantics are imported", ids["DITOO-0X46-IS-NATIVE-EVIDENCE-NOT-INHERITED"]["not_claimed"])
+        self.assertIn("decisive_trial", data["open_question"])
+        reported = {report["reported_command"] for report in data["unsolicited_reports"]}
+        self.assertEqual(reported, {"0x09", "0x46", "0xBD"})
+
+    def test_m8_sequence_visual_order_is_resolved(self) -> None:
+        result = json.loads((ROOT / "experiments/DAY1-M8-AB-SEQUENCE-PENDING.json").read_text(encoding="utf-8"))["result"]
+        self.assertEqual(result["operator_visual_order"], "confirmed_a_then_b")
+        self.assertIn("RESOLVED", result["residual"])
+        self.assertIn("bounded by stock takeover", result["frame_lifetime_note"])
 
     def test_status_reports_host_health_not_device_connectivity(self) -> None:
         program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")

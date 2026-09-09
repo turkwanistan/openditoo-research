@@ -183,17 +183,18 @@
     "retry": false,
     "reconnect": false,
     "budgets_respected": true,
-    "operator_visual_order": "observed_moving_between_opposite_corners",
+    "operator_visual_order": "confirmed_a_then_b",
     "note": "Every budget in this manifest was met exactly. Ordered ACKs prove the device accepted frame A then frame B on one connection; the operator additionally observed the rendered block move between opposite corners, so two ordered frames were physically displayed as distinct successive frames.",
     "operator_report": "a white box moved from corner to corner",
-    "residual": "The operator reported movement between corners without naming which corner came first. A reversed order would also read as corner-to-corner movement, so first-frame identity is confirmable for free by checking which corner the display rests in now: frame B (bottom-right) was sent last, so a bottom-right resting block confirms A-then-B. Recorded as an open detail rather than assumed."
+    "residual": "RESOLVED 2026-09-09: the operator reported the block still resting in the bottom-right corner at the start of the next session. Frame B (bottom-right) was sent last, so the rendered order was A then B.",
+    "frame_lifetime_note": "The frame persisted on the display across the intervening period and was cleared not by time but by the next stock page change (the brightness key). Display lifetime is bounded by stock takeover, not by a timeout."
   },
   "findings": [
     {
       "id": "SAME-SESSION-REPEATED-FRAMES-RENDER-AS-DISTINCT-ORDERED-FRAMES",
       "confidence": "MATCHED",
       "statement": "The exact unit accepts and physically renders two different image frames inside one connection, each answered by its own wrapped 0x44 ACK, with no reconnect between them. 6/6 packets and 142/142 bytes were sent, the socket closed cleanly, and the operator observed the rendered block move between opposite corners rather than a single static frame.",
-      "not_claimed": "Which frame rendered first (see result.residual), any rate above the 1000 ms inter-frame delay used here, sustained looping, and persistence of either frame."
+      "not_claimed": "Any rate above the 1000 ms inter-frame delay used here, sustained looping, and persistence across a power cycle (M6.4 showed a power cycle returns the unit to stock)."
     },
     {
       "id": "ACK-PAYLOAD-VARIES-AGAIN",

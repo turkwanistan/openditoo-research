@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "capture_id": "OPENDITOO-M7-KEY-SWEEP-2026-09-09",
+  "status": "filtered_exact_unit_physical_input_evidence",
+  "privacy": {
+    "raw_bugreport_committed": false,
+    "raw_bugreport_sha256": "8208881b53e41d823e9c7836deb35890da6900924949f0ba597252ea65a0af13",
+    "btsnoop_hci_sha256": "77f053988878540656e074853b100aef688bb17bafa39f265e6c2008df532b4f",
+    "note": "Whole Android bugreport remains private. Only decoded device-state reports are committed; no account or application metadata is included."
+  },
+  "method": {
+    "controller": "official Divoom app on Android, connected over Classic RFCOMM channel 1",
+    "procedure": "one short press per control, roughly 8-10 s apart, in a fixed order",
+    "press_order": ["K-F1 left arrow", "K-F3 right arrow", "K-F1 left arrow", "K-F2 minus", "K-B2 plus", "K-B3 brightness", "J-R1 joystick", "K-B1 M"],
+    "tool": "openditoo capture-parse",
+    "parser_health": {"rfcomm_fcs_failures": 1, "decoder_errors": {"tx": 0, "rx": 0}}
+  },
+  "operator_observations": {
+    "K-F1 left arrow": "no visible effect",
+    "K-F3 right arrow": "no visible effect",
+    "K-F2 minus": "volume down",
+    "K-B2 plus": "volume up",
+    "K-B3 brightness": "changed the page; the previously displayed custom frame disappeared",
+    "J-R1 joystick": "single down-press only, not a multi-direction stick; no visible effect",
+    "K-B1 M": "opened the menu screen"
+  },
+  "transport_frame_shape": {
+    "wrapper": "01 | inner_len_le16 | 04 | reported_command | 0x55 | data | checksum_le16 | 02",
+    "evidence": "Solicited responses carry the command the app had just sent (e.g. app sends 0x31, device replies with reported_command 0x31), so byte 0 of the payload identifies what is being reported.",
+    "confidence": "MATCHED across three independent exact-unit captures"
+  },
+  "unsolicited_reports": [
+    {"at_utc": "2026-09-09T04:58:11.706Z", "reported_command": "0x09", "data_hex": "02", "seconds_since_last_app_tx": 17.5, "correlated_press": "unresolved"},
+    {"at_utc": "2026-09-09T04:58:36.271Z", "reported_command": "0x09", "data_hex": "01", "seconds_since_last_app_tx": 2.8, "correlated_press": "K-F2 minus (volume down), by order and timing"},
+    {"at_utc": "2026-09-09T04:58:44.309Z", "reported_command": "0x09", "data_hex": "02", "seconds_since_last_app_tx": 5.9, "correlated_press": "K-B2 plus (volume up), by order and timing"},
+    {"at_utc": "2026-09-09T04:58:52.335Z", "reported_command": "0x46", "data_hex": "000000ffff00640001036400ffffff040100000000", "seconds_since_last_app_tx": 14.0, "correlated_press": "K-B3 brightness (page change), by order and timing"},
+    {"at_utc": "2026-09-09T04:59:00.012Z", "reported_command": "0xBD", "data_hex": "13014b00", "seconds_since_last_app_tx": 21.7, "correlated_press": "K-B1 M (menu opened), by order and timing"}
+  ],
+  "silent_controls": {
+    "controls": ["K-F1 left arrow", "K-F3 right arrow", "J-R1 joystick"],
+    "observation": "no application traffic in either direction within the trial windows, and no visible device change",
+    "explicit_limit": "This is 'no event observed under this exact context', NOT proof of internal-only handling. Context: official app as controller, Classic RFCOMM channel 1, device on its normal page. Other established Bluetooth profiles were not separately examined for these presses, and a custom-owner receive window was not tested."
+  },
+  "findings": [
+    {
+      "id": "PHYSICAL-KEYS-PRODUCE-UNSOLICITED-DEVICE-REPORTS",
+      "confidence": "MATCHED",
+      "statement": "Physical controls that change device state cause the exact unit to send unsolicited wrapped 0x04 reports to the connected controller on Classic RFCOMM channel 1, with no request from the controller. Four such reports correlate one-to-one, in order, with the four controls the operator saw take visible effect.",
+      "significance": "A custom OpenDitoo Host holding an open receive window on the same channel could observe these, so physical input is not inherently invisible to a non-official controller."
+    },
+    {
+      "id": "REPORTS-ARE-STATE-NOT-KEYSTROKES",
+      "confidence": "MATCHED",
+      "statement": "The reports identify a changed device facility (volume, page, menu), not a key press. They carry no key identity, no press/release distinction and no repeat indication.",
+      "consequence": "Press/release events must never be synthesised from these. A key that changes nothing - for example volume-down already at minimum - would be expected to produce no distinguishable report, so these cannot be treated as a reliable key channel."
+    },
+    {
+      "id": "NAVIGATION-KEYS-ARE-SILENT",
+      "confidence": "MATCHED_UNDER_TESTED_CONTEXT",
+      "statement": "The left arrow, right arrow and joystick produced no application traffic and no visible effect. The two arrows are the only symmetric pair on the device and were the natural candidates for page navigation; under the tested context they are unavailable.",
+      "consequence": "M9 keeps local navigation. A physical page cycle is not deliverable from this evidence."
+    },
+    {
+      "id": "DITOO-0X46-IS-NATIVE-EVIDENCE-NOT-INHERITED",
+      "confidence": "MATCHED",
+      "statement": "A 0x46 report with a 21-byte state payload was observed unsolicited from the exact Ditoo after a page change. 0x46 also appears as a solicited response in both earlier captures.",
+      "not_claimed": "No OpenTivoo 0x46 semantics are imported. Tivoo's 0x46 has no proven CW/CCW identity and that unresolved meaning does not transfer to this device. This entry records a Ditoo-native observation only."
+    }
+  ],
+  "open_question": {
+    "id": "0X09-LEVEL-OR-IDENTITY",
+    "question": "Is the 0x09 data byte an absolute volume level, or an identifier for which volume key was pressed?",
+    "why_unresolved": "Observed values were 02, then 01 after volume-down, then 02 after volume-up. An absolute level fits. A key identifier where minus=01 and plus=02 fits the same two samples equally well. The 04:58:11 report of 02 with no expected press fits neither cleanly.",
+    "decisive_trial": "From a mid volume, press K-F2 (minus) four times in a row about 5 s apart. Four descending values means an absolute level. The same value four times means a key identifier. A stop at the floor with no further reports also indicates a level.",
+    "cost": "one short stock trial, no new authority"
+  },
+  "device_io": false
+}

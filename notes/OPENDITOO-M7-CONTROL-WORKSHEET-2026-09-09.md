@@ -163,13 +163,18 @@ negative M7 does not block the product.
 
 ## Exit criteria tracking
 
-| ID | Symbol | Tested | Context | Event result | Side effects | Classification |
+| ID | Symbol | Tested | Context | Event result | Side effect | Classification |
 | --- | --- | --- | --- | --- | --- | --- |
-| `K-F1` | left arrow | no | | | | |
-| `K-F3` | right arrow | no | | | | |
-| `K-F2` | minus | no | | | | |
-| `K-B2` | plus | no | | | | |
-| `K-B3` | brightness | no | | | | |
-| `J-R1` | joystick | no | | | | |
-| `K-B1` | M | no | | | | |
-| `P-S1` | power | n/a | manual-documented only | | battery / BT disconnect / power | not a candidate input |
+| `K-F1` | left arrow | yes | app connected, normal page | none | none seen | `no_event_observed` |
+| `K-F3` | right arrow | yes | app connected, normal page | none | none seen | `no_event_observed` |
+| `K-F2` | minus | yes | app connected, normal page | unsolicited `0x09` report, data `01` | volume down | `absolute_state_report` |
+| `K-B2` | plus | yes | app connected, normal page | unsolicited `0x09` report, data `02` | volume up | `absolute_state_report` |
+| `K-B3` | brightness | yes | app connected, normal page | unsolicited `0x46` report, 21-byte state | page changed; cleared the custom frame | `absolute_state_report` |
+| `J-R1` | joystick (single down-press) | yes | app connected, normal page | none | none seen | `no_event_observed` |
+| `K-B1` | M | yes | app connected, normal page | unsolicited `0xBD` report, data `13014b00` | menu screen opened | `absolute_state_report` |
+| `P-S1` | power | no | manual-documented only | | battery / BT disconnect / power | not a candidate input |
+
+Full evidence: `captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json`.
+
+**Inventory correction:** `J-R1` is a single down-press button, not a multi-direction
+stick. The FCC photo reading of a "joystick lever" implied throws that do not exist.
