@@ -2,7 +2,7 @@
  "schema_version": 2,
  "experiment_id": "OPENDITOO-M9-ACTIVATION-001",
  "milestone": "N5 \u2014 first bounded M9 activity-display activation and stock-yield acceptance",
- "status": "authorized_pending_execution",
+ "status": "completed_partial_authority_consumed",
  "objective": "Prove the M9 activity display on the exact purchased unit: that a runtime-generated frame is accepted and readable, that an unchanged scene sends nothing, that an unsolicited state report yields the canvas without a reclaim, and that stopping leaves collection running and display state honestly reported.",
  "why_this_shape": "M0-M8 already proved the frame primitive, the geometry, the same-connection repeat and the rate ceiling. The only untested thing is the JOIN: app-driven frames under a bounded session authority. So this changes exactly one variable \u2014 who chooses the pixels \u2014 and holds the packets, target, rate and connection shape at their already-accepted values.",
  "target": {
@@ -30,7 +30,8 @@
   "receive_assembler_cross_check": "tests/receive_assembler_cases.json, 9 cases, replayed by the WSL Python assembler (offline suite) and by the Host itself (`--selftest`): HOST_SELFTEST_PASS cases=9 failures=0 device_io=false.",
   "installed_dll_sha256_verified": "a0f2fa1c3b5ced5c1225393453a4476ce4b0aa9e06c39364020868eda97f2762",
   "build_is_not_byte_reproducible": "Two Release builds of identical source produced different DLL hashes (d3ece014...a042a then a0f2fa1c...f2762). The build is not deterministic, so a build hash is only meaningful when taken from the artifact actually installed. That is what is frozen here.",
-  "previous_installed_dll_sha256": "092ed38d4dd7aaeb3eedbdab15c2c0a0f8dac07ea6134545e18ad15398fa636c"
+  "previous_installed_dll_sha256": "092ed38d4dd7aaeb3eedbdab15c2c0a0f8dac07ea6134545e18ad15398fa636c",
+  "code_hashes_note": "These freeze the code as it was AT EXECUTION. host/activity_session.py was corrected afterwards in response to this result, so the frozen session_sha256 no longer matches the working tree. That is correct and expected: the hashes are a record of what ran, not a live assertion."
  },
  "session": {
   "lifetime_seconds": 300,
@@ -112,15 +113,17 @@
   "status": "implemented offline; awaiting install and grant"
  },
  "authority": {
-  "transmission_authorized": true,
-  "authorization_consumed": false,
+  "transmission_authorized": false,
+  "authorization_consumed": true,
   "experiment_id": "OPENDITOO-M9-ACTIVATION-001",
   "granted_by": "operator, in-session, 2026-09-09",
   "grant_text": "Grant, 300 s as specified",
   "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution of this exact bounded session: up to 300 seconds, change-only frames at no faster than one frame start per 1118 ms, at most 269 frames / 807 packets / 51379 application bytes, one connection, no retry, no reconnect, no reclaim. Not continuous display, not unattended operation, not installation-time transmission, not a higher rate.",
   "note": "Granted in answer to an explicit scope question naming this experiment id. A failed, partial or ambiguous outcome does NOT re-authorize: it needs a new manifest with a new id under a new grant.",
-  "grant_scope": "ONE execution of this exact bounded session: up to 300 seconds, change-only frames at no faster than one frame start per 1118 ms, at most 269 frames / 807 packets / 51379 application bytes, one connection, no retry, no reconnect, no reclaim. Explicitly NOT authorized: any higher rate, unattended or installation-time transmission, a longer session, or a second attempt."
+  "grant_scope": "ONE execution of this exact bounded session: up to 300 seconds, change-only frames at no faster than one frame start per 1118 ms, at most 269 frames / 807 packets / 51379 application bytes, one connection, no retry, no reconnect, no reclaim. Explicitly NOT authorized: any higher rate, unattended or installation-time transmission, a longer session, or a second attempt.",
+  "consumed_at": "2026-09-09T13:59:33Z",
+  "consumption_note": "Executed once on 2026-09-09. The grant is spent whatever the outcome. The session ended early on an implementation defect, NOT on a device fault and NOT on a takeover; that does not re-authorize anything. Any further trial needs a new manifest with a new experiment id under a new grant."
  },
  "explicitly_out_of_scope": [
   "any rate above the accepted ceiling",
@@ -131,5 +134,53 @@
   "any new command id, command enumeration or raw send",
   "firmware update, persistent upload, service/MassBoot entry or teardown"
  ],
- "result": null
+ "result": {
+  "status": "partial_transport_pass_visual_pass",
+  "session_id": "6baad9d080c4",
+  "opened_at": "2026-09-09T13:59:33.772892Z",
+  "host_terminal_at": "2026-09-09T14:00:04.182716Z",
+  "worker_stopped_at": "2026-09-09T14:02:11Z",
+  "connections_attempted": 1,
+  "frames_sent": 1,
+  "packets_sent_complete": 3,
+  "tx_bytes_sent_complete_host": 147,
+  "tx_bytes_sent_complete_worker": 132,
+  "ack_payload_hex_ordered": [
+   "0x9E"
+  ],
+  "holds": {
+   "unchanged": 134
+  },
+  "retry": false,
+  "reconnect": false,
+  "reclaim": false,
+  "socket_closed": true,
+  "host_terminal_reason": "worker_silent",
+  "host_terminal_outcome": "stopped_clean",
+  "worker_terminal_reason": "transport_fault",
+  "worker_terminal_outcome": "unknown",
+  "display_state_at_host_terminal": "ours_last_acked",
+  "acceptance": {
+   "transport_acceptance": "PARTIAL \u2014 one connection, three packets, one wrapped 0x44 ACK (0x9E), clean Host-side close, zero retries, zero reconnects. The session did NOT run its granted 300 s lifetime: the Host ended it cleanly at 30.4 s.",
+   "visual_acceptance": "PASS \u2014 the operator confirmed in-session, looking at the unit: \"i can see the icons and their rails\". This is operator observation of the rendered frame, and is the only thing that establishes it; the ACK does not.",
+   "change_only_acceptance": "PARTIAL \u2014 1 frame against 134 unchanged holds proves silence on an unchanged scene. It does NOT exercise coalescing, pacing under real change, or pulse freshness live, because no second change occurred before the session ended.",
+   "stock_yield_acceptance": "NOT TESTED \u2014 no physical control was used and no unsolicited report was observed.",
+   "collection_survives": "PASS \u2014 collection continued for the whole 158 s the worker ran, including the 127 s after the Host had already closed the link.",
+   "authority_is_consumed": "PASS \u2014 the WSL claim file and the Host ledger both record this experiment id terminal. A second run is refused by both."
+  },
+  "root_cause": "MINE, not the device's. `WorkerSilenceGraceMs` inferred worker liveness from FRAMES, but a change-only display legitimately sends none while the scene is unchanged. 30 s of correct silence was read as a dead worker, and the Host closed the session \u2014 cleanly, and exactly as written. Compounding it, the worker could only learn the session state by SENDING, so it polled for a further 127 s believing the display was live, and finally reported an inferred `transport_fault` for what the Host had recorded as `stopped_clean` / `worker_silent`.",
+  "second_defect": "Byte accounting disagreed: the Host counted 147 application bytes (image packet plus both stock preambles) while the worker counted 132 (image packet only), against a SHARED ceiling. The worker under-reported by 15 bytes per frame.",
+  "fixes": [
+   "New `/v1/session/heartbeat` route: proves worker liveness with no device I/O and no send, and returns the session's own state so the worker learns a terminal within one poll instead of at its next change.",
+   "The worker now adopts the Host's terminal reason and outcome rather than reporting a fault it merely inferred from a refusal.",
+   "The worker counts the whole three-packet group, derived from the stock preamble constants rather than a literal.",
+   "Four regression tests pin all of the above, including that a heartbeat can never touch the device."
+  ],
+  "not_claimed": [
+   "that the display survives a full 300 s session \u2014 it was never given the chance",
+   "that stock takeover yields correctly on this unit \u2014 untested",
+   "that coalescing, pacing or pulse expiry behave live \u2014 only the unchanged case was exercised",
+   "absence of any non-volatile write"
+  ]
+ }
 }

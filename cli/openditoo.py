@@ -36,6 +36,7 @@ IMAGE_SHOW_URL = f"{HOST_ORIGIN}/v1/image/show"
 IMAGE_SEQUENCE_URL = f"{HOST_ORIGIN}/v1/image/sequence"
 SESSION_OPEN_URL = f"{HOST_ORIGIN}/v1/session/open"
 SESSION_FRAME_URL = f"{HOST_ORIGIN}/v1/session/frame"
+SESSION_HEARTBEAT_URL = f"{HOST_ORIGIN}/v1/session/heartbeat"
 SESSION_CLOSE_URL = f"{HOST_ORIGIN}/v1/session/close"
 MIN_TOKEN_CHARS = 32
 
@@ -579,10 +580,22 @@ class _HostSessionTransport:
         return result
 
     def poll_reports(self) -> list[dict]:
-        # The Host observes the link continuously and reports a takeover as a refusal on
-        # the next frame, so there is nothing for the client to poll. Adding a polling
-        # route would only duplicate that with a staler answer.
-        return []
+        """Prove liveness and read the session's state, without sending anything.
+
+        A change-only display can legitimately send nothing for minutes, so liveness
+        cannot be inferred from frames -- and the worker must not have to send one to
+        discover that the session has already ended.
+        """
+        session = _post(SESSION_HEARTBEAT_URL, {"sessionId": self.session_id},
+                        self.token, timeout=15.0).get("session", {})
+        if session.get("active") is True:
+            return []
+        return [{"kind": "session_ended",
+                 "reason": session.get("terminalReason") or "session_ended",
+                 "outcome": session.get("terminalOutcome") or "unknown",
+                 "display_state": session.get("displayState"),
+                 "frames_sent": session.get("framesSent"),
+                 "tx_bytes_sent": session.get("txBytesSent")}]
 
     def close(self, reason: str) -> dict:
         if self.session_id is None:

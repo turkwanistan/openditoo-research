@@ -1610,6 +1610,88 @@ class N3SessionRunTests(unittest.TestCase):
         self.assertEqual(len(transport.frames), 2)
 
 
+class N5PostTrialRegressionTests(unittest.TestCase):
+    """Pinned from the OPENDITOO-M9-ACTIVATION-001 trial. Both were real failures."""
+
+    def test_a_quiet_change_only_session_is_not_mistaken_for_a_dead_worker(self) -> None:
+        # The trial ended at 30.4 s with reason `worker_silent` because liveness was
+        # inferred from FRAMES, and a change-only display legitimately sends none.
+        # Liveness is now a heartbeat that performs no device I/O.
+        host = (HOST_DIR / "ActivitySessionHost.cs").read_text(encoding="utf-8")
+        self.assertIn("internal static object Heartbeat(string sessionId)", host)
+        self.assertIn("lastWorkerContact = DateTimeOffset.UtcNow;", host)
+        program = (HOST_DIR / "Program.cs").read_text(encoding="utf-8")
+        self.assertIn('app.MapPost("/v1/session/heartbeat"', program)
+        heartbeat = program[program.index('app.MapPost("/v1/session/heartbeat"'):]
+        heartbeat = heartbeat[:heartbeat.index("app.MapPost", 10)]
+        self.assertIn("deviceIo = false", heartbeat)
+        for forbidden in ("SendFrame", "BuildTransaction", "DitooLink.Connect"):
+            self.assertNotIn(forbidden, heartbeat, msg="a heartbeat must never touch the device")
+
+    def test_the_worker_learns_a_session_ended_without_having_to_send(self) -> None:
+        # In the trial the worker polled for 127 s believing the display was live,
+        # because only a send revealed the state.
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        block = cli[cli.index("    def poll_reports("):cli.index("    def close(")]
+        self.assertIn("SESSION_HEARTBEAT_URL", block)
+        self.assertIn('"kind": "session_ended"', block)
+        self.assertIn("terminalReason", block)
+
+    def test_a_host_terminal_is_adopted_not_reported_as_an_inferred_fault(self) -> None:
+        manifest_dir = Path(tempfile.mkdtemp())
+        path = manifest_dir / "m.json"
+        path.write_text(json.dumps(_valid_manifest()), encoding="utf-8")
+        manifest = activity_session.load_session_manifest(path)
+
+        class _EndsItself:
+            def __init__(self) -> None:
+                self.frames, self.closed_reason, self.polls = [], None, 0
+
+            def open(self, _manifest): return {"sessionId": "x"}
+
+            def send_frame(self, rgb, sha):
+                self.frames.append(sha)
+                return {"ackPayloadHex": "0x01"}
+
+            def poll_reports(self):
+                self.polls += 1
+                if self.polls < 3:
+                    return []
+                return [{"kind": "session_ended", "reason": "worker_silent",
+                         "outcome": "stopped_clean", "display_state": "ours_last_acked"}]
+
+            def close(self, reason): self.closed_reason = reason
+
+        transport = _EndsItself()
+        clock = {"ms": 0}
+        result = activity_session.run_session(
+            manifest, transport, lambda _n: (bytes([1, 2, 3]) * 256, False),
+            lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + ms),
+            max_iterations=20)
+        self.assertEqual(result["terminal_reason"], "worker_silent")
+        self.assertEqual(result["outcome"], "stopped_clean")   # not an inferred fault
+        self.assertEqual(len(transport.frames), 1)
+
+    def test_the_byte_budget_counts_the_whole_three_packet_group(self) -> None:
+        # The trial recorded 132 bytes locally against the Host's 147: the local counter
+        # omitted the two stock preambles while sharing the Host's ceiling.
+        from host.ditoo_pixel_coloring import IMAGE_PREAMBLE_A, IMAGE_PREAMBLE_B
+        manifest_dir = Path(tempfile.mkdtemp())
+        path = manifest_dir / "m.json"
+        path.write_text(json.dumps(_valid_manifest()), encoding="utf-8")
+        manifest = activity_session.load_session_manifest(path)
+        transport = activity_session.FakeSessionTransport()
+        clock = {"ms": 0}
+        rgb = bytes([9, 9, 9]) * 256
+        activity_session.run_session(
+            manifest, transport, lambda _n: (rgb, False), lambda: clock["ms"],
+            lambda ms: clock.__setitem__("ms", clock["ms"] + ms), max_iterations=3)
+        wire, _ = encode_rgb888_static_image(rgb)
+        self.assertEqual(len(IMAGE_PREAMBLE_A) + len(IMAGE_PREAMBLE_B), 15)
+        # The Host's own accounting, reproduced locally before the send is authorized.
+        self.assertEqual(transport.tx_bytes, len(wire) + 15)
+
+
 class N3HostBoundaryTests(unittest.TestCase):
     def test_the_host_enforces_the_same_pacing_floor_as_the_cli(self) -> None:
         src = (HOST_DIR / "ActivitySessionHost.cs").read_text(encoding="utf-8")
@@ -1695,11 +1777,20 @@ class N4SessionPreviewTests(unittest.TestCase):
         self.assertTrue(takeover["reports_after_frame"])
 
     def test_the_activation_manifest_authority_is_fully_attributed(self) -> None:
-        path = ROOT / "experiments/DAY1-M9-ACTIVATION-001-PENDING.json"
+        path = ROOT / "experiments/DAY1-M9-ACTIVATION-001.json"
         manifest = json.loads(path.read_text(encoding="utf-8"))
         authority = manifest["authority"]
         self.assertEqual(authority["experiment_id"], manifest["experiment_id"])
-        self.assertFalse(authority["authorization_consumed"])
+        if authority["authorization_consumed"]:
+            # Consumed: the record of what happened outranks re-runnability. It must be
+            # disarmed, and it must not be quietly reported as a clean pass.
+            self.assertFalse(authority["transmission_authorized"])
+            result = manifest["result"]
+            self.assertIn("acceptance", result)
+            self.assertIn("visual_acceptance", result["acceptance"])
+            self.assertIn("NOT TESTED", result["acceptance"]["stock_yield_acceptance"])
+            self.assertTrue(result["root_cause"])
+            return
         if authority["transmission_authorized"]:
             # Armed: every attribution field must be filled, and the scope must exclude
             # the things a bounded pass never implies.
@@ -1712,13 +1803,14 @@ class N4SessionPreviewTests(unittest.TestCase):
             self.assertIn("TRANSMISSION_AUTHORITY_MISSING", activity_session.authority_blockers(path))
         # Structurally complete either way: the grant is the only
         # thing missing, so nothing else has to be decided under time pressure later.
-        reviewed = activity_session.load_session_manifest(path, require_authority=False)
+        reviewed = activity_session.load_session_manifest(path, require_authority=False,
+                                                          verify_code_hashes=False)
         self.assertEqual(reviewed.min_frame_interval_ms,
                          activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
         self.assertEqual(reviewed.max_application_packets, reviewed.max_frames * 3)
 
     def test_the_activation_manifest_budgets_match_their_stated_derivation(self) -> None:
-        manifest = json.loads((ROOT / "experiments/DAY1-M9-ACTIVATION-001-PENDING.json")
+        manifest = json.loads((ROOT / "experiments/DAY1-M9-ACTIVATION-001.json")
                               .read_text(encoding="utf-8"))
         lifetime = manifest["session"]["lifetime_seconds"]
         interval = manifest["session"]["min_frame_interval_ms"]
@@ -1734,11 +1826,16 @@ class N4SessionPreviewTests(unittest.TestCase):
         # Build verified and installed identity verified are different claims. Once armed
         # they must agree, and the frozen hash must be the one actually installed --
         # two Release builds of identical source produced different hashes.
-        manifest = json.loads((ROOT / "experiments/DAY1-M9-ACTIVATION-001-PENDING.json")
+        manifest = json.loads((ROOT / "experiments/DAY1-M9-ACTIVATION-001.json")
                               .read_text(encoding="utf-8"))
         build = manifest["build"]
         self.assertIn("preconditions", manifest)
-        if manifest["authority"]["transmission_authorized"]:
+        if manifest["authority"]["authorization_consumed"]:
+            # The frozen hashes record what RAN. They are history, not a live assertion,
+            # so they are allowed to differ from the working tree afterwards.
+            self.assertIn("code_hashes_note", build)
+            self.assertEqual(build["host_dll_sha256"], build["installed_dll_sha256_verified"])
+        elif manifest["authority"]["transmission_authorized"]:
             self.assertEqual(build["host_dll_sha256"], build["installed_dll_sha256_verified"])
             self.assertNotEqual(build["host_dll_sha256"], build["previous_installed_dll_sha256"])
             self.assertIn("HOST_SELFTEST_PASS", build["installed_identity_note"])

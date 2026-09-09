@@ -460,6 +460,15 @@ app.MapPost("/v1/session/frame", (SessionFrameRequest request) =>
     }
 });
 
+app.MapPost("/v1/session/heartbeat", (CloseSessionRequest request) => Results.Json(new
+{
+    ok = true,
+    apiVersion = ApiVersion,
+    command = "session-heartbeat",
+    deviceIo = false,
+    session = ActivitySessionHost.Heartbeat(request.SessionId ?? ""),
+}));
+
 app.MapPost("/v1/session/close", (CloseSessionRequest request) =>
 {
     try

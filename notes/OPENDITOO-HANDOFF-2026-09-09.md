@@ -28,7 +28,7 @@ M0-M8 are complete on the exact purchased Ditoo Plus (`11:75:58:CE:DE:C7`, v4201
 | M6 static runtime + diagnostics | complete; physically accepted; pixel geometry proven |
 | M7 keyboard/button mapping | complete **as a bounded negative**; no usable navigation input |
 | M8 repeated frames | complete; rate ceiling measured and reproduced |
-| M9 activity application | N1-N4 complete; N5 armed under a live grant, **not yet executed** |
+| M9 activity application | N1-N4 complete; N5 executed once — **visual PASS, transport partial**, grant consumed |
 
 ### The product primitive
 
@@ -164,17 +164,15 @@ exactly why they are re-run, never inherited.**
 - `OpenTivoo Product Runtime` and port 8779 were preserved throughout and never touched.
   OpenTivoo has **active concurrent work**; treat it as read-only reference.
 
-## 5. Authority state — ONE live grant: OPENDITOO-M9-ACTIVATION-001
+## 5. Authority state — nothing is currently authorized
 
-**Live as of 2026-09-09:** the operator granted `OPENDITOO-M9-ACTIVATION-001` — one
-bounded activity-display session, 300 s, change-only frames at no faster than one frame
-start per 1118 ms, at most 269 frames / 807 packets / 51 379 application bytes, one
-connection, no retry, no reconnect, no reclaim; expires `2026-09-10T00:00:00Z`. It does
-**not** authorize a higher rate, unattended or installation-time transmission, a longer
-session, or a second attempt. Once executed or abandoned it is consumed, and a repeat
-needs a new manifest with a new id under a new grant.
+`OPENDITOO-M9-ACTIVATION-001` was granted and **executed once** on 2026-09-09. It is
+consumed. It ended early on an implementation defect of ours — not a device fault and not
+a takeover — and that changes nothing: a spent grant is spent. Any further trial needs a
+new manifest with a new experiment id under a new grant. See section 8a for what it
+proved and what it did not.
 
-Every OTHER experiment manifest is consumed. `manifest-check` on any of them reports
+Every experiment manifest is now consumed. `manifest-check` on any of them reports
 `execution_ready: false` with `transmission_authority_missing`, and `sequence-run`
 exits 30.
 
@@ -245,26 +243,46 @@ Verified on 2026-09-09, and kept distinct:
 unchanged; `HOST_SELFTEST_PASS cases=9 failures=0`. **No transport acceptance and no
 visual acceptance** — neither was attempted.
 
-### N5 preconditions
+## 8a. N5 first activation — executed 2026-09-09, partial
 
-`experiments/DAY1-M9-ACTIVATION-001-PENDING.json` is armed and fully attributed.
+`experiments/DAY1-M9-ACTIVATION-001.json` carries the full record. Summary:
 
-1. **Installed Host — DONE.** `refresh_openditoo_day1_host.ps1 -Apply` run on 2026-09-09:
-   `REFRESH_STATUS=PASS_TYPED_IMAGE`, `OPENTIVOO_TASK=preserved`. Installed DLL is now
-   `a0f2fa1c…f2762`, byte-identical to the repository Release build, replacing the M6-era
-   `092ed38d…a636c`. `/v1/status` advertises `activity-session`. The exact **installed**
-   binary was re-run against the shared receive fixture: `HOST_SELFTEST_PASS cases=9
-   failures=0`.
-2. **The Android Divoom app must be disconnected** — one controller owns the unit at a
-   time, and the first M8 loop attempt failed at connect (`WSA=10060`) for exactly this
-   reason. Still to be confirmed by the operator.
-3. The operator must be watching the unit: visual acceptance cannot be inferred from ACKs.
+| Result | State |
+| --- | --- |
+| Visual acceptance | **PASS** — operator, watching the unit: "i can see the icons and their rails". This is the only thing that establishes it; the ACK does not. |
+| Transport acceptance | **PARTIAL** — one connection, three packets, one wrapped `0x44` ACK (`0x9E`), clean Host-side close, zero retries, zero reconnects. It did **not** run its granted 300 s. |
+| Change-only | **PARTIAL** — 1 frame against 134 unchanged holds proves silence on an unchanged scene. Coalescing, pacing under change and pulse expiry are still untested live. |
+| Stock yield | **NOT TESTED** — no control was touched, no unsolicited report observed. |
+| Collection survives | **PASS** — kept collecting for all 158 s, including 127 s after the link had closed. |
+| Authority | **consumed** — recorded in both the WSL claim file and the Host ledger. |
 
-**New finding — the Release build is not byte-reproducible.** Two builds of identical
-source produced `d3ece014…a042a` then `a0f2fa1c…f2762`. A frozen build hash is therefore
-only meaningful when taken from the artifact actually installed, which is what the
-manifest now records. Do not treat a build hash from an earlier build of the same commit
-as evidence about the installed bytes.
+### Root cause — ours, and now fixed
+
+The Host closed the session at **30.4 s** with `worker_silent` / `stopped_clean`. It did
+exactly what it was written to do; what it was written to do was wrong.
+`WorkerSilenceGraceMs` inferred worker liveness from **frames**, but a change-only display
+legitimately sends none while the scene is unchanged. Thirty seconds of *correct* silence
+read as a dead worker.
+
+Compounding it: the worker could only learn the session state by **sending**, so it polled
+for a further 127 s believing the display was live, and finally reported an inferred
+`transport_fault` / `unknown` for what the Host had already recorded as `stopped_clean`.
+
+A second, smaller defect surfaced in the same record: the Host counted 147 application
+bytes per frame (image packet plus both stock preambles) while the worker counted 132
+(image only) against the *same* ceiling.
+
+Fixed, with four regression tests pinning them:
+
+- `/v1/session/heartbeat` — proves liveness with **no device I/O and no send**, and
+  returns the session's own state, so the worker learns a terminal within one poll.
+- The worker adopts the Host's terminal reason and outcome instead of inferring a fault.
+- The worker counts the whole three-packet group, derived from the preamble constants.
+
+**Consequence for the next trial:** the corrected code is unproven on the device. A second
+activation is worth doing — it is the only way to get a full-lifetime session, live
+coalescing/pacing evidence, and a stock-yield case — but it needs a **new manifest and a
+new grant**, and its frozen code hashes will differ from the consumed one's.
 
 ### After N5
 

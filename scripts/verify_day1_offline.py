@@ -119,17 +119,28 @@ def verify_host_boundary() -> None:
 
 
 def _m9_armed() -> bool:
-    manifest = json.loads((ROOT / "experiments" / "DAY1-M9-ACTIVATION-001-PENDING.json").read_text(encoding="utf-8"))
+    manifest = json.loads((ROOT / "experiments" / "DAY1-M9-ACTIVATION-001.json").read_text(encoding="utf-8"))
     return manifest.get("authority", {}).get("transmission_authorized") is True
 
 
 def verify_activation_boundary() -> None:
     """The M9 session surface must stay bounded, one-use and unauthorized."""
-    manifest_path = ROOT / "experiments" / "DAY1-M9-ACTIVATION-001-PENDING.json"
+    manifest_path = ROOT / "experiments" / "DAY1-M9-ACTIVATION-001.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     authority = manifest.get("authority", {})
     if authority.get("experiment_id") != manifest.get("experiment_id"):
         fail("M9 grant does not name its own experiment")
+    consumed = authority.get("authorization_consumed") is True
+    if consumed:
+        # A consumed manifest must carry its result, including its honest partials.
+        if authority.get("transmission_authorized") is not False:
+            fail("M9 activation manifest is consumed but still armed")
+        result = manifest.get("result") or {}
+        if not result.get("acceptance"):
+            fail("M9 activation manifest is consumed without recorded acceptance")
+        if not result.get("root_cause") and result.get("status") != "pass":
+            fail("a non-pass M9 result must record its root cause")
+        return
     armed = authority.get("transmission_authorized") is True
     if armed:
         # An armed manifest is allowed, but only fully attributed and only while the

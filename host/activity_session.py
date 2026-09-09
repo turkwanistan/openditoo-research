@@ -454,7 +454,12 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
     that cannot be read still renders, as an unavailable indicator, and never stops
     the display.
     """
-    from host.ditoo_pixel_coloring import encode_rgb888_static_image, sha256_hex
+    from host.ditoo_pixel_coloring import (IMAGE_PREAMBLE_A, IMAGE_PREAMBLE_B,
+                                           encode_rgb888_static_image, sha256_hex)
+    # The budget is stated in APPLICATION bytes and the Host is the authority on it, so
+    # count the whole three-packet group -- the image packet plus both stock preambles --
+    # not just the image. Counting only the image under-reports against a shared ceiling.
+    preamble_bytes = len(IMAGE_PREAMBLE_A) + len(IMAGE_PREAMBLE_B)
 
     scheduler = ChangeOnlyScheduler(manifest.min_frame_interval_ms, manifest.pulse_freshness_ms)
     started_ms = clock()
@@ -493,10 +498,19 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
                 break
 
             for report in transport.poll_reports():
-                if report.get("kind") != "ack":
+                kind = report.get("kind")
+                if kind == "session_ended":
+                    # The Host ended it. Adopt ITS reason and outcome rather than
+                    # reporting a fault we merely inferred from a refusal.
+                    reason = report.get("reason") or "session_ended"
+                    if reason == "canvas_invalidated":
+                        scheduler.invalidate_canvas(reason)
+                    return finish(reason, report.get("outcome") or "unknown",
+                                  json.dumps(report, sort_keys=True))
+                if kind != "ack":
                     # An unsolicited state report means the canvas is no longer ours.
                     # A late ACK cannot give it back, and no reclaim frame is sent.
-                    scheduler.invalidate_canvas(report.get("kind", "unexpected_report"))
+                    scheduler.invalidate_canvas(kind or "unexpected_report")
                     return finish("canvas_invalidated", "stopped_yielded_to_stock",
                                   json.dumps(report, sort_keys=True))
 
@@ -511,8 +525,9 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
             desired = scheduler.sending(now)
             wire, _ = encode_rgb888_static_image(desired.rgb)
             packet_sha = sha256_hex(wire)
+            frame_bytes = len(wire) + preamble_bytes
             if result["frames_sent"] + 1 > manifest.max_frames or \
-                    result["tx_bytes_sent"] + len(wire) > manifest.max_tx_bytes:
+                    result["tx_bytes_sent"] + frame_bytes > manifest.max_tx_bytes:
                 return finish("budget_exhausted", "stopped_clean", "local budget ceiling reached")
             try:
                 ack = transport.send_frame(desired.rgb, packet_sha)
@@ -523,7 +538,7 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
             scheduler.sent()
             result["frames_sent"] = scheduler.frames_sent
             result["packets_sent"] += PACKETS_PER_FRAME
-            result["tx_bytes_sent"] += len(wire)
+            result["tx_bytes_sent"] += frame_bytes
             result["acks"].append(ack.get("ackPayloadHex"))
             sleep(manifest.poll_interval_ms)
         else:

@@ -21,8 +21,10 @@ static class ActivitySessionHost
     internal const int MaxLifetimeSeconds = 900;
     internal const int MaxFrames = 500;
     internal const int WatchdogIntervalMs = 250;
-    // If the worker stops asking for frames entirely we still end the session rather
-    // than hold the device's link open indefinitely.
+    // If the worker disappears entirely we end the session rather than hold the link
+    // open. Liveness is proved by /v1/session/heartbeat, NOT by sending a frame: a
+    // change-only display is legitimately silent for long stretches, and treating that
+    // silence as a dead worker is what ended OPENDITOO-M9-ACTIVATION-001 at 30 s.
     internal const int WorkerSilenceGraceMs = 30_000;
 
     private static readonly object Gate = new();
@@ -215,6 +217,22 @@ static class ActivitySessionHost
             acks.Add(hex);
             return new FrameResult(framesSent, hex, encoded.PacketSha256, encoded.PaletteColors,
                                    packetsSent, txBytesSent, deadline.ToString("O"));
+        }
+    }
+
+    /// <summary>
+    /// Worker liveness plus a read of the session's own state. No device I/O and no
+    /// send: this is how a change-only worker stays alive through a quiet scene, and
+    /// how it learns within one poll that the session has ended -- rather than finding
+    /// out only when it next has something to draw.
+    /// </summary>
+    internal static object Heartbeat(string sessionId)
+    {
+        lock (Gate)
+        {
+            if (IsActive && string.Equals(sessionId, SessionId, StringComparison.Ordinal))
+                lastWorkerContact = DateTimeOffset.UtcNow;
+            return Snapshot();
         }
     }
 

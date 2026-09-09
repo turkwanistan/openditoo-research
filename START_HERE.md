@@ -56,16 +56,14 @@ re-verification, not transport acceptance, not visual acceptance.
 | M6 static runtime + diagnostics | complete; physically accepted; pixel geometry proven |
 | M7 keyboard/button mapping | complete as a **bounded negative**; no usable physical navigation |
 | M8 repeated frames | complete; accepted ceiling ~1118 ms/frame, measured twice |
-| M9 activity application | N1-N4 complete: authority lifecycle, takeover-aware receive, change-only scheduling, sources and offline preview. N5 armed under a live grant, **not yet executed**. |
+| M9 activity application | N1-N4 complete: authority lifecycle, takeover-aware receive, change-only scheduling, sources and offline preview. N5 executed once — visual **PASS**, transport **partial**; grant consumed. |
 
 ### Authority state
 
-**One live grant: `OPENDITOO-M9-ACTIVATION-001`** — one bounded 300 s activity-display
-session, change-only at no faster than one frame start per 1118 ms, ceiling 269 frames /
-807 packets / 51 379 bytes, one connection, no retry/reconnect/reclaim, expiring
-`2026-09-10T00:00:00Z`. It authorizes nothing else: not a higher rate, not unattended or
-installation-time transmission, not a longer session, not a second attempt. Every other
-experiment manifest is consumed; `sequence-run` exits 30 on all of them. **Every live operation — `image-show` included —
+**Nothing is currently authorized.** `OPENDITOO-M9-ACTIVATION-001` was granted and
+executed once on 2026-09-09; it is consumed. It ended early on a defect of ours rather
+than a device fault, which does not re-authorize it. Every experiment manifest is
+consumed; `sequence-run` exits 30 on all of them. **Every live operation — `image-show` included —
 needs a NEW reviewed manifest and an explicit operator grant naming that manifest's
 experiment id.** A consumed manifest is never re-armed; an ambiguous or partial attempt
 needs a fresh manifest, not a reset flag. Build/deploy capability, credentials, a
