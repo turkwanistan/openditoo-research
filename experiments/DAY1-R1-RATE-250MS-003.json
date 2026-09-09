@@ -164,7 +164,8 @@
    2633,
    3025,
    3377
-  ]
+  ],
+  "operator_visual_order": "confirmed_alternating_corners"
  },
  "measurements": {
   "achieved_inter_frame_interval_ms": {
@@ -196,7 +197,12 @@
    "not_claimed": "the source of the wider per-interval spread in this third run; host and device jitter are not separated."
   }
  ],
- "acceptance": null,
+ "acceptance": {
+  "transport_acceptance": "PASS \u2014 one connection, 30 packets, 710 bytes, 10/10 ACKs, clean close, no retry, no reconnect.",
+  "rate_acceptance": "PASS \u2014 375.2 ms mean, third of three consistent samples.",
+  "visual_acceptance": "PASS \u2014 operator, watching the unit: \"yeah it was bouncing back and forth between the corners\". The A/B frames are a top-left and a bottom-right block, so alternating corners confirms both that the frames rendered and that they rendered IN ORDER at the 250 ms rate. ACKs establish neither; this is operator observation.",
+  "scope_of_this_confirmation": "Covers the A/B sequence shape at a 250 ms delay. It says nothing about the activity display, which was separately confirmed under OPENDITOO-M9-ACTIVATION-002."
+ },
  "next_step_evidence": {
   "r2_scope": "Reduce SendSpacingMs (40 ms) and the Host's MinInterFrameDelayMs floor (250 ms). Both are code changes needing a rebuild, reinstall, new manifest and new grant.",
   "projected": {
