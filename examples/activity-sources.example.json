@@ -1,0 +1,26 @@
+{
+  "comment": "Copy to .openditoo-local/activity-sources.json and fill in the real endpoints. That file is git-ignored: no host names, users or paths for private machines belong in this repository.",
+  "poll_seconds": 2.0,
+  "sources": {
+    "optiplex_mcp": {
+      "label": "OptiPlex MCP",
+      "adapter": "file_tail_jsonl",
+      "ssh_target": "<user>@<host>",
+      "path": "/path/to/mcp/agent/audit.log",
+      "timeout_seconds": 1.5
+    },
+    "optiplex_lab": {
+      "label": "OptiPlex Lab",
+      "adapter": "journal_tunnel_dispatch",
+      "ssh_target": "<user>@<host>",
+      "journal_unit": "<lab tunnel unit>",
+      "timeout_seconds": 2.0
+    },
+    "wsl_mcp": {
+      "label": "WSL MCP",
+      "adapter": "file_tail_jsonl",
+      "path": "/home/<user>/.local/state/wsl-mcp/audit.jsonl",
+      "timeout_seconds": 1.0
+    }
+  }
+}

@@ -441,5 +441,286 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertLess(send_block.index("SendOutcomeUnknown"), send_block.index("IMAGE_SEND_FAILED"))
 
 
+# --------------------------------------------------------------------------
+# M9 — three-MCP activity collector and 16x16 renderer
+# --------------------------------------------------------------------------
+
+from datetime import datetime, timedelta, timezone  # noqa: E402
+
+from host import mcp_activity  # noqa: E402
+from host import activity_render  # noqa: E402
+
+
+def _wsl_record(ts: str, request_id: str, result: str = "exit_0") -> str:
+    return json.dumps({"ts": ts, "request_id": request_id, "tool": "run_command",
+                       "project": "p", "result": result, "duration_ms": 5})
+
+
+def _optiplex_record(ts: str, ok: bool = True) -> str:
+    return json.dumps({"ts": ts, "tool": "run_command", "project": "p", "ok": ok, "duration_ms": 5})
+
+
+class _StubAdapter:
+    """In-memory adapter so collector tests never touch a real source."""
+
+    kind = "stub"
+    scripted: list = []
+
+    def __init__(self, source_id: str, config: dict) -> None:
+        self.source_id = source_id
+
+    def poll(self, cursor):
+        step = _StubAdapter.scripted.pop(0) if _StubAdapter.scripted else ([], {"n": 0}, True, 0)
+        if isinstance(step, mcp_activity.SourceError):
+            raise step
+        return step
+
+
+class M9ActivityCollectorTests(unittest.TestCase):
+    """M9.2-M9.4 — honest activity semantics, cursors, rotation, skew."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.log = Path(self.tmp.name) / "audit.jsonl"
+        self.now = datetime(2026, 9, 9, 12, 0, 0, tzinfo=timezone.utc)
+
+    def _adapter(self):
+        return mcp_activity.WslMcpAdapter("wsl_mcp", {"path": str(self.log), "timeout_seconds": 5})
+
+    def test_seed_establishes_history_without_replaying_it(self) -> None:
+        self.log.write_text(_wsl_record("2026-09-09T11:59:00Z", "a") + "\n", encoding="utf-8")
+        adapter = self._adapter()
+        events, cursor, complete, failures = adapter.poll(None)
+        self.assertEqual([event.event_id for event in events], ["a"])
+        self.assertTrue(complete)
+        self.assertEqual(failures, 0)
+        # A second poll with that cursor must produce nothing new.
+        self.assertEqual(adapter.poll(cursor)[0], [])
+
+    def test_incremental_read_and_partial_final_line(self) -> None:
+        self.log.write_text(_wsl_record("2026-09-09T11:59:00Z", "a") + "\n", encoding="utf-8")
+        adapter = self._adapter()
+        _, cursor, _, _ = adapter.poll(None)
+        with self.log.open("a", encoding="utf-8") as handle:
+            handle.write(_wsl_record("2026-09-09T11:59:30Z", "b") + "\n")
+            handle.write('{"ts": "2026-09-09T11:59:40Z", "request_i')  # torn write
+        events, cursor, _, failures = adapter.poll(cursor)
+        self.assertEqual([event.event_id for event in events], ["b"])
+        self.assertEqual(failures, 0, "an incomplete final line is buffered, not a parse failure")
+        with self.log.open("a", encoding="utf-8") as handle:
+            handle.write('d": "c", "tool": "t", "project": "p", "result": "exit_0"}\n')
+        events, _, _, _ = adapter.poll(cursor)
+        self.assertEqual([event.event_id for event in events], ["c"])
+
+    def test_malformed_line_does_not_block_later_records(self) -> None:
+        self.log.write_text("not json\n" + _wsl_record("2026-09-09T11:59:00Z", "a") + "\n", encoding="utf-8")
+        events, _, _, failures = self._adapter().poll(None)
+        self.assertEqual([event.event_id for event in events], ["a"])
+        self.assertEqual(failures, 1)
+
+    def test_truncation_reports_a_gap_and_resumes(self) -> None:
+        self.log.write_text("".join(_wsl_record("2026-09-09T11:59:00Z", f"a{i}") + "\n" for i in range(5)),
+                            encoding="utf-8")
+        adapter = self._adapter()
+        _, cursor, _, _ = adapter.poll(None)
+        self.log.write_text(_wsl_record("2026-09-09T11:59:50Z", "fresh") + "\n", encoding="utf-8")
+        events, cursor, complete, _ = adapter.poll(cursor)
+        self.assertFalse(complete, "truncation must be reported as an incomplete history")
+        self.assertEqual([event.event_id for event in events], ["fresh"])
+
+    def test_failed_calls_count_as_activity_with_their_own_outcome(self) -> None:
+        self.log.write_text(_wsl_record("2026-09-09T11:59:00Z", "bad", result="exit_1") + "\n", encoding="utf-8")
+        events, _, _, _ = self._adapter().poll(None)
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].outcome, "failure")
+
+    def test_dispatch_only_results_are_not_claimed_as_completions(self) -> None:
+        self.log.write_text(_wsl_record("2026-09-09T11:59:00Z", "job", result="started") + "\n", encoding="utf-8")
+        self.assertEqual(self._adapter().poll(None)[0][0].outcome, "unknown")
+
+    def test_optiplex_adapter_parses_offset_timestamps_and_ok_flag(self) -> None:
+        adapter = mcp_activity.OptiplexMcpAdapter("optiplex_mcp", {"path": str(self.log)})
+        self.log.write_text(_optiplex_record("2026-09-09T11:59:00.123456+00:00", ok=False) + "\n", encoding="utf-8")
+        events, _, _, _ = adapter.poll(None)
+        self.assertEqual(events[0].outcome, "failure")
+        self.assertEqual(events[0].at, datetime(2026, 9, 9, 11, 59, 0, 123456, tzinfo=timezone.utc))
+
+    def test_lab_journal_parses_dispatch_and_upstream_error_only(self) -> None:
+        adapter = mcp_activity.LabTunnelAdapter("optiplex_lab", {"journal_unit": "u"})
+        lines = [
+            json.dumps({"__CURSOR": "s=1", "MESSAGE": json.dumps({
+                "time": "2026-09-09T07:59:00.5-04:00", "msg": adapter.FORWARDED, "request_id": "cmd_1"})}),
+            json.dumps({"__CURSOR": "s=2", "MESSAGE": json.dumps({
+                "time": "2026-09-09T07:59:01.5-04:00", "msg": adapter.UPSTREAM_ERROR, "request_id": "cmd_2"})}),
+            json.dumps({"__CURSOR": "s=3", "MESSAGE": json.dumps({
+                "time": "2026-09-09T07:59:02.5-04:00", "msg": "poller recovered; polling operational"})}),
+        ]
+        events, cursor, anchored, failures = adapter.parse_journal("\n".join(lines), {"journal_cursor": "s=0"})
+        self.assertEqual([event.event_id for event in events], ["cmd_1", "cmd_2"])
+        self.assertEqual([event.outcome for event in events], ["unknown", "failure"])
+        self.assertEqual(events[0].at, datetime(2026, 9, 9, 11, 59, 0, 500000, tzinfo=timezone.utc))
+        self.assertEqual(cursor["journal_cursor"], "s=3", "cursor advances past non-qualifying entries")
+        self.assertTrue(anchored)
+        self.assertEqual(failures, 0)
+        self.assertEqual(adapter.kind, "transport_forwarded_command",
+                         msg="the lab signal is transport dispatch, not a completed tool call")
+
+    def test_future_timestamp_is_flagged_as_skew_not_fresh_activity(self) -> None:
+        state = mcp_activity.blank_state()
+        source = state["sources"]["wsl_mcp"]
+        ahead = self.now + timedelta(hours=1)
+        mcp_activity._apply(source, [mcp_activity.Event("x", ahead, "success", "k")], {}, True, 0, self.now)
+        self.assertIsNone(source["last_activity_at"])
+        self.assertEqual(source["error_code"], "SOURCE_CLOCK_SKEW")
+
+    def test_unreachable_source_is_unavailable_and_others_continue(self) -> None:
+        original = dict(mcp_activity.ADAPTERS)
+        self.addCleanup(lambda: mcp_activity.ADAPTERS.update(original))
+        for source_id in mcp_activity.SOURCE_IDS:
+            mcp_activity.ADAPTERS[source_id] = _StubAdapter
+        config = {"sources": {sid: {} for sid in mcp_activity.SOURCE_IDS}}
+        state = mcp_activity.blank_state()
+        for sid in mcp_activity.SOURCE_IDS:
+            state["sources"][sid]["cursor"] = {"n": 0}  # already seeded, so events pulse
+        event = mcp_activity.Event("e1", self.now - timedelta(seconds=5), "success", "k")
+        _StubAdapter.scripted = [
+            mcp_activity.SourceError("SOURCE_READ_TIMEOUT"),
+            ([event], {"n": 1}, True, 0),
+            ([event], {"n": 1}, True, 0),
+        ]
+        counts = mcp_activity.collect_once(config, state, now=self.now)
+        healths = {sid: state["sources"][sid]["source_health"] for sid in mcp_activity.SOURCE_IDS}
+        self.assertEqual(sorted(healths.values()), ["healthy", "healthy", "unavailable"])
+        failed = [sid for sid, value in healths.items() if value == "unavailable"][0]
+        self.assertEqual(counts[failed], 0)
+        self.assertIsNone(state["sources"][failed]["last_activity_at"],
+                          msg="an unreachable source must not be shown as idle with invented history")
+        self.assertEqual(state["sources"][failed]["error_code"], "SOURCE_READ_TIMEOUT")
+        self.assertEqual(sum(counts.values()), 2)
+
+    def test_seeding_never_pulses_but_later_events_do(self) -> None:
+        original = dict(mcp_activity.ADAPTERS)
+        self.addCleanup(lambda: mcp_activity.ADAPTERS.update(original))
+        for source_id in mcp_activity.SOURCE_IDS:
+            mcp_activity.ADAPTERS[source_id] = _StubAdapter
+        config = {"sources": {sid: {} for sid in mcp_activity.SOURCE_IDS}}
+        state = mcp_activity.blank_state()
+        event = mcp_activity.Event("old", self.now - timedelta(minutes=1), "success", "k")
+        _StubAdapter.scripted = [([event], {"n": 1}, True, 0)] * 3
+        self.assertEqual(sum(mcp_activity.collect_once(config, state, now=self.now).values()), 0)
+        self.assertIsNotNone(state["sources"]["wsl_mcp"]["last_activity_at"])
+        _StubAdapter.scripted = [([mcp_activity.Event("new", self.now, "success", "k")], {"n": 2}, True, 0)] * 3
+        self.assertEqual(sum(mcp_activity.collect_once(config, state, now=self.now).values()), 3)
+
+    def test_state_round_trips_atomically_and_rejects_a_foreign_version(self) -> None:
+        path = Path(self.tmp.name) / "state.json"
+        state = mcp_activity.blank_state()
+        state["sources"]["wsl_mcp"]["last_activity_at"] = "2026-09-09T11:00:00Z"
+        mcp_activity.save_state(state, path)
+        self.assertEqual(mcp_activity.load_state(path)["sources"]["wsl_mcp"]["last_activity_at"],
+                         "2026-09-09T11:00:00Z")
+        path.write_text(json.dumps({"version": 999, "sources": {}}), encoding="utf-8")
+        self.assertEqual(mcp_activity.load_state(path), mcp_activity.blank_state())
+
+    def test_stale_read_is_not_reported_as_idle_activity(self) -> None:
+        state = mcp_activity.blank_state()
+        source = state["sources"]["wsl_mcp"]
+        source.update({"source_health": "healthy", "last_observed_at": mcp_activity.iso(self.now - timedelta(minutes=5))})
+        mcp_activity.age_out_stale(state, self.now, poll_seconds=2.0)
+        self.assertEqual(source["source_health"], "stale")
+
+    def test_collector_never_issues_an_mcp_call(self) -> None:
+        src = (ROOT / "host/mcp_activity.py").read_text(encoding="utf-8")
+        for forbidden in ("mcp", "jsonrpc", "tools/call", "requests.", "urllib"):
+            if forbidden == "mcp":
+                continue  # the module name itself
+            self.assertNotIn(forbidden, src.lower())
+        # Only these external programs may be run, all read-only.
+        self.assertEqual(sorted({'"stat"', '"tail"', '"journalctl"', '"ssh"'}),
+                         sorted({token for token in ('"stat"', '"tail"', '"journalctl"', '"ssh"') if token in src}))
+        for forbidden in ('"rm"', '"curl"', '"wget"', "shell=True"):
+            self.assertNotIn(forbidden, src)
+
+
+class M9RendererTests(unittest.TestCase):
+    """M9.5 — separated icons, age and health as independent dimensions."""
+
+    def setUp(self) -> None:
+        self.now = datetime(2026, 9, 9, 12, 0, 0, tzinfo=timezone.utc)
+        self.state = mcp_activity.blank_state()
+
+    def _state_with(self, source_id: str, minutes_ago: float | None, health: str = "healthy") -> dict:
+        source = self.state["sources"][source_id]
+        source["last_activity_at"] = None if minutes_ago is None else mcp_activity.iso(
+            self.now - timedelta(minutes=minutes_ago))
+        source["source_health"] = health
+        return self.state
+
+    def test_age_boundaries_are_deterministic(self) -> None:
+        for minutes, expected in ((0, "recent"), (4.99, "recent"), (5, "warm"), (19.99, "warm"), (20, "idle")):
+            stamp = mcp_activity.iso(self.now - timedelta(minutes=minutes))
+            self.assertEqual(activity_render.age_category(stamp, self.now), expected, msg=f"{minutes} min")
+        self.assertEqual(activity_render.age_category(None, self.now), "no_data")
+
+    def test_future_activity_stamp_renders_as_no_data_not_fresh(self) -> None:
+        ahead = mcp_activity.iso(self.now + timedelta(minutes=5))
+        self.assertEqual(activity_render.age_category(ahead, self.now), "no_data")
+
+    def test_icons_are_separated_and_frame_is_exactly_16x16(self) -> None:
+        rgb = activity_render.render_rgb888(self._state_with("wsl_mcp", 1), self.now)
+        self.assertEqual(len(rgb), 16 * 16 * 3)
+        for row in (0, 5, 10, 15):
+            band = rgb[row * 48:(row + 1) * 48]
+            self.assertEqual(band, bytes(48), msg=f"row {row} must stay a black separator")
+        occupied = {y for y in range(16) for x in range(16) if rgb[(y * 16 + x) * 3:(y * 16 + x) * 3 + 3] != b"\x00\x00\x00"}
+        self.assertTrue(occupied.isdisjoint({0, 5, 10, 15}))
+
+    def test_unavailable_health_survives_a_recent_historical_activity(self) -> None:
+        state = self._state_with("optiplex_mcp", 1, health="unavailable")
+        view = activity_render.describe(state, self.now)["optiplex_mcp"]
+        self.assertEqual(view["age_category"], "recent")
+        self.assertEqual(view["source_health"], "unavailable")
+        rgb = activity_render.render_rgb888(state, self.now)
+        top = activity_render.BANDS["optiplex_mcp"]
+        marker = (top * 16 + activity_render.HEALTH_COLUMN) * 3
+        self.assertEqual(rgb[marker:marker + 3], bytes(activity_render.HEALTH_COLOR["unavailable"]))
+
+    def test_every_age_and_health_combination_encodes_for_the_device(self) -> None:
+        for minutes in (None, 1, 10, 30):
+            for health in activity_render.HEALTH_COLOR:
+                for pulses in (set(), {"wsl_mcp"}):
+                    state = mcp_activity.blank_state()
+                    for source_id in mcp_activity.SOURCE_IDS:
+                        state["sources"][source_id]["source_health"] = health
+                        state["sources"][source_id]["last_activity_at"] = None if minutes is None else \
+                            mcp_activity.iso(self.now - timedelta(minutes=minutes))
+                    rgb = activity_render.render_rgb888(state, self.now, pulses)
+                    _, palette_colors = encode_rgb888_static_image(rgb)
+                    self.assertLessEqual(palette_colors, 255)
+
+    def test_pulse_only_affects_the_source_that_saw_activity(self) -> None:
+        state = self._state_with("wsl_mcp", 30)
+        view = activity_render.describe(state, self.now, pulses={"wsl_mcp"})
+        self.assertEqual(view["wsl_mcp"]["age_category"], "new")
+        self.assertEqual(view["optiplex_mcp"]["age_category"], "no_data")
+
+    def test_preview_pngs_are_written_and_decode_back_to_the_exact_frame(self) -> None:
+        rgb = activity_render.render_rgb888(self._state_with("wsl_mcp", 1), self.now)
+        with tempfile.TemporaryDirectory() as tmp:
+            outputs = activity_render.write_previews(Path(tmp), rgb, scale=4)
+            self.assertEqual(decode_png16_rgb(Path(outputs["exact_png"])), rgb)
+            self.assertTrue(Path(outputs["preview_png"]).is_file())
+
+    def test_example_source_config_carries_no_real_endpoints(self) -> None:
+        example = json.loads((ROOT / "examples/activity-sources.example.json").read_text(encoding="utf-8"))
+        self.assertEqual(sorted(example["sources"]), sorted(mcp_activity.SOURCE_IDS))
+        blob = json.dumps(example)
+        self.assertNotIn("192.168.", blob, msg="no private host addresses in committed files")
+        self.assertNotIn("@192", blob)
+        gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+        self.assertIn(".openditoo-local/", gitignore)
+
+
 if __name__ == "__main__":
     unittest.main()

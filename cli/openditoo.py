@@ -24,6 +24,8 @@ from host.diagnostic_frame import write_artifacts  # noqa: E402
 from host.ditoo_candidate_codec import compare_application_frame  # noqa: E402
 from host.ditoo_pixel_coloring import encode_rgb888_static_image, sha256_hex as pixel_sha256_hex  # noqa: E402
 from host.png16 import Png16Error, decode_png16_rgb, png_sha256  # noqa: E402
+from host import activity_render  # noqa: E402
+from host import mcp_activity  # noqa: E402
 
 CLI_VERSION = "0.2.0-static-image"
 HOST_ORIGIN = "http://127.0.0.1:8796"
@@ -39,6 +41,7 @@ EXIT_AUTH = 21
 EXIT_PROTOCOL = 22
 EXIT_BLOCKED = 30
 EXIT_DEVICE = 31
+EXIT_SOURCE = 40
 
 
 def local_dir() -> Path:
@@ -283,6 +286,76 @@ def image_show(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _activity_config():
+    return mcp_activity.load_config()
+
+
+def activity_probe(_: argparse.Namespace) -> int:
+    """Source diagnostics: reachability and cost, separate from device health."""
+    try:
+        report = mcp_activity.probe(_activity_config())
+    except mcp_activity.SourceError as exc:
+        emit({"ok": False, "command": "activity-probe", "error_code": str(exc)})
+        return EXIT_SOURCE
+    emit({"ok": True, "command": "activity-probe", "device_io": False, "sources": report})
+    return EXIT_OK
+
+
+def activity_status(args: argparse.Namespace) -> int:
+    state = mcp_activity.load_state()
+    new_counts: dict[str, int] = {}
+    if args.collect:
+        try:
+            config = _activity_config()
+        except mcp_activity.SourceError as exc:
+            emit({"ok": False, "command": "activity-status", "error_code": str(exc)})
+            return EXIT_SOURCE
+        new_counts = mcp_activity.collect_once(config, state, poll_seconds=float(config.get("poll_seconds", 2.0)))
+        mcp_activity.save_state(state)
+    emit({
+        "ok": True,
+        "command": "activity-status",
+        "device_io": False,
+        "collected": bool(args.collect),
+        "new_activity": new_counts,
+        "sources": state["sources"],
+        "display": activity_render.describe(state, pulses={k for k, v in new_counts.items() if v}),
+    })
+    return EXIT_OK
+
+
+def activity_preview(args: argparse.Namespace) -> int:
+    """Offline: render the current normalized state to exact and enlarged PNGs."""
+    state = mcp_activity.load_state()
+    new_counts: dict[str, int] = {}
+    if args.collect:
+        try:
+            config = _activity_config()
+        except mcp_activity.SourceError as exc:
+            emit({"ok": False, "command": "activity-preview", "error_code": str(exc)})
+            return EXIT_SOURCE
+        new_counts = mcp_activity.collect_once(config, state, poll_seconds=float(config.get("poll_seconds", 2.0)))
+        mcp_activity.save_state(state)
+    pulses = {key for key, value in new_counts.items() if value}
+    rgb = activity_render.render_rgb888(state, pulses=pulses)
+    outputs = activity_render.write_previews(Path(args.output_dir), rgb, scale=args.scale)
+    wire, palette_colors = encode_rgb888_static_image(rgb)
+    emit({
+        "ok": True,
+        "command": "activity-preview",
+        "device_io": False,
+        "pulsing": sorted(pulses),
+        "rgb_sha256": pixel_sha256_hex(rgb),
+        "palette_colors": palette_colors,
+        "image_packet_bytes": len(wire),
+        "image_packet_sha256": pixel_sha256_hex(wire),
+        "legend": activity_render.LEGEND,
+        "display": activity_render.describe(state, pulses=pulses),
+        **outputs,
+    })
+    return EXIT_OK
+
+
 def manifest_check(args: argparse.Namespace) -> int:
     path = Path(args.file)
     try:
@@ -349,6 +422,16 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("image-show", help="show one exact 16x16 local PNG on the fixed paired Ditoo")
     p.add_argument("--png", required=True)
     p.set_defaults(func=image_show)
+    p = sub.add_parser("activity-probe", help="diagnose the three MCP activity sources (read-only)")
+    p.set_defaults(func=activity_probe)
+    p = sub.add_parser("activity-status", help="normalized MCP activity state; collection health is separate from device health")
+    p.add_argument("--collect", action="store_true", help="poll the sources once before reporting")
+    p.set_defaults(func=activity_status)
+    p = sub.add_parser("activity-preview", help="render the activity display offline to exact and enlarged PNGs")
+    p.add_argument("--collect", action="store_true")
+    p.add_argument("--scale", type=int, default=16)
+    p.add_argument("--output-dir", default=str(local_dir() / "activity-preview"))
+    p.set_defaults(func=activity_preview)
     p = sub.add_parser("manifest-check", help="fail-closed review of a Day-1 experiment manifest")
     p.add_argument("--file", required=True)
     p.set_defaults(func=manifest_check)
