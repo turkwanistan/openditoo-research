@@ -8,6 +8,8 @@ Routing refreshed after activation 008 and product-runtime hardening. Always run
 
 ## 0. Read this first if you are the next session
 
+**Current live authority:** persistent product authority `OPENDITOO-PRODUCT-RUNTIME-001` remains active in the local mode-0600 policy, and one additional experimental grant is live: `OPENDITOO-M9-ACTIVATION-009`, exactly one frozen Lab fault-bar visual sequence. The product service must be stopped only for that run, then restarted; 009 grants no retry or second attempt.
+
 **Activations 001–008 are consumed. Persistent product authority `OPENDITOO-PRODUCT-RUNTIME-001` is currently granted through the local git-ignored mode-0600 policy.** 008 is a physical PASS: exactly four changed frames rendered green → yellow → red → grey over 15 s and the operator confirmed every transition looked good. Production semantics remain green <5 min, yellow 5–20 min, red >=20 min, grey for no usable activity data.
 
 The current objective is **persistent plug-and-play MCP product runtime activation**. The operator explicitly granted `OPENDITOO-PRODUCT-RUNTIME-001`; the committed template remains disabled, while the local mode-0600 `.openditoo-local/product-runtime-policy.json` is materialized and `product-check` reports `execution_ready:true`. Persistent authority belongs only to that local policy and exact scope described in `AGENTS.md`; experimental manifests remain one-use/consumed. Next: install/start transactionally and physically accept startup, reclaim, and reconnect.

@@ -34,6 +34,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ### Authority state
 
+**Persistent product authority `OPENDITOO-PRODUCT-RUNTIME-001` remains active locally, and `OPENDITOO-M9-ACTIVATION-009` is additionally authorized for ONE fault-bar visual acceptance execution.** 009 requires temporarily stopping the product service, running the exact frozen healthy → simulated Lab unavailable → healthy sequence once, then restarting the product service. No other experimental transmission is authorized.
+
 **Every activation 001–008 is consumed. Persistent product authority `OPENDITOO-PRODUCT-RUNTIME-001` is now granted.** The committed template remains deliberately disabled; standing authority exists only in the local git-ignored mode-0600 `.openditoo-local/product-runtime-policy.json`, which currently passes `product-check` with `execution_ready:true`. Install/start is the next boundary. Never commit the authorized local policy.
 
 ### Next objective — plug-and-play product activation
