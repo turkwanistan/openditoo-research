@@ -96,6 +96,11 @@ No firmware updates, persistent uploads, teardown, service/test/MassBoot entry, 
 
 ### Activation 006 result / 007 pending — 2026-09-09
 
-**`OPENDITOO-M9-ACTIVATION-007` is currently authorized for exactly one bounded execution** under the operator grant `Grant OPENDITOO-M9-ACTIVATION-007`; no other transmission is authorized.
+**Nothing is currently authorized.** `OPENDITOO-M9-ACTIVATION-007` is consumed and may never be re-armed.
 
 `OPENDITOO-M9-ACTIVATION-006` is consumed after a clean 30 s idle-hold run: one base frame, 552 unchanged holds, no activity event, so animation was not exercised. `OPENDITOO-M9-ACTIVATION-007` is the fresh deterministic visual trial: after the operator starts it and messages `RUNNING`, the assistant will perform one harmless read-only WSL_MCP call, creating a genuine audit event for the existing collector to animate. At that historical point no transmission authority was live.
+
+
+### Activation 007 deterministic trigger result — 2026-09-09
+
+`OPENDITOO-M9-ACTIVATION-007` is consumed after a clean deterministic live-trigger run: 31 ACKed frames / 93 packets / 4743 bytes over the full 30 s lifetime, zero dropped pulses and no pacing refusal. A genuine `wsl_mcp` audit event at 18:00:41Z occurred inside the session after the assistant's harmless read-only WSL_MCP call; the operator reported "yes the skull flashed". Deterministic trigger and visible animation are PASS. Individual cyan/blue/light-blue order remains PARTIAL because the operator did not explicitly confirm every color. Stock-yield remains PASS from 005; fault-bar remains NOT TESTED because no genuine source failure occurred. **Nothing is currently authorized.**

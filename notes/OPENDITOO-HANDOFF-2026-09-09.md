@@ -491,6 +491,11 @@ Operator product decision: each activity event should cycle a few times. Source 
 
 ### Activation 006 result / 007 pending — 2026-09-09
 
-**`OPENDITOO-M9-ACTIVATION-007` is currently authorized for exactly one bounded execution** under the operator grant `Grant OPENDITOO-M9-ACTIVATION-007`; no other transmission is authorized.
+**Nothing is currently authorized.** `OPENDITOO-M9-ACTIVATION-007` is consumed and may never be re-armed.
 
 006 was a clean idle-hold pass, not an animation failure: one ACKed base frame, 552 `unchanged` holds, clean 30 s lifetime close, and zero qualifying source events. The operator therefore did not miss an animation; none was generated. 007 preserves the same transport/pacing envelope and changes only test procedure: once the operator starts the session and says `RUNNING`, one harmless read-only WSL_MCP call will create a genuine completed audit record, which should trigger the 10-frame / ~2 s three-sweep program. At that historical point no transmission authority was live.
+
+
+### Activation 007 deterministic trigger result — 2026-09-09
+
+`OPENDITOO-M9-ACTIVATION-007` is consumed after a clean deterministic live-trigger run: 31 ACKed frames / 93 packets / 4743 bytes over the full 30 s lifetime, zero dropped pulses and no pacing refusal. A genuine `wsl_mcp` audit event at 18:00:41Z occurred inside the session after the assistant's harmless read-only WSL_MCP call; the operator reported "yes the skull flashed". Deterministic trigger and visible animation are PASS. Individual cyan/blue/light-blue order remains PARTIAL because the operator did not explicitly confirm every color. Stock-yield remains PASS from 005; fault-bar remains NOT TESTED because no genuine source failure occurred. **Nothing is currently authorized.**

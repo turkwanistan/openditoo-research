@@ -289,4 +289,9 @@ The post-rate-integration Windows boundary is now closed: changed Host build/dep
 006 cleanly held the idle dashboard for 30 s (1 frame, 552 unchanged holds) but saw no source event, so animation remained unexercised. 007 is a deterministic visual trial using one genuine WSL_MCP audit event created by a harmless read-only WSL_MCP call while the bounded session is live. No synthetic collector state or fake failure is used. At that historical point no transmission authority was live.
 
 
-**`OPENDITOO-M9-ACTIVATION-007` is currently authorized for exactly one bounded execution** under the operator grant `Grant OPENDITOO-M9-ACTIVATION-007`; no other transmission is authorized.
+**Nothing is currently authorized.** `OPENDITOO-M9-ACTIVATION-007` is consumed and may never be re-armed.
+
+
+### Activation 007 deterministic trigger result — 2026-09-09
+
+`OPENDITOO-M9-ACTIVATION-007` is consumed after a clean deterministic live-trigger run: 31 ACKed frames / 93 packets / 4743 bytes over the full 30 s lifetime, zero dropped pulses and no pacing refusal. A genuine `wsl_mcp` audit event at 18:00:41Z occurred inside the session after the assistant's harmless read-only WSL_MCP call; the operator reported "yes the skull flashed". Deterministic trigger and visible animation are PASS. Individual cyan/blue/light-blue order remains PARTIAL because the operator did not explicitly confirm every color. Stock-yield remains PASS from 005; fault-bar remains NOT TESTED because no genuine source failure occurred. **Nothing is currently authorized.**
