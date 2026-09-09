@@ -615,6 +615,21 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         reported = {report["reported_command"] for report in data["unsolicited_reports"]}
         self.assertEqual(reported, {"0x09", "0x46", "0xBD"})
 
+    def test_m7_report_fields_are_derived_from_the_captured_wire(self) -> None:
+        # An earlier hand-transcribed payload silently dropped a byte. Every derived
+        # field is now re-derived from wire_hex so transcription cannot drift again.
+        data = json.loads((ROOT / "captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json").read_text(encoding="utf-8"))
+        for report in data["unsolicited_reports"]:
+            decoded = decode_candidate_normal(bytes.fromhex(report["wire_hex"]))
+            self.assertEqual(decoded.command, 0x04)
+            self.assertEqual(decoded.payload[1], 0x55, msg="wrapped report tag")
+            self.assertEqual(report["reported_command"], f"0x{decoded.payload[0]:02X}")
+            self.assertEqual(report["data_hex"], decoded.payload[2:].hex())
+            self.assertEqual(report["data_bytes"], len(decoded.payload) - 2)
+        widths = {r["reported_command"]: r["data_bytes"] for r in data["unsolicited_reports"]}
+        self.assertEqual(widths["0x09"], 1)
+        self.assertEqual(widths["0x46"], 22)
+
     def test_m8_sequence_visual_order_is_resolved(self) -> None:
         result = json.loads((ROOT / "experiments/DAY1-M8-AB-SEQUENCE-PENDING.json").read_text(encoding="utf-8"))["result"]
         self.assertEqual(result["operator_visual_order"], "confirmed_a_then_b")

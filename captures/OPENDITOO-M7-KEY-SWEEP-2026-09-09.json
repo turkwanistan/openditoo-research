@@ -11,9 +11,24 @@
   "method": {
     "controller": "official Divoom app on Android, connected over Classic RFCOMM channel 1",
     "procedure": "one short press per control, roughly 8-10 s apart, in a fixed order",
-    "press_order": ["K-F1 left arrow", "K-F3 right arrow", "K-F1 left arrow", "K-F2 minus", "K-B2 plus", "K-B3 brightness", "J-R1 joystick", "K-B1 M"],
+    "press_order": [
+      "K-F1 left arrow",
+      "K-F3 right arrow",
+      "K-F1 left arrow",
+      "K-F2 minus",
+      "K-B2 plus",
+      "K-B3 brightness",
+      "J-R1 joystick",
+      "K-B1 M"
+    ],
     "tool": "openditoo capture-parse",
-    "parser_health": {"rfcomm_fcs_failures": 1, "decoder_errors": {"tx": 0, "rx": 0}}
+    "parser_health": {
+      "rfcomm_fcs_failures": 1,
+      "decoder_errors": {
+        "tx": 0,
+        "rx": 0
+      }
+    }
   },
   "operator_observations": {
     "K-F1 left arrow": "no visible effect",
@@ -27,17 +42,62 @@
   "transport_frame_shape": {
     "wrapper": "01 | inner_len_le16 | 04 | reported_command | 0x55 | data | checksum_le16 | 02",
     "evidence": "Solicited responses carry the command the app had just sent (e.g. app sends 0x31, device replies with reported_command 0x31), so byte 0 of the payload identifies what is being reported.",
-    "confidence": "MATCHED across three independent exact-unit captures"
+    "confidence": "MATCHED across three independent exact-unit captures",
+    "note": "wire_hex is authoritative and was extracted directly from the capture; reported_command, data_hex and data_bytes are derived from it, and a test re-derives them. An earlier hand-transcribed data_hex silently dropped a byte, so transcription is no longer used anywhere in this record."
   },
   "unsolicited_reports": [
-    {"at_utc": "2026-09-09T04:58:11.706Z", "reported_command": "0x09", "data_hex": "02", "seconds_since_last_app_tx": 17.5, "correlated_press": "unresolved"},
-    {"at_utc": "2026-09-09T04:58:36.271Z", "reported_command": "0x09", "data_hex": "01", "seconds_since_last_app_tx": 2.8, "correlated_press": "K-F2 minus (volume down), by order and timing"},
-    {"at_utc": "2026-09-09T04:58:44.309Z", "reported_command": "0x09", "data_hex": "02", "seconds_since_last_app_tx": 5.9, "correlated_press": "K-B2 plus (volume up), by order and timing"},
-    {"at_utc": "2026-09-09T04:58:52.335Z", "reported_command": "0x46", "data_hex": "000000ffff00640001036400ffffff040100000000", "seconds_since_last_app_tx": 14.0, "correlated_press": "K-B3 brightness (page change), by order and timing"},
-    {"at_utc": "2026-09-09T04:59:00.012Z", "reported_command": "0xBD", "data_hex": "13014b00", "seconds_since_last_app_tx": 21.7, "correlated_press": "K-B1 M (menu opened), by order and timing"}
+    {
+      "at_utc": "2026-09-09T04:58:11.706261Z",
+      "wire_hex": "010600040955026a0002",
+      "reported_command": "0x09",
+      "data_hex": "02",
+      "data_bytes": 1,
+      "seconds_since_last_app_tx": 17.5,
+      "correlated_press": "unresolved"
+    },
+    {
+      "at_utc": "2026-09-09T04:58:36.271464Z",
+      "wire_hex": "01060004095501690002",
+      "reported_command": "0x09",
+      "data_hex": "01",
+      "data_bytes": 1,
+      "seconds_since_last_app_tx": 2.8,
+      "correlated_press": "K-F2 minus (volume down), by order and timing"
+    },
+    {
+      "at_utc": "2026-09-09T04:58:44.309140Z",
+      "wire_hex": "010600040955026a0002",
+      "reported_command": "0x09",
+      "data_hex": "02",
+      "data_bytes": 1,
+      "seconds_since_last_app_tx": 5.9,
+      "correlated_press": "K-B2 plus (volume up), by order and timing"
+    },
+    {
+      "at_utc": "2026-09-09T04:58:52.335391Z",
+      "wire_hex": "011b00044655000000ffff00640001036400ffffff04010000000000860602",
+      "reported_command": "0x46",
+      "data_hex": "000000ffff00640001036400ffffff04010000000000",
+      "data_bytes": 22,
+      "seconds_since_last_app_tx": 13.9,
+      "correlated_press": "K-B3 brightness (page change), by order and timing"
+    },
+    {
+      "at_utc": "2026-09-09T04:59:00.012584Z",
+      "wire_hex": "01090004bd5513014b007e0102",
+      "reported_command": "0xBD",
+      "data_hex": "13014b00",
+      "data_bytes": 4,
+      "seconds_since_last_app_tx": 21.6,
+      "correlated_press": "K-B1 M (menu opened), by order and timing"
+    }
   ],
   "silent_controls": {
-    "controls": ["K-F1 left arrow", "K-F3 right arrow", "J-R1 joystick"],
+    "controls": [
+      "K-F1 left arrow",
+      "K-F3 right arrow",
+      "J-R1 joystick"
+    ],
     "observation": "no application traffic in either direction within the trial windows, and no visible device change",
     "explicit_limit": "This is 'no event observed under this exact context', NOT proof of internal-only handling. Context: official app as controller, Classic RFCOMM channel 1, device on its normal page. Other established Bluetooth profiles were not separately examined for these presses, and a custom-owner receive window was not tested."
   },
