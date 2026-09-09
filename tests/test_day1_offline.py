@@ -571,6 +571,34 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
                 self.assertEqual(proc.returncode, 30, msg=label)
                 self.assertEqual(json.loads(proc.stdout)["error_code"], expected)
 
+    def test_finite_loop_manifest_is_prepared_but_grants_nothing(self) -> None:
+        path = ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        self.assertFalse(manifest["authority"]["transmission_authorized"])
+        self.assertFalse(manifest["authority"]["authorization_consumed"])
+        budgets = manifest["budgets"]
+        order = manifest["operation"]["frame_order"]
+        self.assertEqual(len(order), budgets["application_requests"])
+        self.assertEqual(budgets["application_packets"], len(order) * 3)
+        # 3 packets per frame: preamble A (7) + preamble B (8) + image (56) = 71 bytes.
+        self.assertEqual(budgets["application_tx_bytes_total"], len(order) * 71)
+        self.assertEqual(budgets["expected_rx_frames"], len(order))
+        # The one changed variable is repetition: the rate must match the proven step.
+        proven = json.loads((ROOT / "experiments/DAY1-M8-AB-SEQUENCE-PENDING.json").read_text(encoding="utf-8"))
+        self.assertEqual(budgets["inter_frame_delay_ms"], proven["budgets"]["inter_frame_delay_ms"])
+        for key in ("a", "b"):
+            self.assertEqual(manifest["operation"]["source_frames"][key]["packet_sha256"],
+                             proven["operation"]["source_frames"][key]["packet_sha256"])
+
+    def test_host_cannot_exceed_the_proven_two_frame_ceiling(self) -> None:
+        # The finite-loop manifest needs 10 frames. Until it is granted, the Host
+        # physically refuses more than the two frames step 1 proved.
+        protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooStaticImageProtocol.cs").read_text(encoding="utf-8")
+        self.assertIn("MaxSequenceFrames = 2", protocol)
+        manifest = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))
+        self.assertGreater(manifest["budgets"]["application_requests"], 2)
+        self.assertIn("MaxSequenceFrames must be raised", manifest["implementation_gate"]["host_change_required"])
+
     def test_status_reports_host_health_not_device_connectivity(self) -> None:
         program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
         status = program[program.index('app.MapGet("/v1/status"'):program.index('app.MapPost("/v1/image/show"')]

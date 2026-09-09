@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-M8-FINITE-LOOP-001",
+  "milestone": "M8.3 step 2",
+  "status": "prepared_awaiting_authority",
+  "objective": "Establish an accepted operating rate ceiling by running one short, finite, low-rate loop and measuring what actually happens. This is the measurement M9 needs before it may drive the display at all.",
+  "why_this_is_the_cheap_path": "M9's activity display is unattended repetition, which is a strictly larger authority ask than this bounded loop. Skipping this step does not avoid the gate; it moves it to a bigger one with no measured ceiling behind it.",
+  "target": {
+    "exact_unit_id": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012",
+    "model": "Ditoo Plus",
+    "pairing_precheck": "authenticated exact target required before any socket is created"
+  },
+  "transport": {
+    "measured_endpoint": "Windows Classic RFCOMM channel 1",
+    "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+    "one_controller_rule": "the Android app must be disconnected for the whole run"
+  },
+  "operation": {
+    "shape": "one connection; ten frames alternating A,B,A,B,... ; per frame send preamble A, preamble B, image, read one ACK, wait the inter-frame delay; then close",
+    "semantic_evidence": "OPENDITOO-M8-AB-SEQUENCE-001 PASS on 2026-09-09: two frames in one session, 6/6 packets, 142/142 bytes, two ordered ACKs, clean close, and the operator observed the rendered block move between opposite corners. Stock evidence from btsnoop b373607316094b0fd529f3354ee379abb6645e89ab0b2c06ce865064428dbc9c shows the official app doing 41 frames in one session at a 1.013 s median gap.",
+    "application_tx_hex": "01340044000a0a04aa2d00f4010002ffffff000000f8fff8fff8ffffffffffffffffffffffffffffffffffffffffffffffffffffff262502",
+    "frame_order": ["a", "b", "a", "b", "a", "b", "a", "b", "a", "b"],
+    "source_frames": {
+      "a": {
+        "file": "examples/openditoo-m8-a-topleft-16.png",
+        "png_sha256": "36c4361020c65a1f03c8617b0d6eb287aa7309cefad428d23c38fafd6fcd4b9c",
+        "rgb_sha256": "91f7692c1795f4952594f280e3532ef5fbf81861433ffbc8d5918ac7bc99b502",
+        "packet_sha256": "42f6a81e9eb3c821a654b14c9070c0dfdc7bf5d5458d59967983435042c2506d",
+        "palette_colors": 2
+      },
+      "b": {
+        "file": "examples/openditoo-m8-b-bottomright-16.png",
+        "png_sha256": "9924d0f4e620e388481540a5b6865178934256753abad8fc977dade913a9a1da",
+        "rgb_sha256": "5a9b4f802654cfbb36c4758923da41fe4eec99e952045410e2c5cd32996c0c81",
+        "packet_sha256": "004dfc38f2acd3aa7a6b8b33249e172a50abc5b60b3777999fe3ea82c7156ddd",
+        "palette_colors": 2
+      },
+      "why_reuse": "The A/B frames are already frozen and already physically proven in step 1, so this experiment changes exactly one variable: repetition. Introducing new artwork at the same time would confound the measurement."
+    },
+    "measurements_required": [
+      "per-frame ACK latency",
+      "actual achieved inter-frame interval versus the requested one",
+      "any frame whose ACK did not arrive",
+      "any stock page takeover or visible interruption during the run",
+      "total wall clock"
+    ],
+    "automatic_retry": false,
+    "automatic_reconnect": false,
+    "target_override": false,
+    "raw_packet_override": false
+  },
+  "budgets": {
+    "connection_attempts": 1,
+    "application_requests": 10,
+    "application_packets": 30,
+    "application_tx_bytes_total": 710,
+    "expected_rx_frames": 10,
+    "expected_rx_bytes_total": 100,
+    "inter_frame_delay_ms": 1000,
+    "ack_timeout_ms_per_frame": 5000,
+    "total_wall_clock_ms": 40000,
+    "derivation": "Same 1000 ms inter-frame delay proven in step 1 and equal to the stock median. The rate is deliberately NOT increased in this experiment: the only new variable is repetition. Ten frames is the smallest count that shows sustained behaviour rather than a one-off. Wall clock is roughly 3x the expected ~12 s."
+  },
+  "expected_observations": {
+    "transport": "one connection, thirty application packets, ten wrapped 0x44 ACKs, clean local close",
+    "physical": "the white block alternates between the top-left and bottom-right corners ten times, ending in the bottom-right",
+    "ack_payload": "recorded per frame, not asserted; five distinct payloads have already been seen across successful sends"
+  },
+  "persistence_analysis": {
+    "expected_effect": "display state only",
+    "basis": "M6.4 power cycle returned the unit to stock software and the default clock",
+    "not_claimed": "absence of any non-volatile write; repetition does not test that either",
+    "new_persistence_risk_vs_step_1": "none identified: identical command, identical packets, same session shape, repeated. No new command id, no save/publish/upload, no gallery interaction."
+  },
+  "stop_policy": {
+    "stop_immediately_on": [
+      "unexpected target identity or pairing precheck failure",
+      "any ACK that is not exactly one 10-byte wrapped 0x44 frame",
+      "any send that does not complete in full",
+      "ACK timeout on any frame",
+      "total wall clock exceeding 40000 ms",
+      "any conflicting controller observed on the link",
+      "a stock page takeover or any device behaviour outside the expected observations"
+    ],
+    "on_ambiguous_outcome": "stop, preserve the Host diagnostics record including the per-frame timings collected so far, and report. Do NOT resend, do not reconnect, do not power-cycle before the result is recorded.",
+    "recovery": "operator-initiated only, after the outcome is recorded",
+    "operator_abort": "the run is short enough to watch end to end; if it looks wrong, power off the Ditoo rather than letting it continue."
+  },
+  "implementation_gate": {
+    "host_change_required": "DitooStaticImageProtocol.MaxSequenceFrames must be raised from 2 to 10, and the Host must record per-frame ACK latency for the measurement above. Both are deliberately NOT implemented until this manifest is granted.",
+    "rationale": "The current Host physically cannot exceed two frames. That ceiling stays until a reviewed experiment needs more."
+  },
+  "authority": {
+    "transmission_authorized": false,
+    "authorization_consumed": false,
+    "note": "Prepared proposal. Grants nothing. Becomes executable only on an explicit operator grant naming OPENDITOO-M8-FINITE-LOOP-001, and that grant covers ten frames once - not continuous display, not a higher rate, and not M9 activation."
+  },
+  "explicitly_out_of_scope": [
+    "any rate above the 1000 ms inter-frame delay",
+    "more than ten frames",
+    "unattended or continuous operation",
+    "driving frames from the M9 activity collector",
+    "delta or partial-frame updates",
+    "keeping the connection open beyond this run"
+  ]
+}
