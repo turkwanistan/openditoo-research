@@ -20,6 +20,7 @@ never modified.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 import hashlib
 import json
@@ -69,6 +70,26 @@ STREAMING_MIN_PLAYBACK_INTERVAL_MS = STREAMING_HOST_FLOOR_MS
 # shared manifest record requires it.
 _STREAM_PULSE_FRESHNESS_SECONDS = 30
 PREAMBLE_BYTES = len(IMAGE_PREAMBLE_A) + len(IMAGE_PREAMBLE_B)
+SOURCE_KIND_FRAME_SET = "frame_set"
+SOURCE_KIND_LIVE = "live"
+SOURCE_KINDS = (SOURCE_KIND_FRAME_SET, SOURCE_KIND_LIVE)
+
+
+def worst_case_frame_tx_bytes() -> int:
+    """Application bytes of the largest frame the encoder can produce, computed not guessed.
+
+    A live source has no frozen frame set to measure, so its byte budget has to come from the
+    encoder's own worst case: a full 255-entry palette at 8 bits per pixel, plus both stock
+    preambles.
+    """
+    frame = bytearray(FRAME_BYTES)
+    for index in range(256):
+        # 255 distinct colours over 256 pixels: the most the encoder will accept.
+        value = min(index, MAX_PALETTE_COLORS - 1)
+        frame[index * 3:index * 3 + 3] = bytes((value, (value * 7) % 256, (value * 29) % 256))
+    wire, palette = encode_rgb888_static_image(quantize_to_palette_limit(bytes(frame))[0])
+    assert palette <= MAX_PALETTE_COLORS
+    return len(wire) + PREAMBLE_BYTES
 
 SessionError = _session.SessionError
 SessionClaim = _session.SessionClaim
@@ -317,15 +338,45 @@ def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
     require(session.get("stock_screen_reclaim") is False, "SESSION_RECLAIM_NOT_DISABLED")
     require(session.get("replay_after_interruption") is False, "SESSION_REPLAY_NOT_DISABLED")
 
-    # -- the frozen frame set ---------------------------------------------
-    frame_file = stream.get("frame_set_file")
-    require(isinstance(frame_file, str) and frame_file, "STREAM_FRAME_SET_UNBOUND")
-    frame_path = (ROOT / frame_file) if not Path(frame_file).is_absolute() else Path(frame_file)
-    frame_set = build_frame_set(frames_from_source(frame_path))
-    require(stream.get("frame_set_sha256") == frame_set.sha256, "STREAM_FRAME_SET_HASH_DRIFT",
-            f"manifest {stream.get('frame_set_sha256')!r} != actual {frame_set.sha256}")
-    require(stream.get("frame_count") == frame_set.count, "STREAM_FRAME_COUNT_MISMATCH",
-            f"manifest {stream.get('frame_count')!r} != actual {frame_set.count}")
+    # -- the source: a frozen frame set, or a live producer -----------------
+    #
+    # A camera's future pixels do not exist at review time, so a live manifest cannot freeze
+    # them. It freezes the ENVELOPE instead -- the producer's code hashes, the profile, the
+    # lifetime, the floor and the budgets -- exactly as the MCP dashboard freezes its renderer
+    # rather than its future frames. Nothing else about the session differs.
+    source_kind = stream.get("source_kind", SOURCE_KIND_FRAME_SET)
+    require(source_kind in SOURCE_KINDS, "STREAM_SOURCE_KIND_UNKNOWN",
+            f"allowed: {', '.join(SOURCE_KINDS)}")
+    live = source_kind == SOURCE_KIND_LIVE
+    if live:
+        for absent in ("frame_set_file", "frame_set_sha256", "frame_count"):
+            require(absent not in stream, "STREAM_LIVE_DECLARES_FRAME_SET",
+                    f"a live source has no frozen frames; remove {absent}")
+        producer = stream.get("live_source") or {}
+        require(bool(producer.get("producer_description")), "STREAM_LIVE_PRODUCER_UNDESCRIBED")
+        hashes = producer.get("producer_code_sha256")
+        require(isinstance(hashes, dict) and hashes, "STREAM_LIVE_PRODUCER_UNHASHED",
+                "freeze the code that produces pixels, since the pixels cannot be frozen")
+        for name, expected in sorted(hashes.items()):
+            require(isinstance(expected, str) and len(expected) == 64,
+                    "STREAM_LIVE_PRODUCER_HASH_INVALID", name)
+            candidate = (ROOT / name) if not Path(name).is_absolute() else Path(name)
+            # A producer inside this repository is verified now. One outside it (the Windows
+            # sidecar's own build) is verified by whoever deploys it; the manifest still
+            # records the hash it was reviewed against.
+            if candidate.is_file():
+                require(_session.sha256_file(candidate) == expected,
+                        "STREAM_LIVE_PRODUCER_HASH_DRIFT", name)
+        frame_set = None
+    else:
+        frame_file = stream.get("frame_set_file")
+        require(isinstance(frame_file, str) and frame_file, "STREAM_FRAME_SET_UNBOUND")
+        frame_path = (ROOT / frame_file) if not Path(frame_file).is_absolute() else Path(frame_file)
+        frame_set = build_frame_set(frames_from_source(frame_path))
+        require(stream.get("frame_set_sha256") == frame_set.sha256, "STREAM_FRAME_SET_HASH_DRIFT",
+                f"manifest {stream.get('frame_set_sha256')!r} != actual {frame_set.sha256}")
+        require(stream.get("frame_count") == frame_set.count, "STREAM_FRAME_COUNT_MISMATCH",
+                f"manifest {stream.get('frame_count')!r} != actual {frame_set.count}")
     playback_ms = stream.get("playback_interval_ms")
     if streaming:
         # ACK-clocked: the interval is not a dispatch schedule, it is the floor the Host
@@ -345,7 +396,13 @@ def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
                 f"a clock-paced stream must dispatch at least {CLIENT_JITTER_MARGIN_MS} ms slower "
                 "than the floor it asks the Host to enforce")
     loop = stream.get("loop")
-    require(isinstance(loop, bool), "STREAM_LOOP_INVALID")
+    if live:
+        # A camera cannot loop; declaring it would be a claim about content that does not
+        # exist yet.
+        require(loop in (None, False), "STREAM_LIVE_CANNOT_LOOP")
+        loop = False
+    else:
+        require(isinstance(loop, bool), "STREAM_LOOP_INVALID")
     require(stream.get("source_description"), "STREAM_SOURCE_DESCRIPTION_MISSING")
 
     # -- budgets: derived, not asserted ------------------------------------
@@ -359,6 +416,8 @@ def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
         # the lifetime could admit at the floor, capped by the Host's own frame ceiling --
         # and a run that sends fewer ends on budget or lifetime, both clean.
         expected_frames = min(steps_in_lifetime, _session.MAX_SESSION_FRAMES)
+    elif live:
+        expected_frames = min(steps_in_lifetime, _session.MAX_SESSION_FRAMES)
     else:
         expected_frames = steps_in_lifetime if loop else min(frame_set.count, steps_in_lifetime)
     max_frames = budgets.get("max_frames")
@@ -371,9 +430,12 @@ def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
     require(budgets.get("max_application_packets") == max_frames * _session.PACKETS_PER_FRAME,
             "BUDGET_PACKETS_NOT_DERIVED", f"expected {max_frames * _session.PACKETS_PER_FRAME}")
     max_tx = budgets.get("max_tx_bytes")
-    require(max_tx == frame_set.total_tx_bytes(max_frames), "BUDGET_TX_BYTES_NOT_DERIVED",
-            f"expected {frame_set.total_tx_bytes(max_frames)} "
-            f"({max_frames} x worst-case {frame_set.max_frame_tx_bytes} application bytes)")
+    # A live source has no frame set to measure, so its per-frame worst case comes from the
+    # encoder's own ceiling: a full 255-entry palette at 8 bits per pixel.
+    per_frame = worst_case_frame_tx_bytes() if live else frame_set.max_frame_tx_bytes
+    require(max_tx == max_frames * per_frame, "BUDGET_TX_BYTES_NOT_DERIVED",
+            f"expected {max_frames * per_frame} "
+            f"({max_frames} x worst-case {per_frame} application bytes)")
     require(budgets.get("connection_attempts") == 1, "BUDGET_CONNECTION_ATTEMPTS_INVALID")
     ack_timeout = budgets.get("ack_timeout_ms_per_frame")
     require(isinstance(ack_timeout, int) and 0 < ack_timeout <= 5000, "BUDGET_ACK_TIMEOUT_INVALID")
@@ -443,15 +505,20 @@ def derived_budgets(frame_set: FrameSet, lifetime_seconds: int, playback_interva
 # This loop reuses the frozen ChangeOnlyScheduler, claim and transport unchanged, and
 # differs only in dispatching on the manifest's own floor and measuring what it did.
 
-def stream_session(manifest, frame_set: FrameSet, stream: dict, transport,
-                   clock, sleep, claim: SessionClaim | None = None) -> dict:
+def stream_session(manifest, frame_set: FrameSet | None, stream: dict, transport,
+                   clock, sleep, claim: SessionClaim | None = None,
+                   renderer=None) -> dict:
     """Drive one bounded stream to a terminal or explicitly unknown result.
 
     Semantics are deliberately identical to `run_session` wherever they overlap: an
     ambiguous or failed frame ends the session as `unknown` with no resend, no reconnect
     and no reclaim frame; an unsolicited report means the canvas is no longer ours.
     """
-    renderer = renderer_for(frame_set, stream)
+    # A live source injects its own renderer; a frozen frame set builds one from the manifest.
+    if renderer is None:
+        if frame_set is None:
+            raise SessionError("STREAM_NO_SOURCE", "a live stream must inject its renderer")
+        renderer = renderer_for(frame_set, stream)
     interval_ms = renderer.playback_interval_ms
     # ACK-clocked: the previous ACK is the permission to send the next frame, so the client
     # cannot dispatch early and the pacing race that ended S2 cannot occur. The Host's floor
@@ -575,6 +642,46 @@ def clip_lifetime_seconds(frame_set: FrameSet,
                           playback_interval_ms: int = MIN_PLAYBACK_INTERVAL_MS) -> int:
     """The shortest whole-second lifetime that still admits every frame of the clip."""
     return -(-frame_set.count * playback_interval_ms // 1000)
+
+
+class LiveFrameSource:
+    """Newest-frame-wins adapter around a live producer.
+
+    The producer is any callable returning the freshest 768-byte frame available, or None if
+    it has nothing yet. Nothing is queued: a frame that was current two frames ago is stale,
+    and stale is worse than skipped, so the newest always wins and the rest are dropped and
+    counted. `frame_sent` exists only to satisfy the renderer contract -- a camera's timeline
+    is not ours to advance.
+
+    Ownership stays with the producer; this holds one frame at most and never blocks.
+    """
+
+    def __init__(self, producer: Callable[[int], bytes | None], playback_interval_ms: int) -> None:
+        self.producer = producer
+        self.playback_interval_ms = playback_interval_ms
+        self.last_index = -1
+        self.frames_offered = 0
+        self.frames_stale_dropped = 0
+        self._last: bytes | None = None
+
+    def __call__(self, now_ms: int) -> tuple[bytes, bool]:
+        frame = self.producer(now_ms)
+        if frame is None:
+            # Nothing new. Repeat the last frame; the scheduler holds it as unchanged, which
+            # is the correct behaviour for a source that has not moved.
+            if self._last is None:
+                return bytes(FRAME_BYTES), False
+            return self._last, False
+        if len(frame) != FRAME_BYTES:
+            raise SessionError("STREAM_FRAME_LENGTH", f"live producer gave {len(frame)} bytes")
+        self.frames_offered += 1
+        if self._last is not None and frame != self._last:
+            self.last_index += 1
+        self._last = frame
+        return frame, False
+
+    def frame_sent(self) -> None:
+        """A live timeline advances on its own; an ACK does not move it."""
 
 
 def renderer_for(frame_set: FrameSet, stream: dict) -> FrameSetRenderer:

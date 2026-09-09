@@ -24,3 +24,5 @@ captures/private/
 bugreport-*.zip
 *btsnoop*
 runtime/windows/OpenDitoo.Day1.Host/bin/Streaming/
+runtime/windows/OpenDitoo.Webcam.Probe/bin/
+runtime/windows/OpenDitoo.Webcam.Probe/obj/

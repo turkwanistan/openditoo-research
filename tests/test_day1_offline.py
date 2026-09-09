@@ -3083,3 +3083,129 @@ class S3StreamingProfileTests(unittest.TestCase):
         # under an ACK clock it loops, so the ceiling comes from the lifetime and the Host.
         self.assertGreater(manifest.max_frames, frame_set.count)
         self.assertLessEqual(manifest.max_frames, activity_session.MAX_SESSION_FRAMES)
+
+
+class W3LiveSourceTests(unittest.TestCase):
+    """The live-source contract: freeze the producer, not the pixels."""
+
+    MANIFEST = ROOT / "experiments/DAY1-S1-STREAM-SWEEP-001.json"
+
+    def _live(self, mutate=None):
+        data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+        for key in ("frame_set_file", "frame_set_sha256", "frame_count", "loop"):
+            data["stream"].pop(key, None)
+        data["stream"].update({
+            "source_kind": frame_stream.SOURCE_KIND_LIVE,
+            "session_profile": frame_stream.SESSION_PROFILE_STREAMING,
+            "playback_interval_ms": 40,
+            "live_source": {
+                "producer_description": "synthetic test producer",
+                "producer_code_sha256": {"host/frame_stream.py":
+                                         activity_session.sha256_file(ROOT / "host/frame_stream.py")},
+            },
+        })
+        data["session"].update(min_frame_interval_ms=40, poll_interval_ms=10, lifetime_seconds=10)
+        frames = min(10 * 1000 // 40 + 1, activity_session.MAX_SESSION_FRAMES)
+        data["budgets"].update(max_frames=frames, max_application_packets=frames * 3,
+                               max_tx_bytes=frames * frame_stream.worst_case_frame_tx_bytes())
+        if mutate is not None:
+            mutate(data)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "s.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            return frame_stream.load_stream_manifest(path, require_authority=False,
+                                                     verify_code_hashes=False)
+
+    def test_a_live_manifest_freezes_the_producer_instead_of_a_frame_set(self) -> None:
+        manifest, frame_set, stream = self._live()
+        self.assertIsNone(frame_set)
+        self.assertEqual(stream["source_kind"], frame_stream.SOURCE_KIND_LIVE)
+        self.assertIn("host/frame_stream.py", stream["live_source"]["producer_code_sha256"])
+
+    def test_a_live_manifest_may_not_also_claim_frozen_frames_or_looping(self) -> None:
+        for key, value in (("frame_set_file", "examples/stream-demo/sweep-bar.rgb888"),
+                           ("frame_set_sha256", "0" * 64), ("frame_count", 48)):
+            with self.assertRaises(frame_stream.SessionError) as caught:
+                self._live(lambda d, k=key, v=value: d["stream"].__setitem__(k, v))
+            self.assertEqual(caught.exception.code, "STREAM_LIVE_DECLARES_FRAME_SET")
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            self._live(lambda d: d["stream"].__setitem__("loop", True))
+        self.assertEqual(caught.exception.code, "STREAM_LIVE_CANNOT_LOOP")
+
+    def test_producer_code_drift_invalidates_a_live_manifest(self) -> None:
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            self._live(lambda d: d["stream"]["live_source"]["producer_code_sha256"].__setitem__(
+                "host/frame_stream.py", "0" * 64))
+        self.assertEqual(caught.exception.code, "STREAM_LIVE_PRODUCER_HASH_DRIFT")
+        for mutate, code in (
+            (lambda d: d["stream"]["live_source"].__setitem__("producer_code_sha256", {}),
+             "STREAM_LIVE_PRODUCER_UNHASHED"),
+            (lambda d: d["stream"]["live_source"].__setitem__("producer_description", ""),
+             "STREAM_LIVE_PRODUCER_UNDESCRIBED"),
+        ):
+            with self.assertRaises(frame_stream.SessionError) as caught:
+                self._live(mutate)
+            self.assertEqual(caught.exception.code, code)
+
+    def test_a_live_byte_budget_comes_from_the_encoder_worst_case(self) -> None:
+        # No frame set exists to measure, so the ceiling is a full 255-entry palette.
+        worst = frame_stream.worst_case_frame_tx_bytes()
+        self.assertGreater(worst, 1000)
+        manifest, _, _ = self._live()
+        self.assertEqual(manifest.max_tx_bytes, manifest.max_frames * worst)
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            self._live(lambda d: d["budgets"].__setitem__("max_tx_bytes", 10))
+        self.assertEqual(caught.exception.code, "BUDGET_TX_BYTES_NOT_DERIVED")
+
+    def test_the_live_source_always_takes_the_newest_frame_and_never_queues(self) -> None:
+        produced = [bytes((n, 0, 0)) * 256 for n in range(1, 5)]
+        pending = list(produced)
+        source = frame_stream.LiveFrameSource(lambda now_ms: pending.pop(0) if pending else None, 40)
+        # Two frames produced while we were busy: the older one must never be sent.
+        self.assertEqual(source(0)[0][:1], b"\x01")
+        self.assertEqual(source(100)[0][:1], b"\x02")
+        pending.clear()
+        # Nothing new: repeat the last frame so the scheduler holds it as unchanged.
+        self.assertEqual(source(200)[0][:1], b"\x02")
+        self.assertFalse(source(200)[1])
+        source.frame_sent()  # a live timeline is not ours to advance
+        self.assertEqual(source(300)[0][:1], b"\x02")
+
+    def test_a_live_source_with_nothing_yet_yields_a_blank_frame(self) -> None:
+        source = frame_stream.LiveFrameSource(lambda now_ms: None, 40)
+        frame, from_pulse = source(0)
+        self.assertEqual(frame, bytes(frame_stream.FRAME_BYTES))
+        self.assertFalse(from_pulse)
+
+    def test_a_live_producer_returning_the_wrong_size_is_refused(self) -> None:
+        source = frame_stream.LiveFrameSource(lambda now_ms: b"\x00" * 12, 40)
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            source(0)
+        self.assertEqual(caught.exception.code, "STREAM_FRAME_LENGTH")
+
+    def test_a_live_stream_drives_the_same_dispatch_loop(self) -> None:
+        manifest, _, stream = self._live()
+        counter = {"n": 0}
+
+        def producer(now_ms: int) -> bytes:
+            counter["n"] += 1
+            return bytes((counter["n"] % 251, 3, 7)) * 256
+
+        clock = {"ms": 0}
+        transport = activity_session.FakeSessionTransport()
+        result = frame_stream.stream_session(
+            manifest, None, stream, transport,
+            lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + max(ms, 1)),
+            claim=None, renderer=frame_stream.LiveFrameSource(producer, 40))
+        self.assertEqual(result["outcome"], "stopped_clean")
+        self.assertEqual(result["frames_sent"], manifest.max_frames)
+        self.assertLessEqual(result["tx_bytes_sent"], manifest.max_tx_bytes)
+        self.assertEqual(len(result["frame_timings"]), result["frames_sent"])
+
+    def test_a_live_stream_without_an_injected_renderer_is_refused(self) -> None:
+        manifest, _, stream = self._live()
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            frame_stream.stream_session(manifest, None, stream,
+                                        activity_session.FakeSessionTransport(),
+                                        lambda: 0, lambda ms: None, claim=None)
+        self.assertEqual(caught.exception.code, "STREAM_NO_SOURCE")
