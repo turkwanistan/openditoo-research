@@ -32,7 +32,7 @@ from host.ditoo_pixel_coloring import (
     encode_rgb888_static_image,
     sha256_hex as pixel_sha256_hex,
 )
-from host.png16 import Png16Error, decode_png16_rgb
+from host.png16 import Png16Error, decode_png16_rgb, png_sha256
 from host.ditoo_candidate_codec import (
     CandidateStreamDecoder,
     FrameDecodeError,
@@ -447,6 +447,53 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertIn("does NOT prove the absence of persistent side effects", volatility["not_claimed"])
         self.assertIn("PIXEL-GEOMETRY-ROW-MAJOR-TOP-LEFT-ORIGIN",
                       [finding["id"] for finding in data["findings"]])
+
+    def test_m8_ab_fixtures_are_frozen_and_asymmetric(self) -> None:
+        manifest = json.loads((ROOT / "experiments/DAY1-M8-AB-SEQUENCE-PENDING.json").read_text(encoding="utf-8"))
+        corners = {"a": (0, 0), "b": (15, 15)}
+        for key, source in manifest["operation"]["source_frames"].items():
+            if key == "why_these":
+                continue
+            path = ROOT / source["file"]
+            rgb = decode_png16_rgb(path)
+            wire, palette_colors = encode_rgb888_static_image(rgb)
+            self.assertEqual(png_sha256(path), source["png_sha256"])
+            self.assertEqual(pixel_sha256_hex(rgb), source["rgb_sha256"])
+            self.assertEqual(pixel_sha256_hex(wire), source["packet_sha256"])
+            self.assertEqual(palette_colors, source["palette_colors"])
+            row, column = corners[key]
+            lit = (row * 16 + column) * 3
+            self.assertEqual(rgb[lit:lit + 3], b"\xff\xff\xff", msg=f"frame {key} corner must be lit")
+        a = decode_png16_rgb(ROOT / manifest["operation"]["source_frames"]["a"]["file"])
+        b = decode_png16_rgb(ROOT / manifest["operation"]["source_frames"]["b"]["file"])
+        self.assertNotEqual(a, b)
+        self.assertEqual(a[:3], b"\xff\xff\xff")
+        self.assertEqual(b[:3], b"\x00\x00\x00", msg="A and B must be distinguishable at the first pixel")
+
+    def test_m8_manifest_fails_closed_with_only_authority_missing(self) -> None:
+        path = ROOT / "experiments/DAY1-M8-AB-SEQUENCE-PENDING.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        self.assertFalse(manifest["authority"]["transmission_authorized"])
+        self.assertFalse(manifest["authority"]["authorization_consumed"])
+        for flag in ("automatic_retry", "automatic_reconnect", "target_override", "raw_packet_override"):
+            self.assertFalse(manifest["operation"][flag])
+        budgets = manifest["budgets"]
+        self.assertEqual(budgets["connection_attempts"], 1)
+        self.assertEqual(budgets["application_packets"], 6)
+        preambles = sum(step["bytes"] for step in manifest["operation"]["application_tx_sequence"]
+                        if step.get("bytes") and step["name"].startswith("preamble"))
+        images = sum(step["bytes"] for step in manifest["operation"]["application_tx_sequence"]
+                     if step.get("bytes") and step["name"].startswith("image"))
+        self.assertEqual(preambles + images, budgets["application_tx_bytes_total"])
+        self.assertIn("does not test that", manifest["persistence_analysis"]["not_claimed"])
+        proc = subprocess.run(
+            [sys.executable, str(ROOT / "cli/openditoo.py"), "manifest-check", "--file", str(path)],
+            text=True, capture_output=True, check=True,
+        )
+        result = json.loads(proc.stdout)
+        self.assertFalse(result["execution_ready"])
+        self.assertEqual(result["execution_blockers"], ["transmission_authority_missing"])
+        self.assertEqual(result["missing_fields"], [])
 
     def test_status_reports_host_health_not_device_connectivity(self) -> None:
         program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
