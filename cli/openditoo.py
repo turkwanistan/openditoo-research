@@ -32,6 +32,7 @@ CLI_VERSION = "0.2.0-static-image"
 HOST_ORIGIN = "http://127.0.0.1:8796"
 STATUS_URL = f"{HOST_ORIGIN}/v1/status"
 IMAGE_SHOW_URL = f"{HOST_ORIGIN}/v1/image/show"
+IMAGE_SEQUENCE_URL = f"{HOST_ORIGIN}/v1/image/sequence"
 MIN_TOKEN_CHARS = 32
 
 EXIT_OK = 0
@@ -287,6 +288,116 @@ def image_show(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def sequence_run(args: argparse.Namespace) -> int:
+    """Run one frozen frame sequence, exactly as its reviewed manifest specifies.
+
+    There are no frame, target, delay or packet arguments: everything comes from the
+    manifest, and every frozen hash in it is re-verified locally before the request.
+    A manifest without live authority, or whose authority is already consumed, is
+    refused here before the Host is contacted.
+    """
+    path = Path(args.manifest)
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        emit({"ok": False, "command": "sequence-run", "error_code": "INVALID_MANIFEST", "message": str(exc)})
+        return EXIT_USAGE
+
+    authority = manifest.get("authority", {})
+    if authority.get("transmission_authorized") is not True:
+        emit({"ok": False, "command": "sequence-run", "error_code": "TRANSMISSION_AUTHORITY_MISSING",
+              "experiment_id": manifest.get("experiment_id")})
+        return EXIT_BLOCKED
+    if authority.get("authorization_consumed") is True:
+        emit({"ok": False, "command": "sequence-run", "error_code": "AUTHORITY_ALREADY_CONSUMED",
+              "experiment_id": manifest.get("experiment_id"),
+              "message": "this manifest has already been executed; a repeat needs a new grant"})
+        return EXIT_BLOCKED
+
+    operation = manifest.get("operation", {})
+    sources = operation.get("source_frames", {})
+    budgets = manifest.get("budgets", {})
+    frames = []
+    for key in ("a", "b"):
+        source = sources.get(key)
+        if not isinstance(source, dict):
+            emit({"ok": False, "command": "sequence-run", "error_code": "MANIFEST_FRAME_MISSING", "frame": key})
+            return EXIT_USAGE
+        png = ROOT / source["file"]
+        if not png.is_file():
+            emit({"ok": False, "command": "sequence-run", "error_code": "FRAME_FILE_NOT_FOUND", "frame": key, "file": str(png)})
+            return EXIT_USAGE
+        try:
+            rgb, wire, palette_colors = _prepare_png(png)
+        except (OSError, Png16Error, ValueError) as exc:
+            emit({"ok": False, "command": "sequence-run", "error_code": "FRAME_PREPARE_FAILED", "frame": key, "message": str(exc)})
+            return EXIT_USAGE
+        actual = {
+            "png_sha256": png_sha256(png),
+            "rgb_sha256": pixel_sha256_hex(rgb),
+            "packet_sha256": pixel_sha256_hex(wire),
+            "palette_colors": palette_colors,
+        }
+        drift = {name: {"manifest": source.get(name), "actual": value}
+                 for name, value in actual.items() if source.get(name) != value}
+        if drift:
+            emit({"ok": False, "command": "sequence-run", "error_code": "FROZEN_FRAME_DRIFT", "frame": key, "drift": drift})
+            return EXIT_BLOCKED
+        frames.append({"pixelsRgb888Hex": rgb.hex(), "expectedImagePacketSha256": actual["packet_sha256"]})
+
+    try:
+        token = read_token()
+    except RuntimeError as exc:
+        emit({"ok": False, "command": "sequence-run", "error_code": "LOCAL_AUTH_CONFIG", "message": str(exc)})
+        return EXIT_CONFIG
+
+    delay_ms = int(budgets.get("inter_frame_delay_ms", 0))
+    body = json.dumps({"frames": frames, "interFrameDelayMs": delay_ms}, separators=(",", ":")).encode("utf-8")
+    timeout = max(30.0, int(budgets.get("total_wall_clock_ms", 20000)) / 1000.0 + 10.0)
+    request = urllib.request.Request(
+        IMAGE_SEQUENCE_URL, data=body, method="POST",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json",
+                 "Content-Type": "application/json", "User-Agent": f"OpenDitoo-CLI/{CLI_VERSION}"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            result = json.loads(response.read(65537).decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = json.loads(exc.read(65537).decode("utf-8"))
+        except Exception:
+            detail = {"http_status": exc.code}
+        emit({"ok": False, "command": "sequence-run", "error_code": "HOST_REJECTED", "http_status": exc.code, "detail": detail})
+        return EXIT_AUTH if exc.code == 401 else (EXIT_BLOCKED if exc.code in {400, 409} else EXIT_DEVICE)
+    except Exception as exc:
+        emit({"ok": False, "command": "sequence-run", "error_code": "HOST_UNAVAILABLE", "message": f"{type(exc).__name__}: {exc}"})
+        return EXIT_HOST_UNAVAILABLE
+
+    expected = {
+        "ok": True,
+        "command": "image-sequence",
+        "deviceIo": True,
+        "frameCount": 2,
+        "packetCount": budgets.get("application_packets"),
+        "txBytesTotal": budgets.get("application_tx_bytes_total"),
+        "connectionsAttempted": budgets.get("connection_attempts"),
+        "interFrameDelayMs": delay_ms,
+        "socketClosed": True,
+        "retry": False,
+        "reconnect": False,
+        "imagePacketSha256Ordered": [sources["a"]["packet_sha256"], sources["b"]["packet_sha256"]],
+    }
+    mismatch = {key: {"expected": value, "actual": result.get(key)}
+                for key, value in expected.items() if result.get(key) != value}
+    if mismatch:
+        emit({"ok": False, "command": "sequence-run", "error_code": "BUDGET_OR_RESULT_MISMATCH",
+              "mismatch": mismatch, "detail": result})
+        return EXIT_PROTOCOL
+    emit({"ok": True, "command": "sequence-run", "experiment_id": manifest.get("experiment_id"),
+          "manifest_file": str(path), **result})
+    return EXIT_OK
+
+
 def capture_parse(args: argparse.Namespace) -> int:
     """Offline: filter one raw btsnoop capture to attributable Ditoo evidence.
 
@@ -476,6 +587,9 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("image-show", help="show one exact 16x16 local PNG on the fixed paired Ditoo")
     p.add_argument("--png", required=True)
     p.set_defaults(func=image_show)
+    p = sub.add_parser("sequence-run", help="run one reviewed frame-sequence manifest against the fixed paired Ditoo")
+    p.add_argument("--manifest", required=True)
+    p.set_defaults(func=sequence_run)
     p = sub.add_parser("capture-parse", help="offline: filter a raw btsnoop capture to Ditoo serial-port application evidence")
     p.add_argument("--capture", "--btsnoop", dest="btsnoop", required=True,
                    help="an Android bugreport .zip, or an already-extracted btsnoop log")

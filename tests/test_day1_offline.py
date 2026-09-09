@@ -404,7 +404,10 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertIn(f'ImagePreambleA = Convert.FromHexString("{IMAGE_PREAMBLE_A.hex().upper()}")', protocol)
         self.assertIn(f'ImagePreambleB = Convert.FromHexString("{IMAGE_PREAMBLE_B.hex().upper()}")', protocol)
         transport = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/WindowsRfcommStaticImageTransport.cs").read_text(encoding="utf-8")
-        self.assertIn('if (packets.Length != 3)', transport)
+        # Every frame group is still exactly preamble A, preamble B, image. The
+        # sequence refactor renamed the variable; the invariant is unchanged.
+        self.assertIn('if (group.Length != 3)', transport)
+        self.assertIn('IMAGE_TRANSACTION_PACKET_COUNT_REJECTED', transport)
         cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
         self.assertIn('"packetCount": 3', cli)
         self.assertIn('"retry": False', cli)
@@ -470,13 +473,25 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertEqual(a[:3], b"\xff\xff\xff")
         self.assertEqual(b[:3], b"\x00\x00\x00", msg="A and B must be distinguishable at the first pixel")
 
-    def test_m8_manifest_fails_closed_with_only_authority_missing(self) -> None:
+    def test_m8_manifest_is_executed_and_its_authority_consumed(self) -> None:
         path = ROOT / "experiments/DAY1-M8-AB-SEQUENCE-PENDING.json"
         manifest = json.loads(path.read_text(encoding="utf-8"))
         self.assertFalse(manifest["authority"]["transmission_authorized"])
-        self.assertFalse(manifest["authority"]["authorization_consumed"])
+        self.assertTrue(manifest["authority"]["authorization_consumed"])
+        result = manifest["result"]
+        self.assertEqual(result["connections_attempted"], 1)
+        self.assertEqual(result["packets_sent_complete"], manifest["budgets"]["application_packets"])
+        self.assertEqual(result["tx_bytes_sent_complete"], manifest["budgets"]["application_tx_bytes_total"])
+        self.assertEqual(result["frames_acked"], 2)
+        self.assertFalse(result["in_flight_packet_bytes_unknown"])
+        self.assertFalse(result["retry"])
+        self.assertFalse(result["reconnect"])
+        self.assertEqual(len(set(result["ack_payload_hex_ordered"])), 2,
+                         msg="the two ACKs in one session differed; the payload is not a success constant")
+        self.assertIn("do NOT prove render order", result["note"])
         for flag in ("automatic_retry", "automatic_reconnect", "target_override", "raw_packet_override"):
             self.assertFalse(manifest["operation"][flag])
+        self.assertEqual(manifest["status"], "completed_transport_pass_authority_consumed")
         budgets = manifest["budgets"]
         self.assertEqual(budgets["connection_attempts"], 1)
         self.assertEqual(budgets["application_packets"], 6)
@@ -490,10 +505,67 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
             [sys.executable, str(ROOT / "cli/openditoo.py"), "manifest-check", "--file", str(path)],
             text=True, capture_output=True, check=True,
         )
-        result = json.loads(proc.stdout)
-        self.assertFalse(result["execution_ready"])
-        self.assertEqual(result["execution_blockers"], ["transmission_authority_missing"])
-        self.assertEqual(result["missing_fields"], [])
+        checked = json.loads(proc.stdout)
+        self.assertFalse(checked["execution_ready"], msg="a consumed manifest must not be executable again")
+        self.assertEqual(checked["execution_blockers"], ["transmission_authority_missing"])
+        self.assertEqual(checked["missing_fields"], [])
+
+    def test_sequence_route_validates_every_frame_before_any_device_io(self) -> None:
+        program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
+        route = program[program.index('app.MapPost("/v1/image/sequence"'):]
+        # A bad second frame must never be discovered halfway through a live sequence.
+        self.assertLess(route.index("IMAGE_ENCODER_HASH_MISMATCH"), route.index("RequireAuthenticatedExactTarget"))
+        self.assertLess(route.index("IMAGE_ENCODER_HASH_MISMATCH"), route.index("ExchangeSequenceOnce"))
+        self.assertIn("IMAGE_SEQUENCE_FRAMES_IDENTICAL", route)
+        self.assertIn("imageGate.Wait(0)", route)
+        self.assertIn("retry = false", route)
+        self.assertIn("reconnect = false", route)
+        self.assertNotIn("TargetMac =", route, msg="the sequence route must not rebind the target")
+
+    def test_sequence_transport_keeps_one_connection_and_no_retry(self) -> None:
+        transport = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/WindowsRfcommStaticImageTransport.cs").read_text(encoding="utf-8")
+        # Refactoring image-show onto the sequence core must not add a second connect
+        # or send call site; the existing boundary counts still have to hold.
+        self.assertEqual(transport.count("connect(socketHandle, ref remote, layoutSize)"), 1)
+        self.assertEqual(transport.count("send(socketHandle, packets[index], packets[index].Length, 0)"), 1)
+        self.assertIn("ExchangeOnce(byte[][] packets, ImageOperation? operation = null)\n        => ExchangeSequenceOnce([packets], 0, operation)[0];", transport)
+        self.assertIn("IMAGE_SEQUENCE_FRAME_COUNT_REJECTED", transport)
+        self.assertIn("IMAGE_SEQUENCE_DELAY_REJECTED", transport)
+        self.assertNotIn("Reconnect", transport)
+        protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooStaticImageProtocol.cs").read_text(encoding="utf-8")
+        self.assertIn("MaxSequenceFrames = 2", protocol)
+        self.assertIn("MinInterFrameDelayMs = 250", protocol)
+
+    def test_sequence_cli_is_manifest_driven_with_no_free_form_arguments(self) -> None:
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        block = cli[cli.index("def sequence_run("):cli.index("def capture_parse(")]
+        self.assertIn("TRANSMISSION_AUTHORITY_MISSING", block)
+        self.assertIn("AUTHORITY_ALREADY_CONSUMED", block)
+        self.assertIn("FROZEN_FRAME_DRIFT", block)
+        self.assertIn("BUDGET_OR_RESULT_MISMATCH", block)
+        parser = cli[cli.index('sub.add_parser("sequence-run"'):]
+        parser = parser[:parser.index("set_defaults")]
+        self.assertIn('"--manifest"', parser)
+        for forbidden in ('"--png"', '"--frames"', '"--delay"', '"--target"', '"--packet"'):
+            self.assertNotIn(forbidden, parser, msg="sequence parameters come from the reviewed manifest only")
+
+    def test_sequence_run_refuses_a_manifest_without_live_authority(self) -> None:
+        source = json.loads((ROOT / "experiments/DAY1-M8-AB-SEQUENCE-PENDING.json").read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as tmp:
+            for label, mutate, expected in (
+                ("ungranted", {"transmission_authorized": False, "authorization_consumed": False}, "TRANSMISSION_AUTHORITY_MISSING"),
+                ("consumed", {"transmission_authorized": True, "authorization_consumed": True}, "AUTHORITY_ALREADY_CONSUMED"),
+            ):
+                manifest = json.loads(json.dumps(source))
+                manifest["authority"].update(mutate)
+                path = Path(tmp) / f"{label}.json"
+                path.write_text(json.dumps(manifest), encoding="utf-8")
+                proc = subprocess.run(
+                    [sys.executable, str(ROOT / "cli/openditoo.py"), "sequence-run", "--manifest", str(path)],
+                    text=True, capture_output=True,
+                )
+                self.assertEqual(proc.returncode, 30, msg=label)
+                self.assertEqual(json.loads(proc.stdout)["error_code"], expected)
 
     def test_status_reports_host_health_not_device_connectivity(self) -> None:
         program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")

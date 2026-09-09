@@ -134,14 +134,33 @@ static class WindowsRfcommStaticImageTransport
     [DllImport("Ws2_32.dll")] private static extern uint WSAWaitForMultipleEvents(uint eventCount, [In] IntPtr[] eventHandles, [MarshalAs(UnmanagedType.Bool)] bool waitAll, uint timeoutMilliseconds, [MarshalAs(UnmanagedType.Bool)] bool alertable);
 
     internal static byte ExchangeOnce(byte[][] packets, ImageOperation? operation = null)
+        => ExchangeSequenceOnce([packets], 0, operation)[0];
+
+    /// <summary>
+    /// One connection, one or more ordered frame groups, one ACK each, then close.
+    /// The stock app repeats frames inside a single open session, so a sequence does
+    /// not reconnect between frames. There is still no retry and no reconnect.
+    /// </summary>
+    internal static byte[] ExchangeSequenceOnce(byte[][][] groups, int interFrameDelayMs, ImageOperation? operation = null)
     {
-        if (packets.Length != 3)
-            throw new ArgumentException("IMAGE_TRANSACTION_PACKET_COUNT_REJECTED");
+        if (groups.Length < 1 || groups.Length > DitooStaticImageProtocol.MaxSequenceFrames)
+            throw new ArgumentException("IMAGE_SEQUENCE_FRAME_COUNT_REJECTED");
+        foreach (var group in groups)
+        {
+            if (group.Length != 3)
+                throw new ArgumentException("IMAGE_TRANSACTION_PACKET_COUNT_REJECTED");
+        }
+        if (interFrameDelayMs < 0 || interFrameDelayMs > DitooStaticImageProtocol.MaxInterFrameDelayMs)
+            throw new ArgumentException("IMAGE_SEQUENCE_DELAY_REJECTED");
+
+        var budgetMs = DitooStaticImageProtocol.TotalBudgetMs
+            + (groups.Length - 1) * (DitooStaticImageProtocol.AckBudgetMs + interFrameDelayMs);
         var total = Stopwatch.StartNew();
         var wsaData = Marshal.AllocHGlobal(512);
         var socketHandle = InvalidSocket;
         var eventHandle = InvalidEvent;
         var started = false;
+        var acks = new byte[groups.Length];
         try
         {
             for (var i = 0; i < 512; i++) Marshal.WriteByte(wsaData, i, 0);
@@ -180,56 +199,33 @@ static class WindowsRfcommStaticImageTransport
             WaitForWriteOrClose(socketHandle, eventHandle, initialSendDeadline);
             operation?.StageCompleted("send_ready");
 
-            for (var index = 0; index < packets.Length; index++)
+            for (var frame = 0; frame < groups.Length; frame++)
             {
-                var sent = send(socketHandle, packets[index], packets[index].Length, 0);
-                if (sent != packets[index].Length)
+                var packets = groups[frame];
+                for (var index = 0; index < packets.Length; index++)
                 {
-                    operation?.SendOutcomeUnknown();
-                    var error = sent < 0 ? WSAGetLastError() : 0;
-                    var reason = error == WsaWouldBlock ? "WOULD_BLOCK" : "PARTIAL_OR_ERROR";
-                    throw new InvalidOperationException($"IMAGE_SEND_FAILED INDEX={index + 1} REASON={reason} BYTES={sent} WSA={error}; NO_RETRY");
+                    var sent = send(socketHandle, packets[index], packets[index].Length, 0);
+                    if (sent != packets[index].Length)
+                    {
+                        operation?.SendOutcomeUnknown();
+                        var error = sent < 0 ? WSAGetLastError() : 0;
+                        var reason = error == WsaWouldBlock ? "WOULD_BLOCK" : "PARTIAL_OR_ERROR";
+                        throw new InvalidOperationException($"IMAGE_SEND_FAILED FRAME={frame + 1} INDEX={index + 1} REASON={reason} BYTES={sent} WSA={error}; NO_RETRY");
+                    }
+                    operation?.PacketSent(sent);
+                    if (index < packets.Length - 1)
+                        Thread.Sleep(DitooStaticImageProtocol.SendSpacingMs);
                 }
-                operation?.PacketSent(sent);
-                if (index < packets.Length - 1)
-                    Thread.Sleep(DitooStaticImageProtocol.SendSpacingMs);
-            }
 
-            SelectEvents(socketHandle, eventHandle, FdRead | FdClose, "IMAGE_ACK");
-            var ackDeadline = new Deadline(DitooStaticImageProtocol.AckBudgetMs);
-            var received = new List<byte>(32);
-            var expectedTotal = -1;
-            var chunk = new byte[32];
-            while (true)
-            {
-                var events = WaitForEvents(socketHandle, eventHandle, ackDeadline, "IMAGE_ACK_RECV");
-                if ((events.NetworkEvents & FdClose) != 0)
-                    throw new InvalidOperationException($"IMAGE_ACK_CLOSED WSA={events.ErrorCodes[FdCloseBit]}; NO_RETRY");
-                if ((events.NetworkEvents & FdRead) == 0) continue;
-                if (events.ErrorCodes[FdReadBit] != 0)
-                    throw new InvalidOperationException($"IMAGE_ACK_EVENT_FAILED WSA={events.ErrorCodes[FdReadBit]}; NO_RETRY");
-                var got = recv(socketHandle, chunk, chunk.Length, 0);
-                if (got <= 0)
-                {
-                    var error = got < 0 ? WSAGetLastError() : 0;
-                    throw new InvalidOperationException($"IMAGE_ACK_RECV_FAILED BYTES={got} WSA={error}; NO_RETRY");
-                }
-                for (var i = 0; i < got; i++) received.Add(chunk[i]);
-                if (received.Count >= 3 && expectedTotal < 0)
-                {
-                    if (received[0] != 0x01) throw new InvalidOperationException("IMAGE_ACK_BAD_START; NO_RETRY");
-                    expectedTotal = (received[1] | (received[2] << 8)) + 4;
-                    if (expectedTotal != 10) throw new InvalidOperationException($"IMAGE_ACK_LENGTH_REJECTED TOTAL={expectedTotal}; NO_RETRY");
-                }
-                if (expectedTotal > 0 && received.Count == expectedTotal) break;
-                if (received.Count > 32 || (expectedTotal > 0 && received.Count > expectedTotal))
-                    throw new InvalidOperationException("IMAGE_ACK_TRAILING_OR_OVERSIZE; NO_RETRY");
+                acks[frame] = ReadOneAck(socketHandle, eventHandle);
+                operation?.StageCompleted($"frame_{frame + 1}_ack");
+                if (total.ElapsedMilliseconds > budgetMs)
+                    throw new TimeoutException("IMAGE_TOTAL_BUDGET_EXCEEDED; NO_RETRY");
+                if (frame < groups.Length - 1 && interFrameDelayMs > 0)
+                    Thread.Sleep(interFrameDelayMs);
             }
-            if (total.ElapsedMilliseconds > DitooStaticImageProtocol.TotalBudgetMs)
-                throw new TimeoutException("IMAGE_TOTAL_BUDGET_EXCEEDED; NO_RETRY");
-            var ack = ValidateAck(received.ToArray());
             operation?.StageCompleted("ack");
-            return ack;
+            return acks;
         }
         finally
         {
@@ -242,6 +238,41 @@ static class WindowsRfcommStaticImageTransport
             if (started) WSACleanup();
             Marshal.FreeHGlobal(wsaData);
         }
+    }
+
+    private static byte ReadOneAck(IntPtr socketHandle, IntPtr eventHandle)
+    {
+        SelectEvents(socketHandle, eventHandle, FdRead | FdClose, "IMAGE_ACK");
+        var ackDeadline = new Deadline(DitooStaticImageProtocol.AckBudgetMs);
+        var received = new List<byte>(32);
+        var expectedTotal = -1;
+        var chunk = new byte[32];
+        while (true)
+        {
+            var events = WaitForEvents(socketHandle, eventHandle, ackDeadline, "IMAGE_ACK_RECV");
+            if ((events.NetworkEvents & FdClose) != 0)
+                throw new InvalidOperationException($"IMAGE_ACK_CLOSED WSA={events.ErrorCodes[FdCloseBit]}; NO_RETRY");
+            if ((events.NetworkEvents & FdRead) == 0) continue;
+            if (events.ErrorCodes[FdReadBit] != 0)
+                throw new InvalidOperationException($"IMAGE_ACK_EVENT_FAILED WSA={events.ErrorCodes[FdReadBit]}; NO_RETRY");
+            var got = recv(socketHandle, chunk, chunk.Length, 0);
+            if (got <= 0)
+            {
+                var error = got < 0 ? WSAGetLastError() : 0;
+                throw new InvalidOperationException($"IMAGE_ACK_RECV_FAILED BYTES={got} WSA={error}; NO_RETRY");
+            }
+            for (var i = 0; i < got; i++) received.Add(chunk[i]);
+            if (received.Count >= 3 && expectedTotal < 0)
+            {
+                if (received[0] != 0x01) throw new InvalidOperationException("IMAGE_ACK_BAD_START; NO_RETRY");
+                expectedTotal = (received[1] | (received[2] << 8)) + 4;
+                if (expectedTotal != 10) throw new InvalidOperationException($"IMAGE_ACK_LENGTH_REJECTED TOTAL={expectedTotal}; NO_RETRY");
+            }
+            if (expectedTotal > 0 && received.Count == expectedTotal) break;
+            if (received.Count > 32 || (expectedTotal > 0 && received.Count > expectedTotal))
+                throw new InvalidOperationException("IMAGE_ACK_TRAILING_OR_OVERSIZE; NO_RETRY");
+        }
+        return ValidateAck(received.ToArray());
     }
 
     private static byte ValidateAck(byte[] wire)

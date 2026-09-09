@@ -9,6 +9,12 @@ static class DitooStaticImageProtocol
     internal const int AckBudgetMs = 5_000;
     internal const int TotalBudgetMs = 20_000;
     internal const int SendSpacingMs = 40;
+    // M8 bounded sequence limits. Derived from capture evidence: the stock app repeats
+    // frames inside one session at a 1.013 s median gap (148 ms floor). These are hard
+    // ceilings, not the operating rate.
+    internal const int MaxSequenceFrames = 2;
+    internal const int MaxInterFrameDelayMs = 5_000;
+    internal const int MinInterFrameDelayMs = 250;
     internal const int RgbBytes = 16 * 16 * 3;
     internal static readonly byte[] ImagePreambleA = Convert.FromHexString("0103009FA20002");
     internal static readonly byte[] ImagePreambleB = Convert.FromHexString("010400BD31F20002");

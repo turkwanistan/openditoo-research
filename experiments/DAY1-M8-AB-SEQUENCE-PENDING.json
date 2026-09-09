@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "OPENDITOO-M8-AB-SEQUENCE-001",
   "milestone": "M8.3 step 1",
-  "status": "prepared_awaiting_authority",
+  "status": "completed_transport_pass_authority_consumed",
   "objective": "Show two different frames in a known order inside one connection, and confirm the device renders them in that order. Nothing more.",
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -20,16 +20,64 @@
     "semantic_evidence": "capture2 btsnoop b373607316094b0fd529f3354ee379abb6645e89ab0b2c06ce865064428dbc9c: the official app sends 41 image packets inside ONE open serial session with no reconnect between frames, each preceded by preamble frames and each answered by exactly one ACK (41/41, none missing).",
     "application_tx_hex": "01340044000a0a04aa2d00f4010002ffffff000000f8fff8fff8ffffffffffffffffffffffffffffffffffffffffffffffffffffff262502",
     "application_tx_sequence": [
-      {"step": 1, "name": "preamble_a", "hex": "0103009fa20002", "bytes": 7},
-      {"step": 2, "name": "preamble_b", "hex": "010400bd31f20002", "bytes": 8},
-      {"step": 3, "name": "image_a_top_left", "sha256": "42f6a81e9eb3c821a654b14c9070c0dfdc7bf5d5458d59967983435042c2506d", "bytes": 56},
-      {"step": 4, "name": "await_ack_a", "direction": "rx", "expect": "one wrapped 0x44 ACK, 10 bytes"},
-      {"step": 5, "name": "inter_frame_delay", "milliseconds": 1000},
-      {"step": 6, "name": "preamble_a", "hex": "0103009fa20002", "bytes": 7},
-      {"step": 7, "name": "preamble_b", "hex": "010400bd31f20002", "bytes": 8},
-      {"step": 8, "name": "image_b_bottom_right", "sha256": "004dfc38f2acd3aa7a6b8b33249e172a50abc5b60b3777999fe3ea82c7156ddd", "bytes": 56},
-      {"step": 9, "name": "await_ack_b", "direction": "rx", "expect": "one wrapped 0x44 ACK, 10 bytes"},
-      {"step": 10, "name": "close", "note": "local socket close; no further traffic"}
+      {
+        "step": 1,
+        "name": "preamble_a",
+        "hex": "0103009fa20002",
+        "bytes": 7
+      },
+      {
+        "step": 2,
+        "name": "preamble_b",
+        "hex": "010400bd31f20002",
+        "bytes": 8
+      },
+      {
+        "step": 3,
+        "name": "image_a_top_left",
+        "sha256": "42f6a81e9eb3c821a654b14c9070c0dfdc7bf5d5458d59967983435042c2506d",
+        "bytes": 56
+      },
+      {
+        "step": 4,
+        "name": "await_ack_a",
+        "direction": "rx",
+        "expect": "one wrapped 0x44 ACK, 10 bytes"
+      },
+      {
+        "step": 5,
+        "name": "inter_frame_delay",
+        "milliseconds": 1000
+      },
+      {
+        "step": 6,
+        "name": "preamble_a",
+        "hex": "0103009fa20002",
+        "bytes": 7
+      },
+      {
+        "step": 7,
+        "name": "preamble_b",
+        "hex": "010400bd31f20002",
+        "bytes": 8
+      },
+      {
+        "step": 8,
+        "name": "image_b_bottom_right",
+        "sha256": "004dfc38f2acd3aa7a6b8b33249e172a50abc5b60b3777999fe3ea82c7156ddd",
+        "bytes": 56
+      },
+      {
+        "step": 9,
+        "name": "await_ack_b",
+        "direction": "rx",
+        "expect": "one wrapped 0x44 ACK, 10 bytes"
+      },
+      {
+        "step": 10,
+        "name": "close",
+        "note": "local socket close; no further traffic"
+      }
     ],
     "source_frames": {
       "a": {
@@ -93,8 +141,12 @@
   },
   "authority": {
     "transmission_authorized": false,
-    "authorization_consumed": false,
-    "note": "This manifest is a prepared proposal. It grants nothing. It becomes executable only when the operator grants authority for this exact experiment id, and that grant covers this two-frame sequence once - not a loop, not a rate increase, and not continuous display."
+    "authorization_consumed": true,
+    "note": "This manifest is a prepared proposal. It grants nothing. It becomes executable only when the operator grants authority for this exact experiment id, and that grant covers this two-frame sequence once - not a loop, not a rate increase, and not continuous display.",
+    "granted_by": "operator, in-session, 2026-09-09",
+    "grant_text": "approved, let it rip",
+    "grant_scope": "this exact experiment id, one execution of the two-frame sequence at the stated budgets. Not a loop, not a rate increase, not continuous display.",
+    "consumed_at_utc": "2026-09-09T04:44:20Z"
   },
   "explicitly_out_of_scope": [
     "any loop or repeated run",
@@ -103,5 +155,49 @@
     "removing or reordering the stock-observed preambles",
     "keeping the connection open beyond this sequence",
     "driving the display from the M9 activity collector"
+  ],
+  "result": {
+    "status": "transport_pass_visual_order_pending_operator",
+    "operation_id": "6c5201e146d7",
+    "started_at_utc": "2026-09-09T04:44:19.2028971Z",
+    "ended_at_utc": "2026-09-09T04:44:20.5218748Z",
+    "duration_ms": 1320,
+    "connections_attempted": 1,
+    "packets_planned": 6,
+    "packets_sent_complete": 6,
+    "tx_bytes_planned": 142,
+    "tx_bytes_sent_complete": 142,
+    "in_flight_packet_bytes_unknown": false,
+    "frames_acked": 2,
+    "ack_payload_hex_ordered": [
+      "0xE5",
+      "0x33"
+    ],
+    "image_packet_sha256_ordered": [
+      "42f6a81e9eb3c821a654b14c9070c0dfdc7bf5d5458d59967983435042c2506d",
+      "004dfc38f2acd3aa7a6b8b33249e172a50abc5b60b3777999fe3ea82c7156ddd"
+    ],
+    "inter_frame_delay_ms": 1000,
+    "last_completed_stage": "ack",
+    "socket_closed": true,
+    "retry": false,
+    "reconnect": false,
+    "budgets_respected": true,
+    "operator_visual_order": "pending",
+    "note": "Every budget in this manifest was met exactly. Ordered ACKs prove the device accepted frame A then frame B on one connection. They do NOT prove render order; that needs the operator's observation."
+  },
+  "findings": [
+    {
+      "id": "SAME-SESSION-REPEATED-FRAMES-ACCEPTED",
+      "confidence": "MATCHED",
+      "statement": "The exact unit accepts two different image frames inside one connection, each answered by its own wrapped 0x44 ACK, with no reconnect between them. 6/6 packets and 142/142 bytes were sent, and the socket closed cleanly.",
+      "not_claimed": "Render order, rendering at all, and any rate above the 1000 ms inter-frame delay used here."
+    },
+    {
+      "id": "ACK-PAYLOAD-VARIES-AGAIN",
+      "confidence": "MATCHED",
+      "statement": "The two ACKs in this single session were 0xE5 and 0x33, both different from each other and from the previously observed 0x12, 0x75 and 0xF0. This further supports that the wrapped 0x44 ACK payload byte is not a success constant.",
+      "not_claimed": "Any semantic meaning for the byte, including that it is a counter or sequence."
+    }
   ]
 }
