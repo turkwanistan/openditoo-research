@@ -93,11 +93,32 @@ our frame is on screen → unsolicited 0x46 observed → the canvas is no longer
 
 ## 4. Environment facts that correct earlier handoffs
 
-- **Windows interop works from a local Claude Code session in WSL.** `powershell.exe`,
-  `cmd.exe` and `dotnet.exe` are reachable, and the project builds over
-  `\\wsl.localhost\...`. The post-M5 note's claim that build/deploy is operator-only was
-  a property of the old WSL_MCP sandbox, not of this environment. Bluetooth transmission
-  remains gated for **authority** reasons, never tooling.
+**Capability is a property of your environment, not of the project. Verify, do not
+inherit either claim below.**
+
+- **From a local Claude Code session in WSL** (which produced this handoff):
+  `powershell.exe`, `cmd.exe` and `dotnet.exe` are reachable, the project builds over
+  `\\wsl.localhost\...`, and loopback plus LAN both work. The post-M5 note's claim that
+  build and deploy are operator-only was a property of the WSL_MCP sandbox, not of this
+  environment.
+- **From WSL_MCP**, expect less. Its `~/.config/wsl-mcp/config.toml` runs commands under
+  bubblewrap with `default_network = "off"` and `fail_closed = true`, and it has
+  historically had no Windows shell or SDK bridge. Under it, assume these may fail until
+  proven otherwise: `powershell.exe` / `dotnet.exe`, reaching the Host on
+  `127.0.0.1:8796`, and `ssh` to the OptiPlex for the two remote activity sources.
+- **Cheap checks before planning around either:** `command -v powershell.exe`,
+  `python3 cli/openditoo.py status`, `python3 cli/openditoo.py activity-probe`. All three
+  are read-only and none touches the device.
+- Repository work — parsing, fixtures, rendering, previews, tests, `verify_day1_offline.py`
+  — needs none of the above and is unaffected.
+- Bluetooth transmission is gated for **authority** reasons in every environment, never
+  tooling. A session that *can* build and deploy still may not transmit.
+
+- **Self-observation, if you run under WSL_MCP:** the M9 collector reads WSL_MCP's own
+  audit log as the `wsl_mcp` source. Your own tool calls will therefore appear as genuine
+  activity there. That is not a feedback loop — the collector reads a file and never calls
+  an MCP server — but do not mistake your own footprint for a live user signal when
+  interpreting `activity-status`.
 - Deployed Host: `%LOCALAPPDATA%\OpenDitoo\Day1Host`, scheduled task `OpenDitoo Day1 Host`,
   at-logon, no terminal required. Installed DLL SHA-256
   `092ed38d4dd7aaeb3eedbdab15c2c0a0f8dac07ea6134545e18ad15398fa636c`, byte-identical to
