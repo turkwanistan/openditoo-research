@@ -283,3 +283,7 @@ The post-rate-integration Windows boundary is now closed: changed Host build/dep
 ### Activation 005 result / 006 pending — 2026-09-09
 
 005 validates the corrected dispatch timestamp and stock-yield path: 5 ACKed frames / 15 packets / 765 bytes, followed by the operator brightness press and `canvas_invalidated / stopped_yielded_to_stock`. Animation was visible but too brief to identify every color confidently. Product source now repeats the color sweep three times while collapsing identical cyan boundaries: 10 distinct ACK-gated frames at 200 ms nominal client cadence (~2.0 s). 006 is pending visual acceptance only; stock-yield is already PASS from 005. **At that historical point, no transmission authority was live.**
+
+### Activation 006 result / 007 pending — 2026-09-09
+
+006 cleanly held the idle dashboard for 30 s (1 frame, 552 unchanged holds) but saw no source event, so animation remained unexercised. 007 is a deterministic visual trial using one genuine WSL_MCP audit event created by a harmless read-only WSL_MCP call while the bounded session is live. No synthetic collector state or fake failure is used. No current transmission is authorized.

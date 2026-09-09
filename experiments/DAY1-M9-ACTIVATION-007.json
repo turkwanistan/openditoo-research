@@ -1,10 +1,10 @@
 {
   "schema_version": 2,
-  "experiment_id": "OPENDITOO-M9-ACTIVATION-006",
-  "milestone": "MCP dashboard three-sweep visual acceptance",
-  "status": "completed_pass_idle_only_authority_consumed",
-  "objective": "Visually accept the operator-requested three-sweep activity animation after 005 proved stock-yield and corrected pacing.",
-  "why_this_shape": "005 proved transport, pacing and stock-yield, but the single sweep was too brief to read. 006 changes only the activity animation program to three visible sweeps; no new command, transport or Host behavior.",
+  "experiment_id": "OPENDITOO-M9-ACTIVATION-007",
+  "milestone": "MCP dashboard deterministic WSL_MCP-triggered three-sweep visual acceptance",
+  "status": "pending_operator_grant",
+  "objective": "Prove the three-sweep cyan/blue/light-blue activity animation with a deliberate real WSL_MCP audit event generated while the bounded session is live.",
+  "why_this_shape": "006 was a clean idle-hold pass but no source event occurred, so animation was not exercised. 007 keeps the same accepted transport/pacing envelope and changes only the test procedure: after the operator starts the session, the assistant performs one harmless read-only WSL_MCP call, which appends a genuine completed WSL_MCP audit record that the existing collector should observe.",
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
     "installed_firmware": "v42012",
@@ -54,7 +54,7 @@
     "max_tx_bytes": 30653,
     "ack_timeout_ms_per_frame": 5000,
     "derivation": "30 s at the 200 ms MCP client cadence admits at most 151 frame starts. Three packets per frame. Current worst-case transaction is 203 bytes, so 151 * 203 = 30653 bytes.",
-    "expected_realistic_frames": "roughly 10-20 for one or two activity events; far below ceiling"
+    "expected_realistic_frames": "about 11: one base frame plus the 10-frame three-sweep program from one deliberately generated WSL_MCP event"
   },
   "stop_policy": {
     "stop_immediately_on": [
@@ -82,36 +82,32 @@
     "animation_expectation": "one activity event visibly sweeps cyan \u2192 blue \u2192 light-blue \u2192 cyan three times over about 2 seconds, with crown + identity letter + icon accent changing together"
   },
   "acceptance_criteria": {
-    "visual_pulse": "operator sees at least one complete four-stage pulse on crown + letter + icon accent and confirms it returns to base status colour",
-    "pacing": "Host enforces no frame starts under 150 ms and each frame remains ACK-gated",
-    "stock_yield": "after one intentional physical control, session terminates without retry/reconnect/reclaim and no later frame is sent",
-    "transport": "one connection, three packets per sent frame, one wrapped 0x44 ACK per completed frame, bounded accounting agrees",
-    "collection_survives": "after display stop, activity-status still collects",
-    "authority_is_consumed": "both WSL claim and Host ledger make this experiment id one-use",
-    "fault_signal": "only claim PASS if a real source failure occurs; otherwise record NOT TESTED",
-    "pacing_acceptance": "No HTTP 429 pacing refusal; all actual client dispatch starts are at least 200 ms apart by client monotonic scheduling while Host independently enforces 150 ms.",
-    "stock_yield_acceptance": "ALREADY PASS from 005; no physical takeover is required in 006",
-    "visual_acceptance": "operator can confidently distinguish the repeated cyan / blue / light-blue progression and judges the three-sweep duration readable; dashboard returns to status color afterward"
+    "visual_acceptance": "operator clearly sees the three-sweep cyan / blue / light-blue progression on the WSL column and confirms it returns to base status color afterward",
+    "event_provenance": "the trigger is a genuine completed WSL_MCP audit record produced by one harmless read-only WSL_MCP tool call while the session is live; no synthetic event is injected into collector state",
+    "transport": "one connection; one ACK per completed frame; no retry/reconnect/reclaim; no HTTP 429 pacing refusal",
+    "idle_change_only": "outside the triggered animation, unchanged renders send nothing",
+    "authority_is_consumed": "both WSL claim and Host ledger make 007 one-use",
+    "stock_yield": "already PASS from 005; not part of 007",
+    "fault_signal": "NOT TESTED unless a real source failure happens naturally"
   },
   "preconditions": [
-    "operator grant naming OPENDITOO-M9-ACTIVATION-006",
+    "operator grant naming OPENDITOO-M9-ACTIVATION-007",
     "installed Host DLL remains verified at fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
     "Android Divoom app disconnected",
     "activity sources reachable",
     "offline verifier PASS at the commit being run",
-    "operator present and watching the unit"
+    "operator present and watching the unit",
+    "operator starts the live command and immediately messages the assistant RUNNING; assistant then performs exactly one harmless read-only WSL_MCP tool call to create a genuine WSL_MCP audit event"
   ],
   "authority": {
     "transmission_authorized": false,
-    "authorization_consumed": true,
-    "experiment_id": "OPENDITOO-M9-ACTIVATION-006",
-    "granted_by": "operator, in-session, 2026-09-09",
-    "grant_text": "Grant OPENDITOO-M9-ACTIVATION-006",
-    "expires_at": "2026-09-10T00:00:00Z",
-    "grant_scope_requested": "ONE execution only: up to 30 seconds; MCP dashboard visual acceptance; 50 ms render tick; nominal 200 ms changed-frame dispatch from actual dispatch time; Host hard floor 150 ms; max 151 frames / 453 packets / 30653 application bytes; one RFCOMM connection; ACK per frame; no retry/reconnect/reclaim/pipelining/streaming/unattended operation/second attempt.",
-    "grant_scope": "ONE execution only: up to 30 seconds; MCP dashboard visual acceptance; 50 ms render tick; nominal 200 ms changed-frame dispatch from actual dispatch time; Host hard floor 150 ms; max 151 frames / 453 packets / 30653 application bytes; one RFCOMM connection; ACK per frame; no retry/reconnect/reclaim/pipelining/streaming/unattended operation/second attempt.",
-    "consumed_at": "2026-09-09T17:54:57Z",
-    "consumption_note": "Executed once for 30 s. One base frame was ACKed; no activity event occurred, so no animation frames were generated. Grant is spent."
+    "authorization_consumed": false,
+    "experiment_id": "OPENDITOO-M9-ACTIVATION-007",
+    "granted_by": null,
+    "grant_text": null,
+    "expires_at": null,
+    "grant_scope_requested": "ONE execution only: up to 30 seconds; MCP dashboard visual acceptance with one deliberate real WSL_MCP audit event generated by a harmless read-only WSL_MCP call while the session is live; 50 ms render tick; nominal 200 ms changed-frame dispatch from actual dispatch time; Host hard floor 150 ms; max 151 frames / 453 packets / 30653 application bytes; one RFCOMM connection; ACK per frame; no retry/reconnect/reclaim/pipelining/streaming/unattended operation/second attempt.",
+    "grant_scope": null
   },
   "explicitly_out_of_scope": [
     "streaming or video milestone work",
@@ -127,32 +123,5 @@
     "experiment_id": "OPENDITOO-M9-ACTIVATION-005",
     "why": "005 grant is consumed; 006 is a fresh visual-only trial for the operator-requested longer animation."
   },
-  "result": {
-    "status": "pass_idle_only",
-    "transport": {
-      "frames_sent": 1,
-      "packets_sent": 3,
-      "tx_bytes_sent": 153,
-      "acks": [
-        "0xC3"
-      ],
-      "terminal_reason": "lifetime_expired",
-      "outcome": "stopped_clean",
-      "elapsed_ms": 30000
-    },
-    "holds": {
-      "unchanged": 552
-    },
-    "visual": {
-      "dashboard_visible": true,
-      "animation_observed": false,
-      "reason": "no qualifying activity event occurred during the 30 s session; output shows one base frame then 552 unchanged holds"
-    },
-    "acceptance": {
-      "idle_hold": "PASS \u2014 unchanged dashboard held for full 30 s with zero redundant sends after the initial frame",
-      "animation": "NOT TESTED \u2014 no source event occurred",
-      "transport": "PASS \u2014 one ACKed frame, clean lifetime close, no retry/reconnect/reclaim",
-      "stock_yield": "PASS carried from 005; not repeated in 006"
-    }
-  }
+  "result": null
 }
