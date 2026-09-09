@@ -8,7 +8,14 @@ static class DitooStaticImageProtocol
     internal const int ConnectBudgetMs = 15_000;
     internal const int AckBudgetMs = 5_000;
     internal const int TotalBudgetMs = 20_000;
-    internal const int SendSpacingMs = 40;
+    // Spacing between the three packets of ONE frame. 40 ms is what the stock app was
+    // observed doing, and it is the only timing value in this project taken from the
+    // stock app rather than chosen by us -- so it is the one most likely to matter.
+    // A reviewed manifest may lower it to measure whether it does; it may never raise it
+    // above the stock-derived value without new evidence.
+    internal const int DefaultSendSpacingMs = 40;
+    internal const int MinSendSpacingMs = 0;
+    internal const int MaxSendSpacingMs = 40;
     // M8 bounded sequence limits. Derived from capture evidence: the stock app repeats
     // frames inside one session at a 1.013 s median gap (148 ms floor). These are hard
     // ceilings, not the operating rate.

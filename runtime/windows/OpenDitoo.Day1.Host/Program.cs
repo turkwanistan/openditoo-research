@@ -232,6 +232,11 @@ app.MapPost("/v1/image/sequence", (ShowSequenceRequest request) =>
         var delay = request.InterFrameDelayMs;
         if (delay < DitooStaticImageProtocol.MinInterFrameDelayMs || delay > DitooStaticImageProtocol.MaxInterFrameDelayMs)
             return Reject("IMAGE_SEQUENCE_DELAY", new { ok = false, errorCode = "IMAGE_SEQUENCE_DELAY", minMs = DitooStaticImageProtocol.MinInterFrameDelayMs, maxMs = DitooStaticImageProtocol.MaxInterFrameDelayMs }, StatusCodes.Status400BadRequest);
+        // Absent means the stock-derived default; a reviewed manifest may lower it to
+        // measure whether that value is load-bearing, never raise it.
+        var spacing = request.SendSpacingMs ?? DitooStaticImageProtocol.DefaultSendSpacingMs;
+        if (spacing < DitooStaticImageProtocol.MinSendSpacingMs || spacing > DitooStaticImageProtocol.MaxSendSpacingMs)
+            return Reject("IMAGE_SEND_SPACING", new { ok = false, errorCode = "IMAGE_SEND_SPACING", minMs = DitooStaticImageProtocol.MinSendSpacingMs, maxMs = DitooStaticImageProtocol.MaxSendSpacingMs }, StatusCodes.Status400BadRequest);
 
         // Every frame is validated and hash-checked before ANY device I/O, so a bad
         // second frame can never be discovered halfway through a live sequence.
@@ -285,7 +290,7 @@ app.MapPost("/v1/image/sequence", (ShowSequenceRequest request) =>
         try
         {
             var startedAt = DateTimeOffset.UtcNow;
-            var acks = WindowsRfcommStaticImageTransport.ExchangeSequenceOnce(groups, delay, operation, request.TotalBudgetMs);
+            var acks = WindowsRfcommStaticImageTransport.ExchangeSequenceOnce(groups, delay, operation, request.TotalBudgetMs, spacing);
             operation.Finish("ok", string.Join(",", acks.Select(ack => $"0x{ack:X2}")), null);
             return Results.Json(new
             {
@@ -301,6 +306,7 @@ app.MapPost("/v1/image/sequence", (ShowSequenceRequest request) =>
                 paletteColorsOrdered = encoded.Select(item => item.PaletteColors).ToArray(),
                 ackPayloadHexOrdered = acks.Select(ack => $"0x{ack:X2}").ToArray(),
                 interFrameDelayMs = delay,
+                sendSpacingMs = spacing,
                 connectionsAttempted = 1,
                 socketClosed = true,
                 retry = false,
@@ -494,7 +500,7 @@ return 0;
 
 sealed record ShowImageRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256);
 sealed record SequenceFrameRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256);
-sealed record ShowSequenceRequest(SequenceFrameRequest[] Frames, int InterFrameDelayMs, int TotalBudgetMs);
+sealed record ShowSequenceRequest(SequenceFrameRequest[] Frames, int InterFrameDelayMs, int TotalBudgetMs, int? SendSpacingMs);
 sealed record OpenSessionRequest(string ExperimentId, int LifetimeSeconds, int MinFrameIntervalMs, int MaxFrames, int MaxTxBytes);
 sealed record SessionFrameRequest(string SessionId, string PixelsRgb888Hex, string ExpectedImagePacketSha256);
 sealed record CloseSessionRequest(string SessionId, string Reason);

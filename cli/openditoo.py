@@ -381,8 +381,12 @@ def sequence_run(args: argparse.Namespace) -> int:
 
     delay_ms = int(budgets.get("inter_frame_delay_ms", 0))
     total_budget_ms = int(budgets.get("total_wall_clock_ms", 0))
-    body = json.dumps({"frames": frames, "interFrameDelayMs": delay_ms, "totalBudgetMs": total_budget_ms},
-                      separators=(",", ":")).encode("utf-8")
+    # Absent means the Host's stock-derived default. Only a reviewed manifest may lower it.
+    spacing = budgets.get("send_spacing_ms")
+    request_body = {"frames": frames, "interFrameDelayMs": delay_ms, "totalBudgetMs": total_budget_ms}
+    if spacing is not None:
+        request_body["sendSpacingMs"] = int(spacing)
+    body = json.dumps(request_body, separators=(",", ":")).encode("utf-8")
     timeout = max(30.0, int(budgets.get("total_wall_clock_ms", 20000)) / 1000.0 + 10.0)
     request = urllib.request.Request(
         IMAGE_SEQUENCE_URL, data=body, method="POST",
@@ -414,6 +418,7 @@ def sequence_run(args: argparse.Namespace) -> int:
         "txBytesTotal": budgets.get("application_tx_bytes_total"),
         "connectionsAttempted": budgets.get("connection_attempts"),
         "interFrameDelayMs": delay_ms,
+        "sendSpacingMs": int(spacing) if spacing is not None else 40,
         "socketClosed": True,
         "retry": False,
         "reconnect": False,

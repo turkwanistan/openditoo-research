@@ -1,0 +1,145 @@
+{
+ "schema_version": 1,
+ "experiment_id": "OPENDITOO-R2B-SPACING-10MS-001",
+ "milestone": "R2b \u2014 is the stock-derived send spacing load-bearing?",
+ "status": "pending_operator_grant",
+ "objective": "Reduce the intra-frame send spacing from the stock-derived 40 ms to 10 ms, holding the delay at the proven 50 ms. Targets roughly 115 ms per frame, about 8.7 fps. The real question is not the rate: it is whether the 40 ms the stock app leaves between a frame's three packets is doing something the device needs.",
+ "why_this_is_the_cheap_path": "ONE variable changes: send spacing 40 -> 10 ms. Same frames, frame count, packets, target, connection shape, stop policy, encoder and 50 ms delay. This is the LAST unknown on the path to the operator's 10 fps target: the arithmetic already shows 10 fps needs spacing at or near zero, so if 10 ms is safe the target is reachable with one ACK per frame and no pipelining. Going straight to 10 rather than via 20 is deliberate -- each run is under two seconds, every failure mode is bounded, and a failure usefully brackets the limit between 10 and 40 rather than wasting a run confirming a safe midpoint.",
+ "target": {
+  "exact_unit_id": "11:75:58:CE:DE:C7",
+  "installed_firmware": "v42012",
+  "model": "Ditoo Plus",
+  "pairing_precheck": "authenticated exact target required before any socket is created"
+ },
+ "transport": {
+  "measured_endpoint": "Windows Classic RFCOMM channel 1",
+  "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+  "one_controller_rule": "the Android app must be disconnected for the whole run"
+ },
+ "operation": {
+  "shape": "one connection; 10 frames alternating A,B,...; per frame send preamble A, preamble B, image with 10 ms between packets, read one ACK, wait 50 ms; then close",
+  "semantic_evidence": "OPENDITOO-R2A-DELAY-50MS-001 PASS: 175.4 ms achieved at a 50 ms delay and 40 ms spacing, 30/30 packets, 10/10 ACKs, zero errors, operator confirmed the corners still alternating distinctly. This changes the intra-frame spacing only.",
+  "application_tx_hex": "01340044000a0a04aa2d00f4010002ffffff000000f8fff8fff8ffffffffffffffffffffffffffffffffffffffffffffffffffffff262502",
+  "frame_order": [
+   "a",
+   "b",
+   "a",
+   "b",
+   "a",
+   "b",
+   "a",
+   "b",
+   "a",
+   "b"
+  ],
+  "source_frames": {
+   "a": {
+    "file": "examples/openditoo-m8-a-topleft-16.png",
+    "png_sha256": "36c4361020c65a1f03c8617b0d6eb287aa7309cefad428d23c38fafd6fcd4b9c",
+    "rgb_sha256": "91f7692c1795f4952594f280e3532ef5fbf81861433ffbc8d5918ac7bc99b502",
+    "packet_sha256": "42f6a81e9eb3c821a654b14c9070c0dfdc7bf5d5458d59967983435042c2506d",
+    "palette_colors": 2
+   },
+   "b": {
+    "file": "examples/openditoo-m8-b-bottomright-16.png",
+    "png_sha256": "9924d0f4e620e388481540a5b6865178934256753abad8fc977dade913a9a1da",
+    "rgb_sha256": "5a9b4f802654cfbb36c4758923da41fe4eec99e952045410e2c5cd32996c0c81",
+    "packet_sha256": "004dfc38f2acd3aa7a6b8b33249e172a50abc5b60b3777999fe3ea82c7156ddd",
+    "palette_colors": 2
+   },
+   "why_reuse": "The A/B frames are already frozen and already physically proven in step 1, so this experiment changes exactly one variable: repetition. Introducing new artwork at the same time would confound the measurement."
+  },
+  "measurements_required": [
+   "achieved inter-frame interval versus the predicted 115 ms",
+   "per-frame ACK latency and whether it drifts",
+   "any frame whose ACK did not arrive, or any malformed ACK",
+   "**whether the correct image renders** \u2014 a too-fast packet group could plausibly be mis-assembled by the device into a wrong or corrupt frame, and that is the one failure mode the ACK cannot detect",
+   "operator observation of whether the alternation is still clean"
+  ],
+  "automatic_retry": false,
+  "automatic_reconnect": false,
+  "target_override": false,
+  "raw_packet_override": false
+ },
+ "budgets": {
+  "connection_attempts": 1,
+  "application_requests": 10,
+  "application_packets": 30,
+  "application_tx_bytes_total": 710,
+  "expected_rx_frames": 10,
+  "expected_rx_bytes_total": 100,
+  "inter_frame_delay_ms": 50,
+  "ack_timeout_ms_per_frame": 5000,
+  "total_wall_clock_ms": 15000,
+  "derivation": "10 frames at a predicted ~115 ms interval is roughly 1.2 s. Wall clock stays 15 s so a slower run is measured rather than truncated. Frames, packets and bytes are unchanged from R1/R2a.",
+  "derivation_note_on_frame_count": "Deliberately NOT raised above ten. The Host's MaxSequenceFrames tracks a manifest that was actually granted rather than being an arbitrary number, and a test pins it to the M8 finite-loop manifest. Raising it to get a longer sample would mean a code change, a rebuild, a reinstall and weakening that guard -- all to answer a question nine intervals already answer.",
+  "send_spacing_ms": 10
+ },
+ "expected_observations": {
+  "transport": "one connection, 30 application packets, 10 wrapped 0x44 ACKs, clean local close",
+  "physical": "the white block alternates between the top-left and bottom-right corners ten times in a little over a second",
+  "ack_payload": "recorded per frame, not asserted",
+  "primary_risk": "The device may need the 40 ms gap to assemble a frame's three packets. If so the likely symptoms are a malformed or missing ACK, which stops the run, or -- the case the ACK cannot catch -- a visibly wrong, corrupt or stale image. Operator observation is therefore load-bearing evidence in this experiment, not a nicety."
+ },
+ "persistence_analysis": {
+  "expected_effect": "display state only",
+  "basis": "M6.4 power cycle returned the unit to stock software and the default clock",
+  "not_claimed": "absence of any non-volatile write; repetition does not test that either",
+  "new_persistence_risk_vs_step_1": "none identified: identical command, identical packets, same session shape, repeated. No new command id, no save/publish/upload, no gallery interaction."
+ },
+ "stop_policy": {
+  "stop_immediately_on": [
+   "unexpected target identity or pairing precheck failure",
+   "any ACK that is not exactly one 10-byte wrapped 0x44 frame",
+   "any send that does not complete in full",
+   "ACK timeout on any frame",
+   "total wall clock exceeding 30000 ms",
+   "any conflicting controller observed on the link",
+   "a stock page takeover or any device behaviour outside the expected observations"
+  ],
+  "on_ambiguous_outcome": "stop, preserve the Host diagnostics record including the per-frame timings collected so far, and report. Do NOT resend, do not reconnect, do not power-cycle before the result is recorded.",
+  "recovery": "operator-initiated only, after the outcome is recorded",
+  "operator_abort": "the run is short enough to watch end to end; if it looks wrong, power off the Ditoo rather than letting it continue."
+ },
+ "implementation_gate": {
+  "host_change_required": "yes: send spacing becomes manifest-driven, bounded 0..40 ms, defaulting to the stock-derived 40 when absent",
+  "status": "built, installed and verified 2026-09-09. Installed DLL 444c47e6dc193ceaa63d3c960a09da8b11d5ec4f1ee917590fbc579237dcbd5b, byte-identical to the repository build, REFRESH_STATUS=PASS_TYPED_IMAGE, OPENTIVOO_TASK=preserved, installed binary passes the shared receive fixture.",
+  "boundary": "A manifest may LOWER the spacing to measure it and may never raise it above the stock-derived 40 ms; the Host rejects anything outside 0..40 with IMAGE_SEND_SPACING."
+ },
+ "authority": {
+  "transmission_authorized": false,
+  "authorization_consumed": false,
+  "experiment_id": "OPENDITOO-R2B-SPACING-10MS-001",
+  "granted_by": null,
+  "grant_text": null,
+  "expires_at": null,
+  "grant_scope_requested": "ONE execution: 10 frames, 30 packets, 710 application bytes, 50 ms inter-frame delay, 10 ms intra-frame send spacing, one connection, no retry, no reconnect. Not spacing below 10 ms, not a delay below 50 ms, not more frames, not the activity display.",
+  "note": "Grants nothing as written."
+ },
+ "explicitly_out_of_scope": [
+  "send spacing below 10 ms (that would be a further step, after this one is measured)",
+  "any inter-frame delay below 50 ms",
+  "pipelining or any change to the one-ACK-per-frame shape",
+  "driving frames from the M9 activity collector",
+  "more than ten frames, or keeping the connection open beyond this run"
+ ],
+ "rate_ladder_context": {
+  "position": "R2b; R1 (250 ms) and R2a (50 ms) are complete, accepted and visually confirmed",
+  "measured": {
+   "1000ms_delay": "1114.1 ms / 0.90 fps",
+   "250ms_delay": "371.6 ms / 2.71 fps (3 runs)",
+   "50ms_delay": "175.4 ms / 5.70 fps"
+  },
+  "residual_model": "frame = 2 x spacing + turnaround + delay. Turnaround measured at 34, 42 and 45 ms as the rate rose, so ~45 ms is used here.",
+  "predicted_interval_ms": "2 x 10 + 45 + 50 = 115 ms, about 8.7 fps",
+  "what_would_falsify_the_model": "An interval materially above ~140 ms would mean the device imposes its own floor between packets regardless of what we ask, which would cap the ladder around 7 fps.",
+  "why_not_target_10_fps_directly": "10 fps needs spacing at essentially zero (95 ms/frame). Measuring 10 first tells us whether the trend is safe before removing the stock behaviour entirely.",
+  "product_note": "The activity display is change-only and sent six frames in 300 seconds, so rate barely affects it. Rate matters for the crown pulse: four stages take 0.70 s at 5.7 fps and 0.46 s at 8.7 fps, both readable. The recommendation is to OPERATE around 6-7 fps with headroom rather than at whatever the wall turns out to be."
+ },
+ "build": {
+  "host_dll_sha256": "444c47e6dc193ceaa63d3c960a09da8b11d5ec4f1ee917590fbc579237dcbd5b",
+  "installed_dll_sha256_verified": "444c47e6dc193ceaa63d3c960a09da8b11d5ec4f1ee917590fbc579237dcbd5b"
+ },
+ "why_this_value_matters": "Every other timing number in this project was chosen by us and has proven reducible: the inter-frame delay went 1000 -> 250 -> 50 ms with no ill effect. The 40 ms send spacing is the ONLY timing taken from observed stock-app behaviour, so it is the only one that might encode a real device requirement.",
+ "result": null
+}

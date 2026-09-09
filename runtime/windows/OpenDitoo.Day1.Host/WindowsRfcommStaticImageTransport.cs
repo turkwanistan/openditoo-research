@@ -141,7 +141,7 @@ static class WindowsRfcommStaticImageTransport
     /// The stock app repeats frames inside a single open session, so a sequence does
     /// not reconnect between frames. There is still no retry and no reconnect.
     /// </summary>
-    internal static byte[] ExchangeSequenceOnce(byte[][][] groups, int interFrameDelayMs, ImageOperation? operation = null, int totalBudgetMsOverride = 0)
+    internal static byte[] ExchangeSequenceOnce(byte[][][] groups, int interFrameDelayMs, ImageOperation? operation = null, int totalBudgetMsOverride = 0, int sendSpacingMs = DitooStaticImageProtocol.DefaultSendSpacingMs)
     {
         if (groups.Length < 1 || groups.Length > DitooStaticImageProtocol.MaxSequenceFrames)
             throw new ArgumentException("IMAGE_SEQUENCE_FRAME_COUNT_REJECTED");
@@ -152,6 +152,9 @@ static class WindowsRfcommStaticImageTransport
         }
         if (interFrameDelayMs < 0 || interFrameDelayMs > DitooStaticImageProtocol.MaxInterFrameDelayMs)
             throw new ArgumentException("IMAGE_SEQUENCE_DELAY_REJECTED");
+        if (sendSpacingMs < DitooStaticImageProtocol.MinSendSpacingMs ||
+            sendSpacingMs > DitooStaticImageProtocol.MaxSendSpacingMs)
+            throw new ArgumentException("IMAGE_SEND_SPACING_REJECTED");
 
         var budgetMs = DitooStaticImageProtocol.TotalBudgetMs
             + (groups.Length - 1) * (DitooStaticImageProtocol.AckBudgetMs + interFrameDelayMs);
@@ -171,7 +174,7 @@ static class WindowsRfcommStaticImageTransport
         {
             var frameStartedAt = total.ElapsedMilliseconds;
             if (frame == 0) firstFrameAt = frameStartedAt;
-            link.SendFrameGroup(groups[frame], operation, frame);
+            link.SendFrameGroup(groups[frame], operation, frame, sendSpacingMs);
             acks[frame] = link.ReadOneAck(DitooStaticImageProtocol.AckBudgetMs).Payload[0];
             var ackAt = total.ElapsedMilliseconds;
             operation?.FrameCompleted(frame + 1, ackAt - frameStartedAt, frameStartedAt - firstFrameAt, acks[frame]);
@@ -275,7 +278,8 @@ static class WindowsRfcommStaticImageTransport
             }
         }
 
-        internal void SendFrameGroup(byte[][] packets, ImageOperation? operation, int frame)
+        internal void SendFrameGroup(byte[][] packets, ImageOperation? operation, int frame,
+                                     int sendSpacingMs = DitooStaticImageProtocol.DefaultSendSpacingMs)
         {
             if (packets.Length != 3)
                 throw new ArgumentException("IMAGE_TRANSACTION_PACKET_COUNT_REJECTED");
@@ -291,8 +295,8 @@ static class WindowsRfcommStaticImageTransport
                     throw new InvalidOperationException($"IMAGE_SEND_FAILED FRAME={frame + 1} INDEX={index + 1} REASON={reason} BYTES={sent} WSA={error}; NO_RETRY");
                 }
                 operation?.PacketSent(sent);
-                if (index < packets.Length - 1)
-                    Thread.Sleep(DitooStaticImageProtocol.SendSpacingMs);
+                if (index < packets.Length - 1 && sendSpacingMs > 0)
+                    Thread.Sleep(sendSpacingMs);
             }
         }
 
