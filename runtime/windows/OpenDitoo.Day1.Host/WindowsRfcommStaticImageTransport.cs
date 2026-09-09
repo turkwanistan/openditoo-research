@@ -133,7 +133,7 @@ static class WindowsRfcommStaticImageTransport
     [DllImport("Ws2_32.dll")] private static extern int WSAEnumNetworkEvents(IntPtr socketHandle, IntPtr eventHandle, ref WsaNetworkEvents networkEvents);
     [DllImport("Ws2_32.dll")] private static extern uint WSAWaitForMultipleEvents(uint eventCount, [In] IntPtr[] eventHandles, [MarshalAs(UnmanagedType.Bool)] bool waitAll, uint timeoutMilliseconds, [MarshalAs(UnmanagedType.Bool)] bool alertable);
 
-    internal static byte ExchangeOnce(byte[][] packets)
+    internal static byte ExchangeOnce(byte[][] packets, ImageOperation? operation = null)
     {
         if (packets.Length != 3)
             throw new ArgumentException("IMAGE_TRANSACTION_PACKET_COUNT_REJECTED");
@@ -173,20 +173,24 @@ static class WindowsRfcommStaticImageTransport
             }
             if (total.ElapsedMilliseconds > DitooStaticImageProtocol.ConnectBudgetMs)
                 throw new TimeoutException("IMAGE_CONNECT_TOTAL_BUDGET_EXCEEDED");
+            operation?.StageCompleted("connect");
 
             var initialSendDeadline = new Deadline(DitooStaticImageProtocol.AckBudgetMs);
             SelectEvents(socketHandle, eventHandle, FdWrite | FdClose, "IMAGE_INITIAL_SEND_READY");
             WaitForWriteOrClose(socketHandle, eventHandle, initialSendDeadline);
+            operation?.StageCompleted("send_ready");
 
             for (var index = 0; index < packets.Length; index++)
             {
                 var sent = send(socketHandle, packets[index], packets[index].Length, 0);
                 if (sent != packets[index].Length)
                 {
+                    operation?.SendOutcomeUnknown();
                     var error = sent < 0 ? WSAGetLastError() : 0;
                     var reason = error == WsaWouldBlock ? "WOULD_BLOCK" : "PARTIAL_OR_ERROR";
                     throw new InvalidOperationException($"IMAGE_SEND_FAILED INDEX={index + 1} REASON={reason} BYTES={sent} WSA={error}; NO_RETRY");
                 }
+                operation?.PacketSent(sent);
                 if (index < packets.Length - 1)
                     Thread.Sleep(DitooStaticImageProtocol.SendSpacingMs);
             }
@@ -223,11 +227,17 @@ static class WindowsRfcommStaticImageTransport
             }
             if (total.ElapsedMilliseconds > DitooStaticImageProtocol.TotalBudgetMs)
                 throw new TimeoutException("IMAGE_TOTAL_BUDGET_EXCEEDED; NO_RETRY");
-            return ValidateAck(received.ToArray());
+            var ack = ValidateAck(received.ToArray());
+            operation?.StageCompleted("ack");
+            return ack;
         }
         finally
         {
-            if (socketHandle != InvalidSocket) closesocket(socketHandle);
+            if (socketHandle != InvalidSocket)
+            {
+                closesocket(socketHandle);
+                operation?.SocketWasClosed();
+            }
             if (eventHandle != InvalidEvent) WSACloseEvent(eventHandle);
             if (started) WSACleanup();
             Marshal.FreeHGlobal(wsaData);

@@ -75,17 +75,34 @@ app.MapGet("/v1/status", () => Results.Json(new
     capabilities = new[] { "status", "image-show" },
     deviceIo = false,
     target = DitooStaticImageProtocol.TargetMac,
-    purpose = "typed_runtime_static_image_control"
+    purpose = "typed_runtime_static_image_control",
+
+    // Diagnostics: Host readiness only. Status never touches Bluetooth, so it
+    // cannot report device connectivity; a past success is not present truth.
+    statusPerformsDeviceIo = false,
+    hostStartedAtUtc = ImageOperationLog.HostStartedAtUtc.ToString("O"),
+    hostUptimeSeconds = (long)(DateTimeOffset.UtcNow - ImageOperationLog.HostStartedAtUtc).TotalSeconds,
+    deviceConnectivity = "unknown",
+    deviceConnectivityBasis = "no_active_observation",
+    operationHistoryScope = "volatile_since_host_start",
+    diagnostics = ImageOperationLog.Snapshot(),
 }));
 
 app.MapPost("/v1/image/show", (ShowImageRequest request) =>
 {
     if (!imageGate.Wait(0))
         return Results.Json(new { ok = false, errorCode = "IMAGE_BUSY" }, statusCode: StatusCodes.Status409Conflict);
+    var operation = ImageOperationLog.Begin();
     try
     {
+        IResult Reject(string errorCode, object body, int statusCode)
+        {
+            operation.Finish("rejected", null, errorCode);
+            return Results.Json(body, statusCode: statusCode);
+        }
+
         if (string.IsNullOrWhiteSpace(request.PixelsRgb888Hex))
-            return Results.BadRequest(new { ok = false, errorCode = "IMAGE_RGB_REQUIRED" });
+            return Reject("IMAGE_RGB_REQUIRED", new { ok = false, errorCode = "IMAGE_RGB_REQUIRED" }, StatusCodes.Status400BadRequest);
         byte[] rgb;
         try
         {
@@ -93,10 +110,10 @@ app.MapPost("/v1/image/show", (ShowImageRequest request) =>
         }
         catch (FormatException)
         {
-            return Results.BadRequest(new { ok = false, errorCode = "IMAGE_RGB_INVALID_HEX" });
+            return Reject("IMAGE_RGB_INVALID_HEX", new { ok = false, errorCode = "IMAGE_RGB_INVALID_HEX" }, StatusCodes.Status400BadRequest);
         }
         if (rgb.Length != DitooStaticImageProtocol.RgbBytes)
-            return Results.BadRequest(new { ok = false, errorCode = "IMAGE_RGB_LENGTH", expectedBytes = DitooStaticImageProtocol.RgbBytes, actualBytes = rgb.Length });
+            return Reject("IMAGE_RGB_LENGTH", new { ok = false, errorCode = "IMAGE_RGB_LENGTH", expectedBytes = DitooStaticImageProtocol.RgbBytes, actualBytes = rgb.Length }, StatusCodes.Status400BadRequest);
 
         DitooStaticImageProtocol.EncodedImage encoded;
         try
@@ -105,18 +122,19 @@ app.MapPost("/v1/image/show", (ShowImageRequest request) =>
         }
         catch (ArgumentException ex)
         {
-            return Results.BadRequest(new { ok = false, errorCode = "IMAGE_ENCODING_REJECTED", message = ex.Message });
+            return Reject("IMAGE_ENCODING_REJECTED", new { ok = false, errorCode = "IMAGE_ENCODING_REJECTED", message = ex.Message }, StatusCodes.Status400BadRequest);
         }
         if (string.IsNullOrWhiteSpace(request.ExpectedImagePacketSha256) ||
             !encoded.PacketSha256.Equals(request.ExpectedImagePacketSha256, StringComparison.OrdinalIgnoreCase))
         {
-            return Results.BadRequest(new
+            return Reject("IMAGE_ENCODER_HASH_MISMATCH", new
             {
                 ok = false,
                 errorCode = "IMAGE_ENCODER_HASH_MISMATCH",
                 hostImagePacketSha256 = encoded.PacketSha256,
-            });
+            }, StatusCodes.Status400BadRequest);
         }
+        operation.Encoded(encoded.PacketSha256, encoded.PaletteColors);
 
         try
         {
@@ -124,13 +142,16 @@ app.MapPost("/v1/image/show", (ShowImageRequest request) =>
         }
         catch (PairingRequiredException ex)
         {
-            return Results.Json(new { ok = false, errorCode = "IMAGE_PAIRING_REQUIRED", message = ex.Message }, statusCode: StatusCodes.Status409Conflict);
+            return Reject("IMAGE_PAIRING_REQUIRED", new { ok = false, errorCode = "IMAGE_PAIRING_REQUIRED", message = ex.Message }, StatusCodes.Status409Conflict);
         }
+        operation.StageCompleted("target_precheck");
 
         var packets = DitooStaticImageProtocol.BuildTransaction(encoded.Packet);
+        operation.Planned(packets);
         try
         {
-            var ack = WindowsRfcommStaticImageTransport.ExchangeOnce(packets);
+            var ack = WindowsRfcommStaticImageTransport.ExchangeOnce(packets, operation);
+            operation.Finish("ok", $"0x{ack:X2}", null);
             return Results.Json(new
             {
                 ok = true,
@@ -146,21 +167,30 @@ app.MapPost("/v1/image/show", (ShowImageRequest request) =>
                 connectionsAttempted = 1,
                 socketClosed = true,
                 retry = false,
+                operationId = operation.OperationId,
+                lastCompletedStage = operation.LastCompletedStage,
             });
         }
         catch (Exception ex)
         {
+            operation.Finish("failed", null, ex is TimeoutException ? "IMAGE_TRANSPORT_TIMEOUT" : "IMAGE_TRANSPORT_FAIL_CLOSED");
             return Results.Json(new
             {
                 ok = false,
                 errorCode = "IMAGE_TRANSPORT_FAIL_CLOSED",
                 message = $"{ex.GetType().Name}: {ex.Message}",
                 retry = false,
+                operationId = operation.OperationId,
+                lastCompletedStage = operation.LastCompletedStage,
+                packetsSentComplete = operation.PacketsSentComplete,
+                txBytesSentComplete = operation.TxBytesSentComplete,
+                inFlightPacketBytesUnknown = operation.InFlightPacketBytesUnknown,
             }, statusCode: StatusCodes.Status502BadGateway);
         }
     }
     finally
     {
+        ImageOperationLog.End(operation);
         imageGate.Release();
     }
 });

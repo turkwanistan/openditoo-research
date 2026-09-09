@@ -15,3 +15,6 @@ runtime/windows/.build/
 # Captures may contain unrelated personal Bluetooth/phone data.
 # Commit only filtered, reviewed evidence explicitly.
 captures/private/
+
+# Windows-copied file metadata
+*:Zone.Identifier

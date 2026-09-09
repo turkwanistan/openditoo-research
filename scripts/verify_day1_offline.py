@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -34,7 +35,7 @@ def verify_sha256_manifest() -> int:
     return count
 
 
-def run_tests() -> None:
+def run_tests() -> int:
     proc = subprocess.run(
         [sys.executable, "-m", "unittest", "-q", "tests/test_day1_offline.py"],
         cwd=ROOT,
@@ -45,6 +46,10 @@ def run_tests() -> None:
         sys.stderr.write(proc.stdout)
         sys.stderr.write(proc.stderr)
         fail("offline unit tests failed")
+    match = re.search(r"^Ran (\d+) tests", proc.stderr, re.MULTILINE)
+    if not match:
+        fail("offline unit test count is unreadable")
+    return int(match.group(1))
 
 
 def verify_manifests() -> None:
@@ -146,14 +151,14 @@ def verify_m5_runner_disarmed() -> None:
 
 def main() -> int:
     artifact_count = verify_sha256_manifest()
-    run_tests()
+    test_count = run_tests()
     verify_manifests()
     verify_host_boundary()
     verify_consumed_runner()
     verify_m5_runner_disarmed()
     print(
         "DAY1_OFFLINE_PASS "
-        f"artifacts={artifact_count} tests=22 host=typed_image port=8796 "
+        f"artifacts={artifact_count} tests={test_count} host=typed_image port=8796 "
         "device_io=false m4_completed=true m4_authorized=false m5_authorized=false"
     )
     return 0

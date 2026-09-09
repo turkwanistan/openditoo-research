@@ -334,5 +334,112 @@ class Png16Tests(unittest.TestCase):
                 decode_png16_rgb(path)
 
 
+def _decode_static_image_packet(wire: bytes) -> bytes:
+    """Rebuild RGB888 from a 0x44 static-image packet, independent of the encoder."""
+    if wire[0] != 0x01 or wire[-1] != 0x02 or wire[3] != 0x44:
+        raise ValueError("not a 0x44 static image packet")
+    payload = wire[4:-3]
+    if payload[:5] != bytes.fromhex("000a0a04aa") or payload[7:10] != bytes.fromhex("f40100"):
+        raise ValueError("unexpected static image payload header")
+    count = payload[10]
+    palette_end = 11 + count * 3
+    palette = [tuple(payload[i:i + 3]) for i in range(11, palette_end, 3)]
+    packed = payload[palette_end:]
+    bits_per_pixel = max(1, (count - 1).bit_length())
+    out = bytearray()
+    for pixel in range(256):
+        index = 0
+        for bit in range(bits_per_pixel):
+            offset = pixel * bits_per_pixel + bit
+            index |= ((packed[offset // 8] >> (offset % 8)) & 1) << bit
+        out.extend(palette[index])
+    return bytes(out)
+
+
+class M6RuntimeAcceptanceTests(unittest.TestCase):
+    """M6.3 — encoder/CLI boundaries and honest Host diagnostics."""
+
+    def test_asymmetric_image_survives_png_and_encoder_round_trip(self) -> None:
+        # Distinct corner/edge marks: any transpose, flip or row/column swap fails.
+        rgb = bytearray(768)
+        for pixel, color in {
+            0: (255, 0, 0),        # top-left
+            15: (0, 255, 0),       # top-right
+            240: (0, 0, 255),      # bottom-left
+            255: (255, 255, 255),  # bottom-right
+            1: (255, 255, 0),      # second column of first row
+            16: (0, 255, 255),     # first column of second row
+        }.items():
+            rgb[pixel * 3:pixel * 3 + 3] = bytes(color)
+        rgb = bytes(rgb)
+        with tempfile.TemporaryDirectory() as tmp:
+            png = Path(tmp) / "asymmetric.png"
+            _write_rgb_png16(png, rgb)
+            decoded = decode_png16_rgb(png)
+        self.assertEqual(decoded, rgb)
+        wire, palette_colors = encode_rgb888_static_image(decoded)
+        self.assertEqual(palette_colors, 7)
+        self.assertEqual(_decode_static_image_packet(wire), rgb)
+
+    def test_malformed_png_crc_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            png = Path(tmp) / "corrupt.png"
+            _write_rgb_png16(png, bytes(768))
+            data = bytearray(png.read_bytes())
+            data[-5] ^= 0xFF  # flip a byte inside the IEND CRC
+            png.write_bytes(bytes(data))
+            with self.assertRaises(Png16Error):
+                decode_png16_rgb(png)
+
+    def test_transaction_is_exactly_three_packets_with_stock_preambles(self) -> None:
+        from host.ditoo_pixel_coloring import IMAGE_PREAMBLE_A, IMAGE_PREAMBLE_B
+
+        protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooStaticImageProtocol.cs").read_text(encoding="utf-8")
+        self.assertIn(f'ImagePreambleA = Convert.FromHexString("{IMAGE_PREAMBLE_A.hex().upper()}")', protocol)
+        self.assertIn(f'ImagePreambleB = Convert.FromHexString("{IMAGE_PREAMBLE_B.hex().upper()}")', protocol)
+        transport = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/WindowsRfcommStaticImageTransport.cs").read_text(encoding="utf-8")
+        self.assertIn('if (packets.Length != 3)', transport)
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        self.assertIn('"packetCount": 3', cli)
+        self.assertIn('"retry": False', cli)
+
+    def test_host_hash_gate_precedes_any_device_touch(self) -> None:
+        program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
+        hash_gate = program.index("IMAGE_ENCODER_HASH_MISMATCH")
+        self.assertLess(hash_gate, program.index("RequireAuthenticatedExactTarget"))
+        self.assertLess(hash_gate, program.index("ExchangeOnce"))
+
+    def test_status_reports_host_health_not_device_connectivity(self) -> None:
+        program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
+        status = program[program.index('app.MapGet("/v1/status"'):program.index('app.MapPost("/v1/image/show"')]
+        self.assertIn('statusPerformsDeviceIo = false', status)
+        self.assertIn('deviceIo = false', status)
+        self.assertIn('deviceConnectivity = "unknown"', status)
+        self.assertIn('operationHistoryScope = "volatile_since_host_start"', status)
+        self.assertIn('diagnostics = ImageOperationLog.Snapshot()', status)
+        self.assertNotIn('ExchangeOnce', status)
+        self.assertNotIn('RequireAuthenticatedExactTarget', status)
+
+    def test_diagnostics_are_bounded_volatile_and_secret_free(self) -> None:
+        src = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/ImageOperationDiagnostics.cs").read_text(encoding="utf-8")
+        self.assertIn('const int RecentLimit = 5', src)
+        self.assertIn('while (Recent.Count > RecentLimit) Recent.Dequeue();', src)
+        self.assertIn('inFlightPacketBytesUnknown', src)
+        self.assertIn('retry = false', src)
+        for forbidden in ("token", "Authorization", "PixelsRgb888Hex", "File.Write", "AppendAllText"):
+            self.assertNotIn(forbidden, src, msg=f"diagnostics must not expose or persist {forbidden}")
+
+    def test_transport_records_stage_progress_and_unknown_in_flight_bytes(self) -> None:
+        transport = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/WindowsRfcommStaticImageTransport.cs").read_text(encoding="utf-8")
+        self.assertIn('ExchangeOnce(byte[][] packets, ImageOperation? operation = null)', transport)
+        for stage in ('operation?.StageCompleted("connect")', 'operation?.StageCompleted("send_ready")',
+                      'operation?.StageCompleted("ack")', 'operation?.PacketSent(sent)',
+                      'operation?.SendOutcomeUnknown()', 'operation?.SocketWasClosed()'):
+            self.assertIn(stage, transport)
+        # An incomplete send must be flagged before the throw that abandons the transaction.
+        send_block = transport[transport.index("if (sent != packets[index].Length)"):]
+        self.assertLess(send_block.index("SendOutcomeUnknown"), send_block.index("IMAGE_SEND_FAILED"))
+
+
 if __name__ == "__main__":
     unittest.main()
