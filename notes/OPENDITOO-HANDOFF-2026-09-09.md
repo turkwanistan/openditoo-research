@@ -47,7 +47,9 @@ Two live commands exist, both operator-invoked, neither able to retry or reconne
 
 **~175 ms per frame (5.70 frames/s), measured 2026-09-09 by `OPENDITOO-R2A-DELAY-50MS-001`.**
 Ten frames, one connection, zero missing ACKs, zero errors. This is 6.35x the original
-1114 ms ceiling. Visual acceptance at this rate is **pending**.
+1114 ms ceiling, and it is **visually accepted**: the operator watched the corners still
+alternating distinctly, so the panel keeps up at 5.7 fps. Where distinctness actually
+breaks down is above that and untested.
 
 The ladder so far, all on the exact unit:
 

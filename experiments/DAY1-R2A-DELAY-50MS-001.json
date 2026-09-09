@@ -182,7 +182,7 @@
    118,
    105
   ],
-  "operator_visual_order": "pending"
+  "operator_visual_order": "confirmed_alternating_corners"
  },
  "measurements": {
   "achieved_inter_frame_interval_ms": {
@@ -220,7 +220,7 @@
    "id": "RATE-50MS-DELAY-SUSTAINED",
    "confidence": "MATCHED",
    "statement": "The exact unit sustains a 175.4 ms mean frame interval (5.70 fps) for ten frames in one connection with zero missing ACKs and zero errors. That is 2.12x R1 and 6.35x the original accepted ceiling.",
-   "not_claimed": "visual distinctness at this rate; that is the operator's observation and is pending."
+   "not_claimed": "nothing further: visual distinctness at this rate is now confirmed by the operator. What remains unknown is where distinctness actually breaks down, which is above 5.7 fps and untested."
   },
   {
    "id": "DELAY-REDUCTION-IS-NEARLY-LINEAR",
@@ -232,6 +232,6 @@
  "acceptance": {
   "transport_acceptance": "PASS \u2014 one connection, 30 packets, 710 bytes, 10/10 ACKs, clean close, no retry, no reconnect.",
   "rate_acceptance": "PASS \u2014 175.4 ms mean, close to the 169 ms predicted before the run.",
-  "visual_acceptance": "PENDING \u2014 does the alternation still read as ten distinct frames at ~5.7 fps, or begin to blur?"
+  "visual_acceptance": "PASS \u2014 operator, watching the unit: \"yeah I could see them bounce back and forth looks good\". At 5.70 fps the ten frames still read as distinct alternating corners rather than blurring together, so the panel keeps up with this rate. ACKs establish neither the rendering nor the ordering."
  }
 }
