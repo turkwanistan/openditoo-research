@@ -72,7 +72,32 @@ shared runner, and needs its own evidence boundary.
 second transport path inside `frame_stream.py`, and free-form operating arguments on the
 stream CLI.
 
-## First live trial — prepared, NOT authorized
+## First live trial — EXECUTED, authority consumed
+
+`OPENDITOO-S1-STREAM-001` ran once under `Grant OPENDITOO-S1-STREAM-001` and is consumed.
+It must never be re-armed.
+
+**Transport result: PASS.** One connection, Host session `71b1a50d7982`, **42 ACKed frames /
+126 packets / 2982 application bytes** over the full 12 s lifetime, 42 ACKs (38 distinct
+payloads), clean `lifetime_expired / stopped_clean`, `display_state=ours_last_acked`. Zero
+pacing refusals, zero budget refusals, no retry, no reconnect, no reclaim. The product
+supervisor was stopped cleanly first (`operator_stop`, `session_active=false`) and restarted
+immediately afterwards; the MCP dashboard returned automatically.
+
+**42 of 48 playback steps dispatched — by design, not a fault.** Measured ACK latency on
+this unit is ~110–153 ms while the client cadence is 200 ms, so send+ACK work consumes most
+of each window and occasionally the next render tick already reports the following step.
+Clock-indexed playback drops that step rather than stretching the clip. Offline replay sent
+all 48 because its fake clock advances only by the runner's own sleeps and models no
+transport work.
+
+**Finding for future streams:** a manifest that needs every frame shown should state a
+slower `playback_interval_ms` (250 ms leaves ~100 ms of headroom over measured ACK latency).
+That is a manifest choice, not a code change — do not "fix" this in the shared runner.
+
+Operator visual observation is recorded separately and is what accepts the appearance.
+
+## Trial envelope as run
 
 `experiments/DAY1-S1-STREAM-SWEEP-001.json`, experiment id `OPENDITOO-S1-STREAM-001`.
 
@@ -83,9 +108,8 @@ stream CLI.
 - Envelope: one connection, 12 s lifetime, 200 ms cadence, **48 frames / 144 packets /
   3408 application bytes**, one ACK per frame, 150 ms Host floor, no retry / reconnect /
   reclaim / replay / pipelining / raw send / target override / persistent write.
-- Offline replay result: exactly 48 frames, 144 packets, 3408 bytes,
-  `lifetime_expired / stopped_clean`, 192 unchanged holds. Sends match the stated budget
-  exactly.
+- Offline replay predicted 48 frames / 144 packets / 3408 bytes; the live run sent 42 / 126
+  / 2982, under budget for the reason above.
 - Expected physical observation: three left-to-right single-column sweeps — red, green,
   blue — over ~9.6 s, then the final blue column held until the lifetime ends.
 
@@ -93,13 +117,13 @@ stream CLI.
 device (`activitySession.active=true` at hydration). One controller at a time is real, so
 the supervisor must be stopped for the trial and restarted immediately afterwards.
 
-`authority.transmission_authorized` is `false` and no claim exists. Nothing has been
-transmitted. The trial needs the explicit operator grant naming
-`OPENDITOO-S1-STREAM-001`.
+Claim: `.openditoo-local/session-claims/OPENDITOO-S1-STREAM-001.json`, `state=finished`,
+`outcome=stopped_clean`. The claim is durable and unreleasable; any further live stream needs
+a fresh manifest, a fresh experiment id and a fresh named grant.
 
-## What this trial will and will not prove
+## What this trial proved
 
 Proves: the general precomputed-frame streaming path on the exact unit through the accepted
 transport. Proves nothing about video preprocessing, live/procedural generation, camera or
 screen sources, audio synchronization, pipelining, or any rate above the tested cadence.
-Those remain out of scope until the primitive is physically accepted.
+Those remain out of scope; each needs its own reviewed manifest and named grant.

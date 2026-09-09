@@ -5,8 +5,9 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 ## Current session route — 2026-09-09
 
 0. **Read `notes/OPENDITOO-S1-STREAM-PRIMITIVE-2026-09-09.md` first.** It is the current
-   route: the general 16x16 frame-streaming primitive is implemented and offline-verified,
-   and its first live trial `OPENDITOO-S1-STREAM-001` is prepared but **not authorized**.
+   route: the general 16x16 frame-streaming primitive is implemented, offline-verified and
+   physically exercised once. `OPENDITOO-S1-STREAM-001` is **consumed** and may never be
+   re-armed; any further live stream needs a fresh manifest and a fresh named grant.
 1. Read `notes/OPENDITOO-STREAMING-HANDOFF-2026-09-09.md` for how streaming was scoped. MCP Dashboard v1 is closed.
 2. **Then read `notes/OPENDITOO-HANDOFF-2026-09-09.md` selectively for exact-unit transport/rate evidence and historical traps.** It carries
    current state, the authority position, and an explicit warning about environment
@@ -29,7 +30,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | M0-M8 | complete; accepted evidence preserved |
 | M9 MCP activity application | complete; layout/activity/status/fault-display acceptance recorded |
 | R1-R5 rate ladder | complete; measured through 18.46 fps full-colour one-ACK-per-frame ceiling |
-| S1 general frame streaming | implemented + offline verified (187 tests); first live trial `OPENDITOO-S1-STREAM-001` prepared, UNAUTHORIZED, nothing transmitted |
+| S1 general frame streaming | implemented, offline verified (188 tests), and physically exercised: `OPENDITOO-S1-STREAM-001` consumed, transport PASS (42 frames / 126 packets / 2982 bytes, clean close) |
 | A1 collection worker | installed/preserved; product owns collection while active |
 | P1 Runtime 001 | installed, standing local authority active, attach/reclaim/device-reconnect accepted |
 | P2 Runtime 002 | telemetry-only successor implemented/offline verified; committed template disabled; cutover requires its own named grant |
@@ -154,9 +155,13 @@ v1 is untouched.
 This primitive's cadence ceiling is 200 ms / 5 fps, set by `MCP_CLIENT_FRAME_INTERVAL_MS`
 inside that hash-frozen runner. Faster is a separate objective with its own boundary.
 
-Prepared and NOT armed: `experiments/DAY1-S1-STREAM-SWEEP-001.json` — 48 generated
-sweep-bar frames, 12 s, 144 packets, 3408 application bytes, one connection. The persistent
-product supervisor must be stopped for the trial and restarted after. Details:
+First live trial `OPENDITOO-S1-STREAM-001` is consumed and its transport result is PASS: one
+connection, 42 ACKed frames / 126 packets / 2982 application bytes over a 12 s lifetime,
+clean `lifetime_expired`, no refusals, supervisor stopped and restarted cleanly. 42 of 48
+playback steps dispatched because measured ACK latency (~110–153 ms) sits close under the
+200 ms client cadence; clock-indexed playback drops a step rather than stretching the clip.
+A stream needing every frame should state `playback_interval_ms: 250` in its own manifest —
+do not change the shared runner. Details:
 `notes/OPENDITOO-S1-STREAM-PRIMITIVE-2026-09-09.md`.
 
 ### MCP Dashboard v1 closed — Runtime 002 accepted

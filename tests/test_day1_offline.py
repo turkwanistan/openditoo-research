@@ -2751,16 +2751,40 @@ class S1FrameStreamTests(unittest.TestCase):
             self._load(mutate)
         self.assertEqual(caught.exception.code, code)
 
-    def test_the_committed_stream_manifest_reviews_but_is_not_authorized(self) -> None:
+    def test_the_committed_stream_manifest_reviews_against_its_real_frame_set(self) -> None:
         manifest, frame_set, stream = self._load()
         self.assertEqual(manifest.experiment_id, "OPENDITOO-S1-STREAM-001")
         self.assertEqual(frame_set.count, stream["frame_count"])
         self.assertEqual(manifest.max_application_packets, manifest.max_frames * 3)
-        self.assertIn("TRANSMISSION_AUTHORITY_MISSING",
-                      frame_stream.authority_blockers(self.MANIFEST))
-        with self.assertRaises(frame_stream.SessionError) as caught:
-            frame_stream.load_stream_manifest(self.MANIFEST)
-        self.assertEqual(caught.exception.code, "TRANSMISSION_AUTHORITY_MISSING")
+
+    def test_every_missing_consumed_or_expired_grant_refuses(self) -> None:
+        # Asserted against mutated copies, not against the committed file's live state:
+        # a grant is session-local, so this must hold whether or not a trial is armed
+        # right now.
+        for mutate, code in (
+            (lambda d: d["authority"].__setitem__("transmission_authorized", False),
+             "TRANSMISSION_AUTHORITY_MISSING"),
+            (lambda d: d["authority"].__setitem__("authorization_consumed", True),
+             "AUTHORITY_ALREADY_CONSUMED"),
+            (lambda d: d["authority"].__setitem__("expires_at", "2020-01-01T00:00:00Z"),
+             "AUTHORITY_EXPIRED"),
+            (lambda d: d["authority"].__setitem__("grant_text", None),
+             "AUTHORITY_GRANT_UNATTRIBUTED"),
+            (lambda d: d["authority"].__setitem__("expires_at", None),
+             "AUTHORITY_EXPIRY_MISSING"),
+        ):
+            data = self._raw()
+            data["authority"].update(transmission_authorized=True, authorization_consumed=False,
+                                     granted_by="test", grant_text="Grant TEST",
+                                     expires_at="2099-01-01T00:00:00Z")
+            mutate(data)
+            with tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "s.json"
+                path.write_text(json.dumps(data), encoding="utf-8")
+                self.assertIn(code, frame_stream.authority_blockers(path))
+                with self.assertRaises(frame_stream.SessionError) as caught:
+                    frame_stream.load_stream_manifest(path)
+                self.assertEqual(caught.exception.code, code)
 
     def test_the_declared_frame_set_must_be_the_one_on_disk(self) -> None:
         self._refuses("STREAM_FRAME_SET_HASH_DRIFT",

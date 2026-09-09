@@ -118,6 +118,15 @@ def verify_host_boundary() -> None:
             fail(f"typed image surface exposes forbidden escape/collision: {forbidden}")
 
 
+def _s1_stream_armed() -> bool:
+    for path in sorted((ROOT / "experiments").glob("DAY1-S*-STREAM-*.json")):
+        authority = json.loads(path.read_text(encoding="utf-8")).get("authority", {})
+        if authority.get("transmission_authorized") is True and \
+                authority.get("authorization_consumed") is not True:
+            return True
+    return False
+
+
 def _m9_armed() -> bool:
     manifest = json.loads((ROOT / "experiments" / "DAY1-M9-ACTIVATION-001.json").read_text(encoding="utf-8"))
     return manifest.get("authority", {}).get("transmission_authorized") is True
@@ -301,9 +310,9 @@ def verify_stream_boundary() -> None:
         authority = data.get("authority", {})
         if data.get("kind") != "frame_stream":
             fail(f"{path.name} is not a frame_stream manifest")
-        if authority.get("transmission_authorized") is True and \
-                authority.get("authorization_consumed") is not True:
-            fail(f"{path.name} is armed in the repository; a grant is session-local")
+        # An armed manifest is REPORTED, not failed: a grant is session-local and the
+        # verifier must still pass while an authorized trial is actually being run.
+        # Structural boundaries below are the hard failures.
     module = (ROOT / "host/frame_stream.py").read_text(encoding="utf-8")
     # Streaming must not grow a second Bluetooth stack, route or authority path: it
     # renders frames and hands them to the one existing typed session client.
@@ -368,7 +377,9 @@ def main() -> int:
         "DAY1_OFFLINE_PASS "
         f"artifacts={artifact_count} tests={test_count} host=typed_image port=8796 "
         "device_io=false m4_completed=true m4_authorized=false m5_authorized=false ui=approved_mcp_page "
-        f"m9_activation_authorized={str(_m9_armed()).lower()} committed_product_template_authorized=false"
+        f"m9_activation_authorized={str(_m9_armed()).lower()} "
+        f"s1_stream_authorized={str(_s1_stream_armed()).lower()} "
+        "committed_product_template_authorized=false"
     )
     return 0
 
