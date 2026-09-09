@@ -38,7 +38,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | W4 streaming session profile | deployed under Runtime 003; installed/repository Host hash `0da3a18b...`. Streaming profile has not been exercised live |
 | W5 fault injection | PASS: 11 camera-free cases + 5 real-camera/in-memory-Host controls; both parity fixtures pass; route §13 |
 | W2 visual ranking | owner-dependent; harness complete, `srgb_area` remains provisional |
-| W6 trial freeze | missing live adapter; route §14 |
+| W6 trial freeze | review-only envelope prepared; live adapter still missing; route §14 |
 | S2 stream-rate measurement | `OPENDITOO-S2-STREAM-RATE-001` consumed. Measured dispatch→ACK: median 66 ms, p95 93 ms at 1039 bytes. Dispatching at the 150 ms Host floor is FATAL (HTTP 429 on frame 10) — client must add 50 ms margin, so ~5 fps is today's safe cadence. Higher rates need a Host pacing change + Runtime 003. See `notes/OPENDITOO-STREAM-PRODUCER-CONTRACT-2026-09-09.md` |
 | S1 general frame streaming | **accepted**; `OPENDITOO-S1-STREAM-001` consumed, transport PASS (42 frames / 126 packets / 2982 bytes, clean close) and operator visual PASS |
 | A1 collection worker | installed/preserved; product owns collection while active |
@@ -54,6 +54,8 @@ Activations 001–009, R1–R5, S1 and S2 are consumed. No experimental one-shot
 
 All committed product templates remain unauthorized. Runtime 003 covers the MCP dashboard only;
 webcam transmission requires its own reviewed manifest and fresh named grant.
+The historical Runtime 002 cutover used `Grant OPENDITOO-PRODUCT-RUNTIME-002`; that revision
+is superseded, and its grant must not be reused for the webcam.
 
 ### Current objective — complete webcam offline preparation
 

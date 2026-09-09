@@ -540,3 +540,31 @@ or silently route the hot frame loop through WSL merely to make `stream-run` acc
 The first trial remains bounded to 10 s on the exact Ditoo, with no retry/reconnect/reclaim.
 Its concrete pacing and derived budgets must match the implemented adapter. Do not request
 a live grant on the strength of the passing W5 fake alone.
+
+### 14.1 Review envelope prepared, not grant-ready
+
+`experiments/DAY1-WEBCAM-N980P-001.json` freezes the current producer sources and Windows
+build artifacts, exact unit/firmware, and verified Host DLL. It explicitly declares the missing
+adapter, missing adapter hash freeze and unproven five-minute allocation soak as blockers.
+It contains no grant, expiry or claim; `transmission_authorized=false` and
+`authorization_consumed=false`. This is partial W6 preparation, not a completed execution freeze.
+
+Read-only review: `python3 scripts/check_webcam_trial.py`. It verifies every named producer
+file (including build dependencies) exists and matches its hash, checks the repository Host
+hash and existing claims, and reports `execution_ready=false`, `grant_ready=false`.
+Use this checker for the review envelope: the existing `stream-preview` is frame-set-only.
+
+The planned first trial preserves the external plan's **83 ms session interval**, above the
+named profile's permanent **40 ms minimum**, for 10 s. Those are distinct limits, not a Host
+profile change. A paced ACK-clock adapter must wait for both the previous ACK and the next
+permitted actual-dispatch time. The current pure ACK-clock stream runner does not enforce
+that local 83 ms limit, another reason this envelope must not be called executable.
+
+Derived ceilings: `floor(10000 / 83) + 1 = 121` frames, 363 application packets, and
+`121 × 1054 = 127534` application bytes (canonical worst-case encoder plus both preambles).
+Future grant string, **only after all readiness blockers are resolved and the updated freeze
+is reviewed**: `Grant OPENDITOO-WEBCAM-N980P-001`. No grant was requested or received here.
+
+Final review verification: `verify_day1_offline.py` **236 tests PASS**; the W6 checker reports
+valid hashes/budgets and all readiness blockers. Product status remains connected with no
+errors or authority blockers and zero reconnects/reclaims. No experimental claim was created.

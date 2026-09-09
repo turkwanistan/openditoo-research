@@ -3514,3 +3514,30 @@ class W5DryRunTests(unittest.TestCase):
         self.assertIn("ProfileStreamingAckClock ? 40 : 150", source)
         self.assertEqual(frame_stream.STREAMING_HOST_FLOOR_MS, 40)
         self.assertEqual(activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS, 150)
+
+
+class W6WebcamReviewTests(unittest.TestCase):
+    MANIFEST = ROOT / "experiments/DAY1-WEBCAM-N980P-001.json"
+
+    def test_review_envelope_is_valid_bounded_and_explicitly_blocked(self) -> None:
+        manifest, frames, stream = frame_stream.load_stream_manifest(
+            self.MANIFEST, require_authority=False)
+        self.assertIsNone(frames)
+        self.assertEqual(stream["source_kind"], "live")
+        self.assertEqual(stream["session_profile"], "streaming_ack_clock")
+        self.assertEqual(manifest.max_frames, 10_000 // 83 + 1)
+        self.assertEqual(manifest.max_application_packets, 363)
+        self.assertEqual(manifest.max_tx_bytes, 121 * frame_stream.worst_case_frame_tx_bytes())
+        self.assertFalse(manifest.raw["readiness"]["grant_ready"])
+        self.assertIn("LIVE_CAMERA_HOST_ADAPTER_MISSING", manifest.raw["readiness"]["blockers"])
+
+    def test_review_does_not_grant_or_rearm_authority(self) -> None:
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            frame_stream.load_stream_manifest(self.MANIFEST)
+        self.assertEqual(caught.exception.code, "TRANSMISSION_AUTHORITY_MISSING")
+        data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+        data["authority"]["authorization_consumed"] = True
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "consumed.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            self.assertIn("AUTHORITY_ALREADY_CONSUMED", frame_stream.authority_blockers(path))
