@@ -1,10 +1,10 @@
 {
  "schema_version": 2,
- "experiment_id": "OPENDITOO-M9-ACTIVATION-005",
- "milestone": "MCP dashboard acceptance \u2014 corrected dispatch timestamp",
- "status": "completed_partial_visual_stock_yield_pass_authority_consumed",
- "objective": "Physically accept the four-stage MCP activity pulse and stock-yield after fixing the stale pre-render dispatch timestamp exposed by 003/004.",
- "why_this_shape": "Same bounded dashboard/session/Host protocol as 004. Only the WSL runner timing bug is fixed: send cadence is now measured from actual dispatch time after source collection. Host hard floor remains 150 ms; client nominal cadence remains 200 ms; render tick remains 50 ms.",
+ "experiment_id": "OPENDITOO-M9-ACTIVATION-006",
+ "milestone": "MCP dashboard three-sweep visual acceptance",
+ "status": "pending_operator_grant",
+ "objective": "Visually accept the operator-requested three-sweep activity animation after 005 proved stock-yield and corrected pacing.",
+ "why_this_shape": "005 proved transport, pacing and stock-yield, but the single sweep was too brief to read. 006 changes only the activity animation program to three visible sweeps; no new command, transport or Host behavior.",
  "target": {
   "exact_unit_id": "11:75:58:CE:DE:C7",
   "installed_firmware": "v42012",
@@ -24,10 +24,10 @@
  },
  "build": {
   "code_sha256": {
-   "renderer_sha256": "bd39fea351af2c74eb6133af01004bcfe6d014290a202eaea5bb32ce50d19803",
+   "renderer_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
    "ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
    "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
-   "session_sha256": "fa2aa2ded6d53e7482f85b318a3f00fe67a36dc31f4ba092674fc6af850e7f9b"
+   "session_sha256": "2a193411ca0496b532d8beb485462484df2af6b2fcf2fd54cb073bac505ba83d"
   },
   "host_dll_sha256": "fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
   "host_exe_repository_sha256": "53356e15acdac4076a15e33224cb74d6b87346c4263942236db3ac4a42032310",
@@ -35,12 +35,12 @@
   "installed_identity_note": "Carried forward from verified deployment immediately before 003/004: repository and installed DLL byte-identical at this hash. 005 changes WSL Python only; Windows Host source/binary is unchanged, so no rebuild is required."
  },
  "session": {
-  "lifetime_seconds": 60,
+  "lifetime_seconds": 30,
   "min_frame_interval_ms": 150,
   "poll_interval_ms": 50,
   "pulse_freshness_seconds": 30,
   "activation_source": "the three MCP audit sources (optiplex_lab, optiplex_mcp, wsl_mcp), rendered by host/activity_render.py as the approved MCP page",
-  "shape": "one connection; source collection remains at configured multi-second cadence; render tick every 50 ms; send ONLY when the rendered frame changes and client-side scheduler permits it, nominally no faster than 200 ms; Host independently refuses arrivals under 150 ms; one ACK per frame; then close",
+  "shape": "one connection; source polling remains at configured cadence; 50 ms render tick; changed animation frames dispatch nominally no faster than 200 ms from actual dispatch time; Host hard floor 150 ms; one ACK per frame; three visible sweeps per event; then close",
   "automatic_retry": false,
   "automatic_reconnect": false,
   "stock_screen_reclaim": false,
@@ -49,12 +49,12 @@
  },
  "budgets": {
   "connection_attempts": 1,
-  "max_frames": 301,
-  "max_application_packets": 903,
-  "max_tx_bytes": 61103,
+  "max_frames": 151,
+  "max_application_packets": 453,
+  "max_tx_bytes": 30653,
   "ack_timeout_ms_per_frame": 5000,
-  "derivation": "60 s at the actual 200 ms MCP client dispatch cadence admits at most 301 frame starts. Packets are 3 per frame. Current worst-case application transaction is 203 bytes including the two stock preambles, so 301 * 203 = 61103 bytes. The Host still independently enforces the 150 ms hard floor.",
-  "expected_realistic_frames": "far below 301; change-only sending plus a few four-stage pulses"
+  "derivation": "30 s at the 200 ms MCP client cadence admits at most 151 frame starts. Three packets per frame. Current worst-case transaction is 203 bytes, so 151 * 203 = 30653 bytes.",
+  "expected_realistic_frames": "roughly 10-20 for one or two activity events; far below ceiling"
  },
  "stop_policy": {
   "stop_immediately_on": [
@@ -79,7 +79,7 @@
   "idle_silence": "unchanged scene sends zero packets",
   "fault_bar": "if a source genuinely becomes unavailable, its crown row shows the red fault bar and no activity crown; otherwise remains NOT TESTED",
   "ack_payload": "recorded per frame, never treated as a success constant",
-  "animation_expectation": "One active column should visibly progress cyan -> blue -> light-blue -> cyan over roughly 0.8 s, then return to status colour."
+  "animation_expectation": "one activity event visibly sweeps cyan \u2192 blue \u2192 light-blue \u2192 cyan three times over about 2 seconds, with crown + identity letter + icon accent changing together"
  },
  "acceptance_criteria": {
   "visual_pulse": "operator sees at least one complete four-stage pulse on crown + letter + icon accent and confirms it returns to base status colour",
@@ -90,28 +90,26 @@
   "authority_is_consumed": "both WSL claim and Host ledger make this experiment id one-use",
   "fault_signal": "only claim PASS if a real source failure occurs; otherwise record NOT TESTED",
   "pacing_acceptance": "No HTTP 429 pacing refusal; all actual client dispatch starts are at least 200 ms apart by client monotonic scheduling while Host independently enforces 150 ms.",
-  "stock_yield_acceptance": "after the operator has visually confirmed the session is live, pressing one physical Ditoo control causes the session to stop/yield, display state becomes unknown_not_ours, no later frame is sent, and no reclaim occurs.",
-  "visual_acceptance": "operator confirms approved page plus one complete four-stage cyan/blue/light-blue/cyan pulse on any active column."
+  "stock_yield_acceptance": "ALREADY PASS from 005; no physical takeover is required in 006",
+  "visual_acceptance": "operator can confidently distinguish the repeated cyan / blue / light-blue progression and judges the three-sweep duration readable; dashboard returns to status color afterward"
  },
  "preconditions": [
-  "operator grant naming OPENDITOO-M9-ACTIVATION-005",
-  "DONE 2026-09-09: Windows Host remains the previously identity-verified fb750078... build; no Host source changed for 005",
-  "DONE 2026-09-09: stale pre-render dispatch timestamp fixed and regression-tested with 350 ms simulated source collection",
-  "DONE 2026-09-09: offline verifier PASS with 153 tests",
+  "operator grant naming OPENDITOO-M9-ACTIVATION-006",
+  "installed Host DLL remains verified at fb750078e9f5d8e763e57e2f58d8a79b1faff1d886d2d04946274a29dd9af70f",
   "Android Divoom app disconnected",
+  "activity sources reachable",
+  "offline verifier PASS at the commit being run",
   "operator present and watching the unit"
  ],
  "authority": {
   "transmission_authorized": false,
-  "authorization_consumed": true,
-  "experiment_id": "OPENDITOO-M9-ACTIVATION-005",
-  "granted_by": "operator, in-session, 2026-09-09",
-  "grant_text": "Grant OPENDITOO-M9-ACTIVATION-005",
-  "expires_at": "2026-09-10T00:00:00Z",
-  "grant_scope_requested": "ONE execution only: up to 60 seconds; change-only MCP dashboard; 50 ms render tick; client dispatch nominally no faster than 200 ms measured from actual dispatch; Host hard floor 150 ms; at most 301 frames / 903 packets / 61103 application bytes; one RFCOMM connection; one ACK per frame; fixed 10 ms intra-frame spacing; no retry, reconnect, reclaim, pipelining, streaming, unattended operation, or second attempt.",
-  "grant_scope": "ONE execution only: up to 60 seconds; change-only MCP dashboard; 50 ms render tick; client dispatch nominally no faster than 200 ms measured from actual dispatch; Host hard floor 150 ms; at most 301 frames / 903 packets / 61103 application bytes; one RFCOMM connection; one ACK per frame; fixed 10 ms intra-frame spacing; no retry, reconnect, reclaim, pipelining, streaming, unattended operation, or second attempt.",
-  "consumed_at": "2026-09-09T17:48:24Z",
-  "consumption_note": "Executed once. Grant spent; any further live validation needs a fresh manifest/id/grant."
+  "authorization_consumed": false,
+  "experiment_id": "OPENDITOO-M9-ACTIVATION-006",
+  "granted_by": null,
+  "grant_text": null,
+  "expires_at": null,
+  "grant_scope_requested": "ONE execution only: up to 30 seconds; MCP dashboard visual acceptance; 50 ms render tick; nominal 200 ms changed-frame dispatch from actual dispatch time; Host hard floor 150 ms; max 151 frames / 453 packets / 30653 application bytes; one RFCOMM connection; ACK per frame; no retry/reconnect/reclaim/pipelining/streaming/unattended operation/second attempt.",
+  "grant_scope": null
  },
  "explicitly_out_of_scope": [
   "streaming or video milestone work",
@@ -124,25 +122,8 @@
   "firmware update, persistent upload, service/MassBoot, teardown"
  ],
  "supersedes": {
-  "experiment_id": "OPENDITOO-M9-ACTIVATION-004",
-  "why": "004 authority is consumed after the stale pre-render timestamp pacing failure; 005 is a new manifest/new id."
+  "experiment_id": "OPENDITOO-M9-ACTIVATION-005",
+  "why": "005 grant is consumed; 006 is a fresh visual-only trial for the operator-requested longer animation."
  },
- "result": {
-  "status": "partial_pass",
-  "frames_sent": 5,
-  "packets_sent": 15,
-  "tx_bytes_sent": 765,
-  "terminal_reason": "canvas_invalidated",
-  "terminal_outcome": "stopped_yielded_to_stock",
-  "display_state_at_terminal": "unknown_not_ours",
-  "operator_observation": "Animation was visibly active, but it went too quickly to confidently confirm every cyan/blue/light-blue/cyan stage. Operator then pressed brightness; the Ditoo returned to the stock clock.",
-  "acceptance": {
-   "dashboard_visibility": "PASS",
-   "animation_present": "PASS \u2014 operator visibly observed animation",
-   "animation_color_sequence": "PARTIAL \u2014 individual colors not confidently confirmed because the single sweep was too brief",
-   "stock_yield": "PASS \u2014 physical brightness press produced canvas_invalidated / stopped_yielded_to_stock; display_state unknown_not_ours; no reclaim frame",
-   "pacing_regression": "PASS \u2014 005 progressed through 5 ACKed frames, closing the one-frame 429 failure from 003/004"
-  },
-  "product_decision": "A single four-stage sweep is too brief for reliable visual reading. Future activity events use three visible sweeps with duplicate cyan boundaries collapsed."
- }
+ "result": null
 }

@@ -202,5 +202,5 @@ LEGEND = {
     "accents": "mushroom cap recolours as a whole; bunny and skull recolour their eyes only",
     "fault": "a dim red bar in the crown row means the collector could not read that source (unavailable) or has stopped reading it (stale) -- as opposed to grey, which means it read fine and there was simply nothing to report. A source that has never been polled shows neither.",
     "color_model": "RGB888, as the exact unit's stock 0x44 path uses. The artwork's RGB222 values are inherited design, not a device limit.",
-    "animation": "live activity uses the approved four-stage cyan/blue/light-blue/cyan pulse with a 150 ms Host hard floor and 200 ms nominal MCP client cadence (~0.80 s for four ACKed stages); the active column's crown, letter and icon accent change together, then return to status color. Static previews without a stage retain the approved reference-frame blue override.",
+    "animation": "live activity uses three visible cyan/blue/light-blue/cyan sweeps per event. Duplicate cyan boundaries are collapsed, yielding 10 distinct ACK-gated frames at the 200 ms MCP client cadence (~2.0 s total); the active column's crown, letter and icon accent change together, then return to status color. Static previews without a stage retain the approved reference-frame blue override.",
 }

@@ -50,6 +50,11 @@ ACCEPTED_MIN_FRAME_INTERVAL_MS = 150
 # exactly 150 ms after its previous dispatch can still arrive sooner than 150 ms server-side.
 # 200 ms preserves 50 ms of cross-process timing headroom while remaining a responsive 5 fps.
 MCP_CLIENT_FRAME_INTERVAL_MS = 200
+# Three visible cyan -> blue -> light-blue -> cyan sweeps per activity event. The first
+# cyan of a new sweep would be pixel-identical to the previous sweep's ending cyan;
+# repeating stage 0 there would therefore be held as "unchanged" and could not advance
+# an ACK-gated state machine. Collapse those duplicate boundaries explicitly.
+ACTIVITY_PULSE_PROGRAM = (0, 1, 2, 3, 1, 2, 3, 1, 2, 3)
 # A first bounded activation is supervised. Anything longer is a different authority
 # shape and needs its own evidence, not a bigger number here.
 MAX_SESSION_LIFETIME_SECONDS = 900
@@ -596,8 +601,8 @@ class LiveActivityRenderer:
     """Decouple source polling from the faster display tick and own the four-stage pulse.
 
     Source adapters keep their configured multi-second poll cadence. The display may render
-    every 150 ms while an animation is active without hammering SSH/files six times a
-    second. A pulse stage advances only after `run_session` records an ACK, so pacing or a
+    on the fast product tick while animation frames dispatch at the slower client cadence
+    without hammering SSH/files. A pulse stage advances only after `run_session` records an ACK, so pacing or a
     slow Host cannot silently skip an approved stage. New events coalesce into the newest
     pulse; no old animation is queued or replayed.
     """
@@ -608,7 +613,7 @@ class LiveActivityRenderer:
         self.source_poll_ms = max(100, int(float(config.get("poll_seconds", 2.0)) * 1000))
         self.next_collect_ms = 0
         self.pulse_sources: set[str] = set()
-        self.pulse_stage: int | None = None
+        self.pulse_step: int | None = None
 
     def __call__(self, now_ms: int) -> tuple[bytes, bool]:
         if now_ms >= self.next_collect_ms:
@@ -622,23 +627,24 @@ class LiveActivityRenderer:
             if new_pulses:
                 # Coalesce to the newest observed activity. Nothing waits behind it.
                 self.pulse_sources = new_pulses
-                self.pulse_stage = 0
+                self.pulse_step = 0
             self.next_collect_ms = now_ms + self.source_poll_ms
 
-        if self.pulse_stage is not None:
+        if self.pulse_step is not None:
+            stage = ACTIVITY_PULSE_PROGRAM[self.pulse_step]
             return (activity_render.render_rgb888(
-                        self.state, pulses=self.pulse_sources, pulse_stage=self.pulse_stage),
+                        self.state, pulses=self.pulse_sources, pulse_stage=stage),
                     True)
         self.pulse_sources.clear()
         return activity_render.render_rgb888(self.state), False
 
     def frame_sent(self) -> None:
         """Advance animation only after the current stage was ACKed."""
-        if self.pulse_stage is None:
+        if self.pulse_step is None:
             return
-        self.pulse_stage += 1
-        if self.pulse_stage >= len(activity_render.PULSE_COLORS):
-            self.pulse_stage = None
+        self.pulse_step += 1
+        if self.pulse_step >= len(ACTIVITY_PULSE_PROGRAM):
+            self.pulse_step = None
             self.pulse_sources.clear()
 
 

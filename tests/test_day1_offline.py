@@ -1164,7 +1164,7 @@ class M9RendererTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             activity_render.render_rgb888(state, self.now, {"optiplex_mcp"}, pulse_stage=4)
 
-    def test_live_renderer_polls_sources_slowly_but_advances_four_acked_pulse_frames(self) -> None:
+    def test_live_renderer_polls_sources_slowly_but_runs_three_acked_color_sweeps(self) -> None:
         from host import activity_session as session_mod
         state = self._state(self.MIXED)
         config = {"poll_seconds": 2.0, "sources": {sid: {} for sid in mcp_activity.SOURCE_IDS}}
@@ -1174,21 +1174,23 @@ class M9RendererTests(unittest.TestCase):
         try:
             def fake_collect(_config, _state, poll_seconds=2.0):
                 calls.append(poll_seconds)
-                return {"optiplex_lab": 0, "optiplex_mcp": 1, "wsl_mcp": 0}
+                return {"optiplex_lab": 0, "optiplex_mcp": 1 if len(calls) == 1 else 0, "wsl_mcp": 0}
             mcp_activity.collect_once = fake_collect
             mcp_activity.save_state = lambda _state: None
             renderer = session_mod.live_renderer(config, state)
             letter_o = (11 * 16 + 6) * 3
-            for stage, now_ms in enumerate((0, 150, 300, 450)):
-                rgb, from_pulse = renderer(now_ms)
+            program = session_mod.ACTIVITY_PULSE_PROGRAM
+            self.assertEqual(program, (0, 1, 2, 3, 1, 2, 3, 1, 2, 3))
+            for step, stage in enumerate(program):
+                rgb, from_pulse = renderer(step * 200)
                 self.assertTrue(from_pulse)
                 self.assertEqual(rgb[letter_o:letter_o + 3], bytes(activity_render.PULSE_COLORS[stage]))
                 renderer.frame_sent()
-            base, from_pulse = renderer(600)
+            base, from_pulse = renderer(len(program) * 200)
             self.assertFalse(from_pulse)
             expected_base = activity_render.render_rgb888(state)
-            self.assertEqual(base, expected_base, msg="after stage 3 the display must return to current status colors")
-            self.assertEqual(calls, [2.0], msg="150 ms display ticks must not become 6.67 Hz source polling")
+            self.assertEqual(base, expected_base, msg="after three sweeps the display must return to current status colors")
+            self.assertEqual(calls, [2.0, 2.0], msg="fast display ticks must not become fast source polling")
         finally:
             mcp_activity.collect_once = original_collect
             mcp_activity.save_state = original_save
