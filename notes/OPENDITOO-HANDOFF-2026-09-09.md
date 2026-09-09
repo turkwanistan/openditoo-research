@@ -45,13 +45,23 @@ Two live commands exist, both operator-invoked, neither able to retry or reconne
 
 ### Accepted operating ceiling
 
-**~369 ms per frame (2.71 frames/s), measured twice on 2026-09-09** by
-`OPENDITOO-R1-RATE-250MS-001` (368.6 ms), `-002` (370.9 ms) and `-003` (375.2 ms) — mean
-of means 371.6 ms, spread 6.6 ms. Ten frames each, one connection, zero missing ACKs,
-zero errors. **Visually accepted:** the operator watched the A/B pair alternate between
-the top-left and bottom-right corners, confirming the frames rendered *and rendered in
-order* at this rate. This supersedes the earlier ~1118 ms ceiling, which was never a device limit but a
-deliberately conservative 1000 ms delay we chose.
+**~175 ms per frame (5.70 frames/s), measured 2026-09-09 by `OPENDITOO-R2A-DELAY-50MS-001`.**
+Ten frames, one connection, zero missing ACKs, zero errors. This is 6.35x the original
+1114 ms ceiling. Visual acceptance at this rate is **pending**.
+
+The ladder so far, all on the exact unit:
+
+| Delay | Achieved | Rate | Residual above the delay |
+| --- | --- | --- | --- |
+| 1000 ms | 1114.1 ms | 0.90 fps | 114 ms |
+| 250 ms | 371.6 ms (3 runs) | 2.71 fps | 122 ms |
+| 50 ms | 175.4 ms | 5.70 fps | 125 ms |
+
+The delay is very nearly pure overhead we chose to add: the residual barely moves as the
+rate rises. About **80 ms of the remaining ~125 ms is our own `SendSpacingMs`**, so
+removing it entirely projects ~95 ms per frame, about 10.5 fps. **The operator's 10 fps
+target therefore needs send spacing at or very near zero, not merely reduced** — which is
+exactly why R2b must measure 20 ms and 10 ms before anyone assumes zero is safe.
 
 **Correction carried by R1:** the `ackLatencyMs` recorded since M6 is
 `ackAt - frameStartedAt` and therefore **includes** the 80 ms of send spacing our own

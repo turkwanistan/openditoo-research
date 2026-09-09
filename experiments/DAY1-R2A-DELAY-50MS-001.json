@@ -2,7 +2,7 @@
  "schema_version": 1,
  "experiment_id": "OPENDITOO-R2A-DELAY-50MS-001",
  "milestone": "R2a \u2014 second step of the frame-rate ladder",
- "status": "pending_operator_grant",
+ "status": "completed_pass_authority_consumed",
  "objective": "Measure the achievable frame interval at a 50 ms inter-frame delay, against the 250 ms rate now measured three times. Targets roughly 169 ms per frame, about 5.9 fps.",
  "why_this_is_the_cheap_path": "ONE variable changes: inter_frame_delay_ms, 250 -> 50. Same frames, same frame count, same packets, same target, same connection shape, same stop policy, same encoder, same 40 ms send spacing. The delay is the part WE add on top of the device's own turnaround, and it is the variable we have already reduced safely once (1000 -> 250). Send spacing is deliberately NOT touched here: it is the one value taken from stock-app capture rather than chosen by us, so it is the more likely to matter and belongs in its own experiment (R2b).",
  "target": {
@@ -107,13 +107,16 @@
  },
  "authority": {
   "transmission_authorized": false,
-  "authorization_consumed": false,
+  "authorization_consumed": true,
   "experiment_id": "OPENDITOO-R2A-DELAY-50MS-001",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "granted",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution: 10 frames, 30 packets, 710 application bytes, 50 ms inter-frame delay, one connection, no retry, no reconnect. Not a delay below 50 ms, not a change to send spacing, not more frames, not the activity display.",
-  "note": "Grants nothing as written. sequence-run exits 30 until an operator fills the grant fields."
+  "note": "Grants nothing as written. sequence-run exits 30 until an operator fills the grant fields.",
+  "grant_attribution": "Given in direct answer to a request naming OPENDITOO-R2A-DELAY-50MS-001; no other experiment was on offer.",
+  "grant_scope": "ONE execution: 10 frames, 30 packets, 710 application bytes, 50 ms inter-frame delay, one connection, no retry, no reconnect. Not a delay below 50 ms, not a send-spacing change, not more frames.",
+  "consumed_at": "2026-09-09T15:53Z"
  },
  "explicitly_out_of_scope": [
   "any inter-frame delay below 50 ms",
@@ -133,5 +136,102 @@
   "host_dll_sha256": "a788ac369d1f4f0438e756fdbedacbd944a8065a480721f811a95e28e0b204b5",
   "installed_dll_sha256_verified": "a788ac369d1f4f0438e756fdbedacbd944a8065a480721f811a95e28e0b204b5"
  },
- "result": null
+ "result": {
+  "status": "pass",
+  "frames_acked": 10,
+  "packets_sent_complete": 30,
+  "tx_bytes_sent_complete": 710,
+  "elapsed_ms": 1717,
+  "connections_attempted": 1,
+  "socket_closed": true,
+  "retry": false,
+  "reconnect": false,
+  "ack_payload_hex_ordered": [
+   "0x21",
+   "0xCB",
+   "0x7E",
+   "0x37",
+   "0xEA",
+   "0x20",
+   "0x4F",
+   "0xEA",
+   "0x95",
+   "0x49"
+  ],
+  "frame_start_offsets_ms": [
+   0,
+   172,
+   354,
+   522,
+   719,
+   885,
+   1067,
+   1231,
+   1398,
+   1579
+  ],
+  "reported_ack_latency_ms": [
+   111,
+   127,
+   111,
+   137,
+   113,
+   130,
+   112,
+   104,
+   118,
+   105
+  ],
+  "operator_visual_order": "pending"
+ },
+ "measurements": {
+  "achieved_inter_frame_interval_ms": {
+   "n": 9,
+   "mean": 175.4,
+   "min": 164,
+   "max": 197,
+   "pstdev": 10.2
+  },
+  "achieved_fps": 5.7,
+  "prediction_check": "predicted ~169 ms before the run; achieved 175.4 ms. Model holds.",
+  "vs_r1": {
+   "r1_mean_ms": 371.6,
+   "speedup": 2.12
+  },
+  "vs_original_ceiling": {
+   "original_ms": 1114.1,
+   "speedup": 6.35
+  },
+  "per_frame_residual_ms": 125.4,
+  "residual_note": "Interval minus the 50 ms delay leaves 125.4 ms, against 118.6 ms at R1's 250 ms delay. About 80 ms of that is still our own send spacing, so device turnaround plus overhead is roughly 45 ms here versus 39 ms at the slower rate.",
+  "reported_ack_latency_ms": {
+   "n": 10,
+   "min": 104,
+   "median": 112.5,
+   "max": 137
+  },
+  "ack_latency_note": "Reported median rose from 104 ms at R1 to 112 ms here, max 124 -> 137. These figures include our 80 ms of send spacing, so true turnaround moved from roughly 24 ms to 32 ms. A real but modest increase; whether it is the device working harder or host scheduling is NOT separated.",
+  "jitter_note": "Per-interval spread 33 ms on a 175.4 ms mean, about 19 percent, against roughly 6 percent at R1. Absolute jitter is similar; it is simply a larger share of a shorter interval.",
+  "errors": 0,
+  "missing_acks": 0
+ },
+ "findings": [
+  {
+   "id": "RATE-50MS-DELAY-SUSTAINED",
+   "confidence": "MATCHED",
+   "statement": "The exact unit sustains a 175.4 ms mean frame interval (5.70 fps) for ten frames in one connection with zero missing ACKs and zero errors. That is 2.12x R1 and 6.35x the original accepted ceiling.",
+   "not_claimed": "visual distinctness at this rate; that is the operator's observation and is pending."
+  },
+  {
+   "id": "DELAY-REDUCTION-IS-NEARLY-LINEAR",
+   "confidence": "MATCHED",
+   "statement": "Across 1000, 250 and 50 ms delays the achieved interval tracks the delay almost exactly: 1114.1, 371.6 and 175.4 ms, i.e. a residual of 114, 122 and 125 ms. The delay is very nearly pure overhead we chose to add, and the residual grows only slightly as the rate rises.",
+   "consequence": "Roughly 125 ms per frame remains, of which about 80 ms is our own SendSpacingMs. Removing it entirely would project ~95 ms per frame, about 10.5 fps -- so the operator's 10 fps target needs send spacing at or very near zero, not merely reduced. R2b should measure 20 and 10 ms before anyone assumes zero is safe."
+  }
+ ],
+ "acceptance": {
+  "transport_acceptance": "PASS \u2014 one connection, 30 packets, 710 bytes, 10/10 ACKs, clean close, no retry, no reconnect.",
+  "rate_acceptance": "PASS \u2014 175.4 ms mean, close to the 169 ms predicted before the run.",
+  "visual_acceptance": "PENDING \u2014 does the alternation still read as ten distinct frames at ~5.7 fps, or begin to blur?"
+ }
 }
