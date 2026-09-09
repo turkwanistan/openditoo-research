@@ -594,8 +594,31 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         manifest = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))
         requested = manifest["budgets"]["application_requests"]
         self.assertIn(f"MaxSequenceFrames = {requested}", protocol)
-        self.assertTrue(manifest["authority"]["transmission_authorized"],
-                        msg="the raised cap must correspond to a live grant")
+        self.assertTrue(manifest["authority"]["authorization_consumed"],
+                        msg="the raised cap corresponds to a manifest that was actually granted")
+
+    def test_finite_loop_measurements_back_the_accepted_ceiling(self) -> None:
+        manifest = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))
+        run = manifest["attempts"][1]
+        budgets = manifest["budgets"]
+        self.assertEqual(run["outcome"], "transport_pass")
+        self.assertEqual(run["packets_sent_complete"], budgets["application_packets"])
+        self.assertEqual(run["tx_bytes_sent_complete"], budgets["application_tx_bytes_total"])
+        self.assertEqual(run["frames_acked"], budgets["application_requests"])
+        self.assertLessEqual(run["elapsed_ms"], budgets["total_wall_clock_ms"])
+        self.assertEqual(len(run["frame_timings"]), budgets["application_requests"])
+        # Every ACK arrived; a missing one would invalidate the rate claim.
+        measured = manifest["measurements"]
+        self.assertEqual(measured["ack_latency_ms"]["missing"], 0)
+        self.assertEqual(measured["errors"], 0)
+        # The accepted rate is the measured one, never the fastest imaginable.
+        self.assertGreater(measured["achieved_inter_frame_interval_ms"]["mean"],
+                           measured["requested_inter_frame_delay_ms"])
+        self.assertIn("not the fastest possible", manifest["accepted_operating_ceiling"]["scope"])
+        # The ACK-increment observation must stay a LEAD, not a semantic.
+        lead = [f for f in manifest["findings"] if f["id"] == "ACK-PAYLOAD-INCREMENTS-MONOTONICALLY"][0]
+        self.assertEqual(lead["confidence"], "LEAD")
+        self.assertIn("not_claimed", lead)
 
     def test_finite_loop_attempt_1_failed_before_transmitting_anything(self) -> None:
         manifest = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))
@@ -607,9 +630,10 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertFalse(attempt["ambiguous"])
         self.assertFalse(attempt["in_flight_packet_bytes_unknown"])
         self.assertIn("No automatic retry", attempt["action_taken"])
-        # Nothing was transmitted, so the granted execution has not happened yet.
-        self.assertTrue(manifest["authority"]["transmission_authorized"])
-        self.assertFalse(manifest["authority"]["authorization_consumed"])
+        # The failed attempt is preserved alongside the successful one, not overwritten.
+        self.assertEqual(len(manifest["attempts"]), 2)
+        self.assertFalse(manifest["authority"]["transmission_authorized"])
+        self.assertTrue(manifest["authority"]["authorization_consumed"])
 
     def test_m7_sweep_evidence_separates_state_reports_from_keystrokes(self) -> None:
         data = json.loads((ROOT / "captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json").read_text(encoding="utf-8"))

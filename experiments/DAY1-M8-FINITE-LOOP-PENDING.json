@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "OPENDITOO-M8-FINITE-LOOP-001",
   "milestone": "M8.3 step 2",
-  "status": "authorized_attempt_1_failed_before_transmission",
+  "status": "completed_transport_pass_authority_consumed",
   "objective": "Establish an accepted operating rate ceiling by running one short, finite, low-rate loop and measuring what actually happens. This is the measurement M9 needs before it may drive the display at all.",
   "why_this_is_the_cheap_path": "M9's activity display is unattended repetition, which is a strictly larger authority ask than this bounded loop. Skipping this step does not avoid the gate; it moves it to a bigger one with no measured ceiling behind it.",
   "target": {
@@ -104,8 +104,8 @@
     "status": "implemented under this grant: MaxSequenceFrames raised 2 -> 10, per-frame ACK latency and interval recorded, and the manifest total_wall_clock_ms is now enforced inside the Host (it may tighten the computed ceiling, never loosen it)."
   },
   "authority": {
-    "transmission_authorized": true,
-    "authorization_consumed": false,
+    "transmission_authorized": false,
+    "authorization_consumed": true,
     "note": "Prepared proposal. Grants nothing on its own. Granted by the operator on 2026-09-09 for ONE execution of the ten-frame sequence. Attempt 1 failed before any application byte was transmitted, so the granted execution has NOT occurred and the grant remains unspent. A retry is the same single execution, not a second one, and is taken only when the operator confirms the one-controller condition.",
     "granted_by": "operator, in-session, 2026-09-09",
     "grant_text": "proceed with the loop",
@@ -139,6 +139,136 @@
       ],
       "observed_windows_state": "the exact unit remains paired; Windows shows Ditoo-Plus-audio and its AVRCP transports as OK",
       "action_taken": "stopped. No automatic retry and no reconnect were attempted."
+    },
+    {
+      "attempt": 2,
+      "operation_id": "97f5a532b94a",
+      "outcome": "transport_pass",
+      "precondition_change": "operator disconnected the Android app, satisfying the one-controller rule",
+      "connections_attempted": 1,
+      "packets_sent_complete": 30,
+      "tx_bytes_sent_complete": 710,
+      "frames_acked": 10,
+      "elapsed_ms": 10259,
+      "last_completed_stage": "ack",
+      "socket_closed": true,
+      "retry": false,
+      "reconnect": false,
+      "in_flight_packet_bytes_unknown": false,
+      "budgets_respected": true,
+      "ack_payload_hex_ordered": [
+        "0x86",
+        "0xE6",
+        "0x39",
+        "0x97",
+        "0xF6",
+        "0x47",
+        "0xB1",
+        "0x16",
+        "0x67",
+        "0xC8"
+      ],
+      "frame_timings": [
+        {
+          "frame": 1,
+          "ack_latency_ms": 122,
+          "since_first_frame_ms": 0
+        },
+        {
+          "frame": 2,
+          "ack_latency_ms": 102,
+          "since_first_frame_ms": 1138
+        },
+        {
+          "frame": 3,
+          "ack_latency_ms": 118,
+          "since_first_frame_ms": 2241
+        },
+        {
+          "frame": 4,
+          "ack_latency_ms": 105,
+          "since_first_frame_ms": 3361
+        },
+        {
+          "frame": 5,
+          "ack_latency_ms": 102,
+          "since_first_frame_ms": 4479
+        },
+        {
+          "frame": 6,
+          "ack_latency_ms": 105,
+          "since_first_frame_ms": 5585
+        },
+        {
+          "frame": 7,
+          "ack_latency_ms": 124,
+          "since_first_frame_ms": 6702
+        },
+        {
+          "frame": 8,
+          "ack_latency_ms": 102,
+          "since_first_frame_ms": 7840
+        },
+        {
+          "frame": 9,
+          "ack_latency_ms": 113,
+          "since_first_frame_ms": 8945
+        },
+        {
+          "frame": 10,
+          "ack_latency_ms": 103,
+          "since_first_frame_ms": 10065
+        }
+      ],
+      "operator_visual_order": "pending"
+    }
+  ],
+  "measurements": {
+    "ack_latency_ms": {
+      "n": 10,
+      "min": 102,
+      "median": 105.0,
+      "max": 124,
+      "missing": 0
+    },
+    "achieved_inter_frame_interval_ms": {
+      "n": 9,
+      "min": 1103,
+      "median": 1118.0,
+      "max": 1138,
+      "mean": 1118.3
+    },
+    "requested_inter_frame_delay_ms": 1000,
+    "per_frame_overhead_ms": {
+      "min": 103,
+      "median": 118.0,
+      "max": 138,
+      "composition": "two 40 ms inter-packet spacings plus the ~105 ms ACK wait"
+    },
+    "achieved_rate_frames_per_second": 0.894,
+    "errors": 0,
+    "stock_takeover_during_run": "none observed"
+  },
+  "accepted_operating_ceiling": {
+    "accepted_rate": "one frame per 1000 ms requested, ~1118 ms achieved (0.894 frames/s)",
+    "scope": "this is the rate MEASURED and accepted, not the fastest possible. It is the only rate any later automatic display work may use without a new grant.",
+    "implementation_floor_estimate_ms": 190,
+    "floor_basis": "~118 ms unavoidable per-frame overhead in the current implementation plus a non-zero delay; the stock app's observed 148 ms floor remains an observation about the official app, not an earned rate",
+    "sufficient_for_m9": true,
+    "why": "The activity display changes on human timescales - age categories at 5 and 20 minutes and short pulses on new activity - so sub-second updates are unnecessary. M9 should send a frame only when the rendered image actually changes."
+  },
+  "findings": [
+    {
+      "id": "SUSTAINED-REPEATED-FRAMES-IN-ONE-SESSION",
+      "confidence": "MATCHED",
+      "statement": "The exact unit sustained ten ordered frames in one connection with 10/10 ACKs, 30/30 packets, 710/710 bytes, no retry, no reconnect and a clean close in 10.26 s. ACK latency was stable at 102-124 ms with no drift across the run.",
+      "not_claimed": "Any rate faster than the ~1118 ms achieved interval, any run longer than ten frames, unattended operation, and persistence."
+    },
+    {
+      "id": "ACK-PAYLOAD-INCREMENTS-MONOTONICALLY",
+      "confidence": "LEAD",
+      "statement": "The ten ACK payloads in this single session were all distinct and strictly increasing modulo 256, with per-frame deltas between 0x51 and 0x6A. Together with the earlier 0x12, 0x75, 0xF0, 0xE5 and 0x33 observations this rules out a success constant and is consistent with a counter or a time-derived value.",
+      "not_claimed": "That it IS a counter or a timer. The increment is not constant, no wrap behaviour was deliberately tested, and no attempt was made to correlate it with elapsed time or payload content. Recorded as a LEAD, not a semantic."
     }
   ]
 }
