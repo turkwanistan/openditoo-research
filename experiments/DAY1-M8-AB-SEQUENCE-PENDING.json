@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "OPENDITOO-M8-AB-SEQUENCE-001",
   "milestone": "M8.3 step 1",
-  "status": "completed_transport_pass_authority_consumed",
+  "status": "completed_pass_authority_consumed",
   "objective": "Show two different frames in a known order inside one connection, and confirm the device renders them in that order. Nothing more.",
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -157,7 +157,7 @@
     "driving the display from the M9 activity collector"
   ],
   "result": {
-    "status": "transport_pass_visual_order_pending_operator",
+    "status": "pass",
     "operation_id": "6c5201e146d7",
     "started_at_utc": "2026-09-09T04:44:19.2028971Z",
     "ended_at_utc": "2026-09-09T04:44:20.5218748Z",
@@ -183,15 +183,17 @@
     "retry": false,
     "reconnect": false,
     "budgets_respected": true,
-    "operator_visual_order": "pending",
-    "note": "Every budget in this manifest was met exactly. Ordered ACKs prove the device accepted frame A then frame B on one connection. They do NOT prove render order; that needs the operator's observation."
+    "operator_visual_order": "observed_moving_between_opposite_corners",
+    "note": "Every budget in this manifest was met exactly. Ordered ACKs prove the device accepted frame A then frame B on one connection; the operator additionally observed the rendered block move between opposite corners, so two ordered frames were physically displayed as distinct successive frames.",
+    "operator_report": "a white box moved from corner to corner",
+    "residual": "The operator reported movement between corners without naming which corner came first. A reversed order would also read as corner-to-corner movement, so first-frame identity is confirmable for free by checking which corner the display rests in now: frame B (bottom-right) was sent last, so a bottom-right resting block confirms A-then-B. Recorded as an open detail rather than assumed."
   },
   "findings": [
     {
-      "id": "SAME-SESSION-REPEATED-FRAMES-ACCEPTED",
+      "id": "SAME-SESSION-REPEATED-FRAMES-RENDER-AS-DISTINCT-ORDERED-FRAMES",
       "confidence": "MATCHED",
-      "statement": "The exact unit accepts two different image frames inside one connection, each answered by its own wrapped 0x44 ACK, with no reconnect between them. 6/6 packets and 142/142 bytes were sent, and the socket closed cleanly.",
-      "not_claimed": "Render order, rendering at all, and any rate above the 1000 ms inter-frame delay used here."
+      "statement": "The exact unit accepts and physically renders two different image frames inside one connection, each answered by its own wrapped 0x44 ACK, with no reconnect between them. 6/6 packets and 142/142 bytes were sent, the socket closed cleanly, and the operator observed the rendered block move between opposite corners rather than a single static frame.",
+      "not_claimed": "Which frame rendered first (see result.residual), any rate above the 1000 ms inter-frame delay used here, sustained looping, and persistence of either frame."
     },
     {
       "id": "ACK-PAYLOAD-VARIES-AGAIN",

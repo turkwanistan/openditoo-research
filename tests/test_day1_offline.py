@@ -488,10 +488,14 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertFalse(result["reconnect"])
         self.assertEqual(len(set(result["ack_payload_hex_ordered"])), 2,
                          msg="the two ACKs in one session differed; the payload is not a success constant")
-        self.assertIn("do NOT prove render order", result["note"])
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(manifest["status"], "completed_pass_authority_consumed")
+        # Physical render order was observed, but which frame came first was not
+        # reported; that stays an explicit residual rather than an assumption.
+        self.assertIn("residual", result)
+        self.assertIn("reversed order would also read as corner-to-corner", result["residual"])
         for flag in ("automatic_retry", "automatic_reconnect", "target_override", "raw_packet_override"):
             self.assertFalse(manifest["operation"][flag])
-        self.assertEqual(manifest["status"], "completed_transport_pass_authority_consumed")
         budgets = manifest["budgets"]
         self.assertEqual(budgets["connection_attempts"], 1)
         self.assertEqual(budgets["application_packets"], 6)

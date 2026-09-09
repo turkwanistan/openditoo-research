@@ -76,10 +76,48 @@ policy.
 `transmission_authority_missing`. That is the intended state: **the manifest grants
 nothing.**
 
+## Executed 2026-09-09 — M8.3 step 1 PASS
+
+The operator granted authority for `OPENDITOO-M8-AB-SEQUENCE-001` and it ran once.
+
+| | Budget | Actual |
+| --- | --- | --- |
+| Connections | 1 | 1 |
+| Application packets | 6 | 6 |
+| TX bytes | 142 | 142 |
+| ACKs | 2 | 2 (`0xE5`, `0x33`) |
+| Wall clock | <= 20000 ms | 1320 ms |
+| Retry / reconnect | none | none |
+
+Operator observation: *"a white box moved from corner to corner."*
+
+**MATCHED:** the exact unit accepts and physically renders two different frames inside
+one connection, each with its own ACK and no reconnect. That is the M8 primitive.
+
+Residual detail: the report names movement but not which corner came first, and a
+reversed order would look the same. It is settleable for free — frame B (bottom-right)
+was sent last, so a display currently resting bottom-right confirms A-then-B. Recorded
+as open rather than assumed.
+
+The ACK payloads were `0xE5` and `0x33`, different from each other and from the earlier
+`0x12`, `0x75` and `0xF0`. Five distinct payloads across successful sends now; the byte
+is not a success constant, and still has no assigned meaning.
+
+Authority is consumed. `sequence-run` on the same manifest now exits 30.
+
 ## What is deliberately not built yet
 
-The Host sequence route (M8.2) is **not implemented**. Writing the transport state
-machine before the sequence shape is approved risks building the wrong thing, and the
-manifest is the artefact the decision is made on. Implementation, with mock-transport
-tests for partial sends, unexpected ACKs, timeouts, cancellation, concurrent rejection
-and fault latching, follows approval of this shape.
+The Host sequence route is now implemented and deployed: `ExchangeSequenceOnce` is the
+single transport core and `ExchangeOnce` delegates to it, so `image-show` and the
+sequence share one code path and the source still has exactly one connect and one send
+call site. Every frame is hash-checked before any device I/O, identical frames are
+rejected, and the sequence shares `image-show`'s single-operation gate.
+
+Still not built, and each needs its own manifest and grant:
+
+- **Any loop.** M8.3 step 2 is a short finite loop at a measured rate. A two-frame pass
+  is not standing authority for repetition.
+- **Any rate above 1000 ms inter-frame.** The 148 ms stock floor remains an observation
+  about the official app, not an earned rate.
+- **Driving the display from the M9 collector.** M9 stays offline until a rate ceiling
+  is accepted.
