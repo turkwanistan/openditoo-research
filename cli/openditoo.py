@@ -317,8 +317,13 @@ def sequence_run(args: argparse.Namespace) -> int:
     operation = manifest.get("operation", {})
     sources = operation.get("source_frames", {})
     budgets = manifest.get("budgets", {})
+    order = operation.get("frame_order") or ["a", "b"]
+    prepared: dict[str, dict] = {}
     frames = []
-    for key in ("a", "b"):
+    for key in order:
+        if key in prepared:
+            frames.append(prepared[key])
+            continue
         source = sources.get(key)
         if not isinstance(source, dict):
             emit({"ok": False, "command": "sequence-run", "error_code": "MANIFEST_FRAME_MISSING", "frame": key})
@@ -343,7 +348,8 @@ def sequence_run(args: argparse.Namespace) -> int:
         if drift:
             emit({"ok": False, "command": "sequence-run", "error_code": "FROZEN_FRAME_DRIFT", "frame": key, "drift": drift})
             return EXIT_BLOCKED
-        frames.append({"pixelsRgb888Hex": rgb.hex(), "expectedImagePacketSha256": actual["packet_sha256"]})
+        prepared[key] = {"pixelsRgb888Hex": rgb.hex(), "expectedImagePacketSha256": actual["packet_sha256"]}
+        frames.append(prepared[key])
 
     try:
         token = read_token()
@@ -352,7 +358,9 @@ def sequence_run(args: argparse.Namespace) -> int:
         return EXIT_CONFIG
 
     delay_ms = int(budgets.get("inter_frame_delay_ms", 0))
-    body = json.dumps({"frames": frames, "interFrameDelayMs": delay_ms}, separators=(",", ":")).encode("utf-8")
+    total_budget_ms = int(budgets.get("total_wall_clock_ms", 0))
+    body = json.dumps({"frames": frames, "interFrameDelayMs": delay_ms, "totalBudgetMs": total_budget_ms},
+                      separators=(",", ":")).encode("utf-8")
     timeout = max(30.0, int(budgets.get("total_wall_clock_ms", 20000)) / 1000.0 + 10.0)
     request = urllib.request.Request(
         IMAGE_SEQUENCE_URL, data=body, method="POST",
@@ -377,7 +385,7 @@ def sequence_run(args: argparse.Namespace) -> int:
         "ok": True,
         "command": "image-sequence",
         "deviceIo": True,
-        "frameCount": 2,
+        "frameCount": len(order),
         "packetCount": budgets.get("application_packets"),
         "txBytesTotal": budgets.get("application_tx_bytes_total"),
         "connectionsAttempted": budgets.get("connection_attempts"),
@@ -385,7 +393,7 @@ def sequence_run(args: argparse.Namespace) -> int:
         "socketClosed": True,
         "retry": False,
         "reconnect": False,
-        "imagePacketSha256Ordered": [sources["a"]["packet_sha256"], sources["b"]["packet_sha256"]],
+        "imagePacketSha256Ordered": [sources[key]["packet_sha256"] for key in order],
     }
     mismatch = {key: {"expected": value, "actual": result.get(key)}
                 for key, value in expected.items() if result.get(key) != value}

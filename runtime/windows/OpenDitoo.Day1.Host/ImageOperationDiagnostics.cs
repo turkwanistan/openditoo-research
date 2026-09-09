@@ -25,6 +25,24 @@ sealed class ImageOperation
     internal bool SocketClosed { get; private set; }
     internal string? AckPayloadHex { get; private set; }
     internal string? ErrorCode { get; private set; }
+    private readonly List<object> frameTimings = [];
+
+    /// <summary>Per-frame measurement for the M8 rate study.</summary>
+    internal void FrameCompleted(int frameNumber, long ackLatencyMs, long sinceFirstFrameMs, byte ack)
+    {
+        lock (gate) frameTimings.Add(new
+        {
+            frame = frameNumber,
+            ackLatencyMs,
+            sinceFirstFrameMs,
+            ackPayloadHex = $"0x{ack:X2}",
+        });
+    }
+
+    internal object[] FrameTimings
+    {
+        get { lock (gate) return frameTimings.ToArray(); }
+    }
 
     internal void Encoded(string packetSha256, int paletteColors)
     {
@@ -102,6 +120,7 @@ sealed class ImageOperation
             socketClosed = SocketClosed,
             ackPayloadHex = AckPayloadHex,
             errorCode = ErrorCode,
+            frameTimings = FrameTimings,
             retry = false,
         };
     }

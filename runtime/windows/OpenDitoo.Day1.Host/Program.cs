@@ -250,7 +250,7 @@ app.MapPost("/v1/image/sequence", (ShowSequenceRequest request) =>
                 return Reject("IMAGE_ENCODER_HASH_MISMATCH", new { ok = false, errorCode = "IMAGE_ENCODER_HASH_MISMATCH", frame = i + 1, hostImagePacketSha256 = encoded[i].PacketSha256 }, StatusCodes.Status400BadRequest);
             }
         }
-        if (requested.Length > 1 && encoded[0].PacketSha256.Equals(encoded[1].PacketSha256, StringComparison.OrdinalIgnoreCase))
+        if (encoded.Select(item => item.PacketSha256).Distinct(StringComparer.OrdinalIgnoreCase).Count() < 2 && requested.Length > 1)
             return Reject("IMAGE_SEQUENCE_FRAMES_IDENTICAL", new { ok = false, errorCode = "IMAGE_SEQUENCE_FRAMES_IDENTICAL", message = "an A->B order test needs two different frames" }, StatusCodes.Status400BadRequest);
         operation.Encoded(encoded[0].PacketSha256, encoded[0].PaletteColors);
 
@@ -269,7 +269,7 @@ app.MapPost("/v1/image/sequence", (ShowSequenceRequest request) =>
         try
         {
             var startedAt = DateTimeOffset.UtcNow;
-            var acks = WindowsRfcommStaticImageTransport.ExchangeSequenceOnce(groups, delay, operation);
+            var acks = WindowsRfcommStaticImageTransport.ExchangeSequenceOnce(groups, delay, operation, request.TotalBudgetMs);
             operation.Finish("ok", string.Join(",", acks.Select(ack => $"0x{ack:X2}")), null);
             return Results.Json(new
             {
@@ -291,6 +291,7 @@ app.MapPost("/v1/image/sequence", (ShowSequenceRequest request) =>
                 reconnect = false,
                 operationId = operation.OperationId,
                 lastCompletedStage = operation.LastCompletedStage,
+                frameTimings = operation.FrameTimings,
                 elapsedMs = (long)(DateTimeOffset.UtcNow - startedAt).TotalMilliseconds,
             });
         }
@@ -324,4 +325,4 @@ return 0;
 
 sealed record ShowImageRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256);
 sealed record SequenceFrameRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256);
-sealed record ShowSequenceRequest(SequenceFrameRequest[] Frames, int InterFrameDelayMs);
+sealed record ShowSequenceRequest(SequenceFrameRequest[] Frames, int InterFrameDelayMs, int TotalBudgetMs);

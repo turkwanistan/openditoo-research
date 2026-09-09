@@ -141,7 +141,7 @@ static class WindowsRfcommStaticImageTransport
     /// The stock app repeats frames inside a single open session, so a sequence does
     /// not reconnect between frames. There is still no retry and no reconnect.
     /// </summary>
-    internal static byte[] ExchangeSequenceOnce(byte[][][] groups, int interFrameDelayMs, ImageOperation? operation = null)
+    internal static byte[] ExchangeSequenceOnce(byte[][][] groups, int interFrameDelayMs, ImageOperation? operation = null, int totalBudgetMsOverride = 0)
     {
         if (groups.Length < 1 || groups.Length > DitooStaticImageProtocol.MaxSequenceFrames)
             throw new ArgumentException("IMAGE_SEQUENCE_FRAME_COUNT_REJECTED");
@@ -155,6 +155,14 @@ static class WindowsRfcommStaticImageTransport
 
         var budgetMs = DitooStaticImageProtocol.TotalBudgetMs
             + (groups.Length - 1) * (DitooStaticImageProtocol.AckBudgetMs + interFrameDelayMs);
+        // A reviewed manifest may impose a TIGHTER ceiling than the computed one; it may
+        // never loosen it.
+        if (totalBudgetMsOverride > 0)
+        {
+            if (totalBudgetMsOverride > budgetMs)
+                throw new ArgumentException("IMAGE_SEQUENCE_BUDGET_EXCEEDS_CEILING");
+            budgetMs = totalBudgetMsOverride;
+        }
         var total = Stopwatch.StartNew();
         var wsaData = Marshal.AllocHGlobal(512);
         var socketHandle = InvalidSocket;
@@ -199,9 +207,12 @@ static class WindowsRfcommStaticImageTransport
             WaitForWriteOrClose(socketHandle, eventHandle, initialSendDeadline);
             operation?.StageCompleted("send_ready");
 
+            var firstFrameAt = total.ElapsedMilliseconds;
             for (var frame = 0; frame < groups.Length; frame++)
             {
                 var packets = groups[frame];
+                var frameStartedAt = total.ElapsedMilliseconds;
+                if (frame == 0) firstFrameAt = frameStartedAt;
                 for (var index = 0; index < packets.Length; index++)
                 {
                     var sent = send(socketHandle, packets[index], packets[index].Length, 0);
@@ -218,6 +229,8 @@ static class WindowsRfcommStaticImageTransport
                 }
 
                 acks[frame] = ReadOneAck(socketHandle, eventHandle);
+                var ackAt = total.ElapsedMilliseconds;
+                operation?.FrameCompleted(frame + 1, ackAt - frameStartedAt, frameStartedAt - firstFrameAt, acks[frame]);
                 operation?.StageCompleted($"frame_{frame + 1}_ack");
                 if (total.ElapsedMilliseconds > budgetMs)
                     throw new TimeoutException("IMAGE_TOTAL_BUDGET_EXCEEDED; NO_RETRY");

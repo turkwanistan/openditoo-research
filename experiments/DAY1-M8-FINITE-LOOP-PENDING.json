@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "OPENDITOO-M8-FINITE-LOOP-001",
   "milestone": "M8.3 step 2",
-  "status": "prepared_awaiting_authority",
+  "status": "authorized_attempt_1_failed_before_transmission",
   "objective": "Establish an accepted operating rate ceiling by running one short, finite, low-rate loop and measuring what actually happens. This is the measurement M9 needs before it may drive the display at all.",
   "why_this_is_the_cheap_path": "M9's activity display is unattended repetition, which is a strictly larger authority ask than this bounded loop. Skipping this step does not avoid the gate; it moves it to a bigger one with no measured ceiling behind it.",
   "target": {
@@ -20,7 +20,18 @@
     "shape": "one connection; ten frames alternating A,B,A,B,... ; per frame send preamble A, preamble B, image, read one ACK, wait the inter-frame delay; then close",
     "semantic_evidence": "OPENDITOO-M8-AB-SEQUENCE-001 PASS on 2026-09-09: two frames in one session, 6/6 packets, 142/142 bytes, two ordered ACKs, clean close, and the operator observed the rendered block move between opposite corners. Stock evidence from btsnoop b373607316094b0fd529f3354ee379abb6645e89ab0b2c06ce865064428dbc9c shows the official app doing 41 frames in one session at a 1.013 s median gap.",
     "application_tx_hex": "01340044000a0a04aa2d00f4010002ffffff000000f8fff8fff8ffffffffffffffffffffffffffffffffffffffffffffffffffffff262502",
-    "frame_order": ["a", "b", "a", "b", "a", "b", "a", "b", "a", "b"],
+    "frame_order": [
+      "a",
+      "b",
+      "a",
+      "b",
+      "a",
+      "b",
+      "a",
+      "b",
+      "a",
+      "b"
+    ],
     "source_frames": {
       "a": {
         "file": "examples/openditoo-m8-a-topleft-16.png",
@@ -89,12 +100,16 @@
   },
   "implementation_gate": {
     "host_change_required": "DitooStaticImageProtocol.MaxSequenceFrames must be raised from 2 to 10, and the Host must record per-frame ACK latency for the measurement above. Both are deliberately NOT implemented until this manifest is granted.",
-    "rationale": "The current Host physically cannot exceed two frames. That ceiling stays until a reviewed experiment needs more."
+    "rationale": "The current Host physically cannot exceed two frames. That ceiling stays until a reviewed experiment needs more.",
+    "status": "implemented under this grant: MaxSequenceFrames raised 2 -> 10, per-frame ACK latency and interval recorded, and the manifest total_wall_clock_ms is now enforced inside the Host (it may tighten the computed ceiling, never loosen it)."
   },
   "authority": {
-    "transmission_authorized": false,
+    "transmission_authorized": true,
     "authorization_consumed": false,
-    "note": "Prepared proposal. Grants nothing. Becomes executable only on an explicit operator grant naming OPENDITOO-M8-FINITE-LOOP-001, and that grant covers ten frames once - not continuous display, not a higher rate, and not M9 activation."
+    "note": "Prepared proposal. Grants nothing on its own. Granted by the operator on 2026-09-09 for ONE execution of the ten-frame sequence. Attempt 1 failed before any application byte was transmitted, so the granted execution has NOT occurred and the grant remains unspent. A retry is the same single execution, not a second one, and is taken only when the operator confirms the one-controller condition.",
+    "granted_by": "operator, in-session, 2026-09-09",
+    "grant_text": "proceed with the loop",
+    "grant_scope": "this exact experiment id, one execution of the ten-frame sequence at the stated budgets. Not continuous display, not a higher rate, not M9 activation."
   },
   "explicitly_out_of_scope": [
     "any rate above the 1000 ms inter-frame delay",
@@ -103,5 +118,27 @@
     "driving frames from the M9 activity collector",
     "delta or partial-frame updates",
     "keeping the connection open beyond this run"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "at_utc": "2026-09-09T05:1x:00Z",
+      "operation_id": "46904e7fea96",
+      "outcome": "failed_before_transmission",
+      "last_completed_stage": "target_precheck",
+      "error": "IMAGE_RFCOMM_CONNECT_FAILED WSA=10060 (WSAETIMEDOUT)",
+      "packets_sent_complete": 0,
+      "tx_bytes_sent_complete": 0,
+      "in_flight_packet_bytes_unknown": false,
+      "ambiguous": false,
+      "why_unambiguous": "The pairing precheck passed and the RFCOMM connect then timed out, so no socket was ever established and zero application bytes reached the device. This is not a post-send ambiguity and does not trigger the no-resend rule, which exists for outcomes where the device may or may not have received bytes.",
+      "leading_hypothesis": "The Android Divoom app still held the RFCOMM/SPP link from the M7 key sweep. The manifest requires one controller at a time and the phone was the controller minutes earlier.",
+      "alternative_hypotheses": [
+        "the Ditoo powered down or slept",
+        "the device is out of range or its radio is busy with the audio profile"
+      ],
+      "observed_windows_state": "the exact unit remains paired; Windows shows Ditoo-Plus-audio and its AVRCP transports as OK",
+      "action_taken": "stopped. No automatic retry and no reconnect were attempted."
+    }
   ]
 }

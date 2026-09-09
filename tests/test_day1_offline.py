@@ -536,7 +536,6 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertIn("IMAGE_SEQUENCE_DELAY_REJECTED", transport)
         self.assertNotIn("Reconnect", transport)
         protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooStaticImageProtocol.cs").read_text(encoding="utf-8")
-        self.assertIn("MaxSequenceFrames = 2", protocol)
         self.assertIn("MinInterFrameDelayMs = 250", protocol)
 
     def test_sequence_cli_is_manifest_driven_with_no_free_form_arguments(self) -> None:
@@ -570,11 +569,9 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
                 self.assertEqual(proc.returncode, 30, msg=label)
                 self.assertEqual(json.loads(proc.stdout)["error_code"], expected)
 
-    def test_finite_loop_manifest_is_prepared_but_grants_nothing(self) -> None:
+    def test_finite_loop_manifest_is_internally_consistent(self) -> None:
         path = ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json"
         manifest = json.loads(path.read_text(encoding="utf-8"))
-        self.assertFalse(manifest["authority"]["transmission_authorized"])
-        self.assertFalse(manifest["authority"]["authorization_consumed"])
         budgets = manifest["budgets"]
         order = manifest["operation"]["frame_order"]
         self.assertEqual(len(order), budgets["application_requests"])
@@ -589,14 +586,30 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
             self.assertEqual(manifest["operation"]["source_frames"][key]["packet_sha256"],
                              proven["operation"]["source_frames"][key]["packet_sha256"])
 
-    def test_host_cannot_exceed_the_proven_two_frame_ceiling(self) -> None:
-        # The finite-loop manifest needs 10 frames. Until it is granted, the Host
-        # physically refuses more than the two frames step 1 proved.
+    def test_host_frame_ceiling_matches_the_granted_manifest(self) -> None:
+        # The cap tracks a reviewed manifest rather than being an arbitrary number:
+        # it was 2 while only the A->B sequence was proven, and was raised to exactly
+        # what the granted finite-loop manifest needs.
         protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooStaticImageProtocol.cs").read_text(encoding="utf-8")
-        self.assertIn("MaxSequenceFrames = 2", protocol)
         manifest = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))
-        self.assertGreater(manifest["budgets"]["application_requests"], 2)
-        self.assertIn("MaxSequenceFrames must be raised", manifest["implementation_gate"]["host_change_required"])
+        requested = manifest["budgets"]["application_requests"]
+        self.assertIn(f"MaxSequenceFrames = {requested}", protocol)
+        self.assertTrue(manifest["authority"]["transmission_authorized"],
+                        msg="the raised cap must correspond to a live grant")
+
+    def test_finite_loop_attempt_1_failed_before_transmitting_anything(self) -> None:
+        manifest = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))
+        attempt = manifest["attempts"][0]
+        self.assertEqual(attempt["outcome"], "failed_before_transmission")
+        self.assertEqual(attempt["last_completed_stage"], "target_precheck")
+        self.assertEqual(attempt["packets_sent_complete"], 0)
+        self.assertEqual(attempt["tx_bytes_sent_complete"], 0)
+        self.assertFalse(attempt["ambiguous"])
+        self.assertFalse(attempt["in_flight_packet_bytes_unknown"])
+        self.assertIn("No automatic retry", attempt["action_taken"])
+        # Nothing was transmitted, so the granted execution has not happened yet.
+        self.assertTrue(manifest["authority"]["transmission_authorized"])
+        self.assertFalse(manifest["authority"]["authorization_consumed"])
 
     def test_m7_sweep_evidence_separates_state_reports_from_keystrokes(self) -> None:
         data = json.loads((ROOT / "captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json").read_text(encoding="utf-8"))

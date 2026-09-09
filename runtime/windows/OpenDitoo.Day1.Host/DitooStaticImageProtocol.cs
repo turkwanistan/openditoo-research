@@ -12,7 +12,7 @@ static class DitooStaticImageProtocol
     // M8 bounded sequence limits. Derived from capture evidence: the stock app repeats
     // frames inside one session at a 1.013 s median gap (148 ms floor). These are hard
     // ceilings, not the operating rate.
-    internal const int MaxSequenceFrames = 2;
+    internal const int MaxSequenceFrames = 10;  // raised for OPENDITOO-M8-FINITE-LOOP-001
     internal const int MaxInterFrameDelayMs = 5_000;
     internal const int MinInterFrameDelayMs = 250;
     internal const int RgbBytes = 16 * 16 * 3;
