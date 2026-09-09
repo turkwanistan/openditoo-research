@@ -245,3 +245,10 @@ The frozen first custom frame is a 132-byte six-color RGB888 `0x44` image on bla
 ## Exact next action
 
 Request explicit authority for `OPENDITOO-DAY1-M5-STATIC-DIAGNOSTIC-001`: one already-paired RFCOMM channel-1 connection and exactly three sends (`0x9F` stock image preamble, `0xBD/0x31` stock image preamble, one 132-byte custom `0x44` diagnostic image), no retry or reconnect, accept one checksum-valid wrapped `0x44` acknowledgement, then close locally. M5 is currently `transmission_authorized=false`; M4 authority is consumed and does not transfer.
+
+
+## M5 attempt 1 — local runner failure, no image packet sent
+
+The first authorized M5 attempt connected to the exact paired Ditoo and successfully sent packet 1 (`0103009fa20002`). The runner then failed closed with `M5_SEND_READY_2_TIMEOUT; NO_RETRY` before packet 2. Packet 2 and the 132-byte `0x44` diagnostic image packet were not sent; no retry occurred. This is attributed to repeated `FD_WRITE` readiness waits in the Windows nonblocking Winsock runner, not to a Ditoo protocol rejection. Evidence: `captures/OPENDITOO-DAY1-M5-ATTEMPT1-2026-09-08.json`.
+
+The transport was corrected offline to wait for initial `FD_WRITE` once after connect, then perform exactly one `send()` call for each frozen packet. Any partial send, `WSAEWOULDBLOCK`, or later error still fails closed with no resend. Windows compile-only validation of the corrected disarmed runner passed with 0 warnings and 0 errors in 0.90 s. Attempt-1 authority is consumed; attempt 2 requires fresh explicit authority.

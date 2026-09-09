@@ -130,7 +130,7 @@
   "authority": {
     "transmission_authorized": false,
     "authorization_basis": null,
-    "note": "M4 authority was consumed and does not transfer. Requires explicit authorization for this exact three-packet M5 static-frame trial."
+    "note": "Attempt 1 authority was consumed after packet 1 was sent and the local runner failed before packet 2. Corrected transport is compile-validated and disarmed; attempt 2 requires fresh explicit authority for the same frozen three-packet sequence."
   },
   "stop_policy": {
     "ambiguous_or_partial_send": "close locally; outcome unknown; no resend",
@@ -138,5 +138,24 @@
     "wrong_orientation_or_color": "freeze visual result; correct offline; new authority for any corrected frame",
     "recovery": "ordinary documented stock control only; no invented exit command",
     "automatic_reconnect": false
+  },
+  "attempt_history": [
+    {
+      "attempt": 1,
+      "result": "fail_closed_local_send_readiness_timeout",
+      "evidence": "captures/OPENDITOO-DAY1-M5-ATTEMPT1-2026-09-08.json",
+      "packets_sent": 1,
+      "packets_not_sent": [
+        2,
+        3
+      ],
+      "image_packet_sent": false,
+      "automatic_retry": false
+    }
+  ],
+  "implementation_validation": {
+    "corrected_transport": "single initial FD_WRITE readiness wait; then one send call per frozen packet",
+    "compile_proof": "Windows .NET 8 Release --no-restore --nologo: Build succeeded, 0 warnings, 0 errors, 0.90 s",
+    "runner_authorized": false
   }
 }

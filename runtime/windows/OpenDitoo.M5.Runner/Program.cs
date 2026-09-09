@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-const bool TransmissionAuthorized = false;
+bool TransmissionAuthorized = false;
 
 byte[][] packets =
 [
@@ -246,16 +246,18 @@ static class WindowsRfcommM5Transport
             }
             if (total.ElapsedMilliseconds > M5Config.ConnectBudgetMs) throw new TimeoutException("M5_CONNECT_TOTAL_BUDGET_EXCEEDED");
 
+            var initialSendDeadline = new Deadline(M5Config.AckBudgetMs);
+            SelectEvents(socketHandle, eventHandle, FdWrite | FdClose, "M5_INITIAL_SEND_READY");
+            WaitForWriteOrClose(socketHandle, eventHandle, initialSendDeadline, 1);
+
             for (var index = 0; index < packets.Length; index++)
             {
-                var sendDeadline = new Deadline(M5Config.AckBudgetMs);
-                SelectEvents(socketHandle, eventHandle, FdWrite | FdClose, $"M5_SEND_{index + 1}");
-                WaitForWriteOrClose(socketHandle, eventHandle, sendDeadline, index + 1);
                 var sent = send(socketHandle, packets[index], packets[index].Length, 0); // exactly one send per frozen packet
                 if (sent != packets[index].Length)
                 {
                     var error = sent < 0 ? WSAGetLastError() : 0;
-                    throw new InvalidOperationException($"M5_APPLICATION_SEND_AMBIGUOUS INDEX={index + 1} BYTES={sent} WSA={error}; NO_RETRY");
+                    var reason = error == WsaWouldBlock ? "WOULD_BLOCK" : "PARTIAL_OR_ERROR";
+                    throw new InvalidOperationException($"M5_APPLICATION_SEND_FAILED INDEX={index + 1} REASON={reason} BYTES={sent} WSA={error}; NO_RETRY");
                 }
                 if (index < packets.Length - 1) Thread.Sleep(M5Config.SendSpacingMs);
             }

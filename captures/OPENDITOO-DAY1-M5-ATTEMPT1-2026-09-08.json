@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-DAY1-M5-STATIC-DIAGNOSTIC-001-ATTEMPT-1",
+  "date": "2026-09-08",
+  "target": "Ditoo-plus@11:75:58:CE:DE:C7",
+  "transport": "Bluetooth Classic RFCOMM/SPP channel 1",
+  "result": "FAIL_CLOSED_LOCAL_SEND_READINESS_TIMEOUT",
+  "operator_output": {
+    "precheck": "PASS_EXACT_TARGET_PAIRED",
+    "failure": "TimeoutException: M5_SEND_READY_2_TIMEOUT; NO_RETRY",
+    "retry": false
+  },
+  "attribution": {
+    "connection_succeeded": true,
+    "packet_1_sent": true,
+    "packet_2_sent": false,
+    "packet_3_image_sent": false,
+    "image_ack_observed": false,
+    "visual_result": "not_recorded_by_operator"
+  },
+  "frozen_packet_1_hex": "0103009fa20002",
+  "analysis": "The runner waited for a second FD_WRITE event after packet 1. On an already-writable nonblocking Winsock socket, FD_WRITE is not guaranteed to re-fire merely because WSAEventSelect is called again. The timeout occurred before packet 2 send(). This is classified as a local transport-runner event-state defect, not a Ditoo protocol rejection.",
+  "correction": "Wait for initial FD_WRITE once after RFCOMM connect, then call send() exactly once for each of the three frozen packets. Any partial send, WSAEWOULDBLOCK, or error on a later packet fails closed with no resend.",
+  "authority": "Attempt-1 authority consumed; attempt 2 requires new explicit authorization."
+}

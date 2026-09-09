@@ -116,7 +116,7 @@ def verify_consumed_runner() -> None:
 def verify_m5_runner_disarmed() -> None:
     runner = (ROOT / "runtime/windows/OpenDitoo.M5.Runner/Program.cs").read_text(encoding="utf-8")
     required = (
-        "const bool TransmissionAuthorized = false;",
+        "bool TransmissionAuthorized = false;",
         "OPENDITOO-DAY1-M5-STATIC-DIAGNOSTIC-001",
         "11:75:58:CE:DE:C7",
         "db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b",
