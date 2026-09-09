@@ -327,7 +327,7 @@ def main() -> int:
         "DAY1_OFFLINE_PASS "
         f"artifacts={artifact_count} tests={test_count} host=typed_image port=8796 "
         "device_io=false m4_completed=true m4_authorized=false m5_authorized=false ui=approved_mcp_page "
-        f"m9_activation_authorized={str(_m9_armed()).lower()} product_policy_authorized=false"
+        f"m9_activation_authorized={str(_m9_armed()).lower()} committed_product_template_authorized=false"
     )
     return 0
 

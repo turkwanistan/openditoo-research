@@ -8,9 +8,9 @@ Routing refreshed after activation 008 and product-runtime hardening. Always run
 
 ## 0. Read this first if you are the next session
 
-**Nothing is currently authorized. Activations 001–008 are consumed.** 008 is a physical PASS: exactly four changed frames rendered green → yellow → red → grey over 15 s and the operator confirmed every transition looked good. Production semantics remain green <5 min, yellow 5–20 min, red >=20 min, grey for no usable activity data.
+**Activations 001–008 are consumed. Persistent product authority `OPENDITOO-PRODUCT-RUNTIME-001` is currently granted through the local git-ignored mode-0600 policy.** 008 is a physical PASS: exactly four changed frames rendered green → yellow → red → grey over 15 s and the operator confirmed every transition looked good. Production semantics remain green <5 min, yellow 5–20 min, red >=20 min, grey for no usable activity data.
 
-The current objective is **persistent plug-and-play MCP product runtime**. Offline implementation is prepared under `product/OPENDITOO-PRODUCT-RUNTIME-001.json`, but the committed template is deliberately disabled. Do not start `product-runtime`, install the product service, or materialize a local authorized policy until the operator explicitly grants `OPENDITOO-PRODUCT-RUNTIME-001`. After such a grant, persistent authority belongs only to the local mode-0600 policy and exact scope described in `AGENTS.md`; experimental manifests remain one-use/consumed.
+The current objective is **persistent plug-and-play MCP product runtime activation**. The operator explicitly granted `OPENDITOO-PRODUCT-RUNTIME-001`; the committed template remains disabled, while the local mode-0600 `.openditoo-local/product-runtime-policy.json` is materialized and `product-check` reports `execution_ready:true`. Persistent authority belongs only to that local policy and exact scope described in `AGENTS.md`; experimental manifests remain one-use/consumed. Next: install/start transactionally and physically accept startup, reclaim, and reconnect.
 
 Prepared behavior: Windows logon bootstrap → WSL product service → bounded typed activity sessions → automatic bounded reconnect when Ditoo returns → immediate fresh-session MCP-screen reclaim after `canvas_invalidated`. No new Host route or raw Bluetooth surface was added. `OpenDitoo Day1 Host` and OpenTivoo remain separately owned/preserved. See `notes/OPENDITOO-PRODUCT-RUNTIME-HARDENING-2026-09-09.md`.
 
@@ -478,13 +478,13 @@ The client fix keeps the Host's hard 150 ms floor but uses a nominal **200 ms MC
 
 ### Activation 004 result / 005 pending — 2026-09-09
 
-`OPENDITOO-M9-ACTIVATION-004` is consumed after one ACKed cyan frame (3 packets / 153 bytes). Frame 2 was refused HTTP 429 because the runner backdated its send start to the tick timestamp captured before slow live source collection. Dashboard visibility passed; four-stage animation and stock-yield remain NOT TESTED. The runner now re-samples monotonic time after rendering and at dispatch; a 350 ms slow-collection regression is pinned. `OPENDITOO-M9-ACTIVATION-005` is consumed; no transmission is currently authorized.
+`OPENDITOO-M9-ACTIVATION-004` is consumed after one ACKed cyan frame (3 packets / 153 bytes). Frame 2 was refused HTTP 429 because the runner backdated its send start to the tick timestamp captured before slow live source collection. Dashboard visibility passed; four-stage animation and stock-yield remain NOT TESTED. The runner now re-samples monotonic time after rendering and at dispatch; a 350 ms slow-collection regression is pinned. `OPENDITOO-M9-ACTIVATION-005` is consumed; at that historical point no transmission authority was live.
 
 ### Activation 005 result / 006 pending — 2026-09-09
 
 `OPENDITOO-M9-ACTIVATION-005` is consumed. The actual-dispatch timestamp fix closed the 003/004 pacing defect: five frames / 15 packets / 765 bytes were ACKed. The operator visibly observed animation but reported that the single cyan→blue→light-blue→cyan sweep went too quickly to confirm every color. After the operator pressed brightness, the worker recorded `canvas_invalidated / stopped_yielded_to_stock`, `display_state=unknown_not_ours`; the unit returned to the stock clock and no reclaim frame was sent. **Stock-yield is now physically accepted.**
 
-Operator product decision: each activity event should cycle a few times. Source now runs three visible sweeps; identical cyan boundaries are collapsed so an ACK-gated animation cannot stall on an unchanged frame. That is 10 distinct frames at the 200 ms MCP send cadence, about 2.0 s total. Offline verification remains green. `OPENDITOO-M9-ACTIVATION-006` is currently authorized for exactly one bounded visual-acceptance execution under the operator grant `Grant OPENDITOO-M9-ACTIVATION-006`; no other transmission is authorized. **At that historical point, no transmission authority was live.** Streaming remains tabled until the dashboard is accepted.
+Operator product decision: each activity event should cycle a few times. Source now runs three visible sweeps; identical cyan boundaries are collapsed so an ACK-gated animation cannot stall on an unchanged frame. That is 10 distinct frames at the 200 ms MCP send cadence, about 2.0 s total. Offline verification remains green. `OPENDITOO-M9-ACTIVATION-006` was then authorized for exactly one bounded visual-acceptance execution under the historical operator grant `Grant OPENDITOO-M9-ACTIVATION-006`; that grant is now consumed. **At that historical point, no transmission authority was live.** Streaming remains tabled until the dashboard is accepted.
 
 ### Activation 006 result / 007 pending — 2026-09-09
 
@@ -499,7 +499,7 @@ Operator product decision: each activity event should cycle a few times. Source 
 
 ### Activation 008 pending — accelerated green/yellow/red/grey acceptance
 
-Production status semantics remain green <5 min, yellow 5-20 min, red >=20 min, and grey for no usable activity data. A test-only virtual-clock profile lets the exact device show those states as green 0-3 s -> yellow 3-6 s -> red 6-9 s -> grey from 9 s onward without changing production thresholds or persisted source state. Offline suite: **157 tests PASS**. `experiments/DAY1-M9-ACTIVATION-008.json` is **currently authorized for exactly one bounded 15 s execution** under the operator grant `Grant OPENDITOO-M9-ACTIVATION-008`; expected four changed frames, hard ceiling 8; no other transmission is authorized. See `notes/OPENDITOO-MCP-STATUS-TRANSITION-ACCEPTANCE-2026-09-09.md`.
+Production status semantics remain green <5 min, yellow 5-20 min, red >=20 min, and grey for no usable activity data. A test-only virtual-clock profile lets the exact device show those states as green 0-3 s -> yellow 3-6 s -> red 6-9 s -> grey from 9 s onward without changing production thresholds or persisted source state. Offline suite: **157 tests PASS**. `experiments/DAY1-M9-ACTIVATION-008.json` was historically authorized for exactly one bounded 15 s execution under `Grant OPENDITOO-M9-ACTIVATION-008`; that run is now consumed and PASS (four changed frames, hard ceiling 8). See `notes/OPENDITOO-MCP-STATUS-TRANSITION-ACCEPTANCE-2026-09-09.md`.
 
 
 ### Product decision after 007 — dashboard owns the display while connected
@@ -509,6 +509,6 @@ The operator does not intend to use the stock Ditoo UI. Future hardened product 
 
 ### Activation 008 result — status transitions physically accepted
 
-`OPENDITOO-M9-ACTIVATION-008` is consumed and PASS. The test-only virtual-clock profile produced exactly four ACKed changed frames over 15 s (12 packets / 714 bytes), clean `lifetime_expired`, with 287 unchanged holds and no pacing/refusal. Operator observation: **all green → yellow → red → grey transitions were visible and looked good**. Production thresholds remain unchanged: green <5 min, yellow 5–20 min, red >=20 min; grey remains no usable activity data. Nothing is currently authorized.
+`OPENDITOO-M9-ACTIVATION-008` is consumed and PASS. The test-only virtual-clock profile produced exactly four ACKed changed frames over 15 s (12 packets / 714 bytes), clean `lifetime_expired`, with 287 unchanged holds and no pacing/refusal. Operator observation: **all green → yellow → red → grey transitions were visible and looked good**. Production thresholds remain unchanged: green <5 min, yellow 5–20 min, red >=20 min; grey remains no usable activity data. At completion of 008 no standing product authority had yet been granted; that historical state is superseded by the current product grant.
 
 Product decision recorded immediately after acceptance: stock UI is not desired while OpenDitoo owns the device. Future plug-and-play product mode should automatically restore the last/current MCP dashboard after a physical input causes stock takeover, rather than yielding until reconnect. This is a new product-runtime authority shape and is not authorized by 008.

@@ -726,9 +726,11 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         handoff = (ROOT / "notes/OPENDITOO-HANDOFF-2026-09-09.md").read_text(encoding="utf-8")
         start_here = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
         self.assertIn("OPENDITOO-HANDOFF-2026-09-09.md", start_here)
-        # The contract is that the routing documents match the manifests, in BOTH
-        # directions. Either everything is unauthorized and the docs say so, or exactly
-        # the armed experiments are named in both documents.
+        # The contract is that routing matches one-shot experimental manifests in BOTH
+        # directions. Persistent product authority is intentionally local/git-ignored and
+        # is therefore NOT inferable from committed manifests; routing must send readers
+        # to the local product policy/status rather than claiming that no authority of any
+        # kind exists.
         armed = []
         for path in sorted((ROOT / "experiments").glob("DAY1-M*.json")):
             manifest = json.loads(path.read_text(encoding="utf-8"))
@@ -747,7 +749,12 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
                     self.assertIn(experiment_id, document,
                                   msg=f"live grant {experiment_id} is not named in the routing")
             else:
-                self.assertIn("nothing is currently authorized", document.lower())
+                lowered = document.lower()
+                self.assertIn("001–008", lowered)
+                self.assertIn("consumed", lowered)
+                self.assertIn("persistent product authority", lowered)
+                self.assertNotIn("currently authorized for one", lowered,
+                                 msg="routing still advertises a consumed one-shot grant")
         # Every note the routing sends a reader to must exist.
         for name in ("OPENDITOO-M6-RUNTIME-ACCEPTANCE-2026-09-09.md",
                      "OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md",

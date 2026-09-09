@@ -77,4 +77,4 @@ Do not claim plug-and-play complete until all are observed:
 
 ## Current state
 
-Implementation is offline only. The committed product policy is disabled and **nothing is currently authorized**. `scripts/verify_day1_offline.py` must remain PASS before any persistent grant/install.
+Implementation is frozen at the reviewed product boundary. The committed product policy remains disabled. **Persistent authority `OPENDITOO-PRODUCT-RUNTIME-001` is now granted only through the local mode-0600 `.openditoo-local/product-runtime-policy.json`, and `product-check` reports `execution_ready:true`.** `scripts/verify_day1_offline.py` must remain PASS before install/start.
