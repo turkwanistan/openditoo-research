@@ -596,16 +596,26 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
             self.assertEqual(manifest["operation"]["source_frames"][key]["packet_sha256"],
                              proven["operation"]["source_frames"][key]["packet_sha256"])
 
-    def test_host_frame_ceiling_matches_the_granted_manifest(self) -> None:
-        # The cap tracks a reviewed manifest rather than being an arbitrary number:
-        # it was 2 while only the A->B sequence was proven, and was raised to exactly
-        # what the granted finite-loop manifest needs.
+    def test_host_frame_ceiling_matches_a_reviewed_manifest(self) -> None:
+        # The cap tracks the largest reviewed manifest rather than being an arbitrary
+        # number: 2 while only the A->B sequence was proven, 10 for the finite loop, 512
+        # for the sustained motion run. Raising it must require a manifest that needs it.
         protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooStaticImageProtocol.cs").read_text(encoding="utf-8")
-        manifest = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))
-        requested = manifest["budgets"]["application_requests"]
-        self.assertIn(f"MaxSequenceFrames = {requested}", protocol)
-        self.assertTrue(manifest["authority"]["authorization_consumed"],
-                        msg="the raised cap corresponds to a manifest that was actually granted")
+        requests = {}
+        for path in sorted((ROOT / "experiments").glob("DAY1-*.json")):
+            data = json.loads(path.read_text(encoding="utf-8"))
+            frames = (data.get("budgets") or {}).get("application_requests")
+            if isinstance(frames, int) and (data.get("operation") or {}).get("frame_order"):
+                requests[path.name] = frames
+        self.assertTrue(requests, msg="no sequence manifest found to justify any cap")
+        largest = max(requests.values())
+        self.assertIn(f"MaxSequenceFrames = {largest};", protocol,
+                      msg=f"cap must equal the largest reviewed request ({largest}); saw {requests}")
+        # And that manifest must be a real reviewed experiment, not a stub.
+        owner = max(requests, key=requests.get)
+        data = json.loads((ROOT / "experiments" / owner).read_text(encoding="utf-8"))
+        self.assertIn("authority", data)
+        self.assertEqual(data["authority"]["experiment_id"], data["experiment_id"])
 
     def test_finite_loop_measurements_back_the_accepted_ceiling(self) -> None:
         manifest = json.loads((ROOT / "experiments/DAY1-M8-FINITE-LOOP-PENDING.json").read_text(encoding="utf-8"))

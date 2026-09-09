@@ -1,0 +1,258 @@
+{
+ "schema_version": 1,
+ "experiment_id": "OPENDITOO-R3-FULLCOLOUR-THROUGHPUT-001",
+ "milestone": "R3 \u2014 throughput at full-colour frame size",
+ "status": "completed_pass_authority_consumed",
+ "objective": "Measure the frame interval with FULL-COLOUR content: 255-palette frames of 1054 application bytes each, against the 71-byte two-colour frames every rate experiment has used so far. Timing is held exactly at R2b's 10 ms spacing and 50 ms delay, so the only variable is frame size.",
+ "why_this_is_the_cheap_path": "ONE variable changes: bytes per frame, 71 -> 1054, a 14.8x increase. Same frame count, same packet count, same connection shape, same spacing, same delay, same stop policy, same encoder. Every rate number this project owns was measured with 2-colour frames, so the whole rate ladder may describe a regime that real content never occupies. This is the single measurement that decides whether the device is a full-colour video target or a limited-palette animation target.",
+ "target": {
+  "exact_unit_id": "11:75:58:CE:DE:C7",
+  "installed_firmware": "v42012",
+  "model": "Ditoo Plus",
+  "pairing_precheck": "authenticated exact target required before any socket is created"
+ },
+ "transport": {
+  "measured_endpoint": "Windows Classic RFCOMM channel 1",
+  "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+  "one_controller_rule": "the Android app must be disconnected for the whole run"
+ },
+ "operation": {
+  "shape": "one connection; 10 frames alternating A,B,...; per frame send preamble A, preamble B, image with 10 ms between packets, read one ACK, wait 50 ms; then close",
+  "semantic_evidence": "OPENDITOO-R2B-SPACING-10MS-001 PASS at this exact timing: 109.3 ms achieved, 30/30 packets, 10/10 well-formed ACKs, zero errors, operator confirmed clean rendering. Only the image content changes here.",
+  "application_tx_hex": "01340044000a0a04aa2d00f4010002ffffff000000f8fff8fff8ffffffffffffffffffffffffffffffffffffffffffffffffffffff262502",
+  "frame_order": [
+   "a",
+   "b",
+   "a",
+   "b",
+   "a",
+   "b",
+   "a",
+   "b",
+   "a",
+   "b"
+  ],
+  "source_frames": {
+   "a": {
+    "file": "examples/openditoo-video-a-16.png",
+    "png_sha256": "fc7ea117f246dd25bba76c2d2609a5cc6bcdc0abfe87eb3f7c87fa3a37047dd3",
+    "rgb_sha256": "c3f09c6b80800d713f3a9e79638842d2a902b31b0ae18787b72d7ade4585d0f0",
+    "packet_sha256": "3516e66fe6c82882151a9d0c11ae174515ac5172265871a2112260cd9a4ce7e1",
+    "palette_colors": 255
+   },
+   "b": {
+    "file": "examples/openditoo-video-b-16.png",
+    "png_sha256": "5ba64217a300d573120da0e62b169554353ad3fca5744a0b0845c4d0b7b9129e",
+    "rgb_sha256": "db3c2abaf9f37ef5b1f93ba4e0feb3fe733713e96e049cd04cec517effa6536e",
+    "packet_sha256": "1d0061a91480b497205e220f3f2229ebae71faf28eaaf6a5c7024e0baec940ae",
+    "palette_colors": 255
+   },
+   "why": "Full hue sweep across x with a brightness ramp down y, at the encoder's 255-colour ceiling. Frame B is the same sweep shifted half a turn, so the two are unmistakably different on the panel and a wrong or partial render is obvious rather than subtle. Deliberately NOT random noise: noise would hit the same byte count but tell the operator nothing about correctness."
+  },
+  "measurements_required": [
+   "achieved inter-frame interval versus R2b's 109.3 ms at the same timing",
+   "per-frame ACK latency, which now contains 14.8x the transmission",
+   "any frame whose ACK did not arrive, or any malformed ACK",
+   "whether the full-colour image renders correctly and completely",
+   "operator observation of whether the two sweeps are distinct and clean"
+  ],
+  "automatic_retry": false,
+  "automatic_reconnect": false,
+  "target_override": false,
+  "raw_packet_override": false
+ },
+ "budgets": {
+  "connection_attempts": 1,
+  "application_requests": 10,
+  "application_packets": 30,
+  "application_tx_bytes_total": 10540,
+  "expected_rx_frames": 10,
+  "expected_rx_bytes_total": 100,
+  "inter_frame_delay_ms": 50,
+  "ack_timeout_ms_per_frame": 5000,
+  "total_wall_clock_ms": 30000,
+  "derivation": "10 frames at 1054 B is 10540 application bytes, 14.8x R2b's 710. Wall clock is raised to 30 s because the whole point is that the interval is UNKNOWN: at R2b's rate this is 1.1 s, but even at 10x slower it completes in 11 s. A tight budget would truncate the very measurement being sought.",
+  "derivation_note_on_frame_count": "Deliberately NOT raised above ten. The Host's MaxSequenceFrames tracks a manifest that was actually granted rather than being an arbitrary number, and a test pins it to the M8 finite-loop manifest. Raising it to get a longer sample would mean a code change, a rebuild, a reinstall and weakening that guard -- all to answer a question nine intervals already answer.",
+  "send_spacing_ms": 10
+ },
+ "expected_observations": {
+  "transport": "one connection, 30 application packets, 10 wrapped 0x44 ACKs, clean local close",
+  "physical": "a full-spectrum colour sweep alternating between two half-turn-shifted versions ten times. Unlike every previous rate run, this is a rich image rather than a single white block.",
+  "ack_payload": "recorded per frame, not asserted",
+  "primary_risk": "A 1039-byte image packet is by far the largest single application frame this project has ever sent; the previous maximum was 188 B. Plausible failures: the ACK times out because transmission takes longer than budgeted, the device rejects or truncates an oversized frame, or -- the case an ACK cannot detect -- it renders a partial or corrupted image. Operator observation is load-bearing evidence here."
+ },
+ "persistence_analysis": {
+  "expected_effect": "display state only",
+  "basis": "M6.4 power cycle returned the unit to stock software and the default clock",
+  "not_claimed": "absence of any non-volatile write; repetition does not test that either",
+  "new_persistence_risk_vs_step_1": "none identified: identical command, identical packets, same session shape, repeated. No new command id, no save/publish/upload, no gallery interaction.",
+  "new_risk_vs_previous": "Frame SIZE is new; the command, packet structure, target, rate and session shape are unchanged. No new command id, no save/publish/upload, no gallery interaction. The encoder's 255-colour ceiling and the existing frame-size guard both still apply."
+ },
+ "stop_policy": {
+  "stop_immediately_on": [
+   "unexpected target identity or pairing precheck failure",
+   "any ACK that is not exactly one 10-byte wrapped 0x44 frame",
+   "any send that does not complete in full",
+   "ACK timeout on any frame",
+   "total wall clock exceeding 30000 ms",
+   "any conflicting controller observed on the link",
+   "a stock page takeover or any device behaviour outside the expected observations"
+  ],
+  "on_ambiguous_outcome": "stop, preserve the Host diagnostics record including the per-frame timings collected so far, and report. Do NOT resend, do not reconnect, do not power-cycle before the result is recorded.",
+  "recovery": "operator-initiated only, after the outcome is recorded",
+  "operator_abort": "the run is short enough to watch end to end; if it looks wrong, power off the Ditoo rather than letting it continue."
+ },
+ "implementation_gate": {
+  "host_change_required": "none",
+  "status": "installed Host 444c47e6dc193ceaa63d3c960a09da8b11d5ec4f1ee917590fbc579237dcbd5b already supports this; only the source images differ."
+ },
+ "authority": {
+  "transmission_authorized": false,
+  "authorization_consumed": true,
+  "experiment_id": "OPENDITOO-R3-FULLCOLOUR-THROUGHPUT-001",
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "grant OPENDITOO-R3-FULLCOLOUR-THROUGHPUT-001",
+  "expires_at": "2026-09-10T00:00:00Z",
+  "grant_scope_requested": "ONE execution: 10 frames, 30 packets, 10540 application bytes, 50 ms delay, 10 ms spacing, one connection, no retry, no reconnect.",
+  "note": "Grants nothing as written.",
+  "grant_scope": "ONE execution: 10 frames, 30 packets, 10540 application bytes, 50 ms delay, 10 ms spacing, one connection, no retry, no reconnect.",
+  "consumed_at": "2026-09-09T16:34:30Z"
+ },
+ "explicitly_out_of_scope": [
+  "any timing change; spacing and delay are held at R2b's values so frame size is the only variable",
+  "pipelining or any change to the one-ACK-per-frame shape",
+  "sustained operation beyond ten frames -- streaming durability is a separate, untested question",
+  "any new command id, delta-frame or partial-update command, or command enumeration",
+  "driving frames from the M9 activity collector"
+ ],
+ "rate_ladder_context": {
+  "position": "R3; R1, R2a and R2b are complete, accepted and visually confirmed, all at 71-byte frames",
+  "measured_at_71_bytes": {
+   "1000ms_delay": "1114.1 ms",
+   "250ms_delay": "371.6 ms",
+   "50ms_delay_40ms_spacing": "175.4 ms",
+   "50ms_delay_10ms_spacing": "109.3 ms / 9.15 fps"
+  },
+  "this_run": "identical timing to R2b, frames 1054 B instead of 71 B"
+ },
+ "build": {
+  "host_dll_sha256": "444c47e6dc193ceaa63d3c960a09da8b11d5ec4f1ee917590fbc579237dcbd5b",
+  "installed_dll_sha256_verified": "444c47e6dc193ceaa63d3c960a09da8b11d5ec4f1ee917590fbc579237dcbd5b"
+ },
+ "why_this_value_matters": "Every other timing number in this project was chosen by us and has proven reducible: the inter-frame delay went 1000 -> 250 -> 50 ms with no ill effect. The 40 ms send spacing is the ONLY timing taken from observed stock-app behaviour, so it is the only one that might encode a real device requirement.",
+ "why_this_matters_for_streaming": {
+  "the_gap": "R1, R2a and R2b all used 71-byte frames. The activity page tops out at 188 B. Video-like content at the encoder's 255-colour ceiling is 1054 B. We have no throughput measurement at any size.",
+  "what_is_known": "Turnaround was measured at about 27 ms at 71 bytes. That is mostly round-trip latency, not transmission, so larger frames add air time on top of it -- but how much is unmeasured.",
+  "prediction": "If the extra ~983 bytes cost little, expect roughly 130-190 ms per frame (5-8 fps). If the link is slower than hoped, the interval could exceed 300 ms (under 3 fps), which would mean full-colour video is not viable and palette discipline is mandatory.",
+  "what_would_falsify_optimism": "An interval above about 250 ms would put full-palette streaming out of reach at any useful rate and redirect the work to 16-64 colour content, which costs 209-417 B.",
+  "opentivoo_comparison": "The operator notes Tivoo streams well at 8-10 fps. That is class-5 comparative prior art on a different device and does not transfer -- and the direction of the difference is not obvious. Tivoo is RGB222, so its palette entries are cheaper than Ditoo's 3-byte RGB888 ones; a 255-colour Tivoo frame may be several hundred bytes SMALLER. Better colour depth means a more expensive frame, so Ditoo being the richer device is a reason its streaming rate might be LOWER, not higher. This experiment measures Ditoo directly rather than inheriting either expectation."
+ },
+ "result": {
+  "status": "pass",
+  "frames_acked": 10,
+  "packets_sent_complete": 30,
+  "tx_bytes_sent_complete": 10540,
+  "elapsed_ms": 1195,
+  "connections_attempted": 1,
+  "socket_closed": true,
+  "retry": false,
+  "reconnect": false,
+  "ack_payload_hex_ordered": [
+   "0xB1",
+   "0x28",
+   "0x95",
+   "0xFE",
+   "0x8B",
+   "0x04",
+   "0x78",
+   "0xFA",
+   "0x6B",
+   "0xD4"
+  ],
+  "frame_start_offsets_ms": [
+   0,
+   111,
+   233,
+   338,
+   443,
+   594,
+   716,
+   822,
+   959,
+   1064
+  ],
+  "reported_ack_latency_ms": [
+   58,
+   67,
+   52,
+   51,
+   89,
+   58,
+   54,
+   80,
+   52,
+   52
+  ],
+  "operator_visual_render": "pending"
+ },
+ "measurements": {
+  "achieved_inter_frame_interval_ms": {
+   "n": 9,
+   "mean": 118.2,
+   "min": 105,
+   "max": 151,
+   "pstdev": 15.6
+  },
+  "achieved_fps": 8.46,
+  "bytes_per_frame": 1054,
+  "palette_colors": 255,
+  "vs_r2b_same_timing": {
+   "r2b_bytes": 71,
+   "r2b_mean_ms": 109.3,
+   "r2b_fps": 9.15,
+   "delta_ms_per_frame": 8.9,
+   "statement": "14.8x the bytes cost 8.9 ms per frame, an 8 percent slowdown."
+  },
+  "implied_marginal_throughput_kb_s": 107,
+  "sustained_throughput_kb_s": 8.7,
+  "reported_ack_latency_ms": {
+   "n": 10,
+   "min": 51,
+   "median": 56.0,
+   "max": 89,
+   "note": "includes 20 ms of our own spacing; true send+ACK is about 36 ms at this frame size, against 27 ms at 71 bytes."
+  },
+  "prediction_check": "Predicted 130-190 ms, with above 250 ms meaning full-colour video was out of reach. Achieved 118.2 ms -- better than the optimistic end of the prediction.",
+  "errors": 0,
+  "missing_acks": 0
+ },
+ "findings": [
+  {
+   "id": "FULL-COLOUR-FRAMES-ARE-NEARLY-FREE",
+   "confidence": "MATCHED",
+   "statement": "Raising frame size 14.8x, from 71 to 1054 application bytes at the encoder's 255-colour ceiling, cost only 8.9 ms per frame: 118.2 ms against R2b's 109.3 ms at identical timing. Ten frames, 30/30 packets, 10/10 well-formed ACKs, zero errors.",
+   "implication": "Marginal throughput is roughly 107 KB/s, so at 16x16 even a maximum-palette frame is not the constraint. Bytes are not the bottleneck; our own pacing is. Full-colour video is viable.",
+   "supersedes": "The concern that all rate work had been done at 71 bytes and might describe a regime real content never occupies. It does not: the regimes are within 8 percent of each other."
+  },
+  {
+   "id": "REMAINING-BUDGET-IS-STILL-OURS",
+   "confidence": "MATCHED",
+   "statement": "At 118.2 ms per full-colour frame the composition is roughly 50 ms of inter-frame delay we add, 20 ms of send spacing we add, and about 48 ms of actual send, ACK and loop overhead. Two thirds of the budget is still self-imposed, even at maximum frame size.",
+   "projection": {
+    "spacing_10_delay_0": "68 ms = 14.7 fps at full colour",
+    "spacing_0_delay_0": "48 ms = 20.7 fps at full colour",
+    "caveat": "projections, not measurements; and Windows Thread.Sleep granularity of about 15.6 ms already shows in the interval clustering, so removing the delay entirely means not sleeping at all rather than sleeping less."
+   }
+  },
+  {
+   "id": "TIVOO-COMPARISON-DOES-NOT-BIND",
+   "confidence": "MATCHED_NEGATIVE",
+   "statement": "The operator's expectation, that Tivoo streaming well at 8-10 fps sets a floor for the 'superior' Ditoo, is not how the comparison works and did not need to be relied on. Ditoo reaches 8.46 fps at FULL RGB888 colour, measured directly on the exact unit. Tivoo's RGB222 palette entries are cheaper per colour, so richer colour depth means a more expensive frame; the direction of any cross-device inference was ambiguous. Measuring removed the need to guess."
+  }
+ ],
+ "acceptance": {
+  "transport_acceptance": "PASS \u2014 one connection, 30 packets, 10540 bytes, 10/10 well-formed ACKs, clean close, no retry, no reconnect.",
+  "throughput_acceptance": "PASS \u2014 118.2 ms per 1054-byte frame, 8.46 fps at maximum palette.",
+  "visual_acceptance": "PENDING \u2014 did the full-colour sweep render completely and correctly? A truncated or corrupted large frame is the one failure a valid ACK cannot detect."
+ }
+}

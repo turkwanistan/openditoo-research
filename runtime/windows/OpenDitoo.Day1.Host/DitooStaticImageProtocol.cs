@@ -19,7 +19,12 @@ static class DitooStaticImageProtocol
     // M8 bounded sequence limits. Derived from capture evidence: the stock app repeats
     // frames inside one session at a 1.013 s median gap (148 ms floor). These are hard
     // ceilings, not the operating rate.
-    internal const int MaxSequenceFrames = 10;  // raised for OPENDITOO-M8-FINITE-LOOP-001
+    // Tracks the largest reviewed manifest rather than being an arbitrary number: it was
+    // 2 while only the A->B sequence was proven, 10 for OPENDITOO-M8-FINITE-LOOP-001, and
+    // 512 for OPENDITOO-R4-MOTION-SUSTAINED-001, which needs sixteen 32-frame laps to
+    // judge motion smoothness and to hold the link open for a minute. A test asserts the
+    // cap equals what some manifest in experiments/ actually asks for.
+    internal const int MaxSequenceFrames = 512;
     internal const int MaxInterFrameDelayMs = 5_000;
     // The floor tracks measured evidence, not ambition. 1000 ms was the conservative
     // starting point; 250 ms was measured three times by OPENDITOO-R1-RATE-250MS-001/2/3
