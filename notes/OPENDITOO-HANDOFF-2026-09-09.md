@@ -295,8 +295,28 @@ target, including why 10 fps needs a different protocol shape rather than a smal
 `experiments/DAY1-M9-ACTIVATION-002-PENDING.json` is cut and unarmed for the next trial,
 with budgets rederived for the new page (203 bytes/frame worst case, up from 191).
 
+### Preconditions for the next trial — all but two are DONE
+
+Completed 2026-09-09, none of which is transmission authority:
+
+- Host rebuilt with the heartbeat fix, reinstalled (`REFRESH_STATUS=PASS_TYPED_IMAGE`,
+  `OPENTIVOO_TASK=preserved`), installed DLL `9c4abe8f…9a582` byte-identical to the
+  repository build.
+- The exact **installed** binary passes the shared receive fixture:
+  `HOST_SELFTEST_PASS cases=9 failures=0`.
+- `/v1/status` advertises `activity-session`; `/v1/session/heartbeat` answers live with
+  `deviceIo=false` — the route whose absence ended 001, now confirmed reachable without
+  touching the device.
+- **Consumed authority survives a Host reinstall**, verified: both the Host ledger and
+  the WSL claim for `OPENDITOO-M9-ACTIVATION-001` are intact afterwards. The ledger lives
+  in `.openditoo-local/`, not in the Windows install directory, so replacing the binary
+  cannot un-consume a grant.
+
+Still outstanding: **an operator grant naming `OPENDITOO-M9-ACTIVATION-002`**, and the
+Android Divoom app disconnected.
+
 **Consequence for the next trial:** the corrected code and the new page are unproven on
-the device. A second
+the device. Everything reachable without a grant has now been done. A second
 activation is worth doing — it is the only way to get a full-lifetime session, live
 coalescing/pacing evidence, and a stock-yield case — but it needs a **new manifest and a
 new grant**, and its frozen code hashes will differ from the consumed one's.

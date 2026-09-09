@@ -23,12 +23,14 @@
    "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
    "session_sha256": "a3327424f2713ad80a1749ff36cd67aa38ac09ef72f137bc71ada89e4a147c23"
   },
-  "host_dll_sha256": "1b51d01f3f4d7c9a8913864d9f4e51203b3c186547e81c53d5931f0ebe44415b",
-  "host_exe_sha256": "6753e86ced54e3813049d740fcb78c6e5c14b4b232c8441db76137ac7aad4500",
+  "host_dll_sha256": "9c4abe8f48765407706cfcdf0f8cd08923a17927a6989290ffd4a78c3799a582",
+  "host_exe_sha256": "465960de048b0526f1c11f339f6efd258038e478c0fcd78288c9e271d8095535",
   "currently_installed_dll_sha256": "a0f2fa1c3b5ced5c1225393453a4476ce4b0aa9e06c39364020868eda97f2762",
-  "installed_identity_note": "The installed Host predates the heartbeat fix and would reproduce 001's failure. `refresh_openditoo_day1_host.ps1 -Apply` MUST be re-run and the installed hash re-verified before this experiment. Because the Release build is not byte-reproducible, freeze host_dll_sha256 from the artifact actually installed at that point, not from this file.",
+  "installed_identity_note": "VERIFIED 2026-09-09: refresh_openditoo_day1_host.ps1 -Apply re-run after the heartbeat fix; REFRESH_STATUS=PASS_TYPED_IMAGE, OPENTIVOO_TASK=preserved. Installed DLL is byte-identical to the repository Release build. The exact INSTALLED binary passes the shared receive fixture (HOST_SELFTEST_PASS cases=9 failures=0), /v1/status advertises activity-session, and /v1/session/heartbeat answers with deviceIo=false -- the route whose absence ended 001.",
   "build_is_not_byte_reproducible": "Two Release builds of identical source produced different DLL hashes (d3ece014...a042a then a0f2fa1c...f2762). The build is not deterministic, so a build hash is only meaningful when taken from the artifact actually installed. That is what is frozen here.",
-  "ui_design": "Operator-approved three-MCP page from the supplied handoff package: L/mushroom, O/bunny, W/skull, blue activity override. host/activity_ui_data.py is DERIVED from assets/ui/reference/ and the offline suite re-renders all eight approved mockups pixel-for-pixel. Two operator decisions depart from the supplied spec, both deliberate: a dim red fault bar in the crown row separates an unreadable source from a merely idle one (the spec merged both into grey and listed the split as an open question), and the RGB222 palette constraint is dropped because the exact unit's stock 0x44 path is plain RGB888."
+  "ui_design": "Operator-approved three-MCP page from the supplied handoff package: L/mushroom, O/bunny, W/skull, blue activity override. host/activity_ui_data.py is DERIVED from assets/ui/reference/ and the offline suite re-renders all eight approved mockups pixel-for-pixel. Two operator decisions depart from the supplied spec, both deliberate: a dim red fault bar in the crown row separates an unreadable source from a merely idle one (the spec merged both into grey and listed the split as an open question), and the RGB222 palette constraint is dropped because the exact unit's stock 0x44 path is plain RGB888.",
+  "installed_dll_sha256_verified": "9c4abe8f48765407706cfcdf0f8cd08923a17927a6989290ffd4a78c3799a582",
+  "authority_survives_reinstall": "VERIFIED: the Host session ledger and the WSL claim for OPENDITOO-M9-ACTIVATION-001 both survived the reinstall. The ledger lives in .openditoo-local/, not in the Windows install directory, so replacing the Host binary cannot un-consume authority."
  },
  "session": {
   "lifetime_seconds": 300,
@@ -103,8 +105,7 @@
  },
  "preconditions": [
   "operator grant naming OPENDITOO-M9-ACTIVATION-002",
-  "`refresh_openditoo_day1_host.ps1 -Apply` re-run (the installed Host predates the heartbeat fix), and the installed DLL hash re-verified and frozen into build.host_dll_sha256",
-  "the installed binary re-run against tests/receive_assembler_cases.json: HOST_SELFTEST_PASS",
+  "DONE 2026-09-09: Host rebuilt, reinstalled and identity-verified; installed binary self-checked; heartbeat route confirmed live",
   "the Android Divoom app disconnected",
   "`python3 cli/openditoo.py activity-probe` showing the sources reachable",
   "`python3 scripts/verify_day1_offline.py` PASS at the commit being run",
