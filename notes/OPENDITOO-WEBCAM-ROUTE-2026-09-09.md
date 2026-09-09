@@ -415,3 +415,60 @@ consequence is for W3's `sourceAgeP95Under50ms` criterion: with a 33 ms camera i
 criterion is only achievable when the camera interval is well under half the send cycle — i.e.
 at 60 fps. It is environment-dependent, not a pipeline defect, and the queue-depth and
 replacement invariants that actually prove the freshest-frame design all pass regardless.
+
+## 12. W5 results — full dry path, no Ditoo involved
+
+`OpenDitoo.Webcam.Probe.exe dryrun` runs the entire application path against an **in-memory
+typed-Host stand-in**: capture → latest raw slot → transform → palette guard → canonical encoder
+and hash → session semantics → ACK clock. No Bluetooth, no socket, no token, no Ditoo.
+
+The stand-in is deliberately not a lenient mock. It **re-encodes every frame independently** and
+refuses on hash mismatch exactly as the Host does, and enforces the same lifetime, frame and byte
+budgets and the same 40 ms streaming floor. A dry run that passed against a permissive fake would
+prove nothing; the point is to find refusals here rather than on the device.
+
+### 12.1 Encoder parity — PASS
+
+`encoder-selftest` → `ENCODER_SELFTEST_PASS cases=6 failures=0` against
+`tests/ditoo_encoder_cases.json`, covering a 1-colour frame (1 bit/pixel), a 2-colour frame, two
+255-colour frames (8 bits/pixel), and a 256-distinct-colour frame that only fits because the
+palette guard merges one pixel.
+
+This matters more than it looks: the sidecar computes the `expectedImagePacketSha256` that
+`/v1/session/frame` checks, so an encoder that drifts by one byte gets every frame refused with
+`IMAGE_ENCODER_HASH_MISMATCH`. Palette order is first-seen in row-major order, not sorted — the
+index stream depends on it.
+
+### 12.2 Thresholds, over a 20 s run with the real camera
+
+| Threshold | Result | |
+| --- | ---: | --- |
+| p95 transform ≤ 5 ms | 3.42 ms (p50 0.99) | **PASS** |
+| p95 source age at simulated send ≤ 75 ms | 53.07 ms (p50 25.8) | **PASS** |
+| no queue depth > 1 | maxRaw 1, maxReady 1 | **PASS** |
+| processing throughput > 100 fps | 729.5 fps | **PASS** |
+| no encoder hash mismatch | 0 refusals in 291 frames | **PASS** |
+| camera ≥ 58 fps for the 60 fps mode | 29.15 fps | **documented exception, §11** |
+
+291 frames / 873 packets / 299,169 application bytes, clean `operator_stop / stopped_clean`,
+**zero refusals of any kind**. Encode cost is negligible next to the transform (p50 0.03 ms
+against 0.99 ms). Managed memory *fell* 1.2 MB over the run, so there is no allocation trend.
+
+The replacement counts are the freshest-frame design working end to end: 583 camera frames
+offered, **0 raw frames replaced before use**, **291 processed frames replaced before use** — the
+sender consumed every second frame and the rest were dropped rather than queued.
+
+### 12.3 The one exception
+
+`cameraFpsAtLeast58` fails for the reason in §11: the camera quantises exposure to whole
+power-line periods and is currently delivering 30 fps. The plan allows this — "unless hardware
+evidence says otherwise" — and §11 is that evidence. It costs nothing here: 29 fps is still more
+than double the ~10–13 fps transport ceiling, source age passed with 22 ms of margin, and the
+processing path has ~25x the throughput it needs.
+
+### 12.4 What W5 does not cover
+
+The dry run exercises the fake Host's refusal paths by construction, but **camera disconnect
+during a live session** and **a real Host fault** are not yet exercised end to end. Both are
+listed in the plan's W5 offline tests. They need fault injection in the sidecar, which is the
+first thing to add before W6 freezes a trial manifest.

@@ -1,0 +1,68 @@
+{
+  "note": "Canonical Ditoo image-encoder fixture. The sidecar computes the expected image packet SHA-256 that /v1/session/frame checks, so its encoder must agree with host/ditoo_pixel_coloring.py exactly or every frame is refused with IMAGE_ENCODER_HASH_MISMATCH.",
+  "frame_formulas": {
+    "solid": "every pixel = (n, n, n)",
+    "ramp": "pixel i (row-major) = ((i*n)%256, (i*3+n)%256, (i*7+n)%256)",
+    "twotone": "(n,0,0) where (x+y) odd else (0,0,n)",
+    "full": "pixel i = (i, 255-i, (i*13)%256): 256 distinct colours, exercises the palette guard"
+  },
+  "palette_guard": "applied to the frame before encoding, per host/frame_stream.quantize_to_palette_limit",
+  "preamble_a_hex": "0103009fa20002",
+  "preamble_b_hex": "010400bd31f20002",
+  "cases": [
+    {
+      "kind": "solid",
+      "n": 0,
+      "frame_sha256": "ef115a0e0c15cdc41958ca46b5b14b456115f4baec5e3ca68599d2a8f435e3b8",
+      "palette_colors": 1,
+      "image_packet_bytes": 53,
+      "image_packet_sha256": "669f2ac1103cdc204fffb947555e2b2eaed171758f1a0123cf5e04505bf87ba7",
+      "frame_application_bytes": 68
+    },
+    {
+      "kind": "solid",
+      "n": 200,
+      "frame_sha256": "fafe81c21065c5c95c808dd898e98be9796689b6812a75845fd7e7290596bbab",
+      "palette_colors": 1,
+      "image_packet_bytes": 53,
+      "image_packet_sha256": "761dfc7a44296b9b2e3cbb01dd07df7c6e246a6474fdf60ac1b3a902ef0d916c",
+      "frame_application_bytes": 68
+    },
+    {
+      "kind": "twotone",
+      "n": 255,
+      "frame_sha256": "2965cf9943cc4b21f9e083e66af74c62c40d020c885c0ef53a7611af4ae6eb10",
+      "palette_colors": 2,
+      "image_packet_bytes": 56,
+      "image_packet_sha256": "3e20e7db7021717ff8cf5cfccfb14baccdc315929a5c92c517ddf10bf35f73ae",
+      "frame_application_bytes": 71
+    },
+    {
+      "kind": "ramp",
+      "n": 5,
+      "frame_sha256": "b1ada59ba119da9de27642598ec3dbd7e1acf567d0edd3b057c11b84fcfd37dc",
+      "palette_colors": 255,
+      "image_packet_bytes": 1039,
+      "image_packet_sha256": "3616e8486b00027a792adef8cb53b43583fa6785f8077317dea8512ae12364b3",
+      "frame_application_bytes": 1054
+    },
+    {
+      "kind": "ramp",
+      "n": 91,
+      "frame_sha256": "a79ecd76729f4e0bc067c16db2793442ac71bfe59bf58179e2fa8efe42490e39",
+      "palette_colors": 255,
+      "image_packet_bytes": 1039,
+      "image_packet_sha256": "4924632affbb1d10bb2935883c1d73141d263231512f24dd17aaa698b48cf85b",
+      "frame_application_bytes": 1054
+    },
+    {
+      "kind": "full",
+      "n": 0,
+      "frame_sha256": "9523bdf56440e65212e5dfb6a4b63e9950082508fa95d2eff469259c5c5eb832",
+      "palette_colors": 255,
+      "image_packet_bytes": 1039,
+      "image_packet_sha256": "0116515d340e257b08aeae2cf2d71e5132a795b91e5ce7df0e1a0fe48632de82",
+      "frame_application_bytes": 1054
+    }
+  ]
+}

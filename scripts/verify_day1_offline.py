@@ -358,7 +358,24 @@ def verify_webcam_sidecar_boundary() -> None:
     probe = ROOT / "runtime/windows/OpenDitoo.Webcam.Probe"
     if not probe.is_dir():
         return
-    source = "\n".join(path.read_text(encoding="utf-8") for path in sorted(probe.glob("*.cs")))
+    # Comments are stripped so the scan tests CODE: the sources document that they avoid these
+    # things, and a naive substring match would trip on that documentation.
+    def strip_comments(text: str) -> str:
+        out, i, n = [], 0, len(text)
+        while i < n:
+            if text.startswith("//", i):
+                end = text.find("\n", i)
+                i = n if end < 0 else end
+            elif text.startswith("/*", i):
+                end = text.find("*/", i + 2)
+                i = n if end < 0 else end + 2
+            else:
+                out.append(text[i])
+                i += 1
+        return "".join(out)
+
+    source = "\n".join(strip_comments(path.read_text(encoding="utf-8"))
+                       for path in sorted(probe.glob("*.cs")))
     for forbidden in ("8796", "host.token", "Bearer", "Rfcomm", "Bluetooth", "11:75:58",
                       "/v1/session", "/v1/image", "HttpClient"):
         if forbidden in source:

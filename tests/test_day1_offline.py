@@ -3363,14 +3363,47 @@ class W2FrameTransformTests(unittest.TestCase):
         self.assertEqual((ft.DEFAULT.saturation, ft.DEFAULT.gamma, ft.DEFAULT.zoom), (1.0, 1.0, 1.0))
 
 
+def _strip_csharp_comments(source: str) -> str:
+    """Drop // and /* */ comments so a boundary scan tests CODE, not prose.
+
+    Without this the checks trip on documentation that says "reaches no Bluetooth", which is the
+    opposite of the risk being guarded against.
+    """
+    out, index, length = [], 0, len(source)
+    while index < length:
+        if source.startswith("//", index):
+            end = source.find("\n", index)
+            index = length if end < 0 else end
+        elif source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            index = length if end < 0 else end + 2
+        elif source[index] == '"':
+            out.append(source[index])
+            index += 1
+            while index < length and source[index] != '"':
+                if source[index] == "\\":
+                    out.append(source[index])
+                    index += 1
+                if index < length:
+                    out.append(source[index])
+                    index += 1
+            if index < length:
+                out.append(source[index])
+                index += 1
+        else:
+            out.append(source[index])
+            index += 1
+    return "".join(out)
+
+
 class W3WebcamPipelineBoundaryTests(unittest.TestCase):
     """The camera sidecar is a frame source. It must not be able to reach the Ditoo."""
 
     PROBE = ROOT / "runtime/windows/OpenDitoo.Webcam.Probe"
 
     def _sources(self) -> str:
-        return "\n".join(path.read_text(encoding="utf-8")
-                         for path in sorted(self.PROBE.glob("*.cs")))
+        return "\n".join(_strip_csharp_comments(path.read_text(encoding="utf-8"))
+                          for path in sorted(self.PROBE.glob("*.cs")))
 
     def test_the_camera_sidecar_cannot_reach_the_device_or_the_host(self) -> None:
         source = self._sources()
@@ -3386,7 +3419,7 @@ class W3WebcamPipelineBoundaryTests(unittest.TestCase):
         self.assertNotIn("OpenDitoo.Day1.Host", csproj)
 
     def test_the_latest_frame_slot_replaces_and_never_queues(self) -> None:
-        source = (self.PROBE / "LatestFrameSlot.cs").read_text(encoding="utf-8")
+        source = _strip_csharp_comments((self.PROBE / "LatestFrameSlot.cs").read_text(encoding="utf-8"))
         # Depth is 0 or 1 by construction; a collection here would be a queue.
         self.assertIn("if (occupied) Replaced++;", source)
         self.assertIn("internal int Depth", source)
@@ -3414,3 +3447,70 @@ class W3WebcamPipelineBoundaryTests(unittest.TestCase):
         # The default must agree with the frozen Python default.
         from host import frame_transform
         self.assertIn(f'new("{frame_transform.DEFAULT.name}", LinearLight: false)', source)
+
+
+class W5DryRunTests(unittest.TestCase):
+    """The sidecar's encoder must agree with the canonical one, or every frame is refused."""
+
+    PROBE = ROOT / "runtime/windows/OpenDitoo.Webcam.Probe"
+    FIXTURE = ROOT / "tests/ditoo_encoder_cases.json"
+
+    def _frame(self, kind: str, n: int) -> bytes:
+        from host.frame_stream import quantize_to_palette_limit
+        frame = bytearray(768)
+        for i in range(256):
+            y, x = divmod(i, 16)
+            if kind == "solid":
+                rgb = (n, n, n)
+            elif kind == "ramp":
+                rgb = ((i * n) % 256, (i * 3 + n) % 256, (i * 7 + n) % 256)
+            elif kind == "twotone":
+                rgb = (n, 0, 0) if (x + y) % 2 else (0, 0, n)
+            else:
+                rgb = (i, 255 - i, (i * 13) % 256)
+            frame[i * 3:i * 3 + 3] = bytes(rgb)
+        return quantize_to_palette_limit(bytes(frame))[0]
+
+    def test_the_encoder_fixture_matches_the_canonical_encoder(self) -> None:
+        import hashlib
+        doc = json.loads(self.FIXTURE.read_text(encoding="utf-8"))
+        self.assertTrue(doc["cases"])
+        for case in doc["cases"]:
+            frame = self._frame(case["kind"], case["n"])
+            self.assertEqual(hashlib.sha256(frame).hexdigest(), case["frame_sha256"])
+            wire, palette = encode_rgb888_static_image(frame)
+            self.assertEqual(hashlib.sha256(wire).hexdigest(), case["image_packet_sha256"])
+            self.assertEqual(palette, case["palette_colors"])
+            self.assertEqual(len(wire), case["image_packet_bytes"])
+            self.assertEqual(len(wire) + len(IMAGE_PREAMBLE_A) + len(IMAGE_PREAMBLE_B),
+                             case["frame_application_bytes"])
+            self.assertLessEqual(palette, 255)
+
+    def test_the_fixture_covers_the_palette_extremes(self) -> None:
+        doc = json.loads(self.FIXTURE.read_text(encoding="utf-8"))
+        palettes = {case["palette_colors"] for case in doc["cases"]}
+        self.assertIn(1, palettes)     # a solid frame: 1 bit per pixel
+        self.assertIn(255, palettes)   # the encoder ceiling: 8 bits per pixel
+        # And a case that only reaches 255 by way of the guard merging one pixel.
+        self.assertTrue(any(case["kind"] == "full" for case in doc["cases"]))
+
+    def test_the_fake_host_refuses_exactly_what_the_real_one_refuses(self) -> None:
+        source = _strip_csharp_comments(
+            (self.PROBE / "FakeTypedHostSession.cs").read_text(encoding="utf-8"))
+        for code in ("SESSION_PACING_BELOW_ACCEPTED_CEILING", "SESSION_LIFETIME_EXPIRED",
+                     "SESSION_FRAME_BUDGET_EXHAUSTED", "SESSION_TX_BUDGET_EXHAUSTED",
+                     "IMAGE_ENCODER_HASH_MISMATCH", "SESSION_PROFILE_UNKNOWN"):
+            self.assertIn(code, source, msg=f"the fake Host must enforce {code}")
+        # A lenient fake would prove nothing: it re-encodes independently rather than trusting
+        # the hash it is handed.
+        self.assertIn("DitooEncoder.EncodeRgb888(rgb)", source)
+        # Ambiguity stays terminal and unknown.
+        self.assertIn('Terminate($"transport_fault:{detail}", "unknown")', source)
+        self.assertEqual(source.count("streaming_ack_clock"), 1)
+
+    def test_the_fake_host_floor_matches_the_real_streaming_floor(self) -> None:
+        source = _strip_csharp_comments(
+            (self.PROBE / "FakeTypedHostSession.cs").read_text(encoding="utf-8"))
+        self.assertIn("ProfileStreamingAckClock ? 40 : 150", source)
+        self.assertEqual(frame_stream.STREAMING_HOST_FLOOR_MS, 40)
+        self.assertEqual(activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS, 150)

@@ -84,6 +84,12 @@ static async Task<(MediaCapture? Capture, string Strategy, List<string> Errors)>
 var mode = args.Length > 0 ? args[0] : "enumerate";
 
 // Offline parity check against the Python reference. Starts no camera and touches nothing.
+if (mode == "encoder-selftest")
+{
+    if (args.Length < 2) return Fail("encoder-selftest <fixture.json>");
+    return OpenDitoo.Webcam.Probe.DitooEncoder.SelfTest(args[1]);
+}
+
 if (mode == "transform-selftest")
 {
     if (args.Length < 2) return Fail("transform-selftest <fixture.json>");
@@ -603,6 +609,194 @@ if (mode == "pipeline")
             senderIterationsPerSecondAtLeast18 = sendersPerSecond >= 18.0,
             sourceAgeP95Under50ms = ageAtSendMs.Count > 0 && ((dynamic)ageStats).p95 <= 50.0,
             queueDepthNeverAboveOne = maxRawDepth <= 1 && maxProcessedDepth <= 1,
+        },
+    }, new JsonSerializerOptions { WriteIndented = true }));
+    return 0;
+}
+
+// --------------------------------------------------------------------------
+// dryrun <subtype> <width> <height> <fps> <seconds> <fakeAckMs>
+// --------------------------------------------------------------------------
+// W5: the full application path -- capture, latest slot, transform, palette guard, canonical
+// encoder + hash, typed session semantics, ACK clock -- with an IN-MEMORY Host stand-in.
+// No Bluetooth, no socket, no token, no Ditoo. The fake enforces the same budgets, pacing
+// floor and encoder-hash check the real Host does, so refusals surface here rather than live.
+if (mode == "dryrun")
+{
+    if (args.Length < 7) return Fail("dryrun <subtype> <width> <height> <fps> <seconds> <fakeAckMs>");
+    var wantSubtype = args[1];
+    var wantWidth = uint.Parse(args[2]);
+    var wantHeight = uint.Parse(args[3]);
+    var wantFps = double.Parse(args[4]);
+    var seconds = int.Parse(args[5]);
+    var fakeAckMs = int.Parse(args[6]);
+
+    var target = groups.FirstOrDefault(g => g.DisplayName.Contains("NexiGo", StringComparison.OrdinalIgnoreCase))
+                 ?? groups[0];
+    var (capture, _, initErrors) = await TryInitialize(target, exclusive: true);
+    if (capture is null) return Fail($"camera initialize failed: {string.Join(" | ", initErrors)}");
+    using var owned = capture;
+    var source = capture.FrameSources.Values.FirstOrDefault(s =>
+        s.Info.MediaStreamType is MediaStreamType.VideoRecord or MediaStreamType.VideoPreview);
+    if (source is null) return Fail("no video frame source");
+    var chosen = source.SupportedFormats.FirstOrDefault(f =>
+        f.Subtype.Equals(wantSubtype, StringComparison.OrdinalIgnoreCase) &&
+        f.VideoFormat.Width == wantWidth && f.VideoFormat.Height == wantHeight &&
+        f.FrameRate.Denominator != 0 &&
+        Math.Abs((double)f.FrameRate.Numerator / f.FrameRate.Denominator - wantFps) < 0.51);
+    if (chosen is null) return Fail($"mode not exposed: {wantSubtype} {wantWidth}x{wantHeight}@{wantFps}");
+    await source.SetFormatAsync(chosen);
+
+    var preset = OpenDitoo.Webcam.Probe.FrameTransform.Default;
+    var rawSlot = new OpenDitoo.Webcam.Probe.LatestFrameSlot<OpenDitoo.Webcam.Probe.TimedFrame>();
+    var readySlot = new OpenDitoo.Webcam.Probe.LatestFrameSlot<(OpenDitoo.Webcam.Probe.TimedFrame Frame, string Sha)>();
+    var transformMs = new List<double>();
+    var encodeMs = new List<double>();
+    var ageAtSendMs = new List<double>();
+    var hostElapsedMs = new List<double>();
+    var refusals = new Dictionary<string, int>();
+    var memorySamples = new List<long>();
+    var maxRawDepth = 0; var maxReadyDepth = 0;
+
+    static double QpcNowMs() => Stopwatch.GetTimestamp() * 1000.0 / Stopwatch.Frequency;
+
+    // Budgets sized exactly as a reviewed manifest would: lifetime at the floor, capped by the
+    // Host's own 500-frame ceiling, and the encoder's worst-case bytes per frame.
+    var floorMs = 40;
+    var frameCeiling = Math.Min(seconds * 1000 / floorMs + 1, 500);
+    var session = new OpenDitoo.Webcam.Probe.FakeTypedHostSession(
+        OpenDitoo.Webcam.Probe.FakeTypedHostSession.ProfileStreamingAckClock,
+        seconds, floorMs, frameCeiling, frameCeiling * 1054, fakeAckMs);
+
+    using var reader = await capture.CreateFrameReaderAsync(source, MediaEncodingSubtypes.Bgra8);
+    reader.AcquisitionMode = MediaFrameReaderAcquisitionMode.Realtime;
+    reader.FrameArrived += (sender, _) =>
+    {
+        using var frame = sender.TryAcquireLatestFrame();
+        var bitmap = frame?.VideoMediaFrame?.SoftwareBitmap;
+        if (bitmap is null) return;
+        using var converted = bitmap.BitmapPixelFormat == Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8
+            ? Windows.Graphics.Imaging.SoftwareBitmap.Copy(bitmap)
+            : Windows.Graphics.Imaging.SoftwareBitmap.Convert(bitmap, Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8);
+        var bgra = new byte[converted.PixelWidth * converted.PixelHeight * 4];
+        var buffer = new Windows.Storage.Streams.Buffer((uint)bgra.Length);
+        converted.CopyToBuffer(buffer);
+        using (var dr = Windows.Storage.Streams.DataReader.FromBuffer(buffer)) dr.ReadBytes(bgra);
+        rawSlot.Put(new OpenDitoo.Webcam.Probe.TimedFrame(
+            bgra, converted.PixelWidth, converted.PixelHeight,
+            frame!.SystemRelativeTime?.TotalMilliseconds ?? QpcNowMs()));
+        maxRawDepth = Math.Max(maxRawDepth, rawSlot.Depth);
+    };
+
+    using var stopping = new CancellationTokenSource(TimeSpan.FromSeconds(seconds));
+    using var timerResolution = OpenDitoo.Webcam.Probe.PreciseDelay.HighResolutionScope();
+    await reader.StartAsync();
+
+    var processor = RunOnDedicatedThread(() =>
+    {
+        while (!stopping.IsCancellationRequested)
+        {
+            if (!rawSlot.Wait(stopping.Token)) continue;
+            if (!rawSlot.TryTake(out var raw)) continue;
+            var t0 = QpcNowMs();
+            var pixels = OpenDitoo.Webcam.Probe.FrameTransform.Transform(
+                raw.Pixels, raw.Width, raw.Height, preset,
+                OpenDitoo.Webcam.Probe.FrameTransform.SourceFormat.Bgra32);
+            var t1 = QpcNowMs();
+            var (packet, _) = OpenDitoo.Webcam.Probe.DitooEncoder.EncodeRgb888(pixels);
+            var sha = OpenDitoo.Webcam.Probe.DitooEncoder.Sha256Hex(packet);
+            var t2 = QpcNowMs();
+            lock (transformMs) { transformMs.Add(t1 - t0); encodeMs.Add(t2 - t1); }
+            readySlot.Put((new OpenDitoo.Webcam.Probe.TimedFrame(pixels, 16, 16, raw.CapturedQpcMs), sha));
+            maxReadyDepth = Math.Max(maxReadyDepth, readySlot.Depth);
+        }
+    });
+
+    var sender = RunOnDedicatedThread(() =>
+    {
+        while (!stopping.IsCancellationRequested && !session.Expired)
+        {
+            if (!readySlot.TryTake(out var ready))
+            {
+                if (!readySlot.Wait(stopping.Token, 1000)) continue;
+                continue;
+            }
+            var age = QpcNowMs() - ready.Frame.CapturedQpcMs;
+            var outcome = session.SendFrame(ready.Frame.Pixels, ready.Sha, stopping.Token);
+            if (outcome.Ok)
+            {
+                lock (ageAtSendMs) { ageAtSendMs.Add(age); hostElapsedMs.Add(outcome.HostElapsedMs); }
+            }
+            else
+            {
+                lock (refusals)
+                    refusals[outcome.ErrorCode!] = refusals.GetValueOrDefault(outcome.ErrorCode!) + 1;
+                if (outcome.ErrorCode is "SESSION_LIFETIME_EXPIRED" or "SESSION_FRAME_BUDGET_EXHAUSTED"
+                    or "SESSION_TX_BUDGET_EXHAUSTED") break;
+            }
+            lock (memorySamples) memorySamples.Add(GC.GetTotalMemory(false));
+        }
+    });
+
+    try { await Task.WhenAll(processor, sender); } catch (OperationCanceledException) { }
+    await reader.StopAsync();
+    session.Close("operator_stop");
+
+    static object Stats(List<double> values)
+    {
+        if (values.Count == 0) return new { count = 0 };
+        var sorted = values.OrderBy(v => v).ToList();
+        return new { count = sorted.Count, p50 = Math.Round(sorted[sorted.Count / 2], 2),
+                     p95 = Math.Round(sorted[Math.Min(sorted.Count - 1, (int)(sorted.Count * 0.95))], 2),
+                     max = Math.Round(sorted[^1], 2) };
+    }
+
+    var transformStats = Stats(transformMs);
+    var ageStats = Stats(ageAtSendMs);
+    var cameraFps = Math.Round(rawSlot.Offered / (double)seconds, 2);
+    var throughputFps = transformMs.Count > 0 && transformMs.Sum() > 0
+        ? Math.Round(transformMs.Count / ((transformMs.Sum() + encodeMs.Sum()) / 1000.0), 1) : 0;
+    var memoryFirst = memorySamples.Count > 0 ? memorySamples[0] : 0;
+    var memoryLast = memorySamples.Count > 0 ? memorySamples[^1] : 0;
+
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        ok = true, command = "dryrun", deviceIo = false, ditooTouched = false, bluetoothTouched = false,
+        note = "in-memory typed-Host stand-in; the ACK is a delay and no socket is opened",
+        negotiatedMode = new { subtype = source.CurrentFormat.Subtype,
+                               width = source.CurrentFormat.VideoFormat.Width,
+                               height = source.CurrentFormat.VideoFormat.Height,
+                               fps = source.CurrentFormat.FrameRate.Denominator == 0 ? 0d
+                                     : Math.Round((double)source.CurrentFormat.FrameRate.Numerator
+                                                  / source.CurrentFormat.FrameRate.Denominator, 3) },
+        preset = preset.Name,
+        sessionProfile = session.SessionProfile,
+        seconds, fakeAckMs,
+        cameraFps,
+        framesSent = session.FramesSent,
+        packetsSent = session.PacketsSent,
+        txBytesSent = session.TxBytesSent,
+        terminalReason = session.TerminalReason,
+        terminalOutcome = session.TerminalOutcome,
+        refusals,
+        transformMs = transformStats,
+        encodeMs = Stats(encodeMs),
+        hostTransactionMs = Stats(hostElapsedMs),
+        sourceAgeAtSimulatedSendMs = ageStats,
+        processingThroughputFps = throughputFps,
+        replacement = new { rawOffered = rawSlot.Offered, rawReplaced = rawSlot.Replaced,
+                            readyOffered = readySlot.Offered, readyReplaced = readySlot.Replaced },
+        queueDepth = new { maxRaw = maxRawDepth, maxReady = maxReadyDepth },
+        managedMemoryBytes = new { first = memoryFirst, last = memoryLast,
+                                   deltaKb = Math.Round((memoryLast - memoryFirst) / 1024.0, 1) },
+        thresholds = new
+        {
+            transformP95Under5ms = transformMs.Count > 0 && ((dynamic)transformStats).p95 <= 5.0,
+            sourceAgeP95Under75ms = ageAtSendMs.Count > 0 && ((dynamic)ageStats).p95 <= 75.0,
+            queueDepthNeverAboveOne = maxRawDepth <= 1 && maxReadyDepth <= 1,
+            processingThroughputOver100Fps = throughputFps > 100.0,
+            noEncoderHashMismatch = !refusals.ContainsKey("IMAGE_ENCODER_HASH_MISMATCH"),
+            cameraFpsAtLeast58 = cameraFps >= 58.0,
         },
     }, new JsonSerializerOptions { WriteIndented = true }));
     return 0;
