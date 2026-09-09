@@ -1,9 +1,17 @@
-"""16x16 renderer for the three-MCP activity display.
+"""16x16 renderer for the approved three-MCP activity page.
 
-Three fixed indicators, one per source, in horizontal bands separated by black
-rows so no two icons touch. Age and health are separate dimensions: the age
-field never hides an unavailable collector, and red is reserved for the error
-state rather than for elapsed time.
+The layout is the operator-approved design: an activity crown across rows 0-2, identity
+letters L / O / W on rows 5-9, and 5x5 mushroom / bunny / skull icons on rows 11-15, one
+5-pixel column per source with x=15 spare.
+
+Every pixel and colour comes from `host/activity_ui_data.py`, which is *derived* from the
+approved mockups in `assets/ui/reference/` rather than transcribed. The offline suite
+re-derives it and also re-renders each reference frame, so the mockups are executable
+acceptance criteria: if a pixel moves, a test fails.
+
+Status is one colour per source -- green under 5 minutes, yellow to 20, red beyond, grey
+for no usable data. During activity that column's crown, letter and icon accent all take
+the blue override together, then fall back to the status colour. See `LEGEND`.
 """
 from __future__ import annotations
 
@@ -13,60 +21,46 @@ from pathlib import Path
 import struct
 import zlib
 
+from host.activity_ui_data import (CROWN, FIXED, OVERRIDE_RGB, ROLE_COLORS, ROLE_PIXELS,
+                                   SIZE, SLOTS)
 from host.mcp_activity import SOURCE_IDS, parse_timestamp, utc_now
 
-SIZE = 16
 BLACK = (0, 0, 0)
-
-# Band rows per source; rows 0, 5, 10 and 15 stay black separators.
-BANDS = {"optiplex_mcp": 1, "optiplex_lab": 6, "wsl_mcp": 11}
-
-GLYPH_COLUMNS = range(0, 4)
-FIELD_COLUMNS = range(5, 14)
-HEALTH_COLUMN = 15
-
-IDENTITY_COLOR = {
-    "optiplex_mcp": (0, 150, 255),
-    "optiplex_lab": (190, 110, 255),
-    "wsl_mcp": (255, 170, 40),
-}
-
-GLYPH = {
-    "optiplex_mcp": ("1111", "1001", "1001", "1111"),   # server box
-    "optiplex_lab": ("0110", "0110", "1001", "1111"),   # flask
-    "wsl_mcp":      ("1001", "1001", "1011", "0110"),   # W
-}
-
-AGE_COLOR = {
-    "new": (255, 255, 255),
-    "recent": (0, 230, 70),
-    "warm": (235, 200, 0),
-    "idle": (35, 35, 55),
-    "no_data": (70, 70, 70),
-}
-
-HEALTH_COLOR = {
-    "healthy": BLACK,
-    "stale": (255, 60, 0),
-    "unavailable": (255, 0, 0),
-    "unknown": (120, 120, 120),
-}
+SLOT_WIDTH = 5
 
 RECENT_LIMIT = timedelta(minutes=5)
 WARM_LIMIT = timedelta(minutes=20)
 
+# A source we could not read has no usable "last activity", so it renders grey rather
+# than as a stale-but-fine colour. The approved spec merges idle and disconnected into
+# grey and lists splitting them as an open question; `describe()` therefore keeps the
+# health separately in JSON so the merge is never load-bearing for diagnosis.
+UNUSABLE_HEALTH = {"unavailable", "stale", "unknown"}
 
-def age_category(last_activity_at: str | None, now: datetime) -> str:
+# Which pixel index belongs to which source column, precomputed once.
+_SLOT_OF = {}
+for _source_id, _base in SLOTS.items():
+    for _index in range(SIZE * SIZE):
+        if _base <= _index % SIZE < _base + SLOT_WIDTH:
+            _SLOT_OF[_index] = _source_id
+_ROLE_OF = {index: role for role, pixels in ROLE_PIXELS.items() for index in pixels}
+
+
+def status_for(source: dict, now: datetime) -> str:
+    """Derive one status colour name for one source."""
+    if source.get("source_health", "unknown") in UNUSABLE_HEALTH:
+        return "grey"
+    last_activity_at = source.get("last_activity_at")
     if not last_activity_at:
-        return "no_data"
+        return "grey"
     age = now - parse_timestamp(last_activity_at)
     if age < timedelta(0):
-        return "no_data"  # a future stamp is skew, not fresh activity
+        return "grey"  # a future stamp is clock skew, not fresh activity
     if age < RECENT_LIMIT:
-        return "recent"
+        return "green"
     if age < WARM_LIMIT:
-        return "warm"
-    return "idle"
+        return "yellow"
+    return "red"
 
 
 def describe(state: dict, now: datetime | None = None, pulses: set[str] | None = None) -> dict:
@@ -75,11 +69,14 @@ def describe(state: dict, now: datetime | None = None, pulses: set[str] | None =
     out = {}
     for source_id in SOURCE_IDS:
         source = state["sources"][source_id]
-        category = "new" if source_id in pulses else age_category(source["last_activity_at"], now)
         health = source.get("source_health", "unknown")
         out[source_id] = {
-            "age_category": category,
-            "source_health": health if health in HEALTH_COLOR else "unknown",
+            "status": status_for(source, now),
+            "activity_pulse": source_id in pulses,
+            # Kept separate from `status` on purpose: the approved page shows an
+            # unreachable collector and a merely idle one with the same grey, and that
+            # ambiguity must not reach anyone reading the JSON.
+            "source_health": health,
             "last_activity_at": source["last_activity_at"],
             "last_observed_at": source["last_observed_at"],
             "last_outcome": source["last_outcome"],
@@ -93,25 +90,23 @@ def render_rgb888(state: dict, now: datetime | None = None, pulses: set[str] | N
     summary = describe(state, now, pulses)
     pixels = [BLACK] * (SIZE * SIZE)
 
-    def put(x: int, y: int, color: tuple[int, int, int]) -> None:
-        pixels[y * SIZE + x] = color
+    for index, color in FIXED:
+        pixels[index] = color
 
-    for source_id, top in BANDS.items():
-        view = summary[source_id]
-        age = AGE_COLOR[view["age_category"]]
-        health = HEALTH_COLOR[view["source_health"]]
-        for row, bits in enumerate(GLYPH[source_id]):
-            y = top + row
-            for x in GLYPH_COLUMNS:
-                if bits[x] == "1":
-                    put(x, y, IDENTITY_COLOR[source_id])
-            for x in FIELD_COLUMNS:
-                if view["age_category"] == "no_data":
-                    # explicit unknown pattern, not a dim "idle" lie
-                    put(x, y, age if (x + y) % 2 == 0 else BLACK)
-                else:
-                    put(x, y, age)
-            put(HEALTH_COLUMN, y, health)
+    for index, role in _ROLE_OF.items():
+        source_id = _SLOT_OF[index]
+        if summary[source_id]["activity_pulse"]:
+            pixels[index] = OVERRIDE_RGB
+        else:
+            pixels[index] = ROLE_COLORS[role][summary[source_id]["status"]]
+
+    # Crowns are per-column and cannot overlap, so simultaneous activity simply shows
+    # more than one crown. Nothing is queued and nothing is shown late.
+    for source_id, base in SLOTS.items():
+        if not summary[source_id]["activity_pulse"]:
+            continue
+        for dx, dy, color in CROWN:
+            pixels[dy * SIZE + base + dx] = color
 
     return b"".join(bytes(color) for color in pixels)
 
@@ -160,11 +155,12 @@ def write_previews(output_dir: Path, rgb: bytes, scale: int = 16) -> dict[str, s
 
 
 LEGEND = {
-    "bands": "rows 1-4 OptiPlex MCP (blue server glyph), rows 6-9 OptiPlex Lab (violet flask), rows 11-14 WSL MCP (amber W); rows 0/5/10/15 are black separators",
-    "identity_columns": "0-3",
-    "age_field_columns": "5-13",
-    "health_column": "15",
-    "age": {"new": "white pulse", "recent": "green, <5 min", "warm": "yellow, 5-20 min",
-            "idle": "dim blue-grey, >=20 min", "no_data": "grey checkerboard, no reliable history"},
-    "health": {"healthy": "black", "stale": "red-orange", "unavailable": "red", "unknown": "grey"},
+    "columns": "x0-4 OptiPlex Lab (L, mushroom), x5-9 OptiPlex MCP (O, bunny), x10-14 WSL MCP (W, skull), x15 spare",
+    "rows": "0-2 activity crown, 3-4 spacer, 5-9 identity letter, 10 divider, 11-15 icon",
+    "status": {"green": "last activity under 5 min", "yellow": "5-20 min", "red": "over 20 min",
+               "grey": "no usable data: idle, unreadable or disconnected"},
+    "activity": "the active column's crown, letter and icon accent all take the blue override together, then fall back to its status colour",
+    "accents": "mushroom cap recolours as a whole; bunny and skull recolour their eyes only",
+    "known_ambiguity": "grey merges idle with unreachable, per the approved spec; activity-status reports source_health separately",
+    "animation": "the crown is shown while activity is fresh. The approved four-stage blue pulse is NOT animated: at the accepted ~1118 ms per frame it would be decimated to noise, so the crown is static and the blue override is the visible activity signal.",
 }

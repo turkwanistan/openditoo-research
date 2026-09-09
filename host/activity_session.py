@@ -49,6 +49,7 @@ PACKETS_PER_FRAME = 3
 # is no longer the one that was reviewed.
 HASHED_MODULES = {
     "renderer_sha256": ROOT / "host" / "activity_render.py",
+    "ui_data_sha256": ROOT / "host" / "activity_ui_data.py",
     "collector_sha256": ROOT / "host" / "mcp_activity.py",
     "session_sha256": ROOT / "host" / "activity_session.py",
 }

@@ -1,0 +1,145 @@
+{
+ "schema_version": 2,
+ "experiment_id": "OPENDITOO-M9-ACTIVATION-002",
+ "milestone": "N5 second bounded activation \u2014 full lifetime, approved UI, corrected liveness",
+ "status": "pending_operator_grant",
+ "objective": "Complete what OPENDITOO-M9-ACTIVATION-001 could not: a full-lifetime bounded session on the exact unit, driving the operator-approved three-MCP page, with the worker-liveness defect fixed. Adds live evidence for change-only pacing and coalescing, and a stock-yield case if a control is touched.",
+ "why_this_shape": "001 proved the display renders (operator-confirmed) but ended at 30.4 s on our own defect, so the interesting behaviour was never exercised. This changes two things deliberately: the corrected heartbeat liveness path, and the approved UI. Rate, packets, target, connection shape and stop policy are unchanged from the accepted values.",
+ "target": {
+  "exact_unit_id": "11:75:58:CE:DE:C7",
+  "installed_firmware": "v42012",
+  "model": "Ditoo Plus",
+  "pairing_precheck": "authenticated exact target required before any socket is created"
+ },
+ "transport": {
+  "measured_endpoint": "Windows Classic RFCOMM channel 1",
+  "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+  "one_controller_rule": "the Android app must be disconnected for the whole session; OpenTivoo's runtime, tasks and port 8779 are untouched"
+ },
+ "build": {
+  "code_sha256": {
+   "renderer_sha256": "ec02de63499d471e2f23cf1dc777f03dea2f0f07349c91a1b37f380959a305ea",
+   "ui_data_sha256": "b44156ee32abd0d3e821ed2f79043ad5bbf26f385181d1667db5d9180d36698c",
+   "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+   "session_sha256": "a3327424f2713ad80a1749ff36cd67aa38ac09ef72f137bc71ada89e4a147c23"
+  },
+  "host_dll_sha256": "1b51d01f3f4d7c9a8913864d9f4e51203b3c186547e81c53d5931f0ebe44415b",
+  "host_exe_sha256": "6753e86ced54e3813049d740fcb78c6e5c14b4b232c8441db76137ac7aad4500",
+  "currently_installed_dll_sha256": "a0f2fa1c3b5ced5c1225393453a4476ce4b0aa9e06c39364020868eda97f2762",
+  "installed_identity_note": "The installed Host predates the heartbeat fix and would reproduce 001's failure. `refresh_openditoo_day1_host.ps1 -Apply` MUST be re-run and the installed hash re-verified before this experiment. Because the Release build is not byte-reproducible, freeze host_dll_sha256 from the artifact actually installed at that point, not from this file.",
+  "build_is_not_byte_reproducible": "Two Release builds of identical source produced different DLL hashes (d3ece014...a042a then a0f2fa1c...f2762). The build is not deterministic, so a build hash is only meaningful when taken from the artifact actually installed. That is what is frozen here.",
+  "ui_design": "Operator-approved three-MCP page from the supplied handoff package: L/mushroom, O/bunny, W/skull, blue activity override. host/activity_ui_data.py is DERIVED from assets/ui/reference/ and the offline suite re-renders all eight approved mockups pixel-for-pixel."
+ },
+ "session": {
+  "lifetime_seconds": 300,
+  "min_frame_interval_ms": 1118,
+  "poll_interval_ms": 1000,
+  "pulse_freshness_seconds": 30,
+  "activation_source": "the three MCP audit sources (optiplex_lab, optiplex_mcp, wsl_mcp), rendered by host/activity_render.py as the approved MCP page",
+  "shape": "one connection; collect once per second; render; send ONLY when the rendered frame changes, never faster than one frame start per 1118 ms; observe the link continuously including while idle; then close",
+  "automatic_retry": false,
+  "automatic_reconnect": false,
+  "stock_screen_reclaim": false,
+  "replay_after_interruption": false,
+  "semantic_evidence": "No new command semantics. Every frame is the same stock-derived three-packet 0x44 transaction proven at M5/M6 and repeated at M8; only the pixels differ."
+ },
+ "budgets": {
+  "connection_attempts": 1,
+  "max_frames": 269,
+  "max_application_packets": 807,
+  "max_tx_bytes": 54607,
+  "ack_timeout_ms_per_frame": 5000,
+  "derivation": "300 s at a 1118 ms minimum frame interval admits at most 269 frame starts. Packets are 3 per frame by construction. 203 bytes is the measured worst-case frame over all 512 status/activity render combinations of the approved page (max image packet 188 bytes at 14 palette colours, plus the two stock preambles at 7 and 8 bytes). The previous design's figure was 191; the approved page is slightly larger. A quiet session sends far less: this is a ceiling, not a target.",
+  "expected_realistic_frames": "on the order of 10-60, driven by actual activity; an unchanged scene sends nothing at all"
+ },
+ "stop_policy": {
+  "stop_immediately_on": [
+   "any unsolicited state report on the link (canvas is no longer ours)",
+   "any inbound bytes that do not parse as exactly one valid wrapped report",
+   "any ACK that is not our wrapped 0x44 shape with a single payload byte",
+   "any send that does not complete in full",
+   "ACK timeout on any frame",
+   "session lifetime reached",
+   "frame or byte budget reached",
+   "pairing precheck failure or any conflicting controller on the link",
+   "the worker falling silent for longer than the Host's grace period"
+  ],
+  "on_ambiguous_outcome_resend": false,
+  "collection_continues_after_display_stop": true,
+  "on_ambiguous_outcome": "stop sending, close the link, record completed and unknown bytes and the last known display state, and report. Do NOT resend, reconnect, reclaim the screen or power-cycle before the result is recorded.",
+  "recovery": "operator-initiated only, after the outcome is recorded, using documented exact-Ditoo controls. Returning to stock is an operator action, never a command we send.",
+  "operator_abort": "the session is short and supervised; if it looks wrong, stop it with `session-close` or power off the Ditoo rather than letting it continue."
+ },
+ "persistence_analysis": {
+  "expected_effect": "display state only",
+  "basis": "M6.4 power cycle returned the unit to stock software and the default clock",
+  "not_claimed": "absence of any non-volatile write. Sending more distinct images than before does not test that either.",
+  "new_risk_vs_m8": "none identified: identical command, identical packet shape, same session shape, same rate ceiling. No new command id, no save/publish/upload, no gallery interaction."
+ },
+ "expected_observations": {
+  "transport": "one connection; three application packets per sent frame; one wrapped 0x44 ACK each; clean local close; zero reconnects",
+  "physical": "the letters L O W on rows 5-9 in per-source status colour, 5x5 mushroom / bunny / skull icons on rows 11-15, and a blue chevron crown on rows 0-2 above any column with fresh activity, whose letter and icon accent turn blue with it",
+  "idle_silence": "during any period with no status change and no activity, ZERO packets are sent",
+  "animation_expectation": "the approved four-stage blue pulse is NOT animated. At ~1118 ms per frame it would be decimated to noise, so the crown is static while activity is fresh. Expect the blue override to appear and disappear, not to shimmer.",
+  "ack_payload": "recorded per frame, never asserted. It is not a success constant."
+ },
+ "acceptance_criteria": {
+  "transport_acceptance": "planned versus actual frames, packets, bytes and ACKs agree; one connection; no retry; no reconnect; clean close; the session reaches its own lifetime rather than an unintended terminal",
+  "visual_acceptance": "the operator confirms the approved page renders: L O W letters, the three icons, correct status colours, and a blue crown plus blue letter/icon on a column that sees activity. ACKs do not establish this.",
+  "change_only_acceptance": "the operator confirms at least one quiet interval where the display held still, AND at least one observed change; recorded frame count materially below the budget ceiling",
+  "pacing_acceptance": "no two frame starts closer than 1118 ms in the recorded timings",
+  "stock_yield_acceptance": "if a physical control is used, the session stops, no further frame is sent, display state becomes unknown_not_ours, and no reclaim frame is sent. If no takeover occurs, record NOT TESTED.",
+  "liveness_regression": "the session must NOT end with `worker_silent` while the worker is alive; that is the exact 001 failure this experiment is testing the fix for",
+  "collection_survives": "after the display stops for any reason, activity-status still collects",
+  "authority_is_consumed": "the claim file and Host ledger both record this id terminal; a second run is refused",
+  "not_established_by_this_experiment": [
+   "any rate above the accepted ~1118 ms ceiling",
+   "unattended or installation-time transmission",
+   "sessions longer than this lifetime",
+   "absence of non-volatile writes",
+   "menu-takeover behaviour (0xBD) unless it happens to occur and is recorded"
+  ]
+ },
+ "preconditions": [
+  "operator grant naming OPENDITOO-M9-ACTIVATION-002",
+  "`refresh_openditoo_day1_host.ps1 -Apply` re-run (the installed Host predates the heartbeat fix), and the installed DLL hash re-verified and frozen into build.host_dll_sha256",
+  "the installed binary re-run against tests/receive_assembler_cases.json: HOST_SELFTEST_PASS",
+  "the Android Divoom app disconnected",
+  "`python3 cli/openditoo.py activity-probe` showing the sources reachable",
+  "`python3 scripts/verify_day1_offline.py` PASS at the commit being run",
+  "operator present and watching the unit for the whole session"
+ ],
+ "implementation_gate": {
+  "host_change_required": "the heartbeat route and corrected liveness; implemented and built, NOT yet installed",
+  "status": "implemented offline; awaiting install and grant"
+ },
+ "authority": {
+  "transmission_authorized": false,
+  "authorization_consumed": false,
+  "experiment_id": "OPENDITOO-M9-ACTIVATION-002",
+  "granted_by": null,
+  "grant_text": null,
+  "expires_at": null,
+  "grant_scope_requested": "ONE execution of this exact bounded session: up to 300 seconds, change-only frames at no faster than one frame start per 1118 ms, at most 269 frames / 807 packets / 54607 application bytes, one connection, no retry, no reconnect, no reclaim. Not continuous display, not unattended operation, not installation-time transmission, not a higher rate, not a second attempt.",
+  "note": "Grants nothing as written. `session-check` reports TRANSMISSION_AUTHORITY_MISSING and `activity-session` exits 30 until an operator fills granted_by, grant_text and expires_at."
+ },
+ "explicitly_out_of_scope": [
+  "any rate above the accepted ceiling",
+  "unattended, installation-time or continuous display",
+  "reconnecting or resending after any fault",
+  "sending a frame to reclaim the screen after a takeover",
+  "delta or partial-frame updates",
+  "any new command id, command enumeration or raw send",
+  "firmware update, persistent upload, service/MassBoot entry or teardown"
+ ],
+ "result": null,
+ "supersedes": {
+  "experiment_id": "OPENDITOO-M9-ACTIVATION-001",
+  "why": "Its grant is consumed and its frozen code hashes are history. This is a NEW manifest with a new id, not a re-arming of that one.",
+  "carried_forward": [
+   "visual acceptance PASS (operator-observed)",
+   "the accepted ~1118 ms ceiling",
+   "one connection, no retry, no reconnect, no reclaim"
+  ]
+ }
+}

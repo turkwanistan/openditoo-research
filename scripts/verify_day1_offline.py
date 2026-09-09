@@ -123,6 +123,22 @@ def _m9_armed() -> bool:
     return manifest.get("authority", {}).get("transmission_authorized") is True
 
 
+def verify_activity_ui() -> None:
+    """The rendered page must still be the approved design, derived not transcribed."""
+    proc = subprocess.run([sys.executable, "scripts/generate_activity_ui_data.py", "--check"],
+                          cwd=ROOT, text=True, capture_output=True)
+    if proc.returncode != 0 or "ACTIVITY_UI_DATA_OK" not in proc.stdout:
+        sys.stderr.write(proc.stdout + proc.stderr)
+        fail("generated activity UI data no longer matches assets/ui/reference")
+    for name in ("all_green_16x16.png", "all_yellow_16x16.png", "all_red_16x16.png",
+                 "all_grey_16x16.png", "mixed_state_16x16.png",
+                 "left_activity_blue_override_16x16.png",
+                 "mid_activity_blue_override_16x16.png",
+                 "right_activity_blue_override_16x16.png"):
+        if not (ROOT / "assets/ui/reference" / name).is_file():
+            fail(f"approved UI reference frame missing: {name}")
+
+
 def verify_activation_boundary() -> None:
     """The M9 session surface must stay bounded, one-use and unauthorized."""
     manifest_path = ROOT / "experiments" / "DAY1-M9-ACTIVATION-001.json"
@@ -226,13 +242,14 @@ def main() -> int:
     test_count = run_tests()
     verify_manifests()
     verify_host_boundary()
+    verify_activity_ui()
     verify_activation_boundary()
     verify_consumed_runner()
     verify_m5_runner_disarmed()
     print(
         "DAY1_OFFLINE_PASS "
         f"artifacts={artifact_count} tests={test_count} host=typed_image port=8796 "
-        "device_io=false m4_completed=true m4_authorized=false m5_authorized=false "
+        "device_io=false m4_completed=true m4_authorized=false m5_authorized=false ui=approved_mcp_page "
         f"m9_activation_authorized={str(_m9_armed()).lower()}"
     )
     return 0

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import binascii
+import itertools
 import json
 import struct
 import zlib
@@ -969,69 +970,138 @@ class M9ActivityCollectorTests(unittest.TestCase):
 
 
 class M9RendererTests(unittest.TestCase):
-    """M9.5 — separated icons, age and health as independent dimensions."""
+    """The approved three-MCP page: L/mushroom, O/bunny, W/skull, blue activity override.
+
+    The design arrived as mockups, so the mockups are the acceptance criteria: the pixel
+    data is derived from them, and these tests re-derive it and re-render every reference
+    frame. Nothing here is hand-transcribed.
+    """
+
+    REFERENCE = ROOT / "assets/ui/reference"
+    AGE = {"green": timedelta(minutes=1), "yellow": timedelta(minutes=10), "red": timedelta(hours=1)}
+    MIXED = {"optiplex_lab": "green", "optiplex_mcp": "yellow", "wsl_mcp": "red"}
 
     def setUp(self) -> None:
         self.now = datetime(2026, 9, 9, 12, 0, 0, tzinfo=timezone.utc)
-        self.state = mcp_activity.blank_state()
 
-    def _state_with(self, source_id: str, minutes_ago: float | None, health: str = "healthy") -> dict:
-        source = self.state["sources"][source_id]
-        source["last_activity_at"] = None if minutes_ago is None else mcp_activity.iso(
-            self.now - timedelta(minutes=minutes_ago))
-        source["source_health"] = health
-        return self.state
+    def _state(self, statuses: dict, health: str = "healthy") -> dict:
+        state = mcp_activity.blank_state()
+        for source_id, status in statuses.items():
+            source = state["sources"][source_id]
+            if status == "grey":
+                source["source_health"] = "unknown"
+                source["last_activity_at"] = None
+            else:
+                source["source_health"] = health
+                source["last_activity_at"] = mcp_activity.iso(self.now - self.AGE[status])
+        return state
 
-    def test_age_boundaries_are_deterministic(self) -> None:
-        for minutes, expected in ((0, "recent"), (4.99, "recent"), (5, "warm"), (19.99, "warm"), (20, "idle")):
-            stamp = mcp_activity.iso(self.now - timedelta(minutes=minutes))
-            self.assertEqual(activity_render.age_category(stamp, self.now), expected, msg=f"{minutes} min")
-        self.assertEqual(activity_render.age_category(None, self.now), "no_data")
+    def test_the_generated_pixel_data_still_matches_the_reference_frames(self) -> None:
+        # If the mockups or the derivation change, the committed data must be regenerated
+        # rather than edited. This is the guard that makes that true.
+        proc = subprocess.run([sys.executable, "scripts/generate_activity_ui_data.py", "--check"],
+                              cwd=ROOT, text=True, capture_output=True)
+        self.assertEqual(proc.returncode, 0, msg=proc.stdout + proc.stderr)
+        self.assertIn("ACTIVITY_UI_DATA_OK", proc.stdout)
 
-    def test_future_activity_stamp_renders_as_no_data_not_fresh(self) -> None:
-        ahead = mcp_activity.iso(self.now + timedelta(minutes=5))
-        self.assertEqual(activity_render.age_category(ahead, self.now), "no_data")
+    def test_every_approved_mockup_is_reproduced_pixel_for_pixel(self) -> None:
+        cases = [(f"all_{s}_16x16.png", {k: s for k in mcp_activity.SOURCE_IDS}, set())
+                 for s in ("green", "yellow", "red", "grey")]
+        cases.append(("mixed_state_16x16.png", self.MIXED, set()))
+        for prefix, source_id in (("left", "optiplex_lab"), ("mid", "optiplex_mcp"),
+                                  ("right", "wsl_mcp")):
+            cases.append((f"{prefix}_activity_blue_override_16x16.png", self.MIXED, {source_id}))
+        for name, statuses, pulses in cases:
+            with self.subTest(name):
+                expected = decode_png16_rgb(self.REFERENCE / name)
+                actual = activity_render.render_rgb888(self._state(statuses), self.now, pulses)
+                self.assertEqual(actual, expected)
 
-    def test_icons_are_separated_and_frame_is_exactly_16x16(self) -> None:
-        rgb = activity_render.render_rgb888(self._state_with("wsl_mcp", 1), self.now)
-        self.assertEqual(len(rgb), 16 * 16 * 3)
-        for row in (0, 5, 10, 15):
-            band = rgb[row * 48:(row + 1) * 48]
-            self.assertEqual(band, bytes(48), msg=f"row {row} must stay a black separator")
-        occupied = {y for y in range(16) for x in range(16) if rgb[(y * 16 + x) * 3:(y * 16 + x) * 3 + 3] != b"\x00\x00\x00"}
-        self.assertTrue(occupied.isdisjoint({0, 5, 10, 15}))
+    def test_status_boundaries_are_deterministic(self) -> None:
+        for minutes, expected in ((0, "green"), (4.99, "green"), (5, "yellow"),
+                                  (19.99, "yellow"), (20, "red"), (600, "red")):
+            source = {"source_health": "healthy",
+                      "last_activity_at": mcp_activity.iso(self.now - timedelta(minutes=minutes))}
+            self.assertEqual(activity_render.status_for(source, self.now), expected,
+                             msg=f"{minutes} min")
+        self.assertEqual(activity_render.status_for(
+            {"source_health": "healthy", "last_activity_at": None}, self.now), "grey")
 
-    def test_unavailable_health_survives_a_recent_historical_activity(self) -> None:
-        state = self._state_with("optiplex_mcp", 1, health="unavailable")
+    def test_a_future_stamp_is_skew_and_never_renders_as_fresh(self) -> None:
+        ahead = {"source_health": "healthy",
+                 "last_activity_at": mcp_activity.iso(self.now + timedelta(minutes=5))}
+        self.assertEqual(activity_render.status_for(ahead, self.now), "grey")
+
+    def test_an_unreadable_source_greys_out_despite_recent_history(self) -> None:
+        # It renders grey, as the approved spec merges idle with disconnected -- but the
+        # health must survive separately in the JSON so the merge never hides a fault.
+        state = self._state({"optiplex_mcp": "green"})
+        state["sources"]["optiplex_mcp"]["source_health"] = "unavailable"
         view = activity_render.describe(state, self.now)["optiplex_mcp"]
-        self.assertEqual(view["age_category"], "recent")
+        self.assertEqual(view["status"], "grey")
         self.assertEqual(view["source_health"], "unavailable")
-        rgb = activity_render.render_rgb888(state, self.now)
-        top = activity_render.BANDS["optiplex_mcp"]
-        marker = (top * 16 + activity_render.HEALTH_COLUMN) * 3
-        self.assertEqual(rgb[marker:marker + 3], bytes(activity_render.HEALTH_COLOR["unavailable"]))
+        self.assertIn("known_ambiguity", activity_render.LEGEND)
 
-    def test_every_age_and_health_combination_encodes_for_the_device(self) -> None:
-        for minutes in (None, 1, 10, 30):
-            for health in activity_render.HEALTH_COLOR:
-                for pulses in (set(), {"wsl_mcp"}):
-                    state = mcp_activity.blank_state()
-                    for source_id in mcp_activity.SOURCE_IDS:
-                        state["sources"][source_id]["source_health"] = health
-                        state["sources"][source_id]["last_activity_at"] = None if minutes is None else \
-                            mcp_activity.iso(self.now - timedelta(minutes=minutes))
-                    rgb = activity_render.render_rgb888(state, self.now, pulses)
-                    _, palette_colors = encode_rgb888_static_image(rgb)
+    def test_the_layout_keeps_its_approved_geometry(self) -> None:
+        rgb = activity_render.render_rgb888(self._state(self.MIXED), self.now)
+        self.assertEqual(len(rgb), 16 * 16 * 3)
+
+        def row(y):
+            return rgb[y * 48:(y + 1) * 48]
+
+        for y in (3, 4, 10):
+            self.assertEqual(row(y), bytes(48), msg=f"row {y} is a spacer or divider")
+        for y in (0, 1, 2):
+            self.assertEqual(row(y), bytes(48), msg="no crown without activity")
+        # x=15 is spare in every state.
+        for y in range(16):
+            self.assertEqual(rgb[(y * 16 + 15) * 3:(y * 16 + 15) * 3 + 3], b"\x00\x00\x00")
+
+    def test_activity_lights_the_crown_only_over_its_own_column(self) -> None:
+        rgb = activity_render.render_rgb888(self._state(self.MIXED), self.now, {"optiplex_mcp"})
+        lit = {(i % 16) for i in range(16 * 3)
+               if rgb[i * 3:i * 3 + 3] != b"\x00\x00\x00"}
+        self.assertEqual(lit, {5, 6, 7, 8, 9})
+
+    def test_simultaneous_activity_merges_and_is_never_queued(self) -> None:
+        # Crowns are per column and cannot collide, so concurrent events show together.
+        # Nothing is deferred to a later frame, which is what "no replay" requires.
+        rgb = activity_render.render_rgb888(self._state(self.MIXED), self.now,
+                                            set(mcp_activity.SOURCE_IDS))
+        lit = {(i % 16) for i in range(16 * 3) if rgb[i * 3:i * 3 + 3] != b"\x00\x00\x00"}
+        self.assertEqual(lit, set(range(15)))
+
+    def test_activity_overrides_only_the_active_column(self) -> None:
+        state = self._state(self.MIXED)
+        rgb = activity_render.render_rgb888(state, self.now, {"optiplex_lab"})
+        override = bytes(activity_render.OVERRIDE_RGB)
+        letter_l = (5 * 16 + 1) * 3        # L stem, active column
+        letter_o = (5 * 16 + 6) * 3        # O, untouched column
+        self.assertEqual(rgb[letter_l:letter_l + 3], override)
+        self.assertEqual(rgb[letter_o:letter_o + 3], bytes((255, 255, 0)))
+
+    def test_every_state_and_activity_combination_encodes_for_the_device(self) -> None:
+        worst = 0
+        for combo in itertools.product(("green", "yellow", "red", "grey"), repeat=3):
+            statuses = dict(zip(mcp_activity.SOURCE_IDS, combo))
+            for count in range(4):
+                for pulses in itertools.combinations(mcp_activity.SOURCE_IDS, count):
+                    rgb = activity_render.render_rgb888(self._state(statuses), self.now, set(pulses))
+                    wire, palette_colors = encode_rgb888_static_image(rgb)
                     self.assertLessEqual(palette_colors, 255)
+                    worst = max(worst, len(wire))
+        # Pinned so a budget derived from it cannot silently go stale.
+        self.assertEqual(worst, 188)
 
-    def test_pulse_only_affects_the_source_that_saw_activity(self) -> None:
-        state = self._state_with("wsl_mcp", 30)
-        view = activity_render.describe(state, self.now, pulses={"wsl_mcp"})
-        self.assertEqual(view["wsl_mcp"]["age_category"], "new")
-        self.assertEqual(view["optiplex_mcp"]["age_category"], "no_data")
+    def test_the_palette_stays_rgb222_legal(self) -> None:
+        # Inherited with the artwork. RGB222 is a strict subset of the RGB888 the encoder
+        # sends, so this is a design constraint, never a device one.
+        rgb = activity_render.render_rgb888(self._state(self.MIXED), self.now,
+                                            set(mcp_activity.SOURCE_IDS))
+        self.assertTrue(set(rgb) <= {0, 85, 170, 255}, msg=sorted(set(rgb) - {0, 85, 170, 255}))
 
     def test_preview_pngs_are_written_and_decode_back_to_the_exact_frame(self) -> None:
-        rgb = activity_render.render_rgb888(self._state_with("wsl_mcp", 1), self.now)
+        rgb = activity_render.render_rgb888(self._state(self.MIXED), self.now)
         with tempfile.TemporaryDirectory() as tmp:
             outputs = activity_render.write_previews(Path(tmp), rgb, scale=4)
             self.assertEqual(decode_png16_rgb(Path(outputs["exact_png"])), rgb)
@@ -1816,11 +1886,15 @@ class N4SessionPreviewTests(unittest.TestCase):
         interval = manifest["session"]["min_frame_interval_ms"]
         budgets = manifest["budgets"]
         self.assertEqual(budgets["max_frames"], lifetime * 1000 // interval + 1)
-        self.assertEqual(budgets["max_tx_bytes"], budgets["max_frames"] * 191)
-        # 191 is the measured worst case over every render combination, not a guess.
-        worst = max(len(encode_rgb888_static_image(
-            activity_render.render_rgb888(mcp_activity.blank_state()))[0]), 0)
-        self.assertLessEqual(worst + 15, 191)
+        # The per-frame figure is whatever the renderer's worst case was WHEN IT RAN.
+        # The design has since changed, so this checks internal consistency, not the
+        # current renderer -- a consumed manifest records history and must not be
+        # retro-fitted to today's code. The live worst case is pinned separately in
+        # M9RendererTests.test_every_state_and_activity_combination_encodes_for_the_device.
+        self.assertEqual(budgets["max_tx_bytes"] % budgets["max_frames"], 0)
+        per_frame = budgets["max_tx_bytes"] // budgets["max_frames"]
+        self.assertEqual(per_frame, 191)
+        self.assertIn("worst-case frame", budgets["derivation"])
 
     def test_an_armed_manifest_freezes_the_hash_of_the_installed_binary(self) -> None:
         # Build verified and installed identity verified are different claims. Once armed

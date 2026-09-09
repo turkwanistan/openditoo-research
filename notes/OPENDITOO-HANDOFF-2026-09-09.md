@@ -279,7 +279,21 @@ Fixed, with four regression tests pinning them:
 - The worker adopts the Host's terminal reason and outcome instead of inferring a fault.
 - The worker counts the whole three-packet group, derived from the preamble constants.
 
-**Consequence for the next trial:** the corrected code is unproven on the device. A second
+### The renderer was replaced after the trial
+
+The operator supplied the approved three-MCP page design (`assets/ui/`), so the display
+is no longer the three-band renderer that trial 001 showed. It is now L/mushroom,
+O/bunny, W/skull with a blue activity override. The pixel data is derived from the
+supplied mockups, and the offline suite re-renders all eight of them pixel-for-pixel.
+Section 7 of the N2-N4 readiness note covers the three things that are not obvious: the
+blue pulse is not animated at our rate, grey merges idle with unreachable per the spec,
+and RGB222 is an artwork constraint rather than a device one.
+
+`experiments/DAY1-M9-ACTIVATION-002-PENDING.json` is cut and unarmed for the next trial,
+with budgets rederived for the new page (203 bytes/frame worst case, up from 191).
+
+**Consequence for the next trial:** the corrected code and the new page are unproven on
+the device. A second
 activation is worth doing — it is the only way to get a full-lifetime session, live
 coalescing/pacing evidence, and a stock-yield case — but it needs a **new manifest and a
 new grant**, and its frozen code hashes will differ from the consumed one's.

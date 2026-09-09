@@ -109,9 +109,9 @@ takeover alone:
 660 bytes and 399 bytes respectively — against a 51 379-byte ceiling. Change-only
 sending is doing real work, not being asserted.
 
-The live render was reviewed at 16× nearest-neighbour: three bands read clearly, and the
-lab source's absent history shows as an explicit checkerboard rather than being hidden
-behind an idle colour.
+The live render was reviewed at 16× nearest-neighbour and reads clearly.
+
+**The renderer was replaced after N5's first trial** — see section 7.
 
 ## 5. What is deliberately still not built
 
@@ -127,3 +127,53 @@ behind an idle colour.
 Its preconditions include applying the refreshed Host and re-verifying the installed
 hash — that has **not** been done, and the installed Host does not contain the session
 routes. See the handoff's authority section.
+
+## 7. The approved MCP page (operator-supplied design, 2026-09-09)
+
+The operator supplied `opentivoo_mcp_activity_ui_handoff_package`, making the artwork
+migration the roadmap had parked ("needs an explicit later product decision and actual
+assets") an explicit decision with actual assets. The three-band renderer is replaced.
+
+**Layout** — rows 0-2 activity crown, 3-4 spacer, 5-9 identity letters, 10 divider,
+11-15 icons; 5 px per source, x=15 spare.
+
+| Column | Source | Identity | Status accent |
+| --- | --- | --- | --- |
+| x0-4 | `optiplex_lab` | `L` + mushroom | whole cap recolours |
+| x5-9 | `optiplex_mcp` | `O` + bunny | eyes only |
+| x10-14 | `wsl_mcp` | `W` + skull | eyes only |
+
+**Status** — green under 5 min, yellow to 20, red beyond, grey for no usable data.
+**Activity** — the active column's crown, letter and icon accent take the blue override
+together, then fall back to status colour. Crowns are per column, so simultaneous
+activity merges rather than queueing — which is also what the no-replay rule requires.
+
+### Nothing was transcribed
+
+The design arrived as PNG mockups. Hand-transcribing them is the mistake this project
+already made once with a capture payload, so `host/activity_ui_data.py` is **derived**
+from `assets/ui/reference/` by `scripts/generate_activity_ui_data.py`, and two guards
+keep it honest:
+
+- the generator re-runs in `--check` mode from the offline verifier and the test suite,
+  failing on any drift between the committed data and the mockups;
+- the renderer re-renders **all eight approved mockups pixel-for-pixel** — four status
+  frames, the mixed state, and the three single-column activity frames.
+
+The mockups are therefore executable acceptance criteria: if a pixel moves, a test fails.
+
+### Three things to know
+
+1. **The four-stage blue pulse is not animated.** At the accepted ~1118 ms per frame it
+   would be decimated to noise. The crown is static while activity is fresh; the visible
+   activity signal is the blue override appearing and disappearing. Upgrading this needs
+   a faster rate, which needs separate evidence and its own grant.
+2. **Grey merges idle with unreachable**, exactly as the approved spec defines it — and
+   the spec itself lists splitting them as an open question. The previous renderer kept
+   them apart. `describe()` therefore still reports `source_health` separately, so the
+   merge is never load-bearing for diagnosis, but on the panel they look the same.
+3. **RGB222 is inherited with the artwork, not with the device.** Its channel values are
+   a strict subset of the RGB888 the Ditoo encoder already sends, so it costs nothing —
+   but it is a design constraint and must never be recorded as a Ditoo limitation. A test
+   pins the palette; another pins the worst-case frame at 188 bytes (203 with preambles,
+   up from 191).
