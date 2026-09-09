@@ -1,0 +1,200 @@
+{
+ "schema_version": 1,
+ "experiment_id": "OPENDITOO-R1-RATE-250MS-002",
+ "milestone": "R1 re-run \u2014 operator observation",
+ "status": "completed_pass_authority_consumed",
+ "objective": "Re-run the identical ten-frame 250 ms sequence so the operator can watch it. Adds a second independent sample of the achieved interval; changes nothing else.",
+ "why_this_is_the_cheap_path": "Byte-identical to 001 in frames, packets, rate, budgets and session shape. It is a separate manifest only because 001's authority was consumed by executing it, and un-consuming that would destroy the record of what happened. Same reason M8-FINITE-LOOP-002 existed.",
+ "target": {
+  "exact_unit_id": "11:75:58:CE:DE:C7",
+  "installed_firmware": "v42012",
+  "model": "Ditoo Plus",
+  "pairing_precheck": "authenticated exact target required before any socket is created"
+ },
+ "transport": {
+  "measured_endpoint": "Windows Classic RFCOMM channel 1",
+  "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+  "one_controller_rule": "the Android app must be disconnected for the whole run"
+ },
+ "operation": {
+  "shape": "one connection; 10 frames alternating A,B,...; per frame send preamble A, preamble B, image, read one ACK, wait 250 ms; then close",
+  "semantic_evidence": "OPENDITOO-M8-FINITE-LOOP-001 and -002 both PASS: ten frames in one connection, 30/30 packets, 710/710 bytes, 10/10 ACKs, no retry, no reconnect, clean close, ACK latency 99-124 ms with no drift across two sessions. This changes the delay only.",
+  "application_tx_hex": "01340044000a0a04aa2d00f4010002ffffff000000f8fff8fff8ffffffffffffffffffffffffffffffffffffffffffffffffffffff262502",
+  "frame_order": [
+   "a",
+   "b",
+   "a",
+   "b",
+   "a",
+   "b",
+   "a",
+   "b",
+   "a",
+   "b"
+  ],
+  "source_frames": {
+   "a": {
+    "file": "examples/openditoo-m8-a-topleft-16.png",
+    "png_sha256": "36c4361020c65a1f03c8617b0d6eb287aa7309cefad428d23c38fafd6fcd4b9c",
+    "rgb_sha256": "91f7692c1795f4952594f280e3532ef5fbf81861433ffbc8d5918ac7bc99b502",
+    "packet_sha256": "42f6a81e9eb3c821a654b14c9070c0dfdc7bf5d5458d59967983435042c2506d",
+    "palette_colors": 2
+   },
+   "b": {
+    "file": "examples/openditoo-m8-b-bottomright-16.png",
+    "png_sha256": "9924d0f4e620e388481540a5b6865178934256753abad8fc977dade913a9a1da",
+    "rgb_sha256": "5a9b4f802654cfbb36c4758923da41fe4eec99e952045410e2c5cd32996c0c81",
+    "packet_sha256": "004dfc38f2acd3aa7a6b8b33249e172a50abc5b60b3777999fe3ea82c7156ddd",
+    "palette_colors": 2
+   },
+   "why_reuse": "The A/B frames are already frozen and already physically proven in step 1, so this experiment changes exactly one variable: repetition. Introducing new artwork at the same time would confound the measurement."
+  },
+  "measurements_required": [
+   "per-frame ACK latency, and whether it drifts upward across the run",
+   "achieved inter-ACK interval versus the requested 250 ms",
+   "any frame whose ACK did not arrive",
+   "any stock page takeover or visible interruption",
+   "total wall clock",
+   "operator observation of whether the alternation is visibly smoother than at 1000 ms"
+  ],
+  "automatic_retry": false,
+  "automatic_reconnect": false,
+  "target_override": false,
+  "raw_packet_override": false
+ },
+ "budgets": {
+  "connection_attempts": 1,
+  "application_requests": 10,
+  "application_packets": 30,
+  "application_tx_bytes_total": 710,
+  "expected_rx_frames": 10,
+  "expected_rx_bytes_total": 100,
+  "inter_frame_delay_ms": 250,
+  "ack_timeout_ms_per_frame": 5000,
+  "total_wall_clock_ms": 15000,
+  "derivation": "10 frames at a predicted ~365-435 ms interval is roughly 3.3-3.9 s. Wall clock is 15 s, comfortably over three times that, so a slower-than-predicted run is MEASURED rather than truncated -- the point is to learn the interval, and a tight budget would hide the answer. Frame count, packets and the 71 bytes per frame are identical to M8-FINITE-LOOP-002 because the frames are byte-identical to it; only the delay differs.",
+  "derivation_note_on_frame_count": "Deliberately NOT raised above ten. The Host's MaxSequenceFrames tracks a manifest that was actually granted rather than being an arbitrary number, and a test pins it to the M8 finite-loop manifest. Raising it to get a longer sample would mean a code change, a rebuild, a reinstall and weakening that guard -- all to answer a question nine intervals already answer."
+ },
+ "expected_observations": {
+  "transport": "one connection, 30 application packets, 10 wrapped 0x44 ACKs, clean local close",
+  "physical": "the white block alternates between the top-left and bottom-right corners ten times, roughly three times faster than the accepted rate, ending in the bottom-right",
+  "ack_payload": "recorded per frame, not asserted",
+  "risk_if_the_device_dislikes_the_rate": "the honest unknown. The stock app was observed repeating frames with a 148 ms floor, so 250 ms is well inside what that app does on this unit -- but that is an observation about the app, not an earned rate for us. A refusal, a missing ACK or a stall is a legitimate result and stops the run."
+ },
+ "persistence_analysis": {
+  "expected_effect": "display state only",
+  "basis": "M6.4 power cycle returned the unit to stock software and the default clock",
+  "not_claimed": "absence of any non-volatile write; repetition does not test that either",
+  "new_persistence_risk_vs_step_1": "none identified: identical command, identical packets, same session shape, repeated. No new command id, no save/publish/upload, no gallery interaction."
+ },
+ "stop_policy": {
+  "stop_immediately_on": [
+   "unexpected target identity or pairing precheck failure",
+   "any ACK that is not exactly one 10-byte wrapped 0x44 frame",
+   "any send that does not complete in full",
+   "ACK timeout on any frame",
+   "total wall clock exceeding 30000 ms",
+   "any conflicting controller observed on the link",
+   "a stock page takeover or any device behaviour outside the expected observations"
+  ],
+  "on_ambiguous_outcome": "stop, preserve the Host diagnostics record including the per-frame timings collected so far, and report. Do NOT resend, do not reconnect, do not power-cycle before the result is recorded.",
+  "recovery": "operator-initiated only, after the outcome is recorded",
+  "operator_abort": "the run is short enough to watch end to end; if it looks wrong, power off the Ditoo rather than letting it continue."
+ },
+ "implementation_gate": {
+  "host_change_required": "none",
+  "status": "250 ms is already MinInterFrameDelayMs and 10 frames is already MaxSequenceFrames on the installed Host 9c4abe8f...9a582. Nothing is built, rebuilt or reinstalled for this run."
+ },
+ "authority": {
+  "transmission_authorized": false,
+  "authorization_consumed": true,
+  "experiment_id": "OPENDITOO-R1-RATE-250MS-002",
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "can you rerun it real quick skip the formalities I missed it I was working",
+  "grant_attribution": "Operator asked to re-run the identical experiment after missing it. A new id was cut rather than re-arming 001, whose authority is consumed. Scope is unchanged from the grant the operator gave for 001 minutes earlier.",
+  "expires_at": "2026-09-10T00:00:00Z",
+  "grant_scope": "ONE execution: 10 frames, 30 packets, 710 application bytes, 250 ms inter-frame delay, one connection, no retry, no reconnect. Identical to OPENDITOO-R1-RATE-250MS-001.",
+  "consumed_at": "2026-09-09T15:44Z"
+ },
+ "explicitly_out_of_scope": [
+  "any inter-frame delay below 250 ms (that is R2, and needs a Host change)",
+  "pipelining or any change to the one-ACK-per-frame shape (that is R3)",
+  "driving frames from the M9 activity collector",
+  "more than ten frames, or keeping the connection open beyond this run",
+  "any new command id, raw send or command enumeration"
+ ],
+ "rate_ladder_context": {
+  "target": "the operator's ~10 fps aspiration",
+  "this_step": "R1 of R1-R3; see notes/OPENDITOO-N2-N4-ACTIVATION-READINESS-2026-09-09.md section 8",
+  "measured_cost_breakdown": "At 1000 ms delay the achieved interval was 1114-1118 ms, so the fixed per-frame cost is roughly 115 ms: about 80 ms of packet spacing (SendSpacingMs 40 ms across two gaps) plus a 105 ms median ACK latency.",
+  "predicted_interval_ms": "roughly 250 + 115 = 365-435 ms, i.e. about 2.3-2.7 fps",
+  "what_would_falsify_the_model": "an achieved interval materially above ~450 ms would mean the device, not our delay, is the limit at this rate -- which would cap the whole ladder and is worth knowing before any further step",
+  "not_authorized_by_this": "R2 (lowering the Host's 250 ms floor) and R3 (pipelining past the ACK) each need their own manifest, grant and code review. 10 fps is 100 ms per frame, which is below the observed median ACK latency alone, so it is NOT reachable by shortening a delay."
+ },
+ "result": {
+  "status": "pass",
+  "frames_acked": 10,
+  "packets_sent_complete": 30,
+  "tx_bytes_sent_complete": 710,
+  "elapsed_ms": 3538,
+  "connections_attempted": 1,
+  "socket_closed": true,
+  "retry": false,
+  "reconnect": false,
+  "ack_payload_hex_ordered": [
+   "0x1E",
+   "0x8D",
+   "0x08",
+   "0x8E",
+   "0xF7",
+   "0x68",
+   "0xE4",
+   "0x4E",
+   "0xBC",
+   "0x2A"
+  ],
+  "frame_start_offsets_ms": [
+   0,
+   361,
+   743,
+   1113,
+   1494,
+   1862,
+   2242,
+   2607,
+   2975,
+   3338
+  ]
+ },
+ "measurements": {
+  "achieved_inter_frame_interval_ms": {
+   "n": 9,
+   "mean": 370.9,
+   "min": 361,
+   "max": 382,
+   "pstdev": 7.6
+  },
+  "achieved_fps": 2.7,
+  "reproducibility": "Run 001 mean 368.6 ms, run 002 mean 370.9 ms -- 0.6 percent apart across two independent sessions. The 250 ms rate reproduces.",
+  "errors": 0,
+  "missing_acks": 0
+ },
+ "findings": [
+  {
+   "id": "RATE-250MS-REPRODUCES",
+   "confidence": "MATCHED",
+   "statement": "The 250 ms rate reproduces: 370.9 ms mean against 001's 368.6 ms, nine intervals each, zero missing ACKs and zero errors in both. The accepted ceiling of ~369 ms / 2.71 fps now rests on two independent samples, as the 1118 ms figure did before it."
+  }
+ ],
+ "acceptance": null,
+ "next_step_evidence": {
+  "r2_scope": "Reduce SendSpacingMs (40 ms) and the Host's MinInterFrameDelayMs floor (250 ms). Both are code changes needing a rebuild, reinstall, new manifest and new grant.",
+  "projected": {
+   "spacing_10_delay_50": "108.6 ms/frame = 9.2 fps",
+   "spacing_0_delay_50": "88.6 ms/frame = 11.3 fps",
+   "spacing_0_delay_0": "38.6 ms/frame = 25.9 fps (theoretical; unlikely to be safe or useful)"
+  },
+  "recommended": "Step the spacing 40 -> 20 -> 10 rather than to zero. The spacing is the one value taken from stock behaviour rather than chosen by us, so it is the one most likely to matter."
+ },
+ "supersedes": null
+}

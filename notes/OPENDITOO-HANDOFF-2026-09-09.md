@@ -45,9 +45,9 @@ Two live commands exist, both operator-invoked, neither able to retry or reconne
 
 ### Accepted operating ceiling
 
-**~368.6 ms per frame (2.71 frames/s), measured 2026-09-09 by `OPENDITOO-R1-RATE-250MS-001`.**
-Ten frames, one connection, zero missing ACKs, zero errors, population stdev 7.8 ms, no
-drift. This supersedes the earlier ~1118 ms ceiling, which was never a device limit but a
+**~369 ms per frame (2.71 frames/s), measured twice on 2026-09-09** by
+`OPENDITOO-R1-RATE-250MS-001` (368.6 ms) and `-002` (370.9 ms), 0.6 % apart. Ten frames
+each, one connection, zero missing ACKs, zero errors, no drift. This supersedes the earlier ~1118 ms ceiling, which was never a device limit but a
 deliberately conservative 1000 ms delay we chose.
 
 **Correction carried by R1:** the `ackLatencyMs` recorded since M6 is
