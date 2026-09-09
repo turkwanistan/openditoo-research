@@ -33,18 +33,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ### Authority state
 
-**`OPENDITOO-M9-ACTIVATION-003` is currently authorized for exactly ONE execution.**
-The prior 001/002 grants and all rate-ladder grants remain consumed. The 003 grant covers
-only the frozen 60 s supervised MCP-dashboard session: 150 ms frame-start floor, fixed
-10 ms packet spacing, one connection, one ACK per frame, no retry/reconnect/reclaim or
-pipelining. A consumed manifest is never re-armed; an ambiguous or partial attempt needs a
-fresh manifest, not a reset flag. Build/deploy capability, credentials, a reachable Host,
-process startup and prior successful trials confer no additional transmission authority.
-
-Both `activity-session` and current `sequence-run` source use durable one-use experiment
-claims before dispatch. The activity Host additionally consumes its id in an on-disk ledger
-before the socket exists. The 003 authority is live only until its one execution is claimed;
-the claims have no reset/un-consume path.
+**Nothing is currently authorized.** `OPENDITOO-M9-ACTIVATION-003` was granted and executed once; it is consumed after a one-frame HTTP 429 pacing-edge partial and must never be re-armed. `OPENDITOO-M9-ACTIVATION-004` is the fresh pending MCP-dashboard acceptance manifest. Every live operation still requires an explicit operator grant naming its exact experiment id.
 
 ### Next objective
 

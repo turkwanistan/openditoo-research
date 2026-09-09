@@ -57,8 +57,9 @@ FAULT_HEALTH = {"unavailable", "stale"}
 FAULT_MARKER = ((1, 0), (2, 0), (3, 0))
 FAULT_RGB = (170, 0, 0)
 
-# The operator-approved four-stage activity pulse. At the product cadence of 150 ms
-# per frame start this is a ~0.60 s blue/cyan shimmer. The static reference mockups
+# The operator-approved four-stage activity pulse. The Host hard floor is 150 ms, while
+# the MCP client nominally dispatches at 200 ms for cross-process jitter headroom, making
+# this a ~0.80 s blue/cyan shimmer. The static reference mockups
 # remain the stage-agnostic acceptance baseline; live animation passes an explicit stage.
 PULSE_COLORS = ((0, 255, 255), (0, 170, 255), (85, 170, 255), (0, 255, 255))
 
@@ -201,5 +202,5 @@ LEGEND = {
     "accents": "mushroom cap recolours as a whole; bunny and skull recolour their eyes only",
     "fault": "a dim red bar in the crown row means the collector could not read that source (unavailable) or has stopped reading it (stale) -- as opposed to grey, which means it read fine and there was simply nothing to report. A source that has never been polled shows neither.",
     "color_model": "RGB888, as the exact unit's stock 0x44 path uses. The artwork's RGB222 values are inherited design, not a device limit.",
-    "animation": "live activity uses the approved four-stage cyan/blue/light-blue/cyan pulse at the 150 ms product frame-start cadence (~0.60 s for four ACKed stages); the active column's crown, letter and icon accent change together, then return to status color. Static previews without a stage retain the approved reference-frame blue override.",
+    "animation": "live activity uses the approved four-stage cyan/blue/light-blue/cyan pulse with a 150 ms Host hard floor and 200 ms nominal MCP client cadence (~0.80 s for four ACKed stages); the active column's crown, letter and icon accent change together, then return to status color. Static previews without a stage retain the approved reference-frame blue override.",
 }

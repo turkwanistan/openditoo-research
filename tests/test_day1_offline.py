@@ -3,6 +3,7 @@ from __future__ import annotations
 import binascii
 import itertools
 import json
+import dataclasses
 import struct
 import zlib
 from pathlib import Path
@@ -1837,6 +1838,15 @@ class N3SessionRunTests(unittest.TestCase):
         self.assertLessEqual(len(transport.frames), 4_000 // 150 + 1)
         self.assertIn("pacing", result["holds"])
 
+    def test_live_dashboard_adds_cross_process_pacing_headroom_above_the_host_floor(self) -> None:
+        # 003 proved that dispatching exactly at the Host's 150 ms arrival floor can race:
+        # variable HTTP latency made the second request arrive too soon and the Host 429'd it.
+        # The product client therefore schedules at 200 ms while the Host still enforces 150 ms.
+        self.assertEqual(activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS, 150)
+        self.assertEqual(activity_session.MCP_CLIENT_FRAME_INTERVAL_MS, 200)
+        self.assertGreater(activity_session.MCP_CLIENT_FRAME_INTERVAL_MS,
+                           activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
+
     def test_transport_time_consumes_the_tick_budget_instead_of_adding_to_it(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             manifest = self._manifest(tmp,
@@ -1859,10 +1869,13 @@ class N3SessionRunTests(unittest.TestCase):
                 index["i"] += 1
                 return frame, False
 
+            # A 50 ms render tick plus the 200 ms MCP dispatch cadence keeps the intended
+            # 0/200/400/... frame starts even though each send/ACK consumes 70 ms.
+            manifest = dataclasses.replace(manifest, poll_interval_ms=50)
             activity_session.run_session(
                 manifest, SlowFake(), render, lambda: clock["ms"],
-                lambda ms: clock.__setitem__("ms", clock["ms"] + ms), max_iterations=12)
-            self.assertEqual(starts[:4], [0, 150, 300, 450])
+                lambda ms: clock.__setitem__("ms", clock["ms"] + ms), max_iterations=24)
+            self.assertEqual(starts[:4], [0, 200, 400, 600])
 
     def test_an_unsolicited_state_report_stops_the_session_and_yields(self) -> None:
         transport = activity_session.FakeSessionTransport(

@@ -269,3 +269,8 @@ rendered as unavailable, which is exactly what the fault bar is for.
 ## 10. Rate-integrated MCP dashboard activation 003 — granted, pending execution
 
 The post-rate-integration Windows boundary is now closed: changed Host build/deploy PASS, installed DLL == repository DLL (`fb750078e9...af70f`), `/v1/status` healthy with `activity-session`, and all three activity sources reachable from normal WSL. `DAY1-M9-ACTIVATION-003.json` freezes the current renderer/collector/session hashes and a 60 s, 150 ms, one-ACK-per-frame envelope. The operator explicitly granted `OPENDITOO-M9-ACTIVATION-003` in-session on 2026-09-09 for exactly this one execution; it is armed and not yet consumed. No Bluetooth/device I/O was performed while preparing or recording the grant. Streaming and pipelining are deliberately deferred to later milestones.
+
+
+## 11. Activation 003 pacing-edge result; 004 pending
+
+003 is consumed after one ACKed frame. The next client request hit the Host's 150 ms arrival guard with HTTP 429 because exact 150 ms client dispatch does not guarantee exact 150 ms server arrival across HTTP. Physical dashboard visibility passed; four-stage animation and stock-yield remain NOT TESTED. The client now uses 200 ms nominal frame dispatch with a phase-stable 50 ms render tick while the unchanged Host keeps its 150 ms hard floor. Offline suite: 152 tests PASS. `DAY1-M9-ACTIVATION-004.json` is the fresh pending acceptance manifest. Nothing is currently authorized.

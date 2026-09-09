@@ -9,9 +9,10 @@ Three separable pieces, in dependency order:
 2. `SessionClaim` — durable one-use authority. Claimed before dispatch, atomically, by
    file creation. A crash leaves the claim standing with an unknown outcome; nothing
    here can reset it. A repeat needs a new manifest and a new grant.
-3. `ChangeOnlyScheduler` — desired versus sent state. The product operating floor is
-   150 ms between frame starts (6.67 fps), chosen below the measured 7.63 fps sustained
-   full-colour rate and far below the 18.46 fps no-sleep ceiling. It is not a heartbeat:
+3. `ChangeOnlyScheduler` — desired versus sent state. The Host hard acceptance floor is
+   150 ms between frame starts. The MCP client deliberately dispatches at a nominal 200 ms
+   cadence (5 fps), leaving 50 ms for cross-process/HTTP jitter while remaining far below
+   the measured 18.46 fps no-sleep ceiling. It is not a heartbeat:
    an unchanged scene sends nothing, a burst coalesces to
    the newest frame, and a pulse that misses its freshness window is dropped rather
    than replayed later.
@@ -38,12 +39,17 @@ SCHEMA_VERSION = 2
 EXACT_UNIT_ID = "11:75:58:CE:DE:C7"
 INSTALLED_FIRMWARE = "v42012"
 
-# Product operating floor after the exact-unit R1-R5 ladder. R4 sustained full-colour
+# Hard Host acceptance floor after the exact-unit R1-R5 ladder. R4 sustained full-colour
 # motion at 131.0 ms/frame (7.63 fps) for 67 s and R5 reached 54.2 ms/frame (18.46 fps)
-# with no sleeps. 150 ms (6.67 fps) deliberately keeps jitter headroom while making the
-# approved four-stage crown pulse readable (~0.60 s). A manifest may pace slower; it may
-# not pace faster than 150 ms without a new evidence boundary.
+# with no sleeps. A manifest may ask the Host to enforce a slower floor; it may not ask
+# for less than 150 ms without a new evidence boundary. The MCP client itself runs slower
+# (see MCP_CLIENT_FRAME_INTERVAL_MS) because HTTP arrival jitter exists across processes.
 ACCEPTED_MIN_FRAME_INTERVAL_MS = 150
+# Client-side nominal cadence for the MCP dashboard. The Host enforces the hard 150 ms
+# arrival floor on its own clock, while HTTP scheduling/jitter means a client dispatch
+# exactly 150 ms after its previous dispatch can still arrive sooner than 150 ms server-side.
+# 200 ms preserves 50 ms of cross-process timing headroom while remaining a responsive 5 fps.
+MCP_CLIENT_FRAME_INTERVAL_MS = 200
 # A first bounded activation is supervised. Anything longer is a different authority
 # shape and needs its own evidence, not a bigger number here.
 MAX_SESSION_LIFETIME_SECONDS = 900
@@ -467,7 +473,8 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
     # not just the image. Counting only the image under-reports against a shared ceiling.
     preamble_bytes = len(IMAGE_PREAMBLE_A) + len(IMAGE_PREAMBLE_B)
 
-    scheduler = ChangeOnlyScheduler(manifest.min_frame_interval_ms, manifest.pulse_freshness_ms)
+    scheduler_interval_ms = max(manifest.min_frame_interval_ms, MCP_CLIENT_FRAME_INTERVAL_MS)
+    scheduler = ChangeOnlyScheduler(scheduler_interval_ms, manifest.pulse_freshness_ms)
     started_ms = clock()
     deadline_ms = started_ms + manifest.lifetime_ms
     result = {"experiment_id": manifest.experiment_id, "frames_sent": 0,
@@ -477,12 +484,19 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
     def hold(reason: str) -> None:
         result["holds"][reason] = result["holds"].get(reason, 0) + 1
 
-    def wait_for_next_tick(tick_started_ms: int) -> None:
-        # Poll cadence is measured start-to-start, not work-time PLUS sleep. That matters
-        # once a frame is no longer a one-second event: HTTP + Bluetooth ACK time must
-        # consume the 150 ms budget instead of being added on top of it.
-        elapsed = max(0, clock() - tick_started_ms)
-        sleep(max(0, manifest.poll_interval_ms - elapsed))
+    next_tick_ms = started_ms
+
+    def wait_for_next_tick(_tick_started_ms: int) -> None:
+        nonlocal next_tick_ms
+        # Keep render ticks on one phase-stable grid. Transport/ACK work consumes the tick
+        # budget; if it overruns a tick, skip that missed tick rather than shifting every
+        # future tick later. This lets a 50 ms render tick service the 200 ms MCP send
+        # cadence at 0/200/400/... while still tolerating e.g. 70 ms of send/ACK work.
+        next_tick_ms += manifest.poll_interval_ms
+        now_ms = clock()
+        while next_tick_ms <= now_ms:
+            next_tick_ms += manifest.poll_interval_ms
+        sleep(max(0, next_tick_ms - now_ms))
 
     def finish(reason: str, outcome: str, detail: str = "") -> dict:
         result["terminal_reason"] = reason
