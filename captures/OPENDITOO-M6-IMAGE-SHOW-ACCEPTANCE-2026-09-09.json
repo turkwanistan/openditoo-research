@@ -71,8 +71,9 @@
     "orientation_evidence": "Operator reports exactly 3 yellow pixels in the top-left corner, matching the fixture's 3 px L-shaped mark at (1,1) (1,2) (2,1). The corner and pixel count exclude horizontal flip, vertical flip and 180 deg rotation; the image reading as an upright smile excludes the transpose, anti-transpose, 90 deg and 270 deg cases. All eight dihedral orientations are therefore excluded.",
     "colors_confirmed": "partial",
     "colors_evidence": "Yellow renders as yellow. Magenta and cyan rendition were not separately reported.",
-    "persistence_after_power_cycle": "untested",
-    "note": "Row-major top-left-origin pixel geometry is now physically confirmed end to end."
+    "persistence_after_power_cycle": "not_retained",
+    "note": "Row-major top-left-origin pixel geometry is now physically confirmed end to end.",
+    "persistence_evidence": "Operator power-cycled the exact unit on 2026-09-09: the device returned to stock software showing the default clock. The custom frame was not restored."
   },
   "findings": [
     {
@@ -92,6 +93,12 @@
       "confidence": "MATCHED",
       "statement": "The encoder's row-major, top-left-origin 16x16 pixel geometry is physically correct on the exact unit: a 3 px asymmetry mark placed at rows 1-2 / columns 1-2 of the source PNG appeared in the top-left corner of the device, with the frame reading upright.",
       "not_claimed": "Nothing about persistence, refresh behaviour, or the device's own scan order below the application layer."
+    },
+    {
+      "id": "STATIC-FRAME-DISPLAY-VOLATILE-ACROSS-POWER-CYCLE",
+      "confidence": "MATCHED",
+      "statement": "A frame shown by the image-show primitive is not restored after a power cycle; the unit returns to stock software and the default clock. The displayed frame is therefore display state, not a persisted boot-time selection.",
+      "not_claimed": "This does NOT prove the absence of persistent side effects. It shows only that the display does not restore the frame. Whether any byte was written to flash, a gallery slot, or other non-volatile storage is untested, and observing the default clock cannot exclude it. Persistence questions must still be answered by evidence, not by this observation."
     }
   ],
   "device_io": true,

@@ -436,7 +436,9 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
             acks.add(operation["ack_payload_hex"])
         self.assertGreater(len(acks), 1, msg="the differing ACK payloads are the point of this record")
         self.assertEqual(data["operator_observation"]["orientation_confirmed"], "confirmed")
-        self.assertEqual(data["operator_observation"]["persistence_after_power_cycle"], "untested")
+        self.assertEqual(data["operator_observation"]["persistence_after_power_cycle"], "not_retained")
+        volatility = [f for f in data["findings"] if f["id"] == "STATIC-FRAME-DISPLAY-VOLATILE-ACROSS-POWER-CYCLE"][0]
+        self.assertIn("does NOT prove the absence of persistent side effects", volatility["not_claimed"])
         self.assertIn("PIXEL-GEOMETRY-ROW-MAJOR-TOP-LEFT-ORIGIN",
                       [finding["id"] for finding in data["findings"]])
 

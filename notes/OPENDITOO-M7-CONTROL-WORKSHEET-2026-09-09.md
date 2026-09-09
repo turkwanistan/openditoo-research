@@ -44,32 +44,59 @@ once except in the single justified `K7` pair.
 
 ## M7.2 Capture procedure
 
-Per trial record, before anything else:
+### Decided capture method: Android HCI snoop
 
-`trial id | UTC start | stock page shown | app screen | audio state (idle/playing/profile) | firmware v42012 | controller (Android app / none) | connection identity | capture tool + raw file SHA-256`
+Trials `B0`-`K7` are captured with the **Android HCI snoop log**, the method already
+proven twice on this exact unit (`captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json`
+and `captures/OPENDITOO-DAY1-PIXEL-COLORING-2026-09-08.json`).
 
-Then run the block, and record the raw capture, the filtered TX/RX with
-direction/profile/channel, the before/after stock state, and any gap in the capture.
-Raw captures stay private and immutable under the repository's ignored capture paths;
-commit only sanitized derivatives plus provenance.
+Reasons, not preference:
+
+- These trials require the **official Divoom app to be the controller**, because a key
+  event that only exists as an app-visible report would be invisible under any other
+  owner. The phone is the controller, so the phone is where the link is observable.
+- It is the only capture layer here that sees both directions of the RFCOMM link
+  without changing who owns the device.
+- It is already proven on this unit with a hash-recorded provenance workflow, so a
+  negative result stays attributable instead of being blamed on new tooling.
+
+Windows/WSL capture was considered and rejected for these trials. Windows has no
+low-friction equivalent: it needs Bluetooth ETW tracing plus `btetlparse` from the WDK
+to convert ETL into btsnoop, and it would still only observe a link the **Windows Host**
+owns — which is the one case where a sniffer is unnecessary, because our own Host can
+log its receive path directly (see `K8` below). Extra tooling that answers no extra
+question is not worth its failure modes.
+
+### `K8` needs no sniffer
+
+`K8` runs with the OpenDitoo Host as the controller. Instrument the Host's own RX path
+rather than capturing the link. That is simpler, exactly attributable, and keeps one
+owner. It still requires the M7.4 manifest and explicit authority before it runs.
+
+### Raw capture handling — read before capturing
+
+An Android HCI snoop log records **all** Bluetooth on the phone: other devices, audio,
+notifications, and app payloads that may contain account metadata. A prior capture
+already contained one official-app frame with account/application metadata, retained
+only as a SHA-256.
+
+Therefore:
+
+- Keep the raw bugreport and `btsnoop_hci.log` **private and immutable**; they are never
+  committed. Record their SHA-256 only.
+- Commit only filtered, reviewed derivatives.
+- Before capturing, disconnect other Bluetooth devices from the phone and stop audio
+  playback, so the trial window is mostly Ditoo traffic.
+
+### Per trial, record before anything else
+
+`trial id | UTC start | stock page shown | app screen | audio state (idle/playing/profile) | firmware v42012 | controller (Android app / none) | connection identity | raw bugreport SHA-256 | extracted btsnoop_hci.log SHA-256`
+
+Then run the block, and record the filtered TX/RX with direction/profile/channel, the
+before/after stock state, and any gap in the capture.
 
 Bracket every action block with a `B0` baseline, and restore stock state between
-trials — restoration traffic is excluded from the trial window.
-
-| Trial | Action | Record |
-| --- | --- | --- |
-| `B0` | 10 s, no action | background telemetry, spontaneous state changes |
-| `K1` | one short press/release of a single non-power control | display / audio / lighting / app / Bluetooth change, and any RX frame |
-| `K2` | the same press in three isolated windows | same code and same side effect each time? |
-| `K3` | the same control in one other stock context | identical or context-dependent |
-| `K4` | one short press of a control that appeared inert in `K1` | any non-display effect or remote event |
-| `K5` | one bounded hold/release on a key already characterised by short press | press vs release distinction, repeat cadence, long-press event |
-| `K6` | two separated presses, then a shorter measured gap | two events, coalescing, duplicates or a lost action → sets the debounce floor |
-| `K7` | one justified pair, pressed while normally running | chord, suppression, priority, or two separate events |
-| `K8` | **gated** — a proven short press during an authorized custom-owner receive window | does the event survive without the official app |
-
-Choose hold duration for `K5` from the manual's own behaviour; do not hold controls
-whose hold effect is unknown.
+trials - restoration traffic is excluded from the trial window.
 
 ## M7.3 Classification (offline, after capture)
 

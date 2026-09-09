@@ -151,10 +151,22 @@ encoder's row-major top-left-origin geometry is correct end to end.
 
 - **Colour rendition** — partial. Yellow renders as yellow; magenta and cyan were not
   separately reported.
-- **Persistence** — untested. A successful ACK and a visible frame say nothing about
-  whether anything was written to the device, or whether the frame survives a power
-  cycle or a stock page change. This is the one remaining unknown in the static
-  primitive and it matters for M8/M9, which assume frames are volatile.
+### Finding: the displayed frame is volatile across a power cycle
+
+The operator power-cycled the exact unit: it came back to stock software showing the
+default clock, with no custom frame. **MATCHED:** an `image-show` frame is display
+state, not a persisted boot-time selection. This is the volatility assumption M8 and
+M9 both rest on, and it now has physical evidence instead of an assumption.
+
+**Not claimed:** this does not prove the absence of persistent side effects. It shows
+the display does not restore the frame. Whether any byte reached flash, a gallery slot
+or other non-volatile storage is untested, and seeing the default clock cannot exclude
+it. Persistence claims still require their own evidence.
+
+### Still open after acceptance
+
+- **Colour rendition** — partial. Yellow renders as yellow; magenta and cyan were not
+  separately reported.
 
 ## M6 exit criteria status
 
