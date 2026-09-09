@@ -169,7 +169,6 @@ def verify_activation_boundary() -> None:
             fail("M9 activation manifest is consumed without recorded acceptance")
         if not result.get("root_cause") and result.get("status") != "pass":
             fail("a non-pass M9 result must record its root cause")
-        return
     armed = authority.get("transmission_authorized") is True
     if armed:
         # An armed manifest is allowed, but only fully attributed and only while the
@@ -187,8 +186,9 @@ def verify_activation_boundary() -> None:
         if "nothing is currently authorized" in handoff.lower():
             fail("the handoff claims nothing is authorized while a manifest is armed")
     session = manifest.get("session", {})
-    if session.get("min_frame_interval_ms") != 1118:
-        fail("M9 pacing floor drifted from the accepted ceiling")
+    interval = session.get("min_frame_interval_ms")
+    if not isinstance(interval, int) or interval < 150:
+        fail("M9 manifest attempts to beat the 150 ms product operating floor")
     for flag in ("automatic_retry", "automatic_reconnect", "stock_screen_reclaim",
                  "replay_after_interruption"):
         if session.get(flag) is not False:
@@ -196,10 +196,12 @@ def verify_activation_boundary() -> None:
 
     host = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/ActivitySessionHost.cs").read_text(encoding="utf-8")
     session_py = (ROOT / "host/activity_session.py").read_text(encoding="utf-8")
-    if "AcceptedMinFrameIntervalMs = 1118;" not in host:
-        fail("Host pacing floor drifted from the accepted ceiling")
-    if "ACCEPTED_MIN_FRAME_INTERVAL_MS = 1118" not in session_py:
-        fail("CLI pacing floor drifted from the accepted ceiling")
+    if "AcceptedMinFrameIntervalMs = 150;" not in host:
+        fail("Host pacing floor drifted from the measured product operating rate")
+    if "ActivitySendSpacingMs = 10;" not in host:
+        fail("Host activity-session packet spacing drifted from the R2b/R3/R4 accepted value")
+    if "ACCEPTED_MIN_FRAME_INTERVAL_MS = 150" not in session_py:
+        fail("CLI pacing floor drifted from the measured product operating rate")
     if "AUTHORITY_ALREADY_CONSUMED" not in host or "AUTHORITY_ALREADY_CONSUMED" not in session_py:
         fail("one-use authority enforcement is missing on one side")
     # Authority must be consumed before the socket exists, on both sides.

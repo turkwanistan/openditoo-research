@@ -126,6 +126,16 @@ sent six frames in 300 seconds. Streaming can use the full 7.6 fps, but at ~131 
 jitter is now dominated by Windows `Thread.Sleep` granularity (~15.6 ms), so further gains
 mean not sleeping at all -- letting the ACK be the clock -- rather than sleeping less.
 
+**Wired offline after the ladder:** the activity-product source now chooses **150 ms per
+frame start (6.67 fps)** and the Host source fixes intra-frame packet spacing at the
+physically accepted 10 ms. Four ACK-gated cyan/blue/light-blue/cyan stages take ~0.60 s.
+The runner measures cadence start-to-start, so transport/ACK time consumes the interval
+instead of being added to it. Source collection remains at its configured multi-second
+cadence rather than running at 6.67 Hz. See
+`notes/OPENDITOO-ACTIVITY-RATE-INTEGRATION-2026-09-09.md`. This is **source/offline
+verification only** in the implementing WSL_MCP session: no Windows build/install or new
+physical acceptance was possible there.
+
 **Correction carried by R1:** the `ackLatencyMs` recorded since M6 is
 `ackAt - frameStartedAt` and therefore **includes** the send spacing our own transport
 inserts between a frame's three packets. Anything reasoning about achievable rate must
@@ -312,9 +322,11 @@ for the evidence; the short version:
   lifetime/pacing/budget enforcement by a watchdog the caller cannot cancel.
 - **N3** — the link now reassembles a byte stream and classifies each report; an
   unsolicited state report ends the session with no reclaim frame, even when coalesced
-  into the same read as the ACK. Change-only scheduling with burst coalescing, pulse
-  freshness and a 1118 ms pacing floor. Nine shared receive cases agree between the WSL
-  Python assembler and the compiled Host (`--selftest`).
+  into the same read as the ACK. Change-only scheduling with burst coalescing and pulse
+  freshness was physically accepted at the then-current 1118 ms floor. That historical
+  floor is now superseded for future product source by the offline 150 ms integration
+  described below; the old trials remain evidence of what actually ran. Nine shared
+  receive cases agree between the WSL Python assembler and the compiled Host (`--selftest`).
 - **N4** — three sources verified reachable from this environment; two scenario replays
   through render, scheduler and a fake transport, differing only in whether the unit was
   touched.
@@ -397,18 +409,19 @@ the enforcement-depth gap this note used to record as open.
 
 ## 8d. Genuinely open, in rough value order
 
-1. **Wire the measured rate into the activity display.** The scheduler still enforces the
-   old 1118 ms floor, so the product cannot yet use anything the ladder earned. This is
-   pure offline work and needs no grant. It is the change that turns the rate findings
-   into product value, and it is what makes the approved crown-pulse animation possible
-   at all.
-2. **Stock yield and the fault bar — both still `NOT TESTED` on hardware.** Neither can be
+**Rate integration is complete offline.** Future activity-session source uses a 150 ms
+frame-start floor (6.67 fps), 10 ms accepted intra-frame spacing, and the approved four
+ACK-gated pulse stages. `DAY1_OFFLINE_PASS ... tests=151`; no device I/O occurred. The
+changed Windows Host has **not** been built or installed from this WSL_MCP environment, so
+the next physical boundary begins with build/installed-identity verification, not a send.
+
+1. **Stock yield and the fault bar — both still `NOT TESTED` on hardware.** Neither can be
    forced: they need the operator to touch a physical control during a live session, or a
    source to genuinely fail. Do not manufacture a fake failure to close them; that would
    test the mock, not the device. Ride them along on a future authorized session.
-3. **Streaming beyond one minute.** The longest run is 56 s. Ten minutes is a different
+2. **Streaming beyond one minute.** The longest run is 56 s. Ten minutes is a different
    question — thermal behaviour, drift, resource growth — and has not been asked.
-4. **`operator_visual_order` on the two M8 loop manifests** is still `pending`. One glance
+3. **`operator_visual_order` on the two M8 loop manifests** is still `pending`. One glance
    closes it; if the operator cannot recall, leave it pending rather than recording a
    recollection as evidence.
 

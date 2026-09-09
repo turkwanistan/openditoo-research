@@ -9,8 +9,10 @@ Three separable pieces, in dependency order:
 2. `SessionClaim` — durable one-use authority. Claimed before dispatch, atomically, by
    file creation. A crash leaves the claim standing with an unknown outcome; nothing
    here can reset it. A repeat needs a new manifest and a new grant.
-3. `ChangeOnlyScheduler` — desired versus sent state. The accepted ~1118 ms interval is
-   a ceiling, not a heartbeat: an unchanged scene sends nothing, a burst coalesces to
+3. `ChangeOnlyScheduler` — desired versus sent state. The product operating floor is
+   150 ms between frame starts (6.67 fps), chosen below the measured 7.63 fps sustained
+   full-colour rate and far below the 18.46 fps no-sleep ceiling. It is not a heartbeat:
+   an unchanged scene sends nothing, a burst coalesces to
    the newest frame, and a pulse that misses its freshness window is dropped rather
    than replayed later.
 
@@ -36,9 +38,12 @@ SCHEMA_VERSION = 2
 EXACT_UNIT_ID = "11:75:58:CE:DE:C7"
 INSTALLED_FIRMWARE = "v42012"
 
-# The rate measured and accepted twice at M8 (0.894 frames/s). A manifest may pace
-# slower; it may not pace faster without separate evidence and a separate grant.
-ACCEPTED_MIN_FRAME_INTERVAL_MS = 1118
+# Product operating floor after the exact-unit R1-R5 ladder. R4 sustained full-colour
+# motion at 131.0 ms/frame (7.63 fps) for 67 s and R5 reached 54.2 ms/frame (18.46 fps)
+# with no sleeps. 150 ms (6.67 fps) deliberately keeps jitter headroom while making the
+# approved four-stage crown pulse readable (~0.60 s). A manifest may pace slower; it may
+# not pace faster than 150 ms without a new evidence boundary.
+ACCEPTED_MIN_FRAME_INTERVAL_MS = 150
 # A first bounded activation is supervised. Anything longer is a different authority
 # shape and needs its own evidence, not a bigger number here.
 MAX_SESSION_LIFETIME_SECONDS = 900
@@ -191,12 +196,12 @@ def load_session_manifest(path: Path, *, verify_code_hashes: bool = True,
     interval = session.get("min_frame_interval_ms")
     _require(isinstance(interval, int) and interval >= ACCEPTED_MIN_FRAME_INTERVAL_MS,
              "SESSION_PACING_BELOW_ACCEPTED_CEILING",
-             f"the accepted floor is {ACCEPTED_MIN_FRAME_INTERVAL_MS} ms per frame start")
+             f"the product operating floor is {ACCEPTED_MIN_FRAME_INTERVAL_MS} ms per frame start")
     freshness = session.get("pulse_freshness_seconds")
     _require(isinstance(freshness, int) and 0 < freshness <= 120, "SESSION_PULSE_FRESHNESS_INVALID")
     poll_ms = session.get("poll_interval_ms")
-    _require(isinstance(poll_ms, int) and 100 <= poll_ms <= interval, "SESSION_POLL_INTERVAL_INVALID",
-             "collection must poll at least as often as a frame may be sent")
+    _require(isinstance(poll_ms, int) and 50 <= poll_ms <= interval, "SESSION_POLL_INTERVAL_INVALID",
+             "the render tick must run at least as often as a frame may be sent")
     _require(bool(session.get("activation_source")), "SESSION_ACTIVATION_SOURCE_MISSING")
     _require(session.get("automatic_retry") is False, "SESSION_RETRY_NOT_DISABLED")
     _require(session.get("automatic_reconnect") is False, "SESSION_RECONNECT_NOT_DISABLED")
@@ -472,6 +477,13 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
     def hold(reason: str) -> None:
         result["holds"][reason] = result["holds"].get(reason, 0) + 1
 
+    def wait_for_next_tick(tick_started_ms: int) -> None:
+        # Poll cadence is measured start-to-start, not work-time PLUS sleep. That matters
+        # once a frame is no longer a one-second event: HTTP + Bluetooth ACK time must
+        # consume the 150 ms budget instead of being added on top of it.
+        elapsed = max(0, clock() - tick_started_ms)
+        sleep(max(0, manifest.poll_interval_ms - elapsed))
+
     def finish(reason: str, outcome: str, detail: str = "") -> dict:
         result["terminal_reason"] = reason
         result["outcome"] = outcome
@@ -520,7 +532,7 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
             action, reason = scheduler.next_action(now)
             if action == "hold":
                 hold(reason)
-                sleep(manifest.poll_interval_ms)
+                wait_for_next_tick(now)
                 continue
 
             desired = scheduler.sending(now)
@@ -537,11 +549,14 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
                 # is known and what is not. Never resend, never reconnect.
                 return finish("transport_fault", "unknown", f"{type(exc).__name__}: {exc}")
             scheduler.sent()
+            frame_sent = getattr(render, "frame_sent", None)
+            if callable(frame_sent):
+                frame_sent()
             result["frames_sent"] = scheduler.frames_sent
             result["packets_sent"] += PACKETS_PER_FRAME
             result["tx_bytes_sent"] += frame_bytes
             result["acks"].append(ack.get("ackPayloadHex"))
-            sleep(manifest.poll_interval_ms)
+            wait_for_next_tick(now)
         else:
             return finish("iteration_ceiling", "unknown", "runner iteration ceiling reached")
         return finish("lifetime_expired", "stopped_clean", "")
@@ -556,19 +571,58 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
 # Offline rendering source used by the preview and by live runs alike
 # --------------------------------------------------------------------------
 
-def live_renderer(config: dict, state: dict) -> Callable[[int], tuple[bytes, bool]]:
-    """Collect once and render. A source failure renders as unavailable, not as idle,
-    and is never a reason to stop sending."""
-    def render(_now_ms: int) -> tuple[bytes, bool]:
-        try:
-            counts = mcp_activity.collect_once(config, state,
-                                               poll_seconds=float(config.get("poll_seconds", 2.0)))
-        except mcp_activity.SourceError:
-            counts = {}
-        mcp_activity.save_state(state)
-        pulses = {key for key, value in counts.items() if value}
-        return activity_render.render_rgb888(state, pulses=pulses), bool(pulses)
-    return render
+class LiveActivityRenderer:
+    """Decouple source polling from the faster display tick and own the four-stage pulse.
+
+    Source adapters keep their configured multi-second poll cadence. The display may render
+    every 150 ms while an animation is active without hammering SSH/files six times a
+    second. A pulse stage advances only after `run_session` records an ACK, so pacing or a
+    slow Host cannot silently skip an approved stage. New events coalesce into the newest
+    pulse; no old animation is queued or replayed.
+    """
+
+    def __init__(self, config: dict, state: dict) -> None:
+        self.config = config
+        self.state = state
+        self.source_poll_ms = max(100, int(float(config.get("poll_seconds", 2.0)) * 1000))
+        self.next_collect_ms = 0
+        self.pulse_sources: set[str] = set()
+        self.pulse_stage: int | None = None
+
+    def __call__(self, now_ms: int) -> tuple[bytes, bool]:
+        if now_ms >= self.next_collect_ms:
+            try:
+                counts = mcp_activity.collect_once(
+                    self.config, self.state, poll_seconds=self.source_poll_ms / 1000.0)
+            except mcp_activity.SourceError:
+                counts = {}
+            mcp_activity.save_state(self.state)
+            new_pulses = {key for key, value in counts.items() if value}
+            if new_pulses:
+                # Coalesce to the newest observed activity. Nothing waits behind it.
+                self.pulse_sources = new_pulses
+                self.pulse_stage = 0
+            self.next_collect_ms = now_ms + self.source_poll_ms
+
+        if self.pulse_stage is not None:
+            return (activity_render.render_rgb888(
+                        self.state, pulses=self.pulse_sources, pulse_stage=self.pulse_stage),
+                    True)
+        self.pulse_sources.clear()
+        return activity_render.render_rgb888(self.state), False
+
+    def frame_sent(self) -> None:
+        """Advance animation only after the current stage was ACKed."""
+        if self.pulse_stage is None:
+            return
+        self.pulse_stage += 1
+        if self.pulse_stage >= len(activity_render.PULSE_COLORS):
+            self.pulse_stage = None
+            self.pulse_sources.clear()
+
+
+def live_renderer(config: dict, state: dict) -> LiveActivityRenderer:
+    return LiveActivityRenderer(config, state)
 
 
 # --------------------------------------------------------------------------

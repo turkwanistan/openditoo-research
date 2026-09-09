@@ -25,7 +25,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | M0-M5 | complete; authorities consumed |
 | M6 static runtime + diagnostics | complete; physically accepted; pixel geometry proven |
 | M7 keyboard/button mapping | complete as a **bounded negative**; no usable physical navigation |
-| M8 repeated frames | complete; accepted ceiling ~1118 ms/frame, measured twice |
+| M8 repeated frames | complete; historical loops ran ~1118 ms/frame; later R1-R5 measured the same one-ACK-per-frame shape through 18.46 fps |
 | M9 activity application | N1-N4 complete: authority lifecycle, takeover-aware receive, change-only scheduling, sources and offline preview. N5 complete — 002 PASS over its full 300 s; both grants consumed. |
 
 | Rate ladder R1-R5 | complete; **0.90 → 18.46 fps** sustained at full colour, all operator-confirmed |
@@ -44,35 +44,30 @@ reachable Host, process startup and prior successful trials confer no transmissi
 authority. Continuous or unattended display is a larger authority shape than any bounded
 run so far.
 
-`sequence_run` enforces this by checking manifest flags before dispatch, but it does not
-itself atomically consume or reserve authority, and its Host request carries frames and
-budgets rather than an experiment identity. Past consumption was manual bookkeeping —
-honest evidence of what happened, not a crash-safe automatic gate. That gap is closed for
-the **session** surface by N2: `activity-session` claims its experiment id durably in WSL
-and the Host consumes it in an on-disk ledger before the socket exists, neither of which
-can be released. The older `sequence-run` route keeps its manual bookkeeping and must
-still not be exercised to test it.
+Both `activity-session` and current `sequence-run` source use durable one-use experiment
+claims before dispatch. The activity Host additionally consumes its id in an on-disk ledger
+before the socket exists. None of this is ongoing authority: all existing manifests are
+consumed, and the claims have no reset/un-consume path.
 
 ### Next objective
 
-**N5 — first bounded M9 activation, awaiting an operator grant.** N1-N4 are complete;
-see `notes/OPENDITOO-N2-N4-ACTIVATION-READINESS-2026-09-09.md` and section 8 of the
-handoff. The manifest `experiments/DAY1-M9-ACTIVATION-001-PENDING.json` is complete
-except for the grant, and two preconditions remain: applying the refreshed Host
-(**done** — installed is now `a0f2fa1c…`, byte-identical to the repository build, and the
-installed binary itself passes `HOST_SELFTEST_PASS cases=9 failures=0`), and disconnecting
-the Android app (**still required**).
+**Rate integration is complete offline.** Future activity-session source uses a **150 ms
+frame-start floor (6.67 fps)**, the accepted 10 ms intra-frame spacing, and the approved
+four ACK-gated cyan/blue/light-blue/cyan stages. See
+`notes/OPENDITOO-ACTIVITY-RATE-INTEGRATION-2026-09-09.md`.
 
-Offline work available without any grant:
+The implementing WSL_MCP session had no `powershell.exe`, the Host connection was refused,
+and all three live activity sources were unreadable. Therefore the **next real boundary is
+a capable-environment Windows build + exact repository/installed identity verification**,
+followed by source reachability verification. That work confers no transmission authority.
+Only after those identities are frozen should a **new manifest with a new experiment id**
+be prepared for any physical stock-yield/fault-bar acceptance. No current manifest is
+authorized and no consumed manifest may be re-armed.
 
-```sh
-python3 cli/openditoo.py activity-probe
-python3 cli/openditoo.py activity-status --collect
-python3 cli/openditoo.py activity-preview --collect
-python3 cli/openditoo.py session-check   --manifest experiments/DAY1-M9-ACTIVATION-001-PENDING.json
-python3 cli/openditoo.py session-preview --manifest experiments/DAY1-M9-ACTIVATION-001-PENDING.json \
-                                         --scenario tests/session_scenario_bounded.json
-```
+Offline commands that remain safe without a grant include the verifier, `session-check`,
+`session-preview`, `activity-status` without a transmitting action, and `activity-preview`.
+The old `DAY1-M9-ACTIVATION-001/002` manifests are consumed historical evidence, not
+activation templates.
 
 ## Current objective
 

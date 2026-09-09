@@ -64,7 +64,10 @@ fragment, garbage before start, corrupt checksum, oversize, and an unwrapped fra
 agree on all nine. No new command semantics are assigned; the ACK payload byte is
 reported and never validated as a constant.
 
-**Scheduling.** The accepted ~1118 ms interval is a ceiling, not a heartbeat.
+**Scheduling (historical N3 acceptance, superseded for future source):** N3 originally
+used the then-accepted ~1118 ms interval. R1-R5 later measured the exact unit through
+18.46 fps, and the product source now uses a conservative **150 ms / 6.67 fps** floor.
+The change-only properties below are unchanged.
 
 - Unchanged scene → nothing sent, for as long as it stays unchanged.
 - A burst coalesces to the newest frame; nothing is queued and nothing is replayed.
@@ -113,20 +116,26 @@ The live render was reviewed at 16× nearest-neighbour and reads clearly.
 
 **The renderer was replaced after N5's first trial** — see section 7.
 
-## 5. What is deliberately still not built
+## 5. What remains deliberately out of scope
 
-- No installed worker (A1). Startup would restore collection only; it would restore no
-  authority, and there is nothing to supervise until an activation is accepted.
+This section was originally written before N5/A1 and is superseded by the handoff for
+installation state. A1 collection is now installed, but it still restores **collection
+only** and never revives transmission authority.
+
 - No M7.4 custom receive window. Still buys nothing: there is nothing to navigate.
-- No rate above the accepted ceiling, no reconnect policy, no session receipts beyond
-  the claim and ledger (A2).
+- No automatic reconnect, replay, stock-screen reclaim or unattended transmission policy.
+- No pipelining past the per-frame ACK. R5 closed the current protocol-shape rate ladder
+  at 18.46 fps; future activity source intentionally operates at 6.67 fps.
+- No claim that a short/one-minute run proves longer-duration durability.
 
-## 6. Next action
+## 6. Current next boundary
 
-`experiments/DAY1-M9-ACTIVATION-001-PENDING.json` is complete except for the grant.
-Its preconditions include applying the refreshed Host and re-verifying the installed
-hash — that has **not** been done, and the installed Host does not contain the session
-routes. See the handoff's authority section.
+The old `DAY1-M9-ACTIVATION-001-PENDING` instruction is obsolete: N5 ran twice and both
+resulting manifests are consumed. After the rate integration, the changed Windows Host
+source must first be built in a capable environment and its repository/installed identity
+verified. The activity sources must also be reachable there. Only after those offline/build
+preconditions are frozen should a **new** experiment id and manifest be prepared for any
+new physical acceptance. Nothing is currently authorized.
 
 ## 7. The approved MCP page (operator-supplied design, 2026-09-09)
 
@@ -164,10 +173,12 @@ The mockups are therefore executable acceptance criteria: if a pixel moves, a te
 
 ### Three things to know
 
-1. **The four-stage blue pulse is not animated.** At the accepted ~1118 ms per frame it
-   would be decimated to noise. The crown is static while activity is fresh; the visible
-   activity signal is the blue override appearing and disappearing. Upgrading this needs
-   a faster rate, which needs separate evidence and its own grant.
+1. **The four-stage pulse is now implemented in source.** The completed R1-R5 ladder
+   removed the old 1118 ms product constraint. Future activity sessions use 150 ms frame
+   starts (6.67 fps), and each ACK advances cyan -> blue -> light blue -> cyan across the
+   crown, identity letter and icon accent before returning to status colour. This source
+   integration passed offline verification; it has not yet been rebuilt/installed or
+   physically accepted after the change.
 2. **Idle and unreachable are separated by a fault bar**, on the operator's decision.
    The approved spec merged them into grey and listed splitting them as an open question.
    A source the collector could not read (`unavailable`) or has stopped reading (`stale`)
@@ -187,38 +198,27 @@ The mockups are therefore executable acceptance criteria: if a pixel moves, a te
    round-trips off-palette colours through the whole encode path to prove nothing
    quantises them. Worst-case frame is 188 bytes, 203 with preambles, up from 191.
 
-## 8. Parked: the frame-rate ladder
+## 8. Frame-rate ladder — complete; product policy wired offline
 
-The operator wants ~10 fps eventually. Recording the evidence now so nobody re-derives it,
-and so nobody mistakes the target for an earned rate.
+R1-R5 are complete and physically accepted on the exact unit. The progression was
+0.90 -> 2.71 -> 5.70 -> 9.15 -> 8.46 full-colour -> 7.63 sustained full-colour ->
+**18.46 fps** with every deliberate wait removed. R4's sustained 131.0 ms/frame over 67 s
+is the conservative full-colour baseline; R5's 54.2 ms/frame over 56 s is the ceiling for
+the current one-ACK-per-frame protocol shape. Going faster would require pipelining and is
+not prepared.
 
-**Where the current 1118 ms actually goes** — *corrected by R1 on 2026-09-09:* a
-deliberately conservative 1000 ms inter-frame delay, plus ~80 ms of packet spacing
-(`SendSpacingMs` 40 ms x 2 gaps), plus roughly **25-40 ms** of actual device turnaround.
+The activity product now operates in source at **150 ms/frame start (6.67 fps)** with the
+accepted **10 ms intra-frame spacing**, intentionally below R4 for jitter headroom. That
+rate yields a ~0.60 s four-stage activity pulse and preserves per-frame acknowledgement.
+See `notes/OPENDITOO-ACTIVITY-RATE-INTEGRATION-2026-09-09.md`.
 
-The `ackLatencyMs` this project has recorded since M6 is measured as
-`ackAt - frameStartedAt`, so it **includes** our own 80 ms of send spacing. The
-"~105 ms ACK latency" was never the device's turnaround, and treating it as such is what
-produced the wrong conclusion below.
+Historical reminder: `ackLatencyMs` includes this project's own intra-frame sleeps; the
+earlier ~105 ms interpretation as pure device turnaround was wrong. The official app's
+148 ms floor is still only an observation about that app.
 
-| Step | Change | Result | Risk |
-| --- | --- | --- | --- |
-| **R1** | delay 1000 -> 250 ms | **DONE: 371.6 ms, 2.71 fps** | none realised |
-| **R2a** | delay 250 -> 50 ms | **DONE: 175.4 ms, 5.70 fps** | none realised |
-| **R2b** | spacing 40 -> 10 ms | **DONE: 109.3 ms, 9.15 fps** | none realised; the stock spacing was not load-bearing |
-| **R3** | frame size 71 -> 1054 B | **DONE: 118.2 ms, 8.46 fps** | none realised; full colour costs 8.9 ms |
-| **R4** | 512 frames over 67 s | **DONE: 131.0 ms, 7.63 fps, no drift** | none realised on the device; the CLI misread its own result |
-| R5? | pipeline past the ACK | **not needed** for anything asked for so far | would abandon per-frame confirmation |
-
-**Correction.** This note previously said 10 fps was unreachable without R3, because
-100 ms per frame sat "below the observed median ACK latency alone". That compared against
-the wrong number: ~105 ms was mostly our own send spacing. With the spacing reduced and
-the delay floor lowered, **10 fps is reachable while keeping one ACK per frame**, so R3
-is very likely not needed at all.
-
-Two things that remain *not* evidence for any rate here: OpenTivoo's 10 fps is class-5
-prior art on a different device, and the stock app's 148 ms floor is an observation about
-that app. R1 earned 250 ms by measuring it; R2 must earn the next step the same way.
+The 150 ms source integration is offline-verified only. The implementing WSL_MCP session
+had no `powershell.exe`, no reachable Host, and no readable live activity sources, so no
+Windows build, install or physical acceptance is claimed for the new source.
 
 ## 9. A1 — installed collection worker (2026-09-09)
 

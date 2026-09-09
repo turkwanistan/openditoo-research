@@ -15,9 +15,15 @@ using System.Text.Json;
 /// </summary>
 static class ActivitySessionHost
 {
-    // The rate measured and accepted twice at M8. The Host will not accept a manifest
-    // that paces faster, whatever the caller asks for.
-    internal const int AcceptedMinFrameIntervalMs = 1118;
+    // Product operating floor after the exact-unit R1-R5 ladder. R4 sustained full-colour
+    // motion at 131.0 ms/frame (7.63 fps) for 67 s; R5 reached 54.2 ms (18.46 fps) with
+    // no sleeps. 150 ms (6.67 fps) keeps jitter headroom and yields a readable ~0.60 s
+    // four-stage crown pulse. The Host refuses anything faster, whatever the caller asks.
+    internal const int AcceptedMinFrameIntervalMs = 150;
+    // R2b/R3/R4 physically accepted 10 ms spacing. Retaining that small proven gap gives
+    // the 150 ms frame-start budget ample ACK/jitter headroom without running at R5's
+    // zero-idle ceiling. This is fixed for the activity session, not caller-configurable.
+    internal const int ActivitySendSpacingMs = 10;
     internal const int MaxLifetimeSeconds = 900;
     internal const int MaxFrames = 500;
     internal const int WatchdogIntervalMs = 250;
@@ -193,7 +199,7 @@ static class ActivitySessionHost
             DitooReport ack;
             try
             {
-                link.SendFrameGroup(packets, null, framesSent);
+                link.SendFrameGroup(packets, null, framesSent, ActivitySendSpacingMs);
                 ack = link.ReadOneAck(DitooStaticImageProtocol.AckBudgetMs);
             }
             catch (DitooTakeoverException takeover)

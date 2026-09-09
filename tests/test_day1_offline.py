@@ -1150,6 +1150,48 @@ class M9RendererTests(unittest.TestCase):
         self.assertEqual(rgb[letter_l:letter_l + 3], override)
         self.assertEqual(rgb[letter_o:letter_o + 3], bytes((255, 255, 0)))
 
+    def test_the_four_live_pulse_stages_use_the_approved_color_family(self) -> None:
+        state = self._state(self.MIXED)
+        letter_o = (11 * 16 + 6) * 3
+        crown_o = (0 * 16 + 5) * 3
+        for stage, color in enumerate(activity_render.PULSE_COLORS):
+            with self.subTest(stage=stage):
+                rgb = activity_render.render_rgb888(
+                    state, self.now, {"optiplex_mcp"}, pulse_stage=stage)
+                self.assertEqual(rgb[letter_o:letter_o + 3], bytes(color))
+                self.assertEqual(rgb[crown_o:crown_o + 3], bytes(color))
+        with self.assertRaises(ValueError):
+            activity_render.render_rgb888(state, self.now, {"optiplex_mcp"}, pulse_stage=4)
+
+    def test_live_renderer_polls_sources_slowly_but_advances_four_acked_pulse_frames(self) -> None:
+        from host import activity_session as session_mod
+        state = self._state(self.MIXED)
+        config = {"poll_seconds": 2.0, "sources": {sid: {} for sid in mcp_activity.SOURCE_IDS}}
+        calls = []
+        original_collect = mcp_activity.collect_once
+        original_save = mcp_activity.save_state
+        try:
+            def fake_collect(_config, _state, poll_seconds=2.0):
+                calls.append(poll_seconds)
+                return {"optiplex_lab": 0, "optiplex_mcp": 1, "wsl_mcp": 0}
+            mcp_activity.collect_once = fake_collect
+            mcp_activity.save_state = lambda _state: None
+            renderer = session_mod.live_renderer(config, state)
+            letter_o = (11 * 16 + 6) * 3
+            for stage, now_ms in enumerate((0, 150, 300, 450)):
+                rgb, from_pulse = renderer(now_ms)
+                self.assertTrue(from_pulse)
+                self.assertEqual(rgb[letter_o:letter_o + 3], bytes(activity_render.PULSE_COLORS[stage]))
+                renderer.frame_sent()
+            base, from_pulse = renderer(600)
+            self.assertFalse(from_pulse)
+            expected_base = activity_render.render_rgb888(state)
+            self.assertEqual(base, expected_base, msg="after stage 3 the display must return to current status colors")
+            self.assertEqual(calls, [2.0], msg="150 ms display ticks must not become 6.67 Hz source polling")
+        finally:
+            mcp_activity.collect_once = original_collect
+            mcp_activity.save_state = original_save
+
     def test_every_state_health_and_activity_combination_encodes_for_the_device(self) -> None:
         worst = 0
         for combo in itertools.product(("green", "yellow", "red", "grey"), repeat=3):
@@ -1489,8 +1531,8 @@ HOST_DIR = ROOT / "runtime/windows/OpenDitoo.Day1.Host"
 
 def _valid_manifest(**overrides) -> dict:
     """The smallest manifest that passes, so each test can break exactly one thing."""
-    session = {"lifetime_seconds": 300, "min_frame_interval_ms": 1118,
-               "pulse_freshness_seconds": 30, "poll_interval_ms": 1000,
+    session = {"lifetime_seconds": 300, "min_frame_interval_ms": 150,
+               "pulse_freshness_seconds": 30, "poll_interval_ms": 150,
                "activation_source": "three MCP audit sources",
                "automatic_retry": False, "automatic_reconnect": False,
                "stock_screen_reclaim": False, "replay_after_interruption": False}
@@ -1552,16 +1594,17 @@ class N2SessionManifestTests(unittest.TestCase):
         self._refuses("AUTHORITY_EXPERIMENT_ID_MISMATCH",
                       **{"authority": {**_valid_manifest()["authority"], "experiment_id": "SOMETHING-ELSE"}})
 
-    def test_pacing_faster_than_the_accepted_ceiling_is_refused(self) -> None:
-        # 1000 ms is the proven inter-frame DELAY, not a proven 1 fps rate. The accepted
-        # measurement is ~1118 ms per frame start, and nothing may quietly beat it.
-        self._refuses("SESSION_PACING_BELOW_ACCEPTED_CEILING", **{"session.min_frame_interval_ms": 1000})
+    def test_pacing_faster_than_the_product_operating_floor_is_refused(self) -> None:
+        # R4 sustained 131 ms / 7.63 fps and R5 reached 54.2 ms / 18.46 fps, but the
+        # product deliberately operates at 150 ms / 6.67 fps for jitter headroom.
+        self._refuses("SESSION_PACING_BELOW_ACCEPTED_CEILING", **{"session.min_frame_interval_ms": 149})
 
     def test_budgets_must_be_derived_not_asserted(self) -> None:
         self._refuses("BUDGET_PACKETS_NOT_DERIVED", **{"budgets.max_application_packets": 61})
         self._refuses("BUDGET_FRAMES_EXCEED_LIFETIME",
-                      **{"budgets": {**_valid_manifest()["budgets"], "max_frames": 400,
-                                     "max_application_packets": 1200}})
+                      **{"session": {**_valid_manifest()["session"], "lifetime_seconds": 1},
+                         "budgets": {**_valid_manifest()["budgets"], "max_frames": 8,
+                                     "max_application_packets": 24}})
         self._refuses("BUDGET_CONNECTION_ATTEMPTS_INVALID", **{"budgets.connection_attempts": 2})
 
     def test_a_lifetime_beyond_the_supervised_ceiling_is_refused(self) -> None:
@@ -1636,7 +1679,7 @@ class N3SchedulerTests(unittest.TestCase):
     BLUE = bytes([0, 0, 255]) * 256
     GREEN = bytes([0, 255, 0]) * 256
 
-    def _scheduler(self, interval: int = 1118, freshness: int = 30_000):
+    def _scheduler(self, interval: int = 150, freshness: int = 30_000):
         return activity_session.ChangeOnlyScheduler(interval, freshness)
 
     def test_an_unchanged_scene_sends_nothing_ever(self) -> None:
@@ -1652,10 +1695,10 @@ class N3SchedulerTests(unittest.TestCase):
     def test_the_accepted_interval_is_a_ceiling_not_a_heartbeat(self) -> None:
         s = self._scheduler()
         s.observe(0, self.RED); s.sending(0); s.sent()
-        s.observe(500, self.BLUE)
-        self.assertEqual(s.next_action(500), ("hold", "pacing"))
-        self.assertEqual(s.next_action(1117), ("hold", "pacing"))
-        self.assertEqual(s.next_action(1118), ("send", "changed"))
+        s.observe(50, self.BLUE)
+        self.assertEqual(s.next_action(50), ("hold", "pacing"))
+        self.assertEqual(s.next_action(149), ("hold", "pacing"))
+        self.assertEqual(s.next_action(150), ("send", "changed"))
 
     def test_a_burst_coalesces_to_the_newest_frame_and_queues_nothing(self) -> None:
         s = self._scheduler()
@@ -1669,7 +1712,7 @@ class N3SchedulerTests(unittest.TestCase):
         s = self._scheduler(freshness=5_000)
         s.observe(0, self.RED); s.sending(0); s.sent()
         s.observe(100, self.BLUE, from_pulse=True)
-        self.assertEqual(s.next_action(1000), ("hold", "pacing"))
+        self.assertEqual(s.next_action(120), ("hold", "pacing"))
         self.assertEqual(s.next_action(20_000), ("hold", "pulse_expired"))
         # It is gone, not deferred: a later slot must not resurrect it.
         self.assertEqual(s.next_action(30_000), ("hold", "no_render_yet"))
@@ -1678,9 +1721,9 @@ class N3SchedulerTests(unittest.TestCase):
     def test_a_pulse_survives_to_the_next_permitted_slot_inside_its_window(self) -> None:
         s = self._scheduler(freshness=30_000)
         s.observe(0, self.RED); s.sending(0); s.sent()
-        s.observe(100, self.BLUE, from_pulse=True)   # arrives while pacing forbids sending
-        self.assertEqual(s.next_action(200), ("hold", "pacing"))
-        self.assertEqual(s.next_action(1118), ("send", "changed"))
+        s.observe(50, self.BLUE, from_pulse=True)   # arrives while pacing forbids sending
+        self.assertEqual(s.next_action(100), ("hold", "pacing"))
+        self.assertEqual(s.next_action(150), ("send", "changed"))
 
     def test_a_persisting_scene_cannot_renew_a_pulse_window_indefinitely(self) -> None:
         s = self._scheduler(freshness=5_000)
@@ -1751,14 +1794,15 @@ class N3SessionRunTests(unittest.TestCase):
 
     def _run(self, frames, transport=None, **overrides):
         """Drive a fixed list of rendered frames on a fake clock and fake transport."""
-        # One poll per second, so a lifetime of len(frames) seconds ends the run exactly
-        # when the scripted frames run out.
-        lifetime = len(frames)
-        overrides.setdefault("session", {**_valid_manifest()["session"],
-                                         "lifetime_seconds": lifetime})
-        cap = lifetime * 1000 // 1118 + 1
-        overrides.setdefault("budgets", {**_valid_manifest()["budgets"], "max_frames": cap,
-                                         "max_application_packets": cap * 3})
+        session = {**_valid_manifest()["session"]}
+        session.update(overrides.pop("session", {}))
+        poll_ms = session["poll_interval_ms"]
+        # Cover every scripted tick, then let the next loop observe the lifetime bound.
+        session["lifetime_seconds"] = max(1, (len(frames) * poll_ms + 999) // 1000)
+        overrides["session"] = session
+        cap = session["lifetime_seconds"] * 1000 // session["min_frame_interval_ms"] + 1
+        overrides.setdefault("budgets", {**_valid_manifest()["budgets"], "max_frames": min(cap, 500),
+                                         "max_application_packets": min(cap, 500) * 3})
         with tempfile.TemporaryDirectory() as tmp:
             manifest = self._manifest(tmp, **overrides)
             transport = transport or activity_session.FakeSessionTransport()
@@ -1785,11 +1829,40 @@ class N3SessionRunTests(unittest.TestCase):
         self.assertEqual(result["frames_sent"], 1)
         self.assertGreater(result["holds"]["unchanged"], 20)
 
-    def test_an_alternating_scene_is_paced_by_the_accepted_interval(self) -> None:
-        result, transport = self._run([self.RED, self.BLUE] * 20)
-        # 40 polls at 1000 ms cannot admit more frame starts than 1118 ms allows.
-        self.assertLessEqual(len(transport.frames), 40_000 // 1118 + 1)
+    def test_an_alternating_scene_is_paced_by_the_product_interval(self) -> None:
+        result, transport = self._run(
+            [self.RED, self.BLUE] * 20,
+            **{"session": {**_valid_manifest()["session"], "poll_interval_ms": 100}})
+        # 40 render ticks at 100 ms cannot admit more frame starts than 150 ms allows.
+        self.assertLessEqual(len(transport.frames), 4_000 // 150 + 1)
         self.assertIn("pacing", result["holds"])
+
+    def test_transport_time_consumes_the_tick_budget_instead_of_adding_to_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._manifest(tmp,
+                **{"session": {**_valid_manifest()["session"], "lifetime_seconds": 1},
+                   "budgets": {**_valid_manifest()["budgets"], "max_frames": 7,
+                               "max_application_packets": 21}})
+            clock = {"ms": 0}
+            starts = []
+
+            class SlowFake(activity_session.FakeSessionTransport):
+                def send_frame(inner_self, rgb, expected_packet_sha256):
+                    starts.append(clock["ms"])
+                    clock["ms"] += 70  # stand in for HTTP + Bluetooth send/ACK work
+                    return super().send_frame(rgb, expected_packet_sha256)
+
+            index = {"i": 0}
+            frames = [self.RED, self.BLUE] * 4
+            def render(_now):
+                frame = frames[index["i"] % len(frames)]
+                index["i"] += 1
+                return frame, False
+
+            activity_session.run_session(
+                manifest, SlowFake(), render, lambda: clock["ms"],
+                lambda ms: clock.__setitem__("ms", clock["ms"] + ms), max_iterations=12)
+            self.assertEqual(starts[:4], [0, 150, 300, 450])
 
     def test_an_unsolicited_state_report_stops_the_session_and_yields(self) -> None:
         transport = activity_session.FakeSessionTransport(
@@ -1961,6 +2034,8 @@ class N3HostBoundaryTests(unittest.TestCase):
         self.assertIn(f"MaxLifetimeSeconds = {activity_session.MAX_SESSION_LIFETIME_SECONDS};", src)
         self.assertIn(f"MaxFrames = {activity_session.MAX_SESSION_FRAMES};", src)
         self.assertIn("SESSION_PACING_BELOW_ACCEPTED_CEILING", src)
+        self.assertIn("ActivitySendSpacingMs = 10;", src)
+        self.assertIn("SendFrameGroup(packets, null, framesSent, ActivitySendSpacingMs)", src)
 
     def test_the_host_bounds_a_session_without_the_worker(self) -> None:
         src = (HOST_DIR / "ActivitySessionHost.cs").read_text(encoding="utf-8")

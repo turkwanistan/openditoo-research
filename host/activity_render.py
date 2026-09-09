@@ -57,6 +57,11 @@ FAULT_HEALTH = {"unavailable", "stale"}
 FAULT_MARKER = ((1, 0), (2, 0), (3, 0))
 FAULT_RGB = (170, 0, 0)
 
+# The operator-approved four-stage activity pulse. At the product cadence of 150 ms
+# per frame start this is a ~0.60 s blue/cyan shimmer. The static reference mockups
+# remain the stage-agnostic acceptance baseline; live animation passes an explicit stage.
+PULSE_COLORS = ((0, 255, 255), (0, 170, 255), (85, 170, 255), (0, 255, 255))
+
 # Which pixel index belongs to which source column, precomputed once.
 _SLOT_OF = {}
 for _source_id, _base in SLOTS.items():
@@ -83,7 +88,8 @@ def status_for(source: dict, now: datetime) -> str:
     return "red"
 
 
-def describe(state: dict, now: datetime | None = None, pulses: set[str] | None = None) -> dict:
+def describe(state: dict, now: datetime | None = None, pulses: set[str] | None = None,
+             pulse_stage: int | None = None) -> dict:
     now = now or utc_now()
     pulses = pulses or set()
     out = {}
@@ -93,6 +99,7 @@ def describe(state: dict, now: datetime | None = None, pulses: set[str] | None =
         out[source_id] = {
             "status": status_for(source, now),
             "activity_pulse": source_id in pulses,
+            "activity_pulse_stage": pulse_stage if source_id in pulses else None,
             "fault": health in FAULT_HEALTH,
             # `status` alone cannot distinguish idle from unreachable -- both are grey.
             # The fault bar does that on the panel; this does it in JSON.
@@ -106,8 +113,12 @@ def describe(state: dict, now: datetime | None = None, pulses: set[str] | None =
     return out
 
 
-def render_rgb888(state: dict, now: datetime | None = None, pulses: set[str] | None = None) -> bytes:
-    summary = describe(state, now, pulses)
+def render_rgb888(state: dict, now: datetime | None = None, pulses: set[str] | None = None,
+                  pulse_stage: int | None = None) -> bytes:
+    if pulse_stage is not None and not 0 <= pulse_stage < len(PULSE_COLORS):
+        raise ValueError(f"pulse_stage must be 0..{len(PULSE_COLORS) - 1}")
+    summary = describe(state, now, pulses, pulse_stage)
+    pulse_rgb = PULSE_COLORS[pulse_stage] if pulse_stage is not None else OVERRIDE_RGB
     pixels = [BLACK] * (SIZE * SIZE)
 
     for index, color in FIXED:
@@ -116,7 +127,7 @@ def render_rgb888(state: dict, now: datetime | None = None, pulses: set[str] | N
     for index, role in _ROLE_OF.items():
         source_id = _SLOT_OF[index]
         if summary[source_id]["activity_pulse"]:
-            pixels[index] = OVERRIDE_RGB
+            pixels[index] = pulse_rgb
         else:
             pixels[index] = ROLE_COLORS[role][summary[source_id]["status"]]
 
@@ -133,7 +144,7 @@ def render_rgb888(state: dict, now: datetime | None = None, pulses: set[str] | N
                 pixels[dy * SIZE + base + dx] = FAULT_RGB
         elif view["activity_pulse"]:
             for dx, dy, color in CROWN:
-                pixels[dy * SIZE + base + dx] = color
+                pixels[dy * SIZE + base + dx] = pulse_rgb if pulse_stage is not None else color
 
     return b"".join(bytes(color) for color in pixels)
 
@@ -190,5 +201,5 @@ LEGEND = {
     "accents": "mushroom cap recolours as a whole; bunny and skull recolour their eyes only",
     "fault": "a dim red bar in the crown row means the collector could not read that source (unavailable) or has stopped reading it (stale) -- as opposed to grey, which means it read fine and there was simply nothing to report. A source that has never been polled shows neither.",
     "color_model": "RGB888, as the exact unit's stock 0x44 path uses. The artwork's RGB222 values are inherited design, not a device limit.",
-    "animation": "the crown is shown while activity is fresh. The approved four-stage blue pulse is NOT animated: at the accepted ~1118 ms per frame it would be decimated to noise, so the crown is static and the blue override is the visible activity signal.",
+    "animation": "live activity uses the approved four-stage cyan/blue/light-blue/cyan pulse at the 150 ms product frame-start cadence (~0.60 s for four ACKed stages); the active column's crown, letter and icon accent change together, then return to status color. Static previews without a stage retain the approved reference-frame blue override.",
 }
