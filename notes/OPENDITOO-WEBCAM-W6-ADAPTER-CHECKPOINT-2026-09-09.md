@@ -16,8 +16,14 @@ and `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md` remain authoritative.
 ## Finish W6 offline from a Windows-capable local WSL session
 
 The WinRT camera binary must execute from a local Windows path, never `\wsl.localhost`.
-Rebuild first, copy the Release output to `C:\temp\openditoo-webcam-runner`, then run only these
-**offline** runner modes before touching authority:
+The preferred path is now one command:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify_webcam_w6_windows.ps1
+```
+
+That script rebuilds first, copies the Release output to `C:\temp\openditoo-webcam-runner`,
+then runs only these **offline** runner modes before touching authority:
 
 ```text
 OpenDitoo.Webcam.Runner.exe selftest
@@ -27,8 +33,10 @@ OpenDitoo.Webcam.Runner.exe soak
 ```
 
 `soak` is five minutes, uses the real camera but an in-memory typed Host, and performs no Ditoo
-I/O. Also exercise the `camera_ready` nonce handshake without allowing `/v1/session/open`, then
-re-freeze hashes and run:
+I/O. The wrapper also exercises the `camera_ready` nonce negative control with a temporary
+synthetic identity, creates no claim, and never sends `execute:<nonce>`, so `/v1/session/open` is
+unreachable in that check. The WSL coordinator separately verifies exact Host identity and idle
+controller ownership before any real one-use claim. After the wrapper passes, re-freeze hashes and run:
 
 ```text
 python3 scripts/verify_day1_offline.py

@@ -4,11 +4,14 @@ The live repository is authoritative over this note. Re-verify rather than inher
 
 This recovery started from committed baseline `da77b6f`; the interrupted W6 adapter work was
 recovered from the local Codex session and preserved as the next coherent checkpoint.
-`python3 scripts/verify_day1_offline.py` passes **236 tests** with `device_io=false`. The source
+`python3 scripts/verify_day1_offline.py` passes **239 tests** with `device_io=false`. The source
 session recorded a successful Windows Release build of `OpenDitoo.Webcam.Runner` with zero
-warnings/errors. This WSL_MCP sandbox does **not** expose `powershell.exe`, `/mnt/c`, or the
-Windows Host loopback, so it cannot honestly re-run Windows-local adapter/camera checks here.
-No webcam grant, experiment claim, or Ditoo transmission was created by the interrupted work.
+warnings/errors. This WSL_MCP sandbox does **not** expose `powershell.exe`, `/mnt/c`, Windows
+`dotnet`, or `/dev/video*`; direct PE launch also fails under its isolated `/proc`, so it cannot
+honestly execute the Windows-local adapter/camera checks. With sandbox networking explicitly on,
+the existing typed Host **is** reachable at `127.0.0.1:8796`; Runtime 003 is healthy and the MCP
+dashboard currently owns an active session. No webcam grant, experiment claim, or Ditoo
+transmission was created by the interrupted/recovery work.
 
 ## 0. Read in this order
 
@@ -131,11 +134,15 @@ device receives:
 
 ## 6. Next objective, in order
 
-1. **Finish W6 offline verification from a Windows-capable local WSL session.** Rebuild and stage
-   `OpenDitoo.Webcam.Runner` to `C:\temp\openditoo-webcam-runner`; run its adapter selftest,
-   transform parity and encoder parity; exercise the camera-ready-before-durable-claim handshake
-   without opening a Ditoo session; then run the five-minute camera/allocation soak. These are the
-   only remaining engineering blockers in the review envelope.
+1. **Finish W6 offline verification from a Windows-capable local WSL session.** Run:
+
+   `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify_webcam_w6_windows.ps1`
+
+   It rebuilds/stages only the webcam runner, executes adapter + parity tests, proves the
+   camera-ready nonce negative control without a claim/Host session, and performs the five-minute
+   real-camera/in-memory-Host soak. These are the only remaining engineering blockers in the
+   review envelope. `host/webcam_trial.py` now also read-only checks exact Host identity and idle
+   controller ownership **before** consuming the one-use claim.
 2. **Freeze the final W6 hashes and re-run the review checker.** The corrected first-trial envelope
    is a permanent **40 ms Host floor** plus a separate **90 ms client dispatch cadence**, 10 s,
    at most **112 frames / 336 application packets / 118,048 application bytes**. The earlier

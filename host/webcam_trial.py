@@ -4,6 +4,8 @@ from pathlib import Path
 import re
 import select
 import subprocess
+import stat
+import urllib.request
 
 from host import activity_session, frame_stream
 
@@ -20,6 +22,46 @@ def executable_path(windows: str) -> Path:
     if not re.fullmatch(r"C:\\[^\r\n]+\\OpenDitoo.Webcam.Runner.exe", windows) or ".." in windows.split("\\"):
         raise ValueError("ADAPTER_WINDOWS_PATH_INVALID")
     return Path("/mnt/c") / windows[3:].replace("\\", "/")
+
+
+def _validate_host_preclaim_status(body: object) -> None:
+    if not isinstance(body, dict):
+        raise ValueError("HOST_PRECLAIM_STATUS_INVALID")
+    required = {
+        "apiVersion": 1, "service": "OpenDitoo Day1 Host",
+        "hostRuntime": ".NET", "bind": "127.0.0.1", "port": 8796,
+        "masterTransmitEnabled": True, "target": "11:75:58:CE:DE:C7",
+        "targetBound": True, "rawSendEnabled": False,
+    }
+    if any(body.get(key) != value for key, value in required.items()):
+        raise ValueError("HOST_PRECLAIM_IDENTITY_MISMATCH")
+    if "activity-session" not in body.get("capabilities", []):
+        raise ValueError("HOST_PRECLAIM_SESSION_CAPABILITY_MISSING")
+    if body.get("activitySession", {}).get("active") is True:
+        raise ValueError("HOST_PRECLAIM_CONTROLLER_NOT_IDLE")
+    if body.get("diagnostics", {}).get("operationInProgress") is True:
+        raise ValueError("HOST_PRECLAIM_OPERATION_IN_PROGRESS")
+
+
+def _host_preclaim_status() -> dict:
+    token_path = ROOT / ".openditoo-local/host.token"
+    info = token_path.stat()
+    if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077:
+        raise ValueError("HOST_TOKEN_MODE_INVALID")
+    token = token_path.read_text(encoding="utf-8").strip()
+    if len(token) < 32:
+        raise ValueError("HOST_TOKEN_INVALID")
+    request = urllib.request.Request(
+        "http://127.0.0.1:8796/v1/status",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+    )
+    with urllib.request.urlopen(request, timeout=3.0) as response:
+        raw = response.read(1024 * 1024 + 1)
+    if len(raw) > 1024 * 1024:
+        raise ValueError("HOST_PRECLAIM_STATUS_TOO_LARGE")
+    body = json.loads(raw.decode("utf-8"))
+    _validate_host_preclaim_status(body)
+    return body
 
 
 def review(path: Path, *, authority: bool = False):
@@ -81,6 +123,9 @@ def run(path: Path) -> dict:
                              capture_output=True, text=True, timeout=5)
     if service.stdout.strip() != "inactive":
         raise ValueError("PRODUCT_CONTROLLER_MUST_BE_STOPPED")
+    # Do not consume the one-use experiment id while the old controller/session still owns
+    # the Host. This status call is read-only and performs no device I/O.
+    _host_preclaim_status()
     digest = activity_session.sha256_file(path)
     claimed = False
     result = {"outcome": "unknown", "terminalReason": "runner_failed"}

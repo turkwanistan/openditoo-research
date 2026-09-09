@@ -69,7 +69,10 @@ The MCP dashboard is already the owner's working everyday baseline. Do not reope
 
 P2/P3/P4 and Runtime 003 deployment are closed. Finish the recovered adapter's Windows-local
 verification, pre-claim handshake check, five-minute soak, and final hash freeze before calling
-W6 execution-ready. Do not claim, stop the product, or transmit while preparing it.
+W6 execution-ready. Preferred offline command from a Windows-capable local WSL session:
+`powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify_webcam_w6_windows.ps1`.
+The coordinator now refuses a non-idle Host **before** one-use claim consumption. Do not claim,
+stop the product, or transmit while preparing it.
 
 Use `PRODUCT.md` for normal operation. The reliable startup design boundary remains current-user Windows logon / StartWhenAvailable; a real Windows reboot/login observation is intentionally deferred and is not to be invented as accepted evidence.
 

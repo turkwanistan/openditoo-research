@@ -658,3 +658,40 @@ named-grant boundary.
 - **W10:** only after experimental acceptance, add operator-friendly start/stop/preview polish and
   decide whether webcam merits its own separate standing product authority. Runtime 003 remains
   the MCP dashboard authority and is not widened by this work.
+
+
+## 16. W6 continuation — pre-claim ownership hardening and one-command Windows verifier
+
+A follow-up WSL_MCP session continued from `661446f`. With sandbox networking explicitly
+enabled, the existing Host is reachable at `127.0.0.1:8796`; Runtime 003/product status was
+healthy and the MCP dashboard owned an active `activity` session. The default no-network sandbox
+was the reason earlier Host status probes appeared unavailable.
+
+That observation exposed one useful ordering improvement in the recovered W6 coordinator. The
+coordinator already required `openditoo-product.service` to be inactive before a webcam claim,
+but the Host's own session-idle check lived in the Windows sender after the one-use WSL claim.
+`host/webcam_trial.py` now performs an authenticated **read-only Host status/identity/ownership
+precheck before claim consumption**. It requires the exact fixed Host identity/target, the typed
+`activity-session` capability, no active activity session and no operation in progress. Against
+the currently active dashboard it correctly fails with `HOST_PRECLAIM_CONTROLLER_NOT_IDLE`; no
+webcam claim is created. Offline tests pin both the status validator and the ordering.
+
+The repository now also contains `scripts/verify_webcam_w6_windows.ps1`, a single offline-only
+Windows verification entry point. It:
+
+1. rebuilds **only** `OpenDitoo.Webcam.Runner` and stages it to `C:\temp\openditoo-webcam-runner`;
+2. runs adapter selftest plus transform/encoder parity fixtures;
+3. exercises the real camera-ready nonce boundary with temporary synthetic identity
+   `OPENDITOO-WEBCAM-N980P-998`, deliberately creating **no durable claim** and never writing
+   `execute:<nonce>`, so the runner cannot reach `TypedSession.Live`;
+4. runs the five-minute real-camera allocation soak against the in-memory typed Host; and
+5. reports `device_io=false`, `host_session_io=false`, `claim_created=false`.
+
+A unit test scans this verifier and forbids `StandardInput.Write`, `cli/webcam.py` and
+`SessionClaim`, preserving the negative-control boundary. Current offline suite: **239 tests PASS**.
+
+The remaining limitation is environmental, not inferred away: WSL_MCP's bubblewrap sandbox hides
+`/mnt/c`, exposes no `powershell.exe`/Windows `dotnet`, breaks WSL PE interop because its `/proc`
+view is isolated, and exposes no `/dev/video*`. Therefore this session cannot execute the Windows
+camera verifier itself. **W6 remains not grant-ready until that script passes in a Windows-capable
+local WSL session and the final executing build hashes are re-frozen.**

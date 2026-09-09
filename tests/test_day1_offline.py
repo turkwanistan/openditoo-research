@@ -3546,6 +3546,45 @@ class W6WebcamReviewTests(unittest.TestCase):
         self.assertEqual(adapter["routes"], ["/v1/status", "/v1/session/open",
                                              "/v1/session/frame", "/v1/session/close"])
 
+    def test_webcam_preclaim_host_status_requires_idle_exact_typed_host(self) -> None:
+        from host import webcam_trial
+        healthy = {
+            "ok": True, "apiVersion": 1, "service": "OpenDitoo Day1 Host",
+            "hostRuntime": ".NET", "bind": "127.0.0.1", "port": 8796,
+            "masterTransmitEnabled": True, "target": "11:75:58:CE:DE:C7",
+            "targetBound": True, "rawSendEnabled": False,
+            "capabilities": ["status", "activity-session"],
+            "activitySession": {"active": False},
+            "diagnostics": {"operationInProgress": False},
+        }
+        webcam_trial._validate_host_preclaim_status(healthy)
+        for mutation, code in (
+            (("target", "wrong"), "HOST_PRECLAIM_IDENTITY_MISMATCH"),
+            (("activitySession", {"active": True}), "HOST_PRECLAIM_CONTROLLER_NOT_IDLE"),
+            (("diagnostics", {"operationInProgress": True}), "HOST_PRECLAIM_OPERATION_IN_PROGRESS"),
+        ):
+            body = json.loads(json.dumps(healthy))
+            body[mutation[0]] = mutation[1]
+            with self.assertRaisesRegex(ValueError, code):
+                webcam_trial._validate_host_preclaim_status(body)
+
+    def test_webcam_claim_happens_only_after_idle_host_preclaim(self) -> None:
+        source = (ROOT / "host/webcam_trial.py").read_text(encoding="utf-8")
+        self.assertLess(source.index("_host_preclaim_status()", source.index("def run(")),
+                        source.index("claim.claim(", source.index("def run(")))
+
+    def test_w6_windows_verifier_cannot_cross_the_nonce_boundary(self) -> None:
+        script = (ROOT / "scripts/verify_webcam_w6_windows.ps1").read_text(encoding="utf-8")
+        self.assertIn("$runner selftest", script)
+        self.assertIn("$runner transform-selftest", script)
+        self.assertIn("$runner encoder-selftest", script)
+        self.assertIn("$runner soak", script)
+        self.assertIn("OPENDITOO-WEBCAM-N980P-998", script)
+        self.assertNotIn("StandardInput.Write", script)
+        self.assertNotIn("cli/webcam.py", script)
+        self.assertNotIn("SessionClaim", script)
+        self.assertIn("claim_created=false host_session_io=false device_io=false", script)
+
     def test_review_does_not_grant_or_rearm_authority(self) -> None:
         with self.assertRaises(frame_stream.SessionError) as caught:
             frame_stream.load_stream_manifest(self.MANIFEST)
