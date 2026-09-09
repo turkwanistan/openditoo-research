@@ -472,3 +472,71 @@ The dry run exercises the fake Host's refusal paths by construction, but **camer
 during a live session** and **a real Host fault** are not yet exercised end to end. Both are
 listed in the plan's W5 offline tests. They need fault injection in the sidecar, which is the
 first thing to add before W6 freezes a trial manifest.
+
+## 13. W5 fault injection — verified 2026-09-09
+
+Continued from clean HEAD `97c927b`; fresh baseline verifier: 234 tests PASS. Windows bridge
+and read-only Host status work with sandbox escalation. Product status reports connected,
+no errors, no authority blockers, runtime_revision 2. The installed Host hash was re-read:
+`0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb`, matching Runtime 003.
+No product stop, Host rebuild/deploy, experiment claim or Ditoo transmission was performed.
+
+`DryRunSession` now owns the dry-run lifecycle. It validates the first transformed frame and
+encoder hash before constructing the fake session (the simulated open/claim boundary).
+Camera failure publishes a terminal stop before waiting for any in-flight ACK, then closes
+once. Every refusal stops the sender; a failed frame or close remains terminal `unknown`.
+The real camera's `MediaCapture.Failed` event and callback/transform exceptions use that path.
+Cancellation during a simulated ACK can no longer increment the ACKed-frame count.
+
+Correction to §12: the previous fake returned a nonterminal pacing refusal and the sender
+continued after some refusals. The new pacing test proves the terminal behavior; the healthy
+control proves the sender was not merely disabled to make the negative tests pass.
+
+Reproduce from Windows (default is camera-free; add `-CameraFaults` for the real camera):
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify_webcam_offline.ps1 -CameraFaults
+```
+
+The script builds only the webcam probe, copies it into a fresh Windows temporary directory,
+and runs all checks there. It leaves that directory for inspection and writes no camera images.
+
+- Build: zero warnings/errors.
+- `fault-selftest`: 11 cases PASS (healthy, pre-open disconnect, mid-session disconnect,
+  Host frame fault, ambiguous close, invalid first frame, frame/byte/lifetime ceilings,
+  pacing refusal, cancelled ACK). Terminal-state negative controls attempt another send and
+  cleanup and assert unchanged open/send/close counts.
+- `transform-selftest`: 15 cases PASS; `encoder-selftest`: 6 cases PASS.
+- Real NV12 640×480@60 capture with in-memory Host, 3 s envelope, 65 ms simulated ACK:
+
+| Injected condition | Opens | Send attempts | Closes | Outcome |
+| --- | ---: | ---: | ---: | --- |
+| healthy control | 1 | 36 | 1 | stopped_clean |
+| camera before open | 0 | 0 | 0 | not_opened |
+| camera after first ACK | 1 | 1 | 1 | stopped_clean |
+| Host loses second frame result | 1 | 2 | 1 | unknown |
+| close loses result | 1 | 1 | 1 | unknown |
+
+These are injected failures, not a physical unplug or actual Host outage. The fake is the only
+transport. W2's owner-dependent ranking and §11's camera-rate exception remain unchanged.
+The earlier 20 s allocation measurement is not a five-minute soak; that longer plan criterion
+has not been demonstrated by these fault tests.
+
+## 14. W6 prerequisite correction — live adapter is missing
+
+The previous handoff implied that fault injection followed by a manifest was enough to reach
+the grant boundary. Source inspection disproves that: `stream-run` dereferences
+`frame_set.sha256` and never injects a `LiveFrameSource`; `stream-preview` also assumes a frame
+set. The probe only runs its delay/in-memory transports. A manifest accepted by
+`load_stream_manifest(..., require_authority=False)` is therefore not an executable webcam
+trial, and the missing adapter's future code/build cannot yet be hash-frozen.
+
+Before a grant-ready W6: connect the freshest-frame camera producer to the existing typed
+session client, verify its camera-preflight-before-claim and terminal fault behavior offline,
+then freeze all executable code/build hashes. Keep the probe's no-device boundary, one
+controller, named profile and Runtime 003 identity. Do not weaken the sidecar boundary scan
+or silently route the hot frame loop through WSL merely to make `stream-run` accept a camera.
+
+The first trial remains bounded to 10 s on the exact Ditoo, with no retry/reconnect/reclaim.
+Its concrete pacing and derived budgets must match the implemented adapter. Do not request
+a live grant on the strength of the passing W5 fake alone.

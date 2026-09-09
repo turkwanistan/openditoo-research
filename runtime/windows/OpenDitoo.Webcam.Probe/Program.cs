@@ -83,6 +83,8 @@ static async Task<(MediaCapture? Capture, string Strategy, List<string> Errors)>
 
 var mode = args.Length > 0 ? args[0] : "enumerate";
 
+if (mode == "fault-selftest") return OpenDitoo.Webcam.Probe.DryRunSession.SelfTest();
+
 // Offline parity check against the Python reference. Starts no camera and touches nothing.
 if (mode == "encoder-selftest")
 {
@@ -630,6 +632,11 @@ if (mode == "dryrun")
     var wantFps = double.Parse(args[4]);
     var seconds = int.Parse(args[5]);
     var fakeAckMs = int.Parse(args[6]);
+    if (seconds is < 1 or > 600 || fakeAckMs is < 40 or > 100)
+        return Fail("dryrun seconds must be 1..600 and fakeAckMs 40..100");
+    var fault = args.Length > 7 ? args[7] : "none";
+    if (fault is not ("none" or "camera_before_open" or "camera_mid_session" or "host_frame_fault" or "close_fault"))
+        return Fail("unknown dryrun fault");
 
     var target = groups.FirstOrDefault(g => g.DisplayName.Contains("NexiGo", StringComparison.OrdinalIgnoreCase))
                  ?? groups[0];
@@ -664,14 +671,28 @@ if (mode == "dryrun")
     // Host's own 500-frame ceiling, and the encoder's worst-case bytes per frame.
     var floorMs = 40;
     var frameCeiling = Math.Min(seconds * 1000 / floorMs + 1, 500);
-    var session = new OpenDitoo.Webcam.Probe.FakeTypedHostSession(
+    var session = new OpenDitoo.Webcam.Probe.DryRunSession(() => new OpenDitoo.Webcam.Probe.FakeTypedHostSession(
         OpenDitoo.Webcam.Probe.FakeTypedHostSession.ProfileStreamingAckClock,
-        seconds, floorMs, frameCeiling, frameCeiling * 1054, fakeAckMs);
+        seconds, floorMs, frameCeiling, frameCeiling * 1054, fakeAckMs)
+    {
+        FaultOnFrame = fault == "host_frame_fault" ? 2 : 0,
+        FaultOnClose = fault == "close_fault",
+    });
+    using var stopping = new CancellationTokenSource(TimeSpan.FromSeconds(seconds));
+    void StopCamera(string reason)
+    {
+        session.Stop(reason);
+        stopping.Cancel();
+    }
+    capture.Failed += (_, _) => StopCamera("camera_disconnected");
 
     using var reader = await capture.CreateFrameReaderAsync(source, MediaEncodingSubtypes.Bgra8);
     reader.AcquisitionMode = MediaFrameReaderAcquisitionMode.Realtime;
     reader.FrameArrived += (sender, _) =>
     {
+        if (stopping.IsCancellationRequested || session.Stopped) return;
+        try
+        {
         using var frame = sender.TryAcquireLatestFrame();
         var bitmap = frame?.VideoMediaFrame?.SoftwareBitmap;
         if (bitmap is null) return;
@@ -686,14 +707,22 @@ if (mode == "dryrun")
             bgra, converted.PixelWidth, converted.PixelHeight,
             frame!.SystemRelativeTime?.TotalMilliseconds ?? QpcNowMs()));
         maxRawDepth = Math.Max(maxRawDepth, rawSlot.Depth);
+        }
+        catch (Exception) { StopCamera("camera_disconnected"); }
     };
 
-    using var stopping = new CancellationTokenSource(TimeSpan.FromSeconds(seconds));
     using var timerResolution = OpenDitoo.Webcam.Probe.PreciseDelay.HighResolutionScope();
-    await reader.StartAsync();
+    try
+    {
+        if (await reader.StartAsync() != MediaFrameReaderStartStatus.Success)
+            StopCamera("camera_start_failed");
+    }
+    catch (Exception) { StopCamera("camera_start_failed"); }
 
     var processor = RunOnDedicatedThread(() =>
     {
+        try
+        {
         while (!stopping.IsCancellationRequested)
         {
             if (!rawSlot.Wait(stopping.Token)) continue;
@@ -710,11 +739,13 @@ if (mode == "dryrun")
             readySlot.Put((new OpenDitoo.Webcam.Probe.TimedFrame(pixels, 16, 16, raw.CapturedQpcMs), sha));
             maxReadyDepth = Math.Max(maxReadyDepth, readySlot.Depth);
         }
+        }
+        catch (Exception) { StopCamera("transform_fault"); }
     });
 
     var sender = RunOnDedicatedThread(() =>
     {
-        while (!stopping.IsCancellationRequested && !session.Expired)
+        while (!stopping.IsCancellationRequested && !session.Stopped)
         {
             if (!readySlot.TryTake(out var ready))
             {
@@ -722,25 +753,28 @@ if (mode == "dryrun")
                 continue;
             }
             var age = QpcNowMs() - ready.Frame.CapturedQpcMs;
-            var outcome = session.SendFrame(ready.Frame.Pixels, ready.Sha, stopping.Token);
+            if (fault == "camera_before_open") { StopCamera("camera_disconnected"); break; }
+            // Stop admits no new frames, but let the one already submitted finish its ACK.
+            var outcome = session.SendFrame(ready.Frame.Pixels, ready.Sha, CancellationToken.None);
             if (outcome.Ok)
             {
                 lock (ageAtSendMs) { ageAtSendMs.Add(age); hostElapsedMs.Add(outcome.HostElapsedMs); }
+                if (fault is "camera_mid_session" or "close_fault") StopCamera("camera_disconnected");
             }
             else
             {
                 lock (refusals)
                     refusals[outcome.ErrorCode!] = refusals.GetValueOrDefault(outcome.ErrorCode!) + 1;
-                if (outcome.ErrorCode is "SESSION_LIFETIME_EXPIRED" or "SESSION_FRAME_BUDGET_EXHAUSTED"
-                    or "SESSION_TX_BUDGET_EXHAUSTED") break;
+                stopping.Cancel();
+                break; // every refusal is terminal; never try the next frame as a retry
             }
             lock (memorySamples) memorySamples.Add(GC.GetTotalMemory(false));
         }
     });
 
     try { await Task.WhenAll(processor, sender); } catch (OperationCanceledException) { }
-    await reader.StopAsync();
-    session.Close("operator_stop");
+    session.Stop("operator_stop");
+    try { await reader.StopAsync(); } catch (Exception) { /* disconnected reader is already stopped */ }
 
     static object Stats(List<double> values)
     {
@@ -761,7 +795,7 @@ if (mode == "dryrun")
 
     Console.WriteLine(JsonSerializer.Serialize(new
     {
-        ok = true, command = "dryrun", deviceIo = false, ditooTouched = false, bluetoothTouched = false,
+        ok = session.TerminalOutcome == "stopped_clean", command = "dryrun", deviceIo = false, ditooTouched = false, bluetoothTouched = false,
         note = "in-memory typed-Host stand-in; the ACK is a delay and no socket is opened",
         negotiatedMode = new { subtype = source.CurrentFormat.Subtype,
                                width = source.CurrentFormat.VideoFormat.Width,
@@ -770,12 +804,15 @@ if (mode == "dryrun")
                                      : Math.Round((double)source.CurrentFormat.FrameRate.Numerator
                                                   / source.CurrentFormat.FrameRate.Denominator, 3) },
         preset = preset.Name,
-        sessionProfile = session.SessionProfile,
-        seconds, fakeAckMs,
+        sessionProfile = session.Host?.SessionProfile,
+        seconds, fakeAckMs, fault,
         cameraFps,
-        framesSent = session.FramesSent,
-        packetsSent = session.PacketsSent,
-        txBytesSent = session.TxBytesSent,
+        openAttempts = session.OpenAttempts,
+        sendAttempts = session.Host?.SendAttempts ?? 0,
+        closeAttempts = session.Host?.CloseAttempts ?? 0,
+        framesSent = session.Host?.FramesSent ?? 0,
+        packetsSent = session.Host?.PacketsSent ?? 0,
+        txBytesSent = session.Host?.TxBytesSent ?? 0,
         terminalReason = session.TerminalReason,
         terminalOutcome = session.TerminalOutcome,
         refusals,
@@ -799,7 +836,7 @@ if (mode == "dryrun")
             cameraFpsAtLeast58 = cameraFps >= 58.0,
         },
     }, new JsonSerializerOptions { WriteIndented = true }));
-    return 0;
+    return session.TerminalOutcome == "stopped_clean" ? 0 : 2;
 }
 
 return Fail($"unknown mode: {mode}");

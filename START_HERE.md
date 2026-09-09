@@ -6,8 +6,9 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 0. **Read `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` first** — the current handoff. Then
    `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md`. The external N980P webcam
-   plan is adopted as the route, with recorded amendments; its W0/W4 are done offline and the
-   Host streaming profile is built but **not deployed**. Then read
+   plan is adopted as the route, with recorded amendments. Runtime 003 is deployed;
+   W5 fault injection is verified (route §13). W6 has a missing live-adapter prerequisite
+   (route §14), not just an operator-grant boundary. Then read
    `notes/OPENDITOO-S1-STREAM-PRIMITIVE-2026-09-09.md`. It is the current
    route: the general 16x16 frame-streaming primitive is implemented, offline-verified and
    physically exercised once. `OPENDITOO-S1-STREAM-001` is **consumed** and may never be
@@ -34,31 +35,37 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | M0-M8 | complete; accepted evidence preserved |
 | M9 MCP activity application | complete; layout/activity/status/fault-display acceptance recorded |
 | R1-R5 rate ladder | complete; measured through 18.46 fps full-colour one-ACK-per-frame ceiling |
-| W4 streaming session profile | implemented + built + self-tested offline (204 tests). Host `bin/Streaming/net8.0` = `56e56e22...`, NOT deployed; `bin/Release/net8.0` still `fb750078...` so Runtime 002 stays valid. Deploying it needs Runtime 003 |
+| W4 streaming session profile | deployed under Runtime 003; installed/repository Host hash `0da3a18b...`. Streaming profile has not been exercised live |
+| W5 fault injection | PASS: 11 camera-free cases + 5 real-camera/in-memory-Host controls; both parity fixtures pass; route §13 |
+| W2 visual ranking | owner-dependent; harness complete, `srgb_area` remains provisional |
+| W6 trial freeze | missing live adapter; route §14 |
 | S2 stream-rate measurement | `OPENDITOO-S2-STREAM-RATE-001` consumed. Measured dispatch→ACK: median 66 ms, p95 93 ms at 1039 bytes. Dispatching at the 150 ms Host floor is FATAL (HTTP 429 on frame 10) — client must add 50 ms margin, so ~5 fps is today's safe cadence. Higher rates need a Host pacing change + Runtime 003. See `notes/OPENDITOO-STREAM-PRODUCER-CONTRACT-2026-09-09.md` |
 | S1 general frame streaming | **accepted**; `OPENDITOO-S1-STREAM-001` consumed, transport PASS (42 frames / 126 packets / 2982 bytes, clean close) and operator visual PASS |
 | A1 collection worker | installed/preserved; product owns collection while active |
-| P1 Runtime 001 | installed, standing local authority active, attach/reclaim/device-reconnect accepted |
-| P2 Runtime 002 | telemetry-only successor implemented/offline verified; committed template disabled; cutover requires its own named grant |
+| P1 Runtime 001 | historical accepted evidence; superseded and deliberately no longer hash-valid |
+| P2 Runtime 002 | telemetry accepted; superseded by Runtime 003 and deliberately no longer hash-valid |
+| Runtime 003 | active local product policy; connected, no errors, runtime_revision remains 2 |
 | P3 product evidence | closed for v1; normal MCP use accepted; forced healthy-Lab outage waived |
 | P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
 
 ### Authority state
 
-Activations 001–009 are consumed. No experimental one-shot transmission is live. Persistent Runtime 001 authority remains active only in the git-ignored mode-0600 `.openditoo-local/product-runtime-policy.json`; its code remains hash-valid and restart-safe.
+Activations 001–009, R1–R5, S1 and S2 are consumed. No experimental one-shot transmission is live. Runtime 003 authority remains active only in the git-ignored mode-0600 `.openditoo-local/product-runtime-policy.json`; product status reports no authority blockers.
 
-Runtime 002 is a separate reviewed product policy at `product/OPENDITOO-PRODUCT-RUNTIME-002.json`. Its committed template is deliberately unauthorized. Do **not** infer Runtime 002 authority from the Runtime 001 grant: cutover requires the explicit named grant `Grant OPENDITOO-PRODUCT-RUNTIME-002`.
+All committed product templates remain unauthorized. Runtime 003 covers the MCP dashboard only;
+webcam transmission requires its own reviewed manifest and fresh named grant.
 
-### Current objective — finish Runtime 002 cutover, then leave MCP productization
+### Current objective — complete webcam offline preparation
 
 The MCP dashboard is already the owner's working everyday baseline. Do not reopen durability, firmware, MassBoot, ACK decoding, command enumeration, or speculative UI work as release blockers.
 
-The only remaining MCP-dashboard action is the small Runtime 002 telemetry cutover described in `notes/OPENDITOO-MCP-DASHBOARD-V1-RELEASE-2026-09-09.md`. After one healthy Runtime 002 status check, treat P2/P3/P4 as closed and move to streaming/other OpenDitoo objectives.
+P2/P3/P4 and Runtime 003 deployment are closed. Resolve the live-adapter gap before calling W6
+execution-ready. Do not claim, stop the product, or transmit while preparing it.
 
 Use `PRODUCT.md` for normal operation. The reliable startup design boundary remains current-user Windows logon / StartWhenAvailable; a real Windows reboot/login observation is intentionally deferred and is not to be invented as accepted evidence.
 
 
-## Current objective
+## Historical Day-1 objective and milestone evidence
 
 M0-M5 are complete through a visibly successful custom 16x16 frame. Current objective is the hardened plug-and-play MCP product runtime:
 

@@ -30,6 +30,10 @@ internal sealed class FakeTypedHostSession
     internal int TxBytesSent { get; private set; }
     internal string? TerminalReason { get; private set; }
     internal string? TerminalOutcome { get; private set; }
+    internal int SendAttempts { get; private set; }
+    internal int CloseAttempts { get; private set; }
+    internal int FaultOnFrame { get; init; }
+    internal bool FaultOnClose { get; init; }
 
     internal FakeTypedHostSession(string profile, int lifetimeSeconds, int minFrameIntervalMs,
                                   int maxFrames, int maxTxBytes, int fakeAckMs)
@@ -70,7 +74,10 @@ internal sealed class FakeTypedHostSession
             return new(false, "SESSION_FRAME_BUDGET_EXHAUSTED", FramesSent, 0, 0, 0);
         }
         if (now - lastFrameStartedMs < minFrameIntervalMs)
+        {
+            Terminate("pacing_violation", "stopped_clean");
             return new(false, "SESSION_PACING_VIOLATION", FramesSent, 0, 0, 0);
+        }
 
         var (packet, palette) = DitooEncoder.EncodeRgb888(rgb);
         if (!DitooEncoder.Sha256Hex(packet).Equals(expectedPacketSha256, StringComparison.OrdinalIgnoreCase))
@@ -83,8 +90,13 @@ internal sealed class FakeTypedHostSession
             return new(false, "SESSION_TX_BUDGET_EXHAUSTED", FramesSent, palette, applicationBytes, 0);
         }
 
+        token.ThrowIfCancellationRequested();
         lastFrameStartedMs = now;
+        SendAttempts++;
+        // Lose the result after submission: an ACK count cannot prove these bytes were not sent.
+        if (SendAttempts == FaultOnFrame) throw new IOException("injected_frame_fault");
         PreciseDelay.Wait(fakeAckMs, token);   // the "ACK": a delay, never a device
+        token.ThrowIfCancellationRequested();
         var elapsed = clock.Elapsed.TotalMilliseconds - now;
         FramesSent++;
         PacketsSent += 3;
@@ -94,6 +106,8 @@ internal sealed class FakeTypedHostSession
 
     internal void Close(string reason)
     {
+        CloseAttempts++;
+        if (FaultOnClose) throw new IOException("injected_close_fault");
         if (TerminalReason is null) Terminate(reason, "stopped_clean");
     }
 
