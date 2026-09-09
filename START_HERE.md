@@ -56,12 +56,16 @@ re-verification, not transport acceptance, not visual acceptance.
 | M6 static runtime + diagnostics | complete; physically accepted; pixel geometry proven |
 | M7 keyboard/button mapping | complete as a **bounded negative**; no usable physical navigation |
 | M8 repeated frames | complete; accepted ceiling ~1118 ms/frame, measured twice |
-| M9 activity application | N1-N4 complete: authority lifecycle, takeover-aware receive, change-only scheduling, sources and offline preview. N5 live activation **not started** — awaiting a grant. |
+| M9 activity application | N1-N4 complete: authority lifecycle, takeover-aware receive, change-only scheduling, sources and offline preview. N5 armed under a live grant, **not yet executed**. |
 
 ### Authority state
 
-**Nothing is currently authorized.** Every experiment manifest is consumed;
-`sequence-run` exits 30 on all of them. **Every live operation — `image-show` included —
+**One live grant: `OPENDITOO-M9-ACTIVATION-001`** — one bounded 300 s activity-display
+session, change-only at no faster than one frame start per 1118 ms, ceiling 269 frames /
+807 packets / 51 379 bytes, one connection, no retry/reconnect/reclaim, expiring
+`2026-09-10T00:00:00Z`. It authorizes nothing else: not a higher rate, not unattended or
+installation-time transmission, not a longer session, not a second attempt. Every other
+experiment manifest is consumed; `sequence-run` exits 30 on all of them. **Every live operation — `image-show` included —
 needs a NEW reviewed manifest and an explicit operator grant naming that manifest's
 experiment id.** A consumed manifest is never re-armed; an ambiguous or partial attempt
 needs a fresh manifest, not a reset flag. Build/deploy capability, credentials, a
@@ -84,8 +88,9 @@ still not be exercised to test it.
 see `notes/OPENDITOO-N2-N4-ACTIVATION-READINESS-2026-09-09.md` and section 8 of the
 handoff. The manifest `experiments/DAY1-M9-ACTIVATION-001-PENDING.json` is complete
 except for the grant, and two preconditions remain: applying the refreshed Host
-(installed `092ed38d…` is the M6-era build with no session routes; the built and
-self-checked binary is `d3ece014…`), and disconnecting the Android app.
+(**done** — installed is now `a0f2fa1c…`, byte-identical to the repository build, and the
+installed binary itself passes `HOST_SELFTEST_PASS cases=9 failures=0`), and disconnecting
+the Android app (**still required**).
 
 Offline work available without any grant:
 

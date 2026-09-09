@@ -118,17 +118,34 @@ def verify_host_boundary() -> None:
             fail(f"typed image surface exposes forbidden escape/collision: {forbidden}")
 
 
+def _m9_armed() -> bool:
+    manifest = json.loads((ROOT / "experiments" / "DAY1-M9-ACTIVATION-001-PENDING.json").read_text(encoding="utf-8"))
+    return manifest.get("authority", {}).get("transmission_authorized") is True
+
+
 def verify_activation_boundary() -> None:
     """The M9 session surface must stay bounded, one-use and unauthorized."""
     manifest_path = ROOT / "experiments" / "DAY1-M9-ACTIVATION-001-PENDING.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     authority = manifest.get("authority", {})
-    if authority.get("transmission_authorized") is not False:
-        fail("M9 activation manifest is armed; it must stay pending until an operator grants it")
-    if authority.get("authorization_consumed") is not False:
-        fail("M9 activation manifest consumption flag drifted")
     if authority.get("experiment_id") != manifest.get("experiment_id"):
         fail("M9 grant does not name its own experiment")
+    armed = authority.get("transmission_authorized") is True
+    if armed:
+        # An armed manifest is allowed, but only fully attributed and only while the
+        # routing documents say so. This is stricter than the pending case, not looser.
+        if authority.get("authorization_consumed") is True:
+            fail("M9 activation manifest is armed AND consumed; a consumed grant is never re-armed")
+        for field in ("granted_by", "grant_text", "expires_at", "grant_scope"):
+            if not authority.get(field):
+                fail(f"M9 activation manifest is armed without {field}")
+        if not manifest.get("build", {}).get("installed_dll_sha256_verified"):
+            fail("M9 activation manifest is armed without a verified installed Host identity")
+        handoff = (ROOT / "notes/OPENDITOO-HANDOFF-2026-09-09.md").read_text(encoding="utf-8")
+        if manifest["experiment_id"] not in handoff:
+            fail("a live grant must be named in the handoff; the routing docs are stale")
+        if "nothing is currently authorized" in handoff.lower():
+            fail("the handoff claims nothing is authorized while a manifest is armed")
     session = manifest.get("session", {})
     if session.get("min_frame_interval_ms") != 1118:
         fail("M9 pacing floor drifted from the accepted ceiling")
@@ -205,7 +222,7 @@ def main() -> int:
         "DAY1_OFFLINE_PASS "
         f"artifacts={artifact_count} tests={test_count} host=typed_image port=8796 "
         "device_io=false m4_completed=true m4_authorized=false m5_authorized=false "
-        "m9_activation_authorized=false"
+        f"m9_activation_authorized={str(_m9_armed()).lower()}"
     )
     return 0
 

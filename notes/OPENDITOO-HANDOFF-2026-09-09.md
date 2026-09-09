@@ -15,9 +15,8 @@ Offline verification is all that line asserts: not a Windows build, not installe
 re-verification, not transport acceptance, not visual acceptance.
 
 Forward routing: the current sequence is **N1-N5** in
-`OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`. N1 (this reconciliation) is done; N2 (bounded
-activity-session authority lifecycle) is in progress by another worker. M0-M8 are complete
-and are not to be repeated.
+`OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`. N1-N4 are done; N5 is armed and awaiting
+execution under the live grant in section 5. M0-M8 are complete and are not to be repeated.
 
 ## 1. What is accepted and proven
 
@@ -29,7 +28,7 @@ M0-M8 are complete on the exact purchased Ditoo Plus (`11:75:58:CE:DE:C7`, v4201
 | M6 static runtime + diagnostics | complete; physically accepted; pixel geometry proven |
 | M7 keyboard/button mapping | complete **as a bounded negative**; no usable navigation input |
 | M8 repeated frames | complete; rate ceiling measured and reproduced |
-| M9 activity application | offline half complete; display integration **not started** |
+| M9 activity application | N1-N4 complete; N5 armed under a live grant, **not yet executed** |
 
 ### The product primitive
 
@@ -165,9 +164,17 @@ exactly why they are re-run, never inherited.**
 - `OpenTivoo Product Runtime` and port 8779 were preserved throughout and never touched.
   OpenTivoo has **active concurrent work**; treat it as read-only reference.
 
-## 5. Authority state — nothing is currently authorized
+## 5. Authority state — ONE live grant: OPENDITOO-M9-ACTIVATION-001
 
-Every experiment manifest is consumed. `manifest-check` on any of them reports
+**Live as of 2026-09-09:** the operator granted `OPENDITOO-M9-ACTIVATION-001` — one
+bounded activity-display session, 300 s, change-only frames at no faster than one frame
+start per 1118 ms, at most 269 frames / 807 packets / 51 379 application bytes, one
+connection, no retry, no reconnect, no reclaim; expires `2026-09-10T00:00:00Z`. It does
+**not** authorize a higher rate, unattended or installation-time transmission, a longer
+session, or a second attempt. Once executed or abandoned it is consumed, and a repeat
+needs a new manifest with a new id under a new grant.
+
+Every OTHER experiment manifest is consumed. `manifest-check` on any of them reports
 `execution_ready: false` with `transmission_authority_missing`, and `sequence-run`
 exits 30.
 
@@ -238,22 +245,26 @@ Verified on 2026-09-09, and kept distinct:
 unchanged; `HOST_SELFTEST_PASS cases=9 failures=0`. **No transport acceptance and no
 visual acceptance** — neither was attempted.
 
-### What blocks N5
+### N5 preconditions
 
-`experiments/DAY1-M9-ACTIVATION-001-PENDING.json` is complete except for the grant.
-It requests ONE bounded session: 300 s, change-only frames at no faster than one frame
-start per 1118 ms, at most 269 frames / 807 packets / 51 379 application bytes, one
-connection, no retry, no reconnect, no reclaim. `session-check` reports
-`TRANSMISSION_AUTHORITY_MISSING` and `activity-session` exits 30 until an operator fills
-`granted_by`, `grant_text` and `expires_at`.
+`experiments/DAY1-M9-ACTIVATION-001-PENDING.json` is armed and fully attributed.
 
-Two preconditions beyond the grant:
+1. **Installed Host — DONE.** `refresh_openditoo_day1_host.ps1 -Apply` run on 2026-09-09:
+   `REFRESH_STATUS=PASS_TYPED_IMAGE`, `OPENTIVOO_TASK=preserved`. Installed DLL is now
+   `a0f2fa1c…f2762`, byte-identical to the repository Release build, replacing the M6-era
+   `092ed38d…a636c`. `/v1/status` advertises `activity-session`. The exact **installed**
+   binary was re-run against the shared receive fixture: `HOST_SELFTEST_PASS cases=9
+   failures=0`.
+2. **The Android Divoom app must be disconnected** — one controller owns the unit at a
+   time, and the first M8 loop attempt failed at connect (`WSA=10060`) for exactly this
+   reason. Still to be confirmed by the operator.
+3. The operator must be watching the unit: visual acceptance cannot be inferred from ACKs.
 
-1. **The installed Host is not the built Host.** Installed is `092ed38d…a636c` (M6-era,
-   no session routes); the built and self-checked binary is `d3ece014…a042a`.
-   `runtime/windows/refresh_openditoo_day1_host.ps1 -Apply` must be run and the installed
-   hash re-verified. Only the dry-run has been performed.
-2. The Android Divoom app must be disconnected — one controller owns the unit at a time.
+**New finding — the Release build is not byte-reproducible.** Two builds of identical
+source produced `d3ece014…a042a` then `a0f2fa1c…f2762`. A frozen build hash is therefore
+only meaningful when taken from the artifact actually installed, which is what the
+manifest now records. Do not treat a build hash from an earlier build of the same commit
+as evidence about the installed bytes.
 
 ### After N5
 

@@ -2,7 +2,7 @@
  "schema_version": 2,
  "experiment_id": "OPENDITOO-M9-ACTIVATION-001",
  "milestone": "N5 \u2014 first bounded M9 activity-display activation and stock-yield acceptance",
- "status": "pending_operator_grant",
+ "status": "authorized_pending_execution",
  "objective": "Prove the M9 activity display on the exact purchased unit: that a runtime-generated frame is accepted and readable, that an unchanged scene sends nothing, that an unsolicited state report yields the canvas without a reclaim, and that stopping leaves collection running and display state honestly reported.",
  "why_this_shape": "M0-M8 already proved the frame primitive, the geometry, the same-connection repeat and the rate ceiling. The only untested thing is the JOIN: app-driven frames under a bounded session authority. So this changes exactly one variable \u2014 who chooses the pixels \u2014 and holds the packets, target, rate and connection shape at their already-accepted values.",
  "target": {
@@ -22,12 +22,15 @@
    "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
    "session_sha256": "e09cd3add22b4de7652d235044be2651e953d8127d726e6d2c53e4cf66261f51"
   },
-  "host_dll_sha256": "d3ece014fc2c9229f5c62ecac05df5d60dbdfd11048d77a2ec55386eee6a042a",
-  "host_exe_sha256": "cd8cb2d4431834b65b2e061e076a9c56dd58771ef8be24e42e31f670c09694c6",
+  "host_dll_sha256": "a0f2fa1c3b5ced5c1225393453a4476ce4b0aa9e06c39364020868eda97f2762",
+  "host_exe_sha256": "940bad3d607eaa73d76f571e0108464d652652470bf53ae8433e99c343851ba6",
   "installed_dll_sha256_at_authoring": "092ed38d4dd7aaeb3eedbdab15c2c0a0f8dac07ea6134545e18ad15398fa636c",
-  "installed_identity_note": "The installed Host is still the M6-era build and does NOT contain the session routes. `refresh_openditoo_day1_host.ps1 -Apply` must be run and its identity re-verified BEFORE this experiment can execute. That apply step is part of this experiment's preconditions, not something already done.",
+  "installed_identity_note": "VERIFIED 2026-09-09: refresh_openditoo_day1_host.ps1 -Apply run; REFRESH_STATUS=PASS_TYPED_IMAGE, OPENTIVOO_TASK=preserved. The installed DLL is byte-identical to the repository Release build, and /v1/status advertises the activity-session capability. The exact INSTALLED binary was then re-run against the shared receive fixture: HOST_SELFTEST_PASS cases=9 failures=0 device_io=false.",
   "windows_build_verified": "dotnet publish Release PASS on 2026-09-09; refresh dry-run PASS with OPENTIVOO_TASK=preserved and the installed runtime unchanged.",
-  "receive_assembler_cross_check": "tests/receive_assembler_cases.json, 9 cases, replayed by the WSL Python assembler (offline suite) and by the Host itself (`--selftest`): HOST_SELFTEST_PASS cases=9 failures=0 device_io=false."
+  "receive_assembler_cross_check": "tests/receive_assembler_cases.json, 9 cases, replayed by the WSL Python assembler (offline suite) and by the Host itself (`--selftest`): HOST_SELFTEST_PASS cases=9 failures=0 device_io=false.",
+  "installed_dll_sha256_verified": "a0f2fa1c3b5ced5c1225393453a4476ce4b0aa9e06c39364020868eda97f2762",
+  "build_is_not_byte_reproducible": "Two Release builds of identical source produced different DLL hashes (d3ece014...a042a then a0f2fa1c...f2762). The build is not deterministic, so a build hash is only meaningful when taken from the artifact actually installed. That is what is frozen here.",
+  "previous_installed_dll_sha256": "092ed38d4dd7aaeb3eedbdab15c2c0a0f8dac07ea6134545e18ad15398fa636c"
  },
  "session": {
   "lifetime_seconds": 300,
@@ -109,14 +112,15 @@
   "status": "implemented offline; awaiting install and grant"
  },
  "authority": {
-  "transmission_authorized": false,
+  "transmission_authorized": true,
   "authorization_consumed": false,
   "experiment_id": "OPENDITOO-M9-ACTIVATION-001",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "Grant, 300 s as specified",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution of this exact bounded session: up to 300 seconds, change-only frames at no faster than one frame start per 1118 ms, at most 269 frames / 807 packets / 51379 application bytes, one connection, no retry, no reconnect, no reclaim. Not continuous display, not unattended operation, not installation-time transmission, not a higher rate.",
-  "note": "This manifest grants nothing as written. `session-check` reports TRANSMISSION_AUTHORITY_MISSING and `activity-session` exits 30 until an operator fills granted_by, grant_text and expires_at and sets transmission_authorized true."
+  "note": "Granted in answer to an explicit scope question naming this experiment id. A failed, partial or ambiguous outcome does NOT re-authorize: it needs a new manifest with a new id under a new grant.",
+  "grant_scope": "ONE execution of this exact bounded session: up to 300 seconds, change-only frames at no faster than one frame start per 1118 ms, at most 269 frames / 807 packets / 51379 application bytes, one connection, no retry, no reconnect, no reclaim. Explicitly NOT authorized: any higher rate, unattended or installation-time transmission, a longer session, or a second attempt."
  },
  "explicitly_out_of_scope": [
   "any rate above the accepted ceiling",

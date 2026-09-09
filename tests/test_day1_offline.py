@@ -702,15 +702,28 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         handoff = (ROOT / "notes/OPENDITOO-HANDOFF-2026-09-09.md").read_text(encoding="utf-8")
         start_here = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
         self.assertIn("OPENDITOO-HANDOFF-2026-09-09.md", start_here)
-        for document in (handoff, start_here):
-            self.assertIn("nothing is currently authorized", document.lower())
+        # The contract is that the routing documents match the manifests, in BOTH
+        # directions. Either everything is unauthorized and the docs say so, or exactly
+        # the armed experiments are named in both documents.
+        armed = []
         for path in sorted((ROOT / "experiments").glob("DAY1-M*.json")):
             manifest = json.loads(path.read_text(encoding="utf-8"))
             authority = manifest.get("authority")
             if authority is None:
                 continue
-            self.assertFalse(authority["transmission_authorized"],
-                             msg=f"{path.name} is live but the handoff says nothing is authorized")
+            if authority["transmission_authorized"]:
+                armed.append(manifest["experiment_id"])
+                self.assertFalse(authority["authorization_consumed"],
+                                 msg=f"{path.name} is armed and consumed at once")
+        for document in (handoff, start_here):
+            if armed:
+                self.assertNotIn("nothing is currently authorized", document.lower(),
+                                 msg="a grant is live but the routing still says nothing is authorized")
+                for experiment_id in armed:
+                    self.assertIn(experiment_id, document,
+                                  msg=f"live grant {experiment_id} is not named in the routing")
+            else:
+                self.assertIn("nothing is currently authorized", document.lower())
         # Every note the routing sends a reader to must exist.
         for name in ("OPENDITOO-M6-RUNTIME-ACCEPTANCE-2026-09-09.md",
                      "OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md",
@@ -1681,18 +1694,23 @@ class N4SessionPreviewTests(unittest.TestCase):
         self.assertEqual(bounded["reports_after_frame"], {})
         self.assertTrue(takeover["reports_after_frame"])
 
-    def test_the_activation_manifest_is_pending_and_grants_nothing(self) -> None:
+    def test_the_activation_manifest_authority_is_fully_attributed(self) -> None:
         path = ROOT / "experiments/DAY1-M9-ACTIVATION-001-PENDING.json"
         manifest = json.loads(path.read_text(encoding="utf-8"))
         authority = manifest["authority"]
-        self.assertIs(authority["transmission_authorized"], False)
-        self.assertIsNone(authority["granted_by"])
-        self.assertIsNone(authority["grant_text"])
-        self.assertIsNone(authority["expires_at"])
         self.assertEqual(authority["experiment_id"], manifest["experiment_id"])
-        self.assertIn("TRANSMISSION_AUTHORITY_MISSING",
-                      activity_session.authority_blockers(path))
-        # Structurally complete even though it is unauthorized: the grant is the only
+        self.assertFalse(authority["authorization_consumed"])
+        if authority["transmission_authorized"]:
+            # Armed: every attribution field must be filled, and the scope must exclude
+            # the things a bounded pass never implies.
+            for field in ("granted_by", "grant_text", "expires_at", "grant_scope"):
+                self.assertTrue(authority[field], msg=f"armed without {field}")
+            self.assertEqual(activity_session.authority_blockers(path), [])
+            for excluded in ("higher rate", "unattended", "second attempt"):
+                self.assertIn(excluded, authority["grant_scope"].lower())
+        else:
+            self.assertIn("TRANSMISSION_AUTHORITY_MISSING", activity_session.authority_blockers(path))
+        # Structurally complete either way: the grant is the only
         # thing missing, so nothing else has to be decided under time pressure later.
         reviewed = activity_session.load_session_manifest(path, require_authority=False)
         self.assertEqual(reviewed.min_frame_interval_ms,
@@ -1712,12 +1730,17 @@ class N4SessionPreviewTests(unittest.TestCase):
             activity_render.render_rgb888(mcp_activity.blank_state()))[0]), 0)
         self.assertLessEqual(worst + 15, 191)
 
-    def test_the_manifest_records_that_the_installed_host_is_not_yet_the_built_one(self) -> None:
-        # Build verified, installed identity NOT verified equal: never substitute one
-        # for the other.
+    def test_an_armed_manifest_freezes_the_hash_of_the_installed_binary(self) -> None:
+        # Build verified and installed identity verified are different claims. Once armed
+        # they must agree, and the frozen hash must be the one actually installed --
+        # two Release builds of identical source produced different hashes.
         manifest = json.loads((ROOT / "experiments/DAY1-M9-ACTIVATION-001-PENDING.json")
                               .read_text(encoding="utf-8"))
         build = manifest["build"]
-        self.assertNotEqual(build["host_dll_sha256"], build["installed_dll_sha256_at_authoring"])
-        self.assertIn("refresh_openditoo_day1_host.ps1 -Apply", build["installed_identity_note"])
         self.assertIn("preconditions", manifest)
+        if manifest["authority"]["transmission_authorized"]:
+            self.assertEqual(build["host_dll_sha256"], build["installed_dll_sha256_verified"])
+            self.assertNotEqual(build["host_dll_sha256"], build["previous_installed_dll_sha256"])
+            self.assertIn("HOST_SELFTEST_PASS", build["installed_identity_note"])
+        else:
+            self.assertIn("refresh_openditoo_day1_host.ps1 -Apply", build["installed_identity_note"])
