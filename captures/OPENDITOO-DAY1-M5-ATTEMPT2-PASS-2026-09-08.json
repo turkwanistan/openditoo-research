@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-DAY1-M5-STATIC-DIAGNOSTIC-001-ATTEMPT-2",
+  "date": "2026-09-08",
+  "target": "Ditoo-plus@11:75:58:CE:DE:C7",
+  "transport": "Bluetooth Classic RFCOMM/SPP channel 1",
+  "result": "PASS",
+  "operator_output": {
+    "precheck": "PASS_EXACT_TARGET_PAIRED",
+    "transport_result": "TRANSPORT_PASS",
+    "ack_payload_hex": "0x12",
+    "packets_sent": 3,
+    "connections_attempted": 1,
+    "socket_closed": true,
+    "retry": false
+  },
+  "visual_result": {
+    "operator_confirmed": true,
+    "observation": "The planned diagnostic colors/lines appeared on the Ditoo display."
+  },
+  "packet_sequence": [
+    "0103009fa20002",
+    "010400bd31f20002",
+    "01800044000a0a04aa7900f4010006000000ff000000ff000000ffffffff5a5a5a0900000000400000000000400000000000400000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000001b00000000001b0000000080210c02"
+  ],
+  "image_wire_sha256": "db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b",
+  "authority": "Attempt-2 authority consumed after one successful execution; runner disarmed in repository state."
+}

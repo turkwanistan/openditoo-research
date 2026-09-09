@@ -1,3 +1,8 @@
+
+## 2026-09-08 M5 first custom frame — PASS
+
+The exact purchased Ditoo Plus successfully rendered the frozen custom diagnostic 16×16 frame over Windows-owned RFCOMM channel 1. The successful attempt sent the exact three-packet stock-derived sequence once, received wrapped `0x44` ACK payload `0x12`, closed cleanly, and visibly rendered the expected colored diagnostic marks. M5 authority is consumed and the one-shot runner is disarmed. This establishes a proven runtime image-control primitive suitable for bounded productization into typed PNG/image tooling; it does not by itself prove persistence across power cycle.
+
 # OpenDitoo Research — Canonical Project State
 
 **Target:** Divoom Ditoo Plus (pink purchased unit)  

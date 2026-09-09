@@ -64,10 +64,15 @@ def verify_manifests() -> None:
         fail("M4 one-shot budget drifted")
 
     m5 = json.loads((ROOT / "experiments" / "DAY1-M5-FRAME-PENDING.json").read_text(encoding="utf-8"))
-    if m5.get("status") != "frozen_pending_explicit_authority":
-        fail("M5 is not frozen pending explicit authority")
+    if m5.get("status") != "completed_pass_authority_consumed":
+        fail("M5 is not completed/consumed")
     if m5.get("authority", {}).get("transmission_authorized") is not False:
         fail("M5 unexpectedly authorizes transmission")
+    if m5.get("authority", {}).get("authorization_consumed") is not True:
+        fail("M5 authority consumption is not recorded")
+    result = m5.get("result", {})
+    if result.get("status") != "pass" or result.get("packets_sent") != 3 or result.get("ack_payload_hex") != "0x12":
+        fail("M5 successful live result is not frozen")
     if m5.get("operation", {}).get("automatic_retry") is not False:
         fail("M5 unexpectedly permits automatic retry")
     if m5.get("operation", {}).get("paint_semantics", {}).get("wire_sha256") != "db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b":

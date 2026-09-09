@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "OPENDITOO-DAY1-M5-STATIC-DIAGNOSTIC-001",
   "milestone": "M5",
-  "status": "frozen_pending_explicit_authority",
+  "status": "completed_pass_authority_consumed",
   "target": {
     "exact_unit_id": "Ditoo-plus@11:75:58:CE:DE:C7",
     "installed_firmware": "v42012 (version confirmed; exact binary not recovered)",
@@ -129,8 +129,9 @@
   },
   "authority": {
     "transmission_authorized": false,
-    "authorization_basis": null,
-    "note": "Attempt 1 authority was consumed after packet 1 was sent and the local runner failed before packet 2. Corrected transport is compile-validated and disarmed; attempt 2 requires fresh explicit authority for the same frozen three-packet sequence."
+    "authorization_basis": "Explicit user authorization: go (attempt 2 after corrected transport compiled cleanly).",
+    "authorization_consumed": true,
+    "note": "M5 attempt 2 completed successfully; replay is not authorized."
   },
   "stop_policy": {
     "ambiguous_or_partial_send": "close locally; outcome unknown; no resend",
@@ -157,5 +158,15 @@
     "corrected_transport": "single initial FD_WRITE readiness wait; then one send call per frozen packet",
     "compile_proof": "Windows .NET 8 Release --no-restore --nologo: Build succeeded, 0 warnings, 0 errors, 0.90 s",
     "runner_authorized": false
+  },
+  "result": {
+    "status": "pass",
+    "attempt": 2,
+    "ack_payload_hex": "0x12",
+    "packets_sent": 3,
+    "connections_attempted": 1,
+    "socket_closed": true,
+    "visual_result": "operator confirmed planned diagnostic colors/lines appeared on display",
+    "evidence": "captures/OPENDITOO-DAY1-M5-ATTEMPT2-PASS-2026-09-08.json"
   }
 }
