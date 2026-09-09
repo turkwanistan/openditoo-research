@@ -1847,6 +1847,42 @@ class N3SessionRunTests(unittest.TestCase):
         self.assertGreater(activity_session.MCP_CLIENT_FRAME_INTERVAL_MS,
                            activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
 
+    def test_slow_source_collection_cannot_backdate_the_frame_start(self) -> None:
+        # 003/004 exposed this exact race. The tick timestamp was captured before render;
+        # the live renderer may spend hundreds of ms collecting remote activity sources.
+        # A frame must be paced from its actual dispatch time, not that stale tick start.
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._manifest(tmp,
+                **{"session": {**_valid_manifest()["session"], "lifetime_seconds": 2,
+                               "poll_interval_ms": 50},
+                   "budgets": {**_valid_manifest()["budgets"], "max_frames": 11,
+                               "max_application_packets": 33}})
+            clock = {"ms": 0}
+            starts = []
+
+            class RecordingFake(activity_session.FakeSessionTransport):
+                def send_frame(inner_self, rgb, expected_packet_sha256):
+                    starts.append(clock["ms"])
+                    return super().send_frame(rgb, expected_packet_sha256)
+
+            frames = [self.RED, self.BLUE] * 12
+            index = {"i": 0}
+            def render(_now):
+                # First source collection is expensive, matching the real remote probe.
+                if index["i"] == 0:
+                    clock["ms"] += 350
+                frame = frames[index["i"] % len(frames)]
+                index["i"] += 1
+                return frame, False
+
+            activity_session.run_session(
+                manifest, RecordingFake(), render, lambda: clock["ms"],
+                lambda ms: clock.__setitem__("ms", clock["ms"] + ms), max_iterations=20)
+            self.assertGreaterEqual(len(starts), 2)
+            self.assertEqual(starts[0], 350)
+            self.assertGreaterEqual(starts[1] - starts[0],
+                                    activity_session.MCP_CLIENT_FRAME_INTERVAL_MS)
+
     def test_transport_time_consumes_the_tick_budget_instead_of_adding_to_it(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             manifest = self._manifest(tmp,

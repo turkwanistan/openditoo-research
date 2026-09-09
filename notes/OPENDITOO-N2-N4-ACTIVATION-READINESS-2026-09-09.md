@@ -274,3 +274,8 @@ The post-rate-integration Windows boundary is now closed: changed Host build/dep
 ## 11. Activation 003 pacing-edge result; 004 pending
 
 003 is consumed after one ACKed frame. The next client request hit the Host's 150 ms arrival guard with HTTP 429 because exact 150 ms client dispatch does not guarantee exact 150 ms server arrival across HTTP. Physical dashboard visibility passed; four-stage animation and stock-yield remain NOT TESTED. The client now uses 200 ms nominal frame dispatch with a phase-stable 50 ms render tick while the unchanged Host keeps its 150 ms hard floor. Offline suite: 152 tests PASS. `DAY1-M9-ACTIVATION-004.json` is the fresh acceptance manifest. `OPENDITOO-M9-ACTIVATION-004` is currently authorized for ONE bounded execution only under the operator grant `Grant OPENDITOO-M9-ACTIVATION-004`.
+
+
+### Activation 004 result / 005 pending — 2026-09-09
+
+`OPENDITOO-M9-ACTIVATION-004` is consumed after one ACKed cyan frame (3 packets / 153 bytes). Frame 2 was refused HTTP 429 because the runner backdated its send start to the tick timestamp captured before slow live source collection. Dashboard visibility passed; four-stage animation and stock-yield remain NOT TESTED. The runner now re-samples monotonic time after rendering and at dispatch; a 350 ms slow-collection regression is pinned. `OPENDITOO-M9-ACTIVATION-005` is the fresh pending one-shot acceptance. Nothing is currently authorized.

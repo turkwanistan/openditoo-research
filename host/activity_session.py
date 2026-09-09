@@ -542,14 +542,21 @@ def run_session(manifest: SessionManifest, transport: SessionTransport,
                                   json.dumps(report, sort_keys=True))
 
             rgb, from_pulse = render(now)
-            scheduler.observe(now, rgb, from_pulse)
-            action, reason = scheduler.next_action(now)
+            # Rendering may include real source collection (SSH/file reads) and can take
+            # hundreds of milliseconds. Never use the tick-start timestamp as the send
+            # timestamp: 003/004 did that, so after a slow first collection the client
+            # believed the pacing interval had elapsed while the Host had only just seen
+            # frame 1. Re-sample the monotonic clock after rendering and immediately
+            # before dispatch.
+            after_render_ms = clock()
+            scheduler.observe(after_render_ms, rgb, from_pulse)
+            action, reason = scheduler.next_action(after_render_ms)
             if action == "hold":
                 hold(reason)
                 wait_for_next_tick(now)
                 continue
 
-            desired = scheduler.sending(now)
+            desired = scheduler.sending(clock())
             wire, _ = encode_rgb888_static_image(desired.rgb)
             packet_sha = sha256_hex(wire)
             frame_bytes = len(wire) + preamble_bytes
