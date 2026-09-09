@@ -64,12 +64,16 @@ def verify_manifests() -> None:
         fail("M4 one-shot budget drifted")
 
     m5 = json.loads((ROOT / "experiments" / "DAY1-M5-FRAME-PENDING.json").read_text(encoding="utf-8"))
-    if m5.get("status") != "awaiting_stock_pixel_coloring_capture":
-        fail("M5 is not waiting on stock Pixel Coloring evidence")
+    if m5.get("status") != "frozen_pending_explicit_authority":
+        fail("M5 is not frozen pending explicit authority")
     if m5.get("authority", {}).get("transmission_authorized") is not False:
         fail("M5 unexpectedly authorizes transmission")
     if m5.get("operation", {}).get("automatic_retry") is not False:
         fail("M5 unexpectedly permits automatic retry")
+    if m5.get("operation", {}).get("paint_semantics", {}).get("wire_sha256") != "db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b":
+        fail("M5 diagnostic wire hash drifted")
+    if m5.get("budgets", {}).get("application_packets") != 3:
+        fail("M5 packet budget drifted")
 
 
 def verify_host_boundary() -> None:
@@ -109,15 +113,39 @@ def verify_consumed_runner() -> None:
         fail("M4 runner still exposes a live execution path after authority consumption")
 
 
+def verify_m5_runner_disarmed() -> None:
+    runner = (ROOT / "runtime/windows/OpenDitoo.M5.Runner/Program.cs").read_text(encoding="utf-8")
+    required = (
+        "const bool TransmissionAuthorized = false;",
+        "OPENDITOO-DAY1-M5-STATIC-DIAGNOSTIC-001",
+        "11:75:58:CE:DE:C7",
+        "db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b",
+        "M5_NOT_AUTHORIZED",
+        "M5_PACKET_COUNT=3",
+        "M5_TX_BYTES_TOTAL=147",
+        "M5_RETRY=false",
+    )
+    for needle in required:
+        if needle not in runner:
+            fail(f"M5 disarmed runner missing boundary: {needle}")
+    if runner.count("connect(socketHandle, ref remote, layoutSize)") != 1:
+        fail("M5 runner connect-call source count drifted")
+    if runner.count("send(socketHandle, packets[index], packets[index].Length, 0)") != 1:
+        fail("M5 runner send-call source count drifted")
+    if "Console.ReadLine" in runner or "send_hex" in runner.lower():
+        fail("M5 runner exposes an interactive/raw-send escape")
+
+
 def main() -> int:
     artifact_count = verify_sha256_manifest()
     run_tests()
     verify_manifests()
     verify_host_boundary()
     verify_consumed_runner()
+    verify_m5_runner_disarmed()
     print(
         "DAY1_OFFLINE_PASS "
-        f"artifacts={artifact_count} tests=12 host=status_only port=8796 "
+        f"artifacts={artifact_count} tests=14 host=status_only port=8796 "
         "device_io=false m4_completed=true m4_authorized=false m5_authorized=false"
     )
     return 0

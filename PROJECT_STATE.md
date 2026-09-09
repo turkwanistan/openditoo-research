@@ -2,7 +2,7 @@
 
 **Target:** Divoom Ditoo Plus (pink purchased unit)  
 **State date:** 2026-09-08
-**Phase:** Day-1 application-first execution active; M1/M2/M3 proven, v42012 identified, M4 explicitly authorized and ready for one-shot execution.
+**Phase:** Day-1 application-first execution active; M1-M4 PASS, exact Pixel Coloring/image encoding proven, M5 frozen pending explicit authority.
 **Safety posture:** preservation-first. No flashing, arbitrary proprietary writes, guessed service-mode entry, electrical probing, soldering, or destructive teardown has been authorized or performed.
 
 This file is the current human-readable project synthesis. It supersedes ad-hoc chat summaries for project state but does not replace raw evidence, hashes, or provenance under `artifacts/`.
@@ -19,7 +19,9 @@ Exact purchased-unit stock capture now proves the official app control route is 
 
 The exact-unit stock initialization also contains `0x97 00` with wrapped payload `00 1c a4 00`. Independent Divoom application reverse engineering names `0x97` as `SPP_GET_FILE_VERSION`; the echoed selector plus little-endian `0xa41c` identifies installed version **v42012** with high confidence. This is a version-number observation, not a recovered v42012 firmware binary.
 
-M4 is the exact stock-observed read-only request `01040097009b0002` with one connect, one send, no retry, and a 20-second total budget. Windows compile proof is PASS and the user explicitly authorized pairing/discovery if needed plus exactly this one frozen RFCOMM exchange. A dedicated no-argument runner enforces the exact target/request and fails before connecting when Windows pairing is absent. The installed Host remains status-only. `manifest-check` is execution-ready with no blockers. Current milestone state and exact next action are canonicalized in `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md`.
+M4 physically passed from Windows: the exact one-shot `0x97` file-version request independently returned v42012, one connection/request was used, and the socket closed. Its authority is consumed and the M4 runner is disarmed.
+
+A second exact-unit Pixel Coloring capture proves command `0x58` uses RGB888 plus row-major pixel indices and proves the complete command-`0x44` 16x16 palette-image encoding. Eight captured full snapshots re-encode byte-for-byte exactly, establishing orientation, palette construction and bit packing without inheriting Tivoo semantics. This path uses RGB888 palettes; OpenTivoo RGB222 is not a Ditoo `0x44` requirement. The first custom diagnostic `0x44` frame is frozen at SHA-256 `db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b`. M5 remains separately unauthorized pending explicit approval. Current milestone state and exact next action are canonicalized in `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md`.
 
 ## 1. Project boundaries and evidence discipline
 

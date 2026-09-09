@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "capture_id": "OPENDITOO-DAY1-PIXEL-COLORING-2026-09-08",
+  "status": "filtered_exact_unit_drawing_evidence",
+  "privacy": {
+    "raw_bugreport_committed": false,
+    "raw_bugreport_sha256": "71821bde31fbd7aea82d8c2f83a9a1a505843b86df322d752d57a8c149acfe5e",
+    "btsnoop_hci_sha256": "b373607316094b0fd529f3354ee379abb6645e89ab0b2c06ce865064428dbc9c",
+    "note": "Whole Android bugreport remains private. Only exact Ditoo RFCOMM drawing evidence is committed."
+  },
+  "unit": {
+    "model": "Ditoo-plus",
+    "bluetooth_address": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012",
+    "control_transport": "Bluetooth Classic RFCOMM/SPP channel 1"
+  },
+  "pixel_coloring_window": {
+    "first_full_snapshot_utc": "2026-09-09T01:34:02.466951Z",
+    "final_full_snapshot_ack_utc": "2026-09-09T01:34:24.032817Z",
+    "app_action": "official Divoom Pixel Coloring; operator drew asymmetric diagnostic marks and exited normally",
+    "save_publish_upload_used": false
+  },
+  "drawing_pad_0x58": {
+    "semantic_verdict": "MATCHED_EXACT_UNIT",
+    "command": "0x58",
+    "supporting_name": "CMD_DRAWING_PAD_CTRL from independent Divoom app decompilation",
+    "payload_format": "RGB888[3] | count:u8 | row_major_pixel_index[count]",
+    "row_major_formula": "index = y*16 + x",
+    "capture_statistics": {
+      "observed_0x58_frames": 106,
+      "max_observed_count": 12,
+      "count_length_mismatches": 0
+    },
+    "diagnostic_marks": [
+      {
+        "rgb_hex": "ff0000",
+        "indices_hex": [
+          "00",
+          "01"
+        ],
+        "coordinates": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "meaning": "top-left red horizontal pair"
+      },
+      {
+        "rgb_hex": "00ff57",
+        "indices_hex": [
+          "0f",
+          "1f",
+          "2f"
+        ],
+        "coordinates": [
+          [
+            15,
+            0
+          ],
+          [
+            15,
+            1
+          ],
+          [
+            15,
+            2
+          ]
+        ],
+        "meaning": "top-right green vertical triple; exact stock color selected by app"
+      },
+      {
+        "rgb_hex": "0066ff",
+        "indices_hex": [
+          "e1",
+          "e0",
+          "f1",
+          "f0"
+        ],
+        "coordinates": [
+          [
+            1,
+            14
+          ],
+          [
+            0,
+            14
+          ],
+          [
+            1,
+            15
+          ],
+          [
+            0,
+            15
+          ]
+        ],
+        "meaning": "bottom-left blue 2x2; exact stock color selected by app"
+      },
+      {
+        "rgb_hex": "5a5a5a",
+        "indices_hex": [
+          "78"
+        ],
+        "coordinates": [
+          [
+            8,
+            7
+          ]
+        ],
+        "meaning": "near-center gray pixel drawn by operator"
+      },
+      {
+        "rgb_hex": "ffffff",
+        "indices_hex": [
+          "ff"
+        ],
+        "coordinates": [
+          [
+            15,
+            15
+          ]
+        ],
+        "meaning": "bottom-right white pixel"
+      }
+    ]
+  },
+  "static_image_0x44": {
+    "semantic_verdict": "MATCHED_EXACT_UNIT",
+    "command": "0x44",
+    "purpose": "full 16x16 static-image snapshot used by stock Pixel Coloring after edits",
+    "payload_layout": "00 0A 0A 04 | AA | frame_size_le16 | F4 01 00 | palette_count | RGB888 palette | packed row-major palette indices",
+    "palette_index_packing": "ceil(log2(palette_count)) bits per pixel, index bits emitted least-significant-bit first and bytes packed least-significant-bit first",
+    "stock_reencode_verification": "8/8 captured Pixel Coloring 0x44 snapshots re-encoded byte-for-byte exactly from decoded palette and 256 row-major indices",
+    "six_color_wire_bytes": 132,
+    "six_color_frame_size": 121,
+    "stock_snapshot_hashes": [
+      "91ace6ba704d4ac820c95107c3333ad93c623c8e0fe8e586a06353f845656954",
+      "f6c6debc0ca2337adf417b0dbaef1729398237ac7d014d74870798dc05bc78f4",
+      "dd46a258deeddf33049292dcb10ddfb5ee815ebed0c2eb6f103fc5b4cfb80390",
+      "59347ecfae96a0852946bd9596390ba93124fd38366df3750d80fdfb206e6392",
+      "97d3f2560b16b2b727135564931f565f1ad5d2d7753badd5b55c259f568a5b45",
+      "8af8091ff5acd4b497140289d18629095d77873aa4f3472c069e17dd07ceb8b6",
+      "d70ab755cabac72c782f0a75b15ba98ea8dfc412c0e3c6c7d2cff454887e2b48",
+      "8f61b450bebfa26fe90f37a935cb874a196a9434c1d356e7178e5e5240f238bc"
+    ]
+  },
+  "entry_semantics": {
+    "verdict": "MATCHED_EXACT_UNIT_SEQUENCE",
+    "stock_sequence": [
+      "0103009fa20002",
+      "010400bd31f20002",
+      "0x44 full snapshot"
+    ],
+    "observation": "0x9F then extended 0xBD/0x31 immediately precede the first and subsequent full 0x44 Pixel Coloring snapshots in the exact-unit session.",
+    "scope": "The exact bytes are justified as image-transfer preamble. Their deeper subfield semantics are not promoted."
+  },
+  "exit_semantics": {
+    "verdict": "NO_DISTINCT_WIRE_EXIT_OBSERVED",
+    "observation": "After the final 0x44 wrapped acknowledgement at 01:34:24.032817Z, no additional Ditoo RFCOMM channel-1 application command was observed for Pixel Coloring exit.",
+    "planned_custom_exit": "close the RFCOMM socket after the complete 0x44 acknowledgement; do not invent an exit command"
+  },
+  "persistence_analysis": {
+    "persistent_commit_observed": false,
+    "firmware_update_or_upload_observed": false,
+    "commands_0x8b_or_0x8c_in_pixel_window": false,
+    "verdict": "runtime_display_path_with_no_observed_persistent_commit",
+    "remaining_unknown": "persistence across a full device power cycle was not tested by this capture"
+  },
+  "m5_diagnostic_candidate": {
+    "source": "host/diagnostic_frame.py + host/ditoo_pixel_coloring.py",
+    "palette_rgb888": [
+      "000000",
+      "ff0000",
+      "00ff00",
+      "0000ff",
+      "ffffff",
+      "5a5a5a"
+    ],
+    "background": "black",
+    "indices": {
+      "red": [
+        0,
+        1
+      ],
+      "green": [
+        15,
+        31,
+        47
+      ],
+      "blue": [
+        224,
+        225,
+        240,
+        241
+      ],
+      "white": [
+        255
+      ],
+      "gray": [
+        119
+      ]
+    },
+    "wire_bytes": 132,
+    "wire_sha256": "db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b",
+    "wire_hex": "01800044000a0a04aa7900f4010006000000ff000000ff000000ffffffff5a5a5a0900000000400000000000400000000000400000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000001b00000000001b0000000080210c02"
+  }
+}

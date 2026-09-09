@@ -20,6 +20,12 @@ from host.diagnostic_frame import (
     build_diagnostic_rgb,
     frame_sha256,
 )
+from host.ditoo_pixel_coloring import (
+    DIAGNOSTIC_FRAME_SHA256,
+    diagnostic_frame,
+    drawing_pad_packet,
+    sha256_hex as pixel_sha256_hex,
+)
 from host.ditoo_candidate_codec import (
     CandidateStreamDecoder,
     FrameDecodeError,
@@ -165,6 +171,23 @@ class BoundaryTests(unittest.TestCase):
             self.assertFalse(result["device_io"])
             self.assertEqual(result["rgb_bytes"], 768)
             self.assertEqual(Path(result["rgb_path"]).read_bytes(), build_diagnostic_rgb())
+
+
+class PixelColoringEvidenceTests(unittest.TestCase):
+    def test_exact_stock_drawing_pad_examples(self) -> None:
+        self.assertEqual(drawing_pad_packet((255, 255, 255), [0x6A, 0x7A]).hex(), "01090058ffffff026a7a440402")
+        self.assertEqual(drawing_pad_packet((255, 0, 0), [0x00]).hex(), "01080058ff00000100600102")
+        self.assertEqual(drawing_pad_packet((0, 255, 87), [0x0F]).hex(), "0108005800ff57010fc60102")
+        self.assertEqual(drawing_pad_packet((0, 102, 255), [0xE1]).hex(), "010800580066ff01e1a70202")
+        self.assertEqual(drawing_pad_packet((90, 90, 90), [0x78]).hex(), "010800585a5a5a0178e70102")
+        self.assertEqual(drawing_pad_packet((255, 255, 255), [0xFF]).hex(), "01080058ffffff01ff5d0402")
+
+    def test_frozen_m5_diagnostic_wire(self) -> None:
+        wire = diagnostic_frame()
+        self.assertEqual(len(wire), 132)
+        self.assertEqual(pixel_sha256_hex(wire), DIAGNOSTIC_FRAME_SHA256)
+        self.assertEqual(DIAGNOSTIC_FRAME_SHA256, "db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b")
+        self.assertEqual(wire[:14].hex(), "01800044000a0a04aa7900f40100")
 
 
 if __name__ == "__main__":

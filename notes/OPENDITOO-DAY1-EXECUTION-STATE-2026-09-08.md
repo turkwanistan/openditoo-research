@@ -222,7 +222,7 @@ Android package metadata also closes two M0 fields: Android 16 / build `CP1A.260
 | M2 attributable stock transaction | PASS | official-app channel-1 request/response bytes frozen, including exact stock file-version query |
 | M3 offline compatibility verdict | PASS | 92/92 observed application frames match candidate checksum/frame geometry; all 36 responses match outer-0x04/tag-0x55 wrapping |
 | M4 bounded custom query | PASS / AUTHORITY CONSUMED | Windows independently completed the exact one-shot 0x97 file-version query; v42012 returned; one connect, one request, socket closed, no retry |
-| M5 volatile frame | EVIDENCE CAPTURE NEXT | exact target/transport are bound; stock Pixel Coloring capture is required to prove entry/paint/exit + persistence behavior before custom frame transmission |
+| M5 volatile frame | FROZEN / AUTHORITY BLOCKED | exact Pixel Coloring capture proves RGB888 row-major 0x58 drawing, exact 0x44 image packing via 8/8 byte-perfect re-encodes, stock image preamble, no distinct wire exit, and no observed persistence commit; exact three-packet frame trial is frozen |
 
 ## Windows M4 compile proof
 
@@ -232,6 +232,16 @@ The operator compiled `runtime/windows/OpenDitoo.Day1.Host/OpenDitoo.Day1.Host.c
 
 The authorized Windows runner completed successfully against the exact paired target `11:75:58:CE:DE:C7` on RFCOMM channel 1. It sent exactly `01040097009B0002`, decoded version **42012**, reported one request and one connection attempt, and closed the socket. No retry or second application command was issued. Result evidence is `captures/OPENDITOO-DAY1-M4-LIVE-RESULT-2026-09-08.json`. The one-shot M4 authority is consumed and the current runner is disarmed against replay.
 
+## M5 Pixel Coloring capture result — PASS
+
+The second private Android bugreport was analyzed without committing the raw archive. Filtered evidence is `captures/OPENDITOO-DAY1-PIXEL-COLORING-2026-09-08.json`; the semantic freeze is `notes/OPENDITOO-DAY1-M5-PIXEL-COLORING-FREEZE-2026-09-08.md`.
+
+Exact-unit command `0x58` is proven as `RGB888 | count | row-major pixel index[count]` with `index=y*16+x`. The operator's asymmetric red/green/blue/gray/white marks independently resolve orientation. Exact-unit command `0x44` is proven as a full palette-indexed 16x16 snapshot using RGB888 palette entries and least-significant-bit-first packed row-major palette indices. All eight captured `0x44` snapshots were decoded and re-encoded byte-for-byte exactly.
+
+The exact stock image-transfer preamble is `0103009fa20002` then `010400bd31f20002`. No distinct Pixel Coloring exit command was observed after the final `0x44` acknowledgement, so the custom exit is local RFCOMM close rather than an invented command. No save/publish/firmware/persistent-commit operation was observed; persistence across a full power cycle remains untested.
+
+The frozen first custom frame is a 132-byte six-color RGB888 `0x44` image on black background with the Day-1 corner/center diagnostic geometry. SHA-256: `db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b`. The full three-packet sequence is 147 application bytes total and is recorded in `experiments/DAY1-M5-FRAME-PENDING.json`.
+
 ## Exact next action
 
-Return control to the Android official app only and capture a tightly attributable **Pixel Coloring** session. Use HCI snoop, enter Pixel Coloring, clear/start from an empty canvas if possible, make only a few uniquely located color edits, observe the live Ditoo result if the app provides one, then exit normally without saving/uploading to cloud/gallery or invoking firmware update. Export a fresh private bugreport. The purpose is to prove exact Ditoo drawing entry, paint encoding, exit behavior, orientation/color packing and whether the path is volatile before any M5 custom transmission is armed.
+Request explicit authority for `OPENDITOO-DAY1-M5-STATIC-DIAGNOSTIC-001`: one already-paired RFCOMM channel-1 connection and exactly three sends (`0x9F` stock image preamble, `0xBD/0x31` stock image preamble, one 132-byte custom `0x44` diagnostic image), no retry or reconnect, accept one checksum-valid wrapped `0x44` acknowledgement, then close locally. M5 is currently `transmission_authorized=false`; M4 authority is consumed and does not transfer.

@@ -1,63 +1,142 @@
 {
   "schema_version": 1,
-  "experiment_id": "OPENDITOO-DAY1-M5-FRAME-PENDING",
+  "experiment_id": "OPENDITOO-DAY1-M5-STATIC-DIAGNOSTIC-001",
   "milestone": "M5",
-  "status": "awaiting_stock_pixel_coloring_capture",
+  "status": "frozen_pending_explicit_authority",
   "target": {
     "exact_unit_id": "Ditoo-plus@11:75:58:CE:DE:C7",
-    "installed_firmware": "v42012 (version confirmed; exact binary not recovered)"
-  },
-  "transport": {
-    "kind": "Bluetooth Classic RFCOMM/SPP",
-    "measured_endpoint": "11:75:58:CE:DE:C7 RFCOMM channel 1",
-    "single_controller_required": true,
+    "installed_firmware": "v42012 (version confirmed; exact binary not recovered)",
     "evidence": [
       "captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json",
       "captures/OPENDITOO-DAY1-M4-LIVE-RESULT-2026-09-08.json"
     ]
   },
+  "transport": {
+    "kind": "Bluetooth Classic RFCOMM/SPP",
+    "measured_endpoint": "11:75:58:CE:DE:C7 RFCOMM channel 1",
+    "single_controller_required": true,
+    "connection_attempts": 1
+  },
   "operation": {
-    "semantic_name": "volatile_diagnostic_frame_pending_stock_pixel_coloring_proof",
-    "semantic_evidence": null,
-    "entry_semantics": null,
-    "paint_semantics": null,
-    "exit_semantics": null,
-    "persistence_analysis": null,
-    "packet_sequence": null,
-    "packet_hashes": [],
-    "application_tx_hex": null,
-    "application_tx_sha256": null,
-    "diagnostic_source": "host/diagnostic_frame.py",
+    "semantic_name": "show_one_runtime_16x16_static_diagnostic_frame",
+    "semantic_evidence": {
+      "exact_stock_pixel_coloring": "captures/OPENDITOO-DAY1-PIXEL-COLORING-2026-09-08.json",
+      "image_command": "0x44",
+      "drawing_pad_command": "0x58",
+      "full_snapshot_reencode": "8/8 exact byte-for-byte stock matches",
+      "coordinate_orientation": "row-major index=y*16+x",
+      "color_encoding": "RGB888 palette",
+      "pixel_encoding": "palette indices packed least-significant-bit first"
+    },
+    "entry_semantics": {
+      "stock_sequence": [
+        "0103009fa20002",
+        "010400bd31f20002"
+      ],
+      "interpretation": "exact-unit stock image-transfer preamble; deeper 0x9F/0xBD31 subfield meanings intentionally not promoted"
+    },
+    "paint_semantics": {
+      "wire_command": "0x44",
+      "wire_hex": "01800044000a0a04aa7900f4010006000000ff000000ff000000ffffffff5a5a5a0900000000400000000000400000000000400000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000001b00000000001b0000000080210c02",
+      "wire_sha256": "db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b",
+      "wire_bytes": 132,
+      "palette_rgb888": [
+        "000000",
+        "ff0000",
+        "00ff00",
+        "0000ff",
+        "ffffff",
+        "5a5a5a"
+      ],
+      "geometry": {
+        "red": [
+          0,
+          1
+        ],
+        "green": [
+          15,
+          31,
+          47
+        ],
+        "blue": [
+          224,
+          225,
+          240,
+          241
+        ],
+        "white": [
+          255
+        ],
+        "gray": [
+          119
+        ],
+        "background": "all other pixels black"
+      }
+    },
+    "exit_semantics": {
+      "device_exit_command": null,
+      "evidence": "stock Pixel Coloring capture contains no distinct exit application command after final 0x44 acknowledgement",
+      "custom_exit": "close RFCOMM immediately after one valid wrapped 0x44 acknowledgement"
+    },
+    "persistence_analysis": {
+      "persistent_commit_observed": false,
+      "known_persistent_upload_or_firmware_command_used": false,
+      "verdict": "runtime display path with no observed persistent commit",
+      "power_cycle_persistence": "not tested; do not infer"
+    },
+    "packet_sequence": [
+      {
+        "index": 1,
+        "role": "stock-observed image preamble A",
+        "hex": "0103009fa20002",
+        "bytes": 7
+      },
+      {
+        "index": 2,
+        "role": "stock-observed image preamble B",
+        "hex": "010400bd31f20002",
+        "bytes": 8
+      },
+      {
+        "index": 3,
+        "role": "custom 16x16 diagnostic image",
+        "hex": "01800044000a0a04aa7900f4010006000000ff000000ff000000ffffffff5a5a5a0900000000400000000000400000000000400000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000001b00000000001b0000000080210c02",
+        "bytes": 132
+      }
+    ],
+    "packet_hashes": [
+      "c8026e7a39d55bbd0db852705c16bdfe1c0c1f4341c1a17130965f870e3037e6",
+      "d9ef630e33d736dd859855cde6c3429df09fddae21bb18ccb0cd07927a10637a",
+      "db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b"
+    ],
+    "application_tx_concatenated_sha256": "ab8852485554f274e6fa4885b9cb69dc49bffabc782bec9e14b96fe558e4e773",
+    "diagnostic_source": "host/diagnostic_frame.py + host/ditoo_pixel_coloring.py",
     "diagnostic_source_rgb_sha256": "fb69505977b1be5d067e907a29d4ca1ed4d18de9b66bfc6921762cda81940955",
     "source_format": "RGB888",
-    "device_packing": null,
+    "device_packing": "6-color RGB888 palette + 3-bit row-major indices, LSB-first",
+    "expected_response": "one checksum-valid wrapped response outer=0x04 inner=0x44 tag=0x55; one-byte payload may vary as in stock capture",
     "automatic_retry": false
   },
-  "stock_capture_plan": {
-    "controller": "official Divoom Android app only",
-    "feature": "Pixel Coloring",
-    "goal": "observe one empty/cleared canvas, a few uniquely located color edits, visible live result if provided by the app, then ordinary exit without save/upload",
-    "do_not_use": ["save to cloud", "gallery upload", "firmware update", "persistent device upload"],
-    "raw_bugreport_private": true,
-    "commit_filtered_protocol_only": true
-  },
   "budgets": {
-    "entry_frame_sets": 1,
-    "send_deadline_seconds": 10,
+    "application_packets": 3,
+    "application_tx_bytes_total": 147,
+    "max_single_packet_bytes": 132,
+    "send_spacing_ms": 40,
+    "ack_deadline_seconds": 5,
+    "total_deadline_seconds": 10,
     "automatic_repeats": 0,
-    "observation_seconds": 5,
-    "max_packets": null,
-    "max_application_tx_bytes": null
+    "observation_seconds": 5
   },
   "authority": {
     "transmission_authorized": false,
     "authorization_basis": null,
-    "note": "M4 authority is consumed and does not transfer. M5 custom transmission remains blocked until stock Pixel Coloring proves entry/paint/exit and persistence behavior."
+    "note": "M4 authority was consumed and does not transfer. Requires explicit authorization for this exact three-packet M5 static-frame trial."
   },
   "stop_policy": {
     "ambiguous_or_partial_send": "close locally; outcome unknown; no resend",
-    "wrong_orientation_or_color": "freeze result; correct mapping offline; require newly bounded review",
-    "recovery": "ordinary documented stock control or separately proven exit only",
+    "missing_or_malformed_ack": "close locally; freeze result; no retry",
+    "wrong_orientation_or_color": "freeze visual result; correct offline; new authority for any corrected frame",
+    "recovery": "ordinary documented stock control only; no invented exit command",
     "automatic_reconnect": false
   }
 }
