@@ -84,12 +84,17 @@ pacing refusals, zero budget refusals, no retry, no reconnect, no reclaim. The p
 supervisor was stopped cleanly first (`operator_stop`, `session_active=false`) and restarted
 immediately afterwards; the MCP dashboard returned automatically.
 
-**42 of 48 playback steps dispatched — by design, not a fault.** Measured ACK latency on
-this unit is ~110–153 ms while the client cadence is 200 ms, so send+ACK work consumes most
-of each window and occasionally the next render tick already reports the following step.
+**42 of 48 playback steps dispatched — by design, not a fault.** Send+ACK work consumes most
+of each 200 ms window and occasionally the next render tick already reports the following step.
 Clock-indexed playback drops that step rather than stretching the clip. Offline replay sent
 all 48 because its fake clock advances only by the runner's own sleeps and models no
 transport work.
+
+**Correction:** this note originally cited "~110–153 ms measured ACK latency" from an earlier
+`image-sequence` operation. That figure included 40 ms x 2 of intra-frame packet spacing and
+is exactly the contaminated-measurement trap the handoff warns about. The clean figures are
+R5's 53 ms median / 111 ms max at the wire, and S2's 66 ms median / 93 ms p95 through the
+HTTP session path.
 
 **Finding for future streams:** a manifest that needs every frame shown should state a
 slower `playback_interval_ms` (250 ms leaves ~100 ms of headroom over measured ACK latency).

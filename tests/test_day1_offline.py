@@ -2687,12 +2687,23 @@ class S1FrameStreamTests(unittest.TestCase):
             frame_stream.build_frame_set([rgb])
         self.assertEqual(caught.exception.code, "STREAM_FRAME_NOT_ENCODABLE")
         reduced, colors = frame_stream.quantize_to_palette_limit(rgb)
-        self.assertLessEqual(colors, frame_stream.MAX_PALETTE_COLORS)
+        # 256 pixels can hold at most 256 colours against a 255 cap, so exactly one merge is
+        # ever needed and exactly one pixel may change. A whole-frame precision drop would
+        # cost every pixel to solve a one-pixel problem.
+        self.assertEqual(colors, frame_stream.MAX_PALETTE_COLORS)
         self.assertEqual(len(reduced), frame_stream.FRAME_BYTES)
+        changed = sum(1 for i in range(0, frame_stream.FRAME_BYTES, 3)
+                      if rgb[i:i + 3] != reduced[i:i + 3])
+        self.assertEqual(changed, 1)
+        # The surviving colour must be one already present: a merge, never a new colour.
+        self.assertTrue({reduced[i:i + 3] for i in range(0, frame_stream.FRAME_BYTES, 3)}
+                        <= {rgb[i:i + 3] for i in range(0, frame_stream.FRAME_BYTES, 3)})
         # Deterministic from the source bytes alone, and already-small frames are untouched.
         self.assertEqual(reduced, frame_stream.quantize_to_palette_limit(rgb)[0])
         flat = bytes((1, 2, 3)) * 256
         self.assertEqual(frame_stream.quantize_to_palette_limit(flat), (flat, 1))
+        encodable, _ = encode_rgb888_static_image(reduced)
+        self.assertTrue(encodable)
 
     def test_worst_case_frame_bytes_include_both_stock_preambles(self) -> None:
         frame_set = frame_stream.build_frame_set(frame_stream.frames_from_source(self.DEMO))

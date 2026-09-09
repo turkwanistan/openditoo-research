@@ -15,12 +15,18 @@ contract. We own encoding, packetisation, ACKs, pacing, budgets and failure hand
 one palette per frame, capped at 255 entries. A 16×16 frame has 256 pixels, so a camera
 frame will essentially always sit at 256 and must be reduced by at least one colour.
 
-*This is not a fidelity problem and does not deserve a sophisticated quantiser.* 256 pixels
-can never show more than 256 colours; being limited to 255 costs you exactly one merged
-pair. We already reduce deterministically by dropping channel low bits until the frame fits
-(`quantize_to_palette_limit`). If you prefer to do it upstream, fine — just guarantee ≤255
-distinct colours and keep it deterministic. **Do not spend effort here.** At 16×16 the
-fidelity budget is spent almost entirely on downscaling, not colour depth.
+*This is not a fidelity problem.* 256 pixels can never show more than 256 colours, so at
+exactly 256 every colour occurs exactly once and **one merge is always enough**.
+`quantize_to_palette_limit` now finds the closest pair by weighted distance
+(`3dr² + 4dg² + 2db²`), repaints that single pixel, and leaves the rest of the frame
+untouched — one pixel changed, 255 colours out. (It previously dropped channel low bits
+across the whole frame, which cost a gradient 24 colours to solve a one-pixel problem. The
+N980P plan §7.5 was right to call that out.)
+
+The C# sidecar's guard **must implement this same rule**, or offline previews will not match
+what the device is sent. Cost is ~3.8 ms in Python and only when the frame is actually at
+256 colours; in the sidecar's hot path it is negligible. At 16×16 the fidelity budget is
+spent almost entirely on downscaling and exposure, not colour depth.
 
 **Payload size is a solved question.** A 250-colour frame is 1039 application bytes. The
 accepted R4/R5 rate ladder sent 1048 bytes per frame, sustained, for 512 and 1024 frames.

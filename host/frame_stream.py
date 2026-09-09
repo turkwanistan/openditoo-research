@@ -78,23 +78,45 @@ def module_hashes() -> dict[str, str]:
 # --------------------------------------------------------------------------
 
 def quantize_to_palette_limit(rgb: bytes) -> tuple[bytes, int]:
-    """Reduce an arbitrary 16x16 frame to <=255 distinct colours, deterministically.
+    """Reduce a 16x16 frame to <=255 distinct colours, deterministically, losing one pixel.
 
-    Channel low bits are dropped one step at a time until the frame fits. This is a
-    blunt instrument on purpose: it is exactly reproducible from the source bytes alone,
-    needs no dependency, and a 16x16 panel cannot show the difference a better quantiser
-    would buy. ponytail: uniform bit-depth reduction, swap in median-cut if 16x16
-    gradients ever visibly band.
+    A 16x16 frame is 256 pixels, so it can never hold more than 256 colours and the cap is
+    255: at most ONE merge is ever required, and at exactly 256 colours every colour occurs
+    exactly once. So the minimal correct fix is to find the closest pair and repaint the
+    single pixel of the second with the first. Nothing else in the frame changes.
+
+    This replaces an earlier whole-frame low-bit reduction, which cost every pixel precision
+    (a gradient fell from 256 to 232 colours) to solve a one-pixel problem. Credit: the
+    N980P webcam implementation plan, section 7.5.
+
+    Distance is weighted for luma sensitivity, and ties break on scan order, so the output is
+    a pure function of the input bytes. The C# sidecar's guard must implement this same rule
+    or offline previews will not match what the device is sent.
     """
     if len(rgb) != FRAME_BYTES:
         raise SessionError("STREAM_FRAME_LENGTH", f"expected {FRAME_BYTES} bytes, got {len(rgb)}")
-    for drop in range(0, 8):
-        mask = (0xFF << drop) & 0xFF
-        candidate = bytes(value & mask for value in rgb) if drop else rgb
-        colors = len({candidate[i:i + 3] for i in range(0, FRAME_BYTES, 3)})
-        if colors <= MAX_PALETTE_COLORS:
-            return candidate, colors
-    raise SessionError("STREAM_FRAME_UNQUANTIZABLE", "frame did not fit 255 colours at 1 bit/channel")
+    pixels = [rgb[i:i + 3] for i in range(0, FRAME_BYTES, 3)]
+    palette = sorted(set(pixels))
+    if len(palette) <= MAX_PALETTE_COLORS:
+        return rgb, len(palette)
+
+    best, keep, drop = None, None, None
+    for index, first in enumerate(palette):
+        for second in palette[index + 1:]:
+            dr, dg, db = first[0] - second[0], first[1] - second[1], first[2] - second[2]
+            distance = 3 * dr * dr + 4 * dg * dg + 2 * db * db
+            if best is None or distance < best:
+                best, keep, drop = distance, first, second
+    merged = bytearray(rgb)
+    for index, pixel in enumerate(pixels):
+        if pixel == drop:
+            merged[index * 3:index * 3 + 3] = keep
+    out = bytes(merged)
+    colors = len({out[i:i + 3] for i in range(0, FRAME_BYTES, 3)})
+    if colors > MAX_PALETTE_COLORS:
+        raise SessionError("STREAM_FRAME_UNQUANTIZABLE",
+                           f"{colors} colours remain after the single permitted merge")
+    return out, colors
 
 
 def frames_from_source(source: Path) -> list[bytes]:
