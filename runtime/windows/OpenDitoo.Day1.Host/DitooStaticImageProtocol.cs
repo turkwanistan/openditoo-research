@@ -14,7 +14,12 @@ static class DitooStaticImageProtocol
     // ceilings, not the operating rate.
     internal const int MaxSequenceFrames = 10;  // raised for OPENDITOO-M8-FINITE-LOOP-001
     internal const int MaxInterFrameDelayMs = 5_000;
-    internal const int MinInterFrameDelayMs = 250;
+    // The floor tracks measured evidence, not ambition. 1000 ms was the conservative
+    // starting point; 250 ms was measured three times by OPENDITOO-R1-RATE-250MS-001/2/3
+    // (368.6 / 370.9 / 375.2 ms achieved, zero errors, operator-confirmed rendering).
+    // 50 ms is the next step down and is what R2a exists to measure. Frames still carry
+    // one ACK each, and the delay is only the part WE add on top of that.
+    internal const int MinInterFrameDelayMs = 50;
     internal const int RgbBytes = 16 * 16 * 3;
     internal static readonly byte[] ImagePreambleA = Convert.FromHexString("0103009FA20002");
     internal static readonly byte[] ImagePreambleB = Convert.FromHexString("010400BD31F20002");

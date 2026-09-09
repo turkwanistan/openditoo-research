@@ -188,11 +188,13 @@
   "new_findings": [
    {
     "id": "NEUTRAL-GREYS-PHOTOGRAPH-BLUE",
-    "confidence": "OPEN_QUESTION",
+    "confidence": "RESOLVED",
     "statement": "The frame on screen when the unit was photographed contained pure neutral values \u2014 the idle L letter at (85,85,85), the mushroom cap at (170,170,170), the skull bones at (255,255,255) \u2014 yet all three appear distinctly blue-white in the photograph. Our data was neutral, so the cast is introduced by the panel, the camera, or both.",
     "why_it_matters": "Grey means idle and blue means activity in this design. If grey reads as blue, the two most semantically distinct states converge. This is exactly the class of defect that only a look at hardware can find.",
     "not_claimed": "Whether the bias is in the panel or in the camera's white balance. A phone auto-white-balancing a dark scene against saturated red and green LEDs will push neutrals blue on its own. One glance by the operator settles it; no experiment needed.",
-    "cost_to_close": "one glance"
+    "cost_to_close": "one glance",
+    "resolution": "CLOSED 2026-09-09 by operator observation: \"it reads grey properly, that was just my stupid phone camera\". The panel renders neutral greys and whites correctly; the blue cast was the camera's white balance against a dark scene with saturated LEDs. The design's grey/blue distinction is intact and needs no change.",
+    "consequence": "Also advances the M6 caveat: red, green, yellow and neutral greys/whites are now all confirmed rendering as themselves on this panel. Magenta and cyan remain unverified, so 'complete colour rendition' stays NOT fully confirmed."
    },
    {
     "id": "BYTE-ACCOUNTING-AGREES",

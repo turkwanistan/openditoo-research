@@ -537,7 +537,11 @@ class M6RuntimeAcceptanceTests(unittest.TestCase):
         self.assertIn("IMAGE_SEQUENCE_DELAY_REJECTED", transport)
         self.assertNotIn("Reconnect", transport)
         protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooStaticImageProtocol.cs").read_text(encoding="utf-8")
-        self.assertIn("MinInterFrameDelayMs = 250", protocol)
+        # The floor tracks measured evidence: 250 ms was measured three times under
+        # OPENDITOO-R1-RATE-250MS-001/2/3 before it was lowered to 50 for R2a.
+        self.assertIn("MinInterFrameDelayMs = 50", protocol)
+        self.assertIn("OPENDITOO-R1-RATE-250MS", protocol,
+                      msg="lowering the floor must cite the run that earned the previous one")
 
     def test_sequence_cli_is_manifest_driven_with_no_free_form_arguments(self) -> None:
         cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")

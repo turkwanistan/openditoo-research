@@ -281,21 +281,20 @@ application bytes per frame to the Host's 147, omitting the two stock preambles.
 Worker and Host independently recorded identical figures this time. In 001 they disagreed
 on both the byte count and the terminal reason; both are confirmed fixed on the device.
 
-### Open question from 002 — one glance to close
+### Colour rendition — mostly closed
 
-The frame on screen when the unit was photographed contained **pure neutral values**: the
-idle `L` at `(85,85,85)`, the mushroom cap at `(170,170,170)`, the skull bones at
-`(255,255,255)`. All three appear distinctly **blue-white** in the photograph.
+A photograph of 002 made the idle column look blue, though the frame contained pure
+neutral values. **Resolved by operator observation: the panel renders greys correctly and
+the cast was the phone camera.** The design's grey-versus-blue distinction is intact and
+needs no change.
 
-Grey means idle and blue means activity in this design, so if grey genuinely reads as
-blue the two most semantically distinct states converge. But a phone auto-white-balancing
-a dark scene against saturated red and green LEDs will push neutrals blue on its own, so
-**this photograph cannot separate panel bias from camera white balance.** Ask the operator
-whether the idle column looks blue or neutral to the eye. No experiment is needed.
+Red, green, yellow and neutral greys/whites are now all confirmed rendering as themselves
+on this panel. **Magenta and cyan remain unverified**, so M6's "complete colour rendition
+NOT confirmed" caveat is narrowed, not closed.
 
-This also bears on the long-standing "complete colour rendition NOT confirmed" caveat from
-M6: yellow, red and green are now all confirmed rendering as themselves, and neutrals are
-the open part.
+Worth keeping as a method note: a phone auto-white-balancing a dark scene against
+saturated LEDs will shift neutrals. Photographs are evidence of layout and change, not of
+colour.
 
 ### Both trials' grants are consumed
 
