@@ -18,3 +18,8 @@ captures/private/
 
 # Windows-copied file metadata
 *:Zone.Identifier
+
+# Raw Android bugreports and HCI snoop logs contain the whole phone's Bluetooth
+# traffic plus unrelated personal data. Never commit them; record SHA-256 only.
+bugreport-*.zip
+*btsnoop*

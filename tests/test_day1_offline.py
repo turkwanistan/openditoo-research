@@ -24,6 +24,8 @@ from host.diagnostic_frame import (
     frame_sha256,
 )
 from host.ditoo_pixel_coloring import (
+    IMAGE_PREAMBLE_A,
+    IMAGE_PREAMBLE_B,
     DIAGNOSTIC_FRAME_SHA256,
     diagnostic_frame,
     drawing_pad_packet,
@@ -137,7 +139,11 @@ class BoundaryTests(unittest.TestCase):
         self.assertNotIn("send_hex", src.lower())
         self.assertNotIn("socket.socket", src)
         self.assertNotIn("AF_BTH", src)
+        # The CLI must contain no Bluetooth transport vocabulary or API. Offline
+        # capture analysis names the transport in host/btsnoop.py instead, so this
+        # guard stays strict rather than gaining exemptions.
         self.assertNotIn("RFCOMM", src)
+        self.assertNotIn("BTPROTO", src)
         self.assertNotIn('"--target"', src)
         self.assertNotIn('"--packet"', src)
 
@@ -753,6 +759,187 @@ class M9RendererTests(unittest.TestCase):
         self.assertNotIn("@192", blob)
         gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
         self.assertIn(".openditoo-local/", gitignore)
+
+
+# --------------------------------------------------------------------------
+# btsnoop capture parsing (M7 tooling)
+# --------------------------------------------------------------------------
+
+from host import btsnoop  # noqa: E402
+
+PRIVATE_CAPTURES = ROOT / "captures/private"
+
+
+def _h4_acl(handle: int, boundary: int, l2cap: bytes) -> bytes:
+    return b"\x02" + struct.pack("<HH", handle | (boundary << 12), len(l2cap)) + l2cap
+
+
+def _l2cap(cid: int, payload: bytes) -> bytes:
+    return struct.pack("<HH", len(payload), cid) + payload
+
+
+def _sig(code: int, identifier: int, body: bytes) -> bytes:
+    return _l2cap(1, bytes((code, identifier)) + struct.pack("<H", len(body)) + body)
+
+
+def _rfcomm_uih(dlci: int, payload: bytes) -> bytes:
+    address = (dlci << 2) | 0x03
+    header = bytes((address, btsnoop.RFCOMM_UIH, (len(payload) << 1) | 1))
+    return header + payload + bytes((btsnoop.rfcomm_fcs(header[:2]),))
+
+
+def _connection_complete(handle: int, bdaddr: str) -> bytes:
+    raw = bytes(int(part, 16) for part in reversed(bdaddr.split(":")))
+    return b"\x04" + bytes((0x03, 11, 0x00)) + struct.pack("<H", handle) + raw + bytes((0x01, 0x00))
+
+
+def _btsnoop(records: list[tuple[str, bytes]]) -> bytes:
+    out = bytearray(b"btsnoop\x00" + struct.pack(">II", 1, 1002))
+    for index, (direction, blob) in enumerate(records):
+        flags = 0x01 if direction == "rx" else 0x00
+        stamp = btsnoop.EPOCH_DELTA_US + 1_757_000_000_000_000 + index * 1000
+        out += struct.pack(">IIIIq", len(blob), len(blob), flags, 0, stamp) + blob
+    return bytes(out)
+
+
+class BtsnoopParserTests(unittest.TestCase):
+    PEER = "11:75:58:CE:DE:C7"
+    HANDLE = 0x000B
+
+    def _capture(self, extra: list[tuple[str, bytes]]) -> bytes:
+        return _btsnoop([("rx", _connection_complete(self.HANDLE, self.PEER))] + extra)
+
+    def _open_rfcomm(self, identifier: int, scid: int, dcid: int) -> list[tuple[str, bytes]]:
+        request = _sig(btsnoop.SIG_CONNECTION_REQUEST, identifier, struct.pack("<HH", 0x0003, scid))
+        response = _sig(btsnoop.SIG_CONNECTION_RESPONSE, identifier, struct.pack("<HHHH", dcid, scid, 0, 0))
+        return [("tx", _h4_acl(self.HANDLE, 2, request)), ("rx", _h4_acl(self.HANDLE, 2, response))]
+
+    def test_round_trip_of_an_application_frame(self) -> None:
+        wire = encode_candidate_normal(0x58, bytes.fromhex("ffffff016a"))
+        records = self._open_rfcomm(1, 0x0041, 0x0044)
+        records.append(("tx", _h4_acl(self.HANDLE, 2, _l2cap(0x0044, _rfcomm_uih(2, wire)))))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "c.btsnoop"
+            path.write_bytes(self._capture(records))
+            view, frames, errors = btsnoop.read(path, peer_bdaddr=self.PEER, reveal_commands={0x58})
+        self.assertEqual(view.handles, {self.HANDLE: self.PEER})
+        self.assertEqual(view.fcs_failures, 0)
+        self.assertEqual([frame.hex for frame in frames], [wire.hex()])
+        self.assertEqual(errors, {"tx": [], "rx": []})
+
+    def test_application_frame_split_across_acl_fragments(self) -> None:
+        wire = encode_candidate_normal(0x44, bytes(60))
+        pdu = _l2cap(0x0044, _rfcomm_uih(2, wire))
+        records = self._open_rfcomm(1, 0x0041, 0x0044)
+        records.append(("tx", _h4_acl(self.HANDLE, 2, pdu[:20])))
+        records.append(("tx", _h4_acl(self.HANDLE, 1, pdu[20:])))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "c.btsnoop"
+            path.write_bytes(self._capture(records))
+            _, frames, _ = btsnoop.read(path, peer_bdaddr=self.PEER, reveal_commands={0x44})
+        self.assertEqual([frame.hex for frame in frames], [wire.hex()])
+
+    def test_a_reused_signalling_identifier_does_not_adopt_another_psm(self) -> None:
+        # Regression: matching a response on identifier alone claimed an AVDTP channel
+        # as RFCOMM and mis-framed its data into phantom application frames.
+        decoy_request = _sig(btsnoop.SIG_CONNECTION_REQUEST, 1, struct.pack("<HH", 0x0019, 0x0050))
+        decoy_response = _sig(btsnoop.SIG_CONNECTION_RESPONSE, 1, struct.pack("<HHHH", 0x0051, 0x0050, 0, 0))
+        records = [("tx", _h4_acl(self.HANDLE, 2, decoy_request)), ("rx", _h4_acl(self.HANDLE, 2, decoy_response))]
+        records.append(("tx", _h4_acl(self.HANDLE, 2, _l2cap(0x0051, bytes.fromhex("deadbeefcafe")))))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "c.btsnoop"
+            path.write_bytes(self._capture(records))
+            view, frames, _ = btsnoop.read(path, peer_bdaddr=self.PEER)
+        self.assertEqual(view.rfcomm_cids, set())
+        self.assertEqual(frames, [])
+
+    def test_a_recycled_cid_stops_being_rfcomm_after_disconnect(self) -> None:
+        # Regression: CIDs are reassigned to other PSMs once a channel closes.
+        records = self._open_rfcomm(1, 0x0041, 0x0044)
+        records.append(("tx", _h4_acl(self.HANDLE, 2,
+                                      _sig(btsnoop.SIG_DISCONNECTION_REQUEST, 2, struct.pack("<HH", 0x0044, 0x0041)))))
+        records.append(("tx", _h4_acl(self.HANDLE, 2, _l2cap(0x0044, bytes.fromhex("deadbeefcafe")))))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "c.btsnoop"
+            path.write_bytes(self._capture(records))
+            view, frames, _ = btsnoop.read(path, peer_bdaddr=self.PEER)
+        self.assertEqual(frames, [])
+        self.assertEqual(view.fcs_failures, 0, msg="post-disconnect traffic must be ignored, not FCS-tested")
+
+    def test_traffic_from_another_device_is_excluded(self) -> None:
+        other = "AA:BB:CC:DD:EE:FF"
+        wire = encode_candidate_normal(0x58, b"\x01\x02\x03\x01\x00")
+        records = [("rx", _connection_complete(0x0020, other))]
+        records += [("tx", _h4_acl(0x0020, 2, _sig(btsnoop.SIG_CONNECTION_REQUEST, 1, struct.pack("<HH", 0x0003, 0x0041)))),
+                    ("rx", _h4_acl(0x0020, 2, _sig(btsnoop.SIG_CONNECTION_RESPONSE, 1, struct.pack("<HHHH", 0x0044, 0x0041, 0, 0))))]
+        records.append(("tx", _h4_acl(0x0020, 2, _l2cap(0x0044, _rfcomm_uih(2, wire)))))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "c.btsnoop"
+            path.write_bytes(self._capture(records))
+            _, frames, _ = btsnoop.read(path, peer_bdaddr=self.PEER, reveal_commands={0x58})
+        self.assertEqual(frames, [], msg="only the exact unit's ACL handle may contribute evidence")
+
+    def test_payloads_are_withheld_unless_explicitly_revealed(self) -> None:
+        wire = encode_candidate_normal(0x58, bytes.fromhex("ffffff016a"))
+        records = self._open_rfcomm(1, 0x0041, 0x0044)
+        records.append(("tx", _h4_acl(self.HANDLE, 2, _l2cap(0x0044, _rfcomm_uih(2, wire)))))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "c.btsnoop"
+            path.write_bytes(self._capture(records))
+            view, frames, errors = btsnoop.read(path, peer_bdaddr=self.PEER)
+        self.assertEqual(len(frames), 1)
+        self.assertIsNone(frames[0].hex, msg="payload bytes must not leak without an explicit reveal")
+        self.assertEqual(frames[0].sha256, __import__("hashlib").sha256(wire).hexdigest())
+        summary = btsnoop.summarize(view, frames, errors)
+        self.assertTrue(summary["payloads_withheld_by_default"])
+        self.assertNotIn(wire.hex(), json.dumps(summary))
+
+    def test_rejects_a_file_that_is_not_btsnoop(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad.bin"
+            path.write_bytes(b"not a capture at all")
+            with self.assertRaises(btsnoop.BtsnoopError):
+                btsnoop.read(path)
+
+
+@unittest.skipUnless((PRIVATE_CAPTURES / "capture2.btsnoop").is_file(),
+                     "raw btsnoop captures are private and absent from this checkout")
+class BtsnoopAgainstFrozenEvidenceTests(unittest.TestCase):
+    """Validates the parser against the exact captures the frozen evidence came from."""
+
+    PEER = "11:75:58:CE:DE:C7"
+
+    def test_stock_rfcomm_capture_reproduces_the_recorded_transport(self) -> None:
+        view, frames, errors = btsnoop.read(PRIVATE_CAPTURES / "capture1.btsnoop", peer_bdaddr=self.PEER)
+        recorded = json.loads((ROOT / "captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json").read_text(encoding="utf-8"))
+        transport = recorded["transport"]
+        self.assertIn(int(transport["l2cap_rfcomm"]["local_scid"], 16), view.rfcomm_cids)
+        self.assertIn(int(transport["l2cap_rfcomm"]["remote_dcid"], 16), view.rfcomm_cids)
+        self.assertEqual(view.handles.get(int(transport["hci_connection_complete"]["handle"], 16)), self.PEER)
+        self.assertIn(transport["rfcomm"]["application_dlci"], view.dlcis_seen)
+        self.assertEqual(errors, {"tx": [], "rx": []})
+
+    def test_pixel_coloring_capture_reproduces_every_frozen_stock_frame(self) -> None:
+        _, frames, errors = btsnoop.read(PRIVATE_CAPTURES / "capture2.btsnoop", peer_bdaddr=self.PEER,
+                                         reveal_commands={0x58, 0x9F, 0xBD})
+        seen = {frame.hex for frame in frames if frame.hex}
+        for expected in ("01090058ffffff026a7a440402", "01080058ff00000100600102",
+                         "0108005800ff57010fc60102", "010800580066ff01e1a70202",
+                         "010800585a5a5a0178e70102", "01080058ffffff01ff5d0402"):
+            self.assertIn(expected, seen, msg="frozen exact-unit drawing evidence must be reproducible")
+        self.assertIn(IMAGE_PREAMBLE_A.hex(), seen)
+        self.assertIn(IMAGE_PREAMBLE_B.hex(), seen)
+        self.assertEqual(errors, {"tx": [], "rx": []})
+
+    def test_drawing_pad_count_field_always_matches_its_index_list(self) -> None:
+        _, frames, _ = btsnoop.read(PRIVATE_CAPTURES / "capture2.btsnoop", peer_bdaddr=self.PEER,
+                                    reveal_commands={0x58})
+        drawing = [frame for frame in frames if frame.command == 0x58]
+        self.assertGreater(len(drawing), 100)
+        for frame in drawing:
+            payload = bytes.fromhex(frame.hex)[4:-3]
+            self.assertEqual(len(payload), 4 + payload[3],
+                             msg="RGB888[3] | count:u8 | index[count] must be self-consistent")
 
 
 if __name__ == "__main__":

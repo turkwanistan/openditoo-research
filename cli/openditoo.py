@@ -25,6 +25,7 @@ from host.ditoo_candidate_codec import compare_application_frame  # noqa: E402
 from host.ditoo_pixel_coloring import encode_rgb888_static_image, sha256_hex as pixel_sha256_hex  # noqa: E402
 from host.png16 import Png16Error, decode_png16_rgb, png_sha256  # noqa: E402
 from host import activity_render  # noqa: E402
+from host import btsnoop  # noqa: E402
 from host import mcp_activity  # noqa: E402
 
 CLI_VERSION = "0.2.0-static-image"
@@ -286,6 +287,60 @@ def image_show(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def capture_parse(args: argparse.Namespace) -> int:
+    """Offline: filter one raw btsnoop capture to attributable Ditoo evidence.
+
+    Payload bytes are withheld unless a command id is explicitly named with --reveal,
+    because a snoop log carries the whole phone's Bluetooth traffic.
+
+    This reads a local file and reaches no device. The transport acronym is spelled out
+    only in host/btsnoop.py: a boundary test asserts the CLI source contains no
+    Bluetooth transport vocabulary, and that guard is worth more than the wording here.
+    """
+    path = Path(args.btsnoop)
+    if not path.is_file():
+        emit({"ok": False, "command": "capture-parse", "error_code": "INPUT_NOT_FOUND", "source_file": str(path)})
+        return EXIT_USAGE
+    reveal: set[int] = set()
+    if args.reveal:
+        try:
+            reveal = {int(item, 16) for item in args.reveal.split(",") if item.strip()}
+        except ValueError:
+            emit({"ok": False, "command": "capture-parse", "error_code": "INVALID_REVEAL_LIST"})
+            return EXIT_USAGE
+    try:
+        view, frames, errors = btsnoop.read(path, peer_bdaddr=args.peer_bdaddr,
+                                            server_channel=args.server_channel, reveal_commands=reveal)
+    except btsnoop.BtsnoopError as exc:
+        emit({"ok": False, "command": "capture-parse", "error_code": "INVALID_BTSNOOP", "message": str(exc)})
+        return EXIT_USAGE
+
+    summary = btsnoop.summarize(view, frames, errors)
+    summary["revealed_commands"] = sorted(f"0x{value:02X}" for value in reveal)
+    summary["payloads_withheld_by_default"] = not reveal
+    result = {
+        "ok": True,
+        "command": "capture-parse",
+        "device_io": False,
+        "source_file": str(path),
+        "source_sha256": pixel_sha256_hex(path.read_bytes()),
+        "peer_bdaddr": args.peer_bdaddr,
+        "rfcomm_server_channel": args.server_channel,
+        **summary,
+    }
+    if reveal:
+        result["revealed_frames"] = [
+            {"at": frame.at.isoformat().replace("+00:00", "Z"), "direction": frame.direction,
+             "command": f"0x{frame.command:02X}", "wire_hex": frame.hex, "sha256": frame.sha256}
+            for frame in frames if frame.hex
+        ]
+    if args.output:
+        Path(args.output).write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        result["output_file"] = args.output
+    emit(result)
+    return EXIT_OK
+
+
 def _activity_config():
     return mcp_activity.load_config()
 
@@ -422,6 +477,15 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("image-show", help="show one exact 16x16 local PNG on the fixed paired Ditoo")
     p.add_argument("--png", required=True)
     p.set_defaults(func=image_show)
+    p = sub.add_parser("capture-parse", help="offline: filter a raw btsnoop capture to Ditoo serial-port application evidence")
+    p.add_argument("--btsnoop", required=True)
+    # Offline analysis filter over a local file. This selects which captured peer to
+    # report on; it is not a device target and reaches nothing.
+    p.add_argument("--peer-bdaddr", default="11:75:58:CE:DE:C7")
+    p.add_argument("--server-channel", type=int, default=1, help="Bluetooth serial port (SPP) server channel to filter")
+    p.add_argument("--reveal", help="comma-separated command ids to include in the clear, e.g. 58,44")
+    p.add_argument("--output")
+    p.set_defaults(func=capture_parse)
     p = sub.add_parser("activity-probe", help="diagnose the three MCP activity sources (read-only)")
     p.set_defaults(func=activity_probe)
     p = sub.add_parser("activity-status", help="normalized MCP activity state; collection health is separate from device health")
