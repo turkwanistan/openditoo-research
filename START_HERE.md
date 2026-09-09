@@ -33,7 +33,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ### Authority state
 
-**Nothing is currently authorized.** `OPENDITOO-M9-ACTIVATION-003` was granted and executed once; it is consumed after a one-frame HTTP 429 pacing-edge partial and must never be re-armed. `OPENDITOO-M9-ACTIVATION-004` is the fresh pending MCP-dashboard acceptance manifest. Every live operation still requires an explicit operator grant naming its exact experiment id.
+**`OPENDITOO-M9-ACTIVATION-004` is currently authorized for ONE bounded execution only.** `OPENDITOO-M9-ACTIVATION-003` is consumed after its one-frame HTTP 429 pacing-edge partial and must never be re-armed. The live 004 grant is limited to the exact frozen 60 s MCP-dashboard envelope; no retry, reconnect, reclaim, streaming, pipelining, unattended operation, or second attempt.
 
 ### Next objective
 

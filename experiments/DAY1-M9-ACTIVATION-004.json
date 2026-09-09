@@ -2,7 +2,7 @@
  "schema_version": 2,
  "experiment_id": "OPENDITOO-M9-ACTIVATION-004",
  "milestone": "MCP dashboard physical acceptance \u2014 paced client, animated pulse, stock-yield",
- "status": "pending_operator_grant",
+ "status": "authorized_pending_execution",
  "objective": "Physically accept the rate-integrated MCP dashboard after the 003 cross-process pacing fix: observe the complete four-stage activity pulse, then exercise one physical control while the session is definitely live and verify immediate yield with no reclaim.",
  "why_this_shape": "003 proved the dashboard renders but exposed a client/Host timing-edge race when dispatch was scheduled exactly at the Host 150 ms arrival floor. 004 changes only client-side timing: 50 ms render tick and 200 ms nominal frame dispatch while the unchanged Host still enforces a 150 ms hard floor. Bluetooth protocol shape, target, packet spacing, ACK-per-frame, and stop policy are unchanged.",
  "target": {
@@ -103,14 +103,14 @@
   "operator present and watching the unit"
  ],
  "authority": {
-  "transmission_authorized": false,
+  "transmission_authorized": true,
   "authorization_consumed": false,
   "experiment_id": "OPENDITOO-M9-ACTIVATION-004",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "Grant OPENDITOO-M9-ACTIVATION-004",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution only: up to 60 seconds; change-only MCP dashboard; 50 ms render tick; client dispatch nominally no faster than 200 ms; Host hard floor 150 ms; at most 301 frames / 903 packets / 61103 application bytes; one RFCOMM connection; one ACK per frame; fixed 10 ms intra-frame spacing; no retry, reconnect, reclaim, pipelining, streaming, unattended operation, or second attempt.",
-  "grant_scope": null
+  "grant_scope": "ONE execution only: up to 60 seconds; change-only MCP dashboard; 50 ms render tick; client dispatch nominally no faster than 200 ms; Host hard floor 150 ms; at most 301 frames / 903 packets / 61103 application bytes; one RFCOMM connection; one ACK per frame; fixed 10 ms intra-frame spacing; no retry, reconnect, reclaim, pipelining, streaming, unattended operation, or second attempt."
  },
  "explicitly_out_of_scope": [
   "streaming or video milestone work",
