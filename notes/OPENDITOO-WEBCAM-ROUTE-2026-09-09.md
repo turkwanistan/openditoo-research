@@ -313,3 +313,56 @@ cd C:\temp\openditoo-webcam-probe
   The owner has since righted it, so the default stays 0 — but a mount-orientation knob is
   clearly load-bearing for a physical webcam and is kept.
 - Scene mean luma is now ~152/255 with the room lit, against ~52 in the dark.
+
+## 10. W3 results — freshest-frame pipeline proven, no Ditoo involved
+
+`runtime/windows/OpenDitoo.Webcam.Probe` gained `FrameTransform.cs`, `LatestFrameSlot.cs` and a
+`pipeline` mode. It references no Host project, holds no token, and contains no Bluetooth,
+socket or endpoint string; a verifier check and a test both enforce that. The transport in this
+milestone is a **delay, not a device**.
+
+### 10.1 Cross-language transform parity — PASS
+
+`OpenDitoo.Webcam.Probe.exe transform-selftest tests/frame_transform_cases.json` →
+`TRANSFORM_SELFTEST_PASS cases=15 failures=0`, first run.
+
+The C# port reproduces the Python reference bit for bit, including the parts most likely to
+drift silently: numpy's half-to-even rounding (every `Math.Round` uses
+`MidpointRounding.ToEven`), the per-row/column cell edges for sides not divisible by 16, and the
+palette-merge tie-break order. Without this, a preview would stop predicting what the device is
+sent and every visual acceptance would become unverifiable.
+
+### 10.2 Exit criteria
+
+| Criterion | Result | |
+| --- | ---: | --- |
+| p95 transform ≤ 5 ms | 2.15 ms (p50 1.32) | **PASS** |
+| ≥18 sender iterations/s at a 54 ms cycle | 18.32/s | **PASS** |
+| p95 source age at fake send ≤ 50 ms | 50.94 ms | miss by 0.94 ms |
+| queue depths never exceed one | maxRaw 1, maxProcessed 1 | **PASS** |
+
+Invariants observed over a 15 s run: 433 camera frames offered, **0 raw frames replaced before
+use** (the processor always kept up), **168 processed frames replaced before use** (the sender
+could not, so the newest won and the rest were dropped rather than queued), 264 sends, **1** idle
+poll, and no frame ever sent twice.
+
+The age miss is gated on camera frame rate, not on the pipeline: at 28.87 fps a frame waits up
+to a full 54 ms sender cycle for a slot. In the earlier well-lit measurement the camera ran at
+53 fps, where that wait roughly halves. This should be re-measured with the room lit before it
+is treated as a real miss.
+
+### 10.3 Three wrong turns, recorded because each was measured rather than assumed
+
+1. **`Task.Delay` is not a 54 ms delay.** The Windows timer tick is ~15.6 ms, so the simulated
+   ACK cycle was really 60.8 ms and failed the rate criterion for reasons that had nothing to do
+   with the pipeline. Fixed with `timeBeginPeriod(1)` plus a short spin — a *simulation*
+   artifact only; a real stream waits on an actual HTTP response and needs no timer.
+2. **I blamed the BGRA conversion for the camera's rate, and was wrong.** Moving the
+   BGRA→RGB conversion off the callback thread was still worth it (transform p95 2.84 → 1.22 ms,
+   and the transform now reads BGRA in place with no intermediate copy), but a control run with
+   *no* conversion measured the same 28.35 fps. Camera rate tracks exposure, as W1 established.
+   The misleading comment has been corrected in the source.
+3. **The rate accounting undercounted a saturated sender.** Dividing sends by wall-clock
+   included camera start-up and the trailing partial cycle, reporting 17.6/s for a sender that
+   was in fact running at its cycle rate. Measuring over the sender's own active span gives
+   18.32/s. The wall-clock figure is still reported alongside it.

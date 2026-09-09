@@ -353,6 +353,21 @@ def verify_stream_boundary() -> None:
             fail(f"the stream CLI exposes a free-form operating argument: {forbidden}")
 
 
+def verify_webcam_sidecar_boundary() -> None:
+    """The camera sidecar is a frame source and must stay unable to reach the Ditoo."""
+    probe = ROOT / "runtime/windows/OpenDitoo.Webcam.Probe"
+    if not probe.is_dir():
+        return
+    source = "\n".join(path.read_text(encoding="utf-8") for path in sorted(probe.glob("*.cs")))
+    for forbidden in ("8796", "host.token", "Bearer", "Rfcomm", "Bluetooth", "11:75:58",
+                      "/v1/session", "/v1/image", "HttpClient"):
+        if forbidden in source:
+            fail(f"webcam sidecar reaches past its boundary: {forbidden}")
+    csproj = (probe / "OpenDitoo.Webcam.Probe.csproj").read_text(encoding="utf-8")
+    if "ProjectReference" in csproj:
+        fail("webcam sidecar must not reference the Host project")
+
+
 def verify_consumed_runner() -> None:
     runner = (ROOT / "runtime/windows/OpenDitoo.M4.Runner/Program.cs").read_text(encoding="utf-8")
     if "M4_AUTHORITY_CONSUMED" not in runner:
@@ -394,6 +409,7 @@ def main() -> int:
     verify_activation_boundary()
     verify_product_runtime_boundary()
     verify_stream_boundary()
+    verify_webcam_sidecar_boundary()
     verify_consumed_runner()
     verify_m5_runner_disarmed()
     print(

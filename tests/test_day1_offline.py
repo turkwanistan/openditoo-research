@@ -3361,3 +3361,56 @@ class W2FrameTransformTests(unittest.TestCase):
         self.assertEqual(ft.DEFAULT.resampler, "area")
         self.assertFalse(ft.DEFAULT.linear_light)
         self.assertEqual((ft.DEFAULT.saturation, ft.DEFAULT.gamma, ft.DEFAULT.zoom), (1.0, 1.0, 1.0))
+
+
+class W3WebcamPipelineBoundaryTests(unittest.TestCase):
+    """The camera sidecar is a frame source. It must not be able to reach the Ditoo."""
+
+    PROBE = ROOT / "runtime/windows/OpenDitoo.Webcam.Probe"
+
+    def _sources(self) -> str:
+        return "\n".join(path.read_text(encoding="utf-8")
+                         for path in sorted(self.PROBE.glob("*.cs")))
+
+    def test_the_camera_sidecar_cannot_reach_the_device_or_the_host(self) -> None:
+        source = self._sources()
+        for forbidden in ("8796", "host.token", "Authorization", "Bearer", "Rfcomm", "Bluetooth",
+                          "DitooStaticImageProtocol", "ActivitySessionHost", "11:75:58",
+                          "/v1/session", "/v1/image", "HttpClient", "Socket"):
+            self.assertNotIn(forbidden, source,
+                             msg=f"the webcam sidecar must not reference {forbidden}")
+
+    def test_the_project_references_nothing_of_the_host(self) -> None:
+        csproj = (self.PROBE / "OpenDitoo.Webcam.Probe.csproj").read_text(encoding="utf-8")
+        self.assertNotIn("ProjectReference", csproj)
+        self.assertNotIn("OpenDitoo.Day1.Host", csproj)
+
+    def test_the_latest_frame_slot_replaces_and_never_queues(self) -> None:
+        source = (self.PROBE / "LatestFrameSlot.cs").read_text(encoding="utf-8")
+        # Depth is 0 or 1 by construction; a collection here would be a queue.
+        self.assertIn("if (occupied) Replaced++;", source)
+        self.assertIn("internal int Depth", source)
+        for forbidden in ("Queue<", "ConcurrentQueue", "List<T>", "Channel<"):
+            self.assertNotIn(forbidden, source, msg=f"the slot must not buffer: {forbidden}")
+
+    def test_the_sender_never_resends_a_frame_it_already_sent(self) -> None:
+        source = (self.PROBE / "Program.cs").read_text(encoding="utf-8")
+        # TryTake empties the slot, so an unchanged source produces an idle wait, not a resend.
+        self.assertIn("senderIdle++", source)
+        self.assertIn("nothing newer: never resend the same frame", source)
+
+    def test_the_simulated_transport_is_clearly_not_a_device(self) -> None:
+        source = (self.PROBE / "Program.cs").read_text(encoding="utf-8")
+        self.assertIn("ditooTouched = false", source)
+        self.assertIn("the transport is a delay, not a device", source)
+        self.assertIn('return Fail("fakeAckMs must be 40..100")', source)
+
+    def test_the_csharp_transform_mirrors_the_python_reference(self) -> None:
+        source = (self.PROBE / "FrameTransform.cs").read_text(encoding="utf-8")
+        # Rounding mode is the whole parity risk: numpy rounds half-to-even.
+        self.assertGreaterEqual(source.count("MidpointRounding.ToEven"), 4)
+        self.assertIn("3 * dr * dr + 4 * dg * dg + 2 * db * db", source)
+        self.assertIn("MaxPaletteColors = 255", source)
+        # The default must agree with the frozen Python default.
+        from host import frame_transform
+        self.assertIn(f'new("{frame_transform.DEFAULT.name}", LinearLight: false)', source)

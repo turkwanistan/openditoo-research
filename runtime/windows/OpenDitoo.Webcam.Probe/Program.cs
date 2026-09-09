@@ -10,6 +10,20 @@ using Windows.Media.Capture;
 using Windows.Media.Capture.Frames;
 using Windows.Media.MediaProperties;
 
+// Both pipeline loops block for long stretches. On the thread pool they compete with the
+// MediaFrameReader callback; dedicated threads keep capture off the critical path.
+static Task RunOnDedicatedThread(Action body)
+{
+    var completion = new TaskCompletionSource();
+    var thread = new Thread(() =>
+    {
+        try { body(); completion.SetResult(); }
+        catch (Exception ex) { completion.SetException(ex); }
+    }) { IsBackground = true, Priority = ThreadPriority.AboveNormal };
+    thread.Start();
+    return completion.Task;
+}
+
 static int Fail(string message)
 {
     Console.Error.WriteLine($"WEBCAM_PROBE_FAIL: {message}");
@@ -68,6 +82,14 @@ static async Task<(MediaCapture? Capture, string Strategy, List<string> Errors)>
 }
 
 var mode = args.Length > 0 ? args[0] : "enumerate";
+
+// Offline parity check against the Python reference. Starts no camera and touches nothing.
+if (mode == "transform-selftest")
+{
+    if (args.Length < 2) return Fail("transform-selftest <fixture.json>");
+    return OpenDitoo.Webcam.Probe.FrameTransform.SelfTest(args[1]);
+}
+
 var groups = await MediaFrameSourceGroup.FindAllAsync();
 if (groups.Count == 0) return Fail("no MediaFrameSourceGroup present");
 
@@ -385,6 +407,186 @@ if (mode == "snapshot")
         saved,
     }, new JsonSerializerOptions { WriteIndented = true }));
     return saved.Count > 0 ? 0 : 2;
+}
+
+// --------------------------------------------------------------------------
+// pipeline <subtype> <width> <height> <fps> <seconds> <fakeAckMs>
+// --------------------------------------------------------------------------
+// W3: camera -> latest raw slot -> transform -> latest processed slot -> simulated ACK sender.
+// Reaches NO Ditoo and holds no Host token: the transport here is a delay, deliberately, so
+// the freshest-frame semantics can be proven before any device is involved.
+if (mode == "pipeline")
+{
+    if (args.Length < 7) return Fail("pipeline <subtype> <width> <height> <fps> <seconds> <fakeAckMs>");
+    var wantSubtype = args[1];
+    var wantWidth = uint.Parse(args[2]);
+    var wantHeight = uint.Parse(args[3]);
+    var wantFps = double.Parse(args[4]);
+    var seconds = int.Parse(args[5]);
+    var fakeAckMs = int.Parse(args[6]);
+    if (fakeAckMs is < 40 or > 100) return Fail("fakeAckMs must be 40..100");
+
+    var target = groups.FirstOrDefault(g => g.DisplayName.Contains("NexiGo", StringComparison.OrdinalIgnoreCase))
+                 ?? groups[0];
+    var (capture, _, initErrors) = await TryInitialize(target, exclusive: true);
+    if (capture is null) return Fail($"camera initialize failed: {string.Join(" | ", initErrors)}");
+    using var owned = capture;
+    var source = capture.FrameSources.Values.FirstOrDefault(s =>
+        s.Info.MediaStreamType is MediaStreamType.VideoRecord or MediaStreamType.VideoPreview);
+    if (source is null) return Fail("no video frame source");
+    var chosen = source.SupportedFormats.FirstOrDefault(f =>
+        f.Subtype.Equals(wantSubtype, StringComparison.OrdinalIgnoreCase) &&
+        f.VideoFormat.Width == wantWidth && f.VideoFormat.Height == wantHeight &&
+        f.FrameRate.Denominator != 0 &&
+        Math.Abs((double)f.FrameRate.Numerator / f.FrameRate.Denominator - wantFps) < 0.51);
+    if (chosen is null) return Fail($"mode not exposed: {wantSubtype} {wantWidth}x{wantHeight}@{wantFps}");
+    await source.SetFormatAsync(chosen);
+
+    var rawSlot = new OpenDitoo.Webcam.Probe.LatestFrameSlot<OpenDitoo.Webcam.Probe.TimedFrame>();
+    var processedSlot = new OpenDitoo.Webcam.Probe.LatestFrameSlot<OpenDitoo.Webcam.Probe.TimedFrame>();
+    var transformMs = new List<double>();
+    var senderCycleMs = new List<double>();
+    var ageAtSendMs = new List<double>();
+    var senderIterations = 0L;
+    double senderFirstSendMs = 0, senderLastSendMs = 0;
+    var senderIdle = 0L;
+    var maxRawDepth = 0;
+    var maxProcessedDepth = 0;
+    var preset = OpenDitoo.Webcam.Probe.FrameTransform.Default;
+
+    static double QpcNowMs() => Stopwatch.GetTimestamp() * 1000.0 / Stopwatch.Frequency;
+
+    using var reader = await capture.CreateFrameReaderAsync(source, MediaEncodingSubtypes.Bgra8);
+    reader.AcquisitionMode = MediaFrameReaderAcquisitionMode.Realtime;
+    reader.FrameArrived += (sender, _) =>
+    {
+        using var frame = sender.TryAcquireLatestFrame();
+        var bitmap = frame?.VideoMediaFrame?.SoftwareBitmap;
+        if (bitmap is null) return;
+        using var converted = bitmap.BitmapPixelFormat == Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8
+            ? Windows.Graphics.Imaging.SoftwareBitmap.Copy(bitmap)
+            : Windows.Graphics.Imaging.SoftwareBitmap.Convert(bitmap, Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8);
+        // Keep the callback cheap: copy the native BGRA out and leave every conversion to the
+        // processor. (An earlier comment here blamed this conversion for a ~29 fps camera rate.
+        // A control run with no Bgra8 conversion measured the same 28.35 fps, so that was
+        // wrong: camera rate tracks exposure/lighting, per the W1 findings. Doing less work on
+        // the callback thread is still right, and it halved transform p95.)
+        var bgra = new byte[converted.PixelWidth * converted.PixelHeight * 4];
+        var buffer = new Windows.Storage.Streams.Buffer((uint)bgra.Length);
+        converted.CopyToBuffer(buffer);
+        using (var dr = Windows.Storage.Streams.DataReader.FromBuffer(buffer)) dr.ReadBytes(bgra);
+        var captured = frame!.SystemRelativeTime?.TotalMilliseconds ?? QpcNowMs();
+        rawSlot.Put(new OpenDitoo.Webcam.Probe.TimedFrame(bgra, converted.PixelWidth, converted.PixelHeight, captured));
+        maxRawDepth = Math.Max(maxRawDepth, rawSlot.Depth);
+    };
+
+    using var stopping = new CancellationTokenSource(TimeSpan.FromSeconds(seconds));
+    // Only needed because the ACK here is simulated with a timer; see PreciseDelay.
+    using var timerResolution = OpenDitoo.Webcam.Probe.PreciseDelay.HighResolutionScope();
+    await reader.StartAsync();
+
+    var processor = RunOnDedicatedThread(() =>
+    {
+        while (!stopping.IsCancellationRequested)
+        {
+            if (!rawSlot.Wait(stopping.Token)) continue;
+            if (rawSlot.TryTake(out var raw))
+            {
+                var started = QpcNowMs();
+                var pixels = OpenDitoo.Webcam.Probe.FrameTransform.Transform(
+                    raw.Pixels, raw.Width, raw.Height, preset,
+                    OpenDitoo.Webcam.Probe.FrameTransform.SourceFormat.Bgra32);
+                lock (transformMs) transformMs.Add(QpcNowMs() - started);
+                processedSlot.Put(new OpenDitoo.Webcam.Probe.TimedFrame(pixels, 16, 16, raw.CapturedQpcMs));
+                maxProcessedDepth = Math.Max(maxProcessedDepth, processedSlot.Depth);
+            }
+        }
+    });
+
+    var senderTask = RunOnDedicatedThread(() =>
+    {
+        while (!stopping.IsCancellationRequested)
+        {
+            // Only ever select AFTER the previous simulated ACK: one frame in flight, and no
+            // catch-up burst is possible because nothing is queued behind it.
+            if (processedSlot.TryTake(out var ready))
+            {
+                var cycleStart = QpcNowMs();
+                if (senderIterations == 0) senderFirstSendMs = cycleStart;
+                senderLastSendMs = cycleStart;
+                senderIterations++;
+                lock (ageAtSendMs) ageAtSendMs.Add(QpcNowMs() - ready.CapturedQpcMs);
+                OpenDitoo.Webcam.Probe.PreciseDelay.Wait(fakeAckMs, stopping.Token);
+                lock (senderCycleMs) senderCycleMs.Add(QpcNowMs() - cycleStart);
+            }
+            else
+            {
+                senderIdle++;   // nothing newer: never resend the same frame
+                // Block for the next frame rather than poll. A 10 ms poll here cost the sender
+                // ~4% of its achievable rate whenever a frame landed just after a check.
+                if (!processedSlot.Wait(stopping.Token, 1000)) continue;
+            }
+        }
+    });
+
+    try { await Task.WhenAll(processor, senderTask); } catch (OperationCanceledException) { }
+    await reader.StopAsync();
+
+    static object Stats(List<double> values)
+    {
+        if (values.Count == 0) return new { count = 0 };
+        var sorted = values.OrderBy(v => v).ToList();
+        return new
+        {
+            count = sorted.Count,
+            p50 = Math.Round(sorted[sorted.Count / 2], 2),
+            p95 = Math.Round(sorted[Math.Min(sorted.Count - 1, (int)(sorted.Count * 0.95))], 2),
+            max = Math.Round(sorted[^1], 2),
+        };
+    }
+
+    var transformStats = Stats(transformMs);
+    var ageStats = Stats(ageAtSendMs);
+    // Rate over the sender's OWN active span, not wall clock: camera start-up and the trailing
+    // partial cycle are not part of a sustained-rate measurement and made a saturated sender
+    // look 4% slow.
+    var senderSpanSeconds = (senderLastSendMs - senderFirstSendMs) / 1000.0;
+    var sendersPerSecond = senderIterations > 1 && senderSpanSeconds > 0
+        ? Math.Round((senderIterations - 1) / senderSpanSeconds, 2)
+        : 0.0;
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        ok = true,
+        command = "pipeline",
+        deviceIo = false,
+        ditooTouched = false,
+        note = "the transport is a delay, not a device; no Host token is held and no Ditoo is reachable",
+        mode = new { chosen.Subtype, chosen.VideoFormat.Width, chosen.VideoFormat.Height },
+        preset = preset.Name,
+        seconds,
+        fakeAckMs,
+        camera = new { offered = rawSlot.Offered, replacedBeforeUse = rawSlot.Replaced, taken = rawSlot.Taken },
+        processed = new { offered = processedSlot.Offered, replacedBeforeUse = processedSlot.Replaced,
+                          taken = processedSlot.Taken },
+        senderIterations,
+        senderIterationsPerSecond = sendersPerSecond,
+        senderActiveSpanSeconds = Math.Round(senderSpanSeconds, 2),
+        senderIterationsPerSecondWallClock = Math.Round(senderIterations / (double)seconds, 2),
+        senderIdlePolls = senderIdle,
+        transformMs = transformStats,
+        senderCycleMs = Stats(senderCycleMs),
+        cameraFps = Math.Round(rawSlot.Offered / (double)seconds, 2),
+        sourceAgeAtFakeSendMs = ageStats,
+        queueDepth = new { maxRaw = maxRawDepth, maxProcessed = maxProcessedDepth },
+        exitCriteria = new
+        {
+            transformP95Under5ms = transformMs.Count > 0 && ((dynamic)transformStats).p95 <= 5.0,
+            senderIterationsPerSecondAtLeast18 = sendersPerSecond >= 18.0,
+            sourceAgeP95Under50ms = ageAtSendMs.Count > 0 && ((dynamic)ageStats).p95 <= 50.0,
+            queueDepthNeverAboveOne = maxRawDepth <= 1 && maxProcessedDepth <= 1,
+        },
+    }, new JsonSerializerOptions { WriteIndented = true }));
+    return 0;
 }
 
 return Fail($"unknown mode: {mode}");
