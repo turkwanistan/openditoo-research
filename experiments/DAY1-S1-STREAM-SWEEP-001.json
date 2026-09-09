@@ -3,7 +3,7 @@
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-S1-STREAM-001",
   "milestone": "S1 general bounded 16x16 frame streaming",
-  "status": "completed_authority_consumed_pending_operator_observation",
+  "status": "completed_pass_authority_consumed",
   "objective": "Physically accept the general frame-streaming primitive: an arbitrary precomputed 16x16 RGB888 frame set played through the already-proven typed session transaction, with no new route, encoder, transport or Host build.",
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -157,8 +157,8 @@
     "any target other than the exact unit"
   ],
   "result": {
-    "status": "transport_pass_visual_observation_pending",
-    "acceptance": "transport and streaming path exercised on the exact unit; operator visual observation not yet recorded",
+    "status": "pass",
+    "acceptance": "physical_visual_pass_general_precomputed_frame_streaming",
     "connections_attempted": 1,
     "host_session_id": "71b1a50d7982",
     "frames_sent": 42,
@@ -226,6 +226,7 @@
     "frames_dropped_by_design": 6,
     "drop_analysis": "42 of the clip's 48 playback steps were dispatched; 6 steps were passed over. This is the designed clock-indexed behaviour, not a fault: measured ACK latency on this unit is ~110-153 ms and the client cadence is 200 ms, so send+ACK work consumes most of each window and occasionally the next render tick already reports the following step. No pacing refusal (429) and no budget refusal occurred, and the close was clean. A future stream manifest wanting every frame shown should state a slower playback_interval_ms (e.g. 250 ms); that is a manifest choice, not a code change.",
     "product_supervisor": "stopped before the run (clean operator_stop, session_active=false) and restarted immediately afterward; the MCP dashboard returned automatically",
-    "scope_note": "Proves the general precomputed-frame streaming path end to end on the exact unit through the existing typed session transaction. Proves nothing about video preprocessing, live generation, audio sync, pipelining, or rates above the tested cadence."
+    "scope_note": "Proves the general precomputed-frame streaming path end to end on the exact unit through the existing typed session transaction. Proves nothing about video preprocessing, live generation, audio sync, pipelining, or rates above the tested cadence.",
+    "operator_observation": "saw what was described: three left-to-right single-column sweeps, red then green then blue"
   }
 }

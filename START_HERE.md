@@ -30,7 +30,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | M0-M8 | complete; accepted evidence preserved |
 | M9 MCP activity application | complete; layout/activity/status/fault-display acceptance recorded |
 | R1-R5 rate ladder | complete; measured through 18.46 fps full-colour one-ACK-per-frame ceiling |
-| S1 general frame streaming | implemented, offline verified (188 tests), and physically exercised: `OPENDITOO-S1-STREAM-001` consumed, transport PASS (42 frames / 126 packets / 2982 bytes, clean close) |
+| S1 general frame streaming | **accepted**; `OPENDITOO-S1-STREAM-001` consumed, transport PASS (42 frames / 126 packets / 2982 bytes, clean close) and operator visual PASS |
 | A1 collection worker | installed/preserved; product owns collection while active |
 | P1 Runtime 001 | installed, standing local authority active, attach/reclaim/device-reconnect accepted |
 | P2 Runtime 002 | telemetry-only successor implemented/offline verified; committed template disabled; cutover requires its own named grant |

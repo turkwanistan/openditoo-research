@@ -95,7 +95,9 @@ transport work.
 slower `playback_interval_ms` (250 ms leaves ~100 ms of headroom over measured ACK latency).
 That is a manifest choice, not a code change — do not "fix" this in the shared runner.
 
-Operator visual observation is recorded separately and is what accepts the appearance.
+**Visual result: PASS.** Operator observation: saw the described three left-to-right
+single-column sweeps, red then green then blue. The general precomputed-frame streaming path
+is now physically accepted on the exact unit.
 
 ## Trial envelope as run
 
