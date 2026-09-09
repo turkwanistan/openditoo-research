@@ -49,10 +49,12 @@ def run_tests() -> None:
 
 def verify_manifests() -> None:
     m4 = json.loads((ROOT / "experiments" / "DAY1-M4-QUERY-PENDING.json").read_text(encoding="utf-8"))
-    if m4.get("status") != "authorized_pending_execution":
-        fail("M4 is not in authorized-pending-execution state")
-    if m4.get("authority", {}).get("transmission_authorized") is not True:
-        fail("M4 authority is not explicit")
+    if m4.get("status") != "completed_pass_authority_consumed":
+        fail("M4 is not completed/consumed")
+    if m4.get("authority", {}).get("transmission_authorized") is not False:
+        fail("M4 replay unexpectedly remains authorized")
+    if m4.get("authority", {}).get("authorization_consumed") is not True:
+        fail("M4 authority consumption is not recorded")
     if m4.get("operation", {}).get("automatic_retry") is not False:
         fail("M4 unexpectedly permits automatic retry")
     if m4.get("operation", {}).get("application_tx_hex") != "01040097009b0002":
@@ -62,8 +64,8 @@ def verify_manifests() -> None:
         fail("M4 one-shot budget drifted")
 
     m5 = json.loads((ROOT / "experiments" / "DAY1-M5-FRAME-PENDING.json").read_text(encoding="utf-8"))
-    if m5.get("status") != "offline_template_not_executable":
-        fail("M5 status is not fail-closed")
+    if m5.get("status") != "awaiting_stock_pixel_coloring_capture":
+        fail("M5 is not waiting on stock Pixel Coloring evidence")
     if m5.get("authority", {}).get("transmission_authorized") is not False:
         fail("M5 unexpectedly authorizes transmission")
     if m5.get("operation", {}).get("automatic_retry") is not False:
@@ -99,21 +101,12 @@ def verify_host_boundary() -> None:
         fail("OpenDitoo control plane collides with OpenTivoo Host port")
 
 
-def verify_authorized_runner() -> None:
+def verify_consumed_runner() -> None:
     runner = (ROOT / "runtime/windows/OpenDitoo.M4.Runner/Program.cs").read_text(encoding="utf-8")
-    project = (ROOT / "runtime/windows/OpenDitoo.M4.Runner/OpenDitoo.M4.Runner.csproj").read_text(encoding="utf-8")
-    for needle in (
-        "args.Length != 0",
-        "RequireAuthenticatedExactTarget()",
-        "ExchangeFrozenFileVersionOnce()",
-        "M4_PAIRING_REQUIRED_NO_CONNECT",
-    ):
-        if needle not in runner:
-            fail(f"authorized runner missing exact boundary: {needle}")
-    if "Console.ReadLine" in runner:
-        fail("authorized runner unexpectedly accepts interactive input")
-    if "DitooM4FileVersionProtocol.cs" not in project or "WindowsRfcommBoundedM4Transport.cs" not in project:
-        fail("authorized runner is not linked to the frozen protocol/transport sources")
+    if "M4_AUTHORITY_CONSUMED" not in runner:
+        fail("M4 runner is not disarmed after successful one-shot execution")
+    if "ExchangeFrozenFileVersionOnce" in runner or "RequireAuthenticatedExactTarget" in runner:
+        fail("M4 runner still exposes a live execution path after authority consumption")
 
 
 def main() -> int:
@@ -121,11 +114,11 @@ def main() -> int:
     run_tests()
     verify_manifests()
     verify_host_boundary()
-    verify_authorized_runner()
+    verify_consumed_runner()
     print(
         "DAY1_OFFLINE_PASS "
         f"artifacts={artifact_count} tests=12 host=status_only port=8796 "
-        "device_io=false m4_authorized=true m5_authorized=false"
+        "device_io=false m4_completed=true m4_authorized=false m5_authorized=false"
     )
     return 0
 

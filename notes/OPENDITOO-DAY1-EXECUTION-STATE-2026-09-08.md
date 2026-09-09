@@ -146,7 +146,7 @@ The semantic/evidence freeze is documented in `notes/OPENDITOO-DAY1-M4-FILE-VERS
 
 `python3 scripts/verify_day1_offline.py`:
 
-`DAY1_OFFLINE_PASS artifacts=19 tests=12 host=status_only port=8796 device_io=false m4_authorized=true m5_authorized=false`
+`DAY1_OFFLINE_PASS artifacts=19 tests=12 host=status_only port=8796 device_io=false m4_completed=true m4_authorized=false m5_authorized=false`
 
 Source hashes at this gate:
 
@@ -221,13 +221,17 @@ Android package metadata also closes two M0 fields: Android 16 / build `CP1A.260
 | M1 transport/capture | PASS | exact purchased-unit stock route measured as Classic RFCOMM/SPP channel 1 |
 | M2 attributable stock transaction | PASS | official-app channel-1 request/response bytes frozen, including exact stock file-version query |
 | M3 offline compatibility verdict | PASS | 92/92 observed application frames match candidate checksum/frame geometry; all 36 responses match outer-0x04/tag-0x55 wrapping |
-| M4 bounded custom query | AUTHORIZED / READY | exact read-only 0x97 request authorized; no-argument one-shot Windows runner prepared; execution pending |
-| M5 volatile frame | BLOCKED | entry/paint/exit + persistence evidence not established |
+| M4 bounded custom query | PASS / AUTHORITY CONSUMED | Windows independently completed the exact one-shot 0x97 file-version query; v42012 returned; one connect, one request, socket closed, no retry |
+| M5 volatile frame | EVIDENCE CAPTURE NEXT | exact target/transport are bound; stock Pixel Coloring capture is required to prove entry/paint/exit + persistence behavior before custom frame transmission |
 
 ## Windows M4 compile proof
 
 The operator compiled `runtime/windows/OpenDitoo.Day1.Host/OpenDitoo.Day1.Host.csproj` on Windows with `.NET 8`, Release configuration, `--no-restore`, and `--nologo`. Result: **Build succeeded, 0 warnings, 0 errors** in 1.24 seconds. This was compile-only: the installed Host was not restarted or replaced, `Program.cs` remained status-only, and no Bluetooth discovery, pairing, connection, or Ditoo transmission occurred.
 
+## M4 live result — PASS
+
+The authorized Windows runner completed successfully against the exact paired target `11:75:58:CE:DE:C7` on RFCOMM channel 1. It sent exactly `01040097009B0002`, decoded version **42012**, reported one request and one connection attempt, and closed the socket. No retry or second application command was issued. Result evidence is `captures/OPENDITOO-DAY1-M4-LIVE-RESULT-2026-09-08.json`. The one-shot M4 authority is consumed and the current runner is disarmed against replay.
+
 ## Exact next action
 
-Compile proof and explicit authority are PASS. Execute only `runtime/windows/run_openditoo_m4_once.ps1`. The runner accepts no arguments, checks that the exact Ditoo is already authenticated/paired in Windows before any RFCOMM connect, then performs exactly one channel-1 connect and one TX `01040097009b0002`, no retry, max 13-byte response, 20-second total deadline, immediate close, and no other command. If pairing is absent it exits `M4_PAIRING_REQUIRED_NO_CONNECT` with zero connection attempts and zero requests. Keep Android disconnected during the Windows-owned trial.
+Return control to the Android official app only and capture a tightly attributable **Pixel Coloring** session. Use HCI snoop, enter Pixel Coloring, clear/start from an empty canvas if possible, make only a few uniquely located color edits, observe the live Ditoo result if the app provides one, then exit normally without saving/uploading to cloud/gallery or invoking firmware update. Export a fresh private bugreport. The purpose is to prove exact Ditoo drawing entry, paint encoding, exit behavior, orientation/color packing and whether the path is volatile before any M5 custom transmission is armed.

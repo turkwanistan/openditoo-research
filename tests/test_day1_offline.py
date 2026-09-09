@@ -124,56 +124,34 @@ class BoundaryTests(unittest.TestCase):
         self.assertNotIn("Stop-Process", src)
         self.assertNotIn("$Port = 8779", src)
 
-    def test_authorized_m4_transport_is_typed_one_shot_and_host_unreachable(self) -> None:
+    def test_completed_m4_transport_is_archived_and_runner_disarmed(self) -> None:
         protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooM4FileVersionProtocol.cs").read_text(encoding="utf-8")
         transport = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/WindowsRfcommBoundedM4Transport.cs").read_text(encoding="utf-8")
         program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
         runner = (ROOT / "runtime/windows/OpenDitoo.M4.Runner/Program.cs").read_text(encoding="utf-8")
 
         self.assertIn('TargetMac = "11:75:58:CE:DE:C7"', protocol)
-        self.assertIn('TargetBluetoothAddress = 0x117558CEDEC7', protocol)
         self.assertIn('TargetRfcommChannel = 1', protocol)
         self.assertIn('01040097009B0002', protocol)
-        self.assertIn('010900049755001CA400B90102', protocol)
-        self.assertIn('ExpectedInstalledVersion = 42012', protocol)
-        self.assertIn('MaxResponseWireBytes = 13', protocol)
-        self.assertIn('ConnectBudgetMs = 15_000', protocol)
-        self.assertIn('ResponseBudgetMs = 5_000', protocol)
-        self.assertIn('TotalBudgetMs = 20_000', protocol)
-
         self.assertEqual(transport.count('var connectResult = connect(socketHandle, ref remote, layoutSize);'), 1)
         self.assertEqual(transport.count('var sent = send(socketHandle, request, request.Length, 0);'), 1)
-        self.assertIn('NO_RETRY', transport)
-        self.assertNotIn('for (var attempt', transport)
-        self.assertNotIn('while (attempt', transport)
         self.assertNotIn('DitooM4FileVersionProtocol', program)
         self.assertNotIn('WindowsRfcommBoundedM4Transport', program)
-        self.assertNotIn('/v1/m4', program.lower())
+        self.assertIn('M4_AUTHORITY_CONSUMED', runner)
+        self.assertNotIn('ExchangeFrozenFileVersionOnce', runner)
+        self.assertNotIn('RequireAuthenticatedExactTarget', runner)
 
-        self.assertIn('args.Length != 0', runner)
-        self.assertIn('RequireAuthenticatedExactTarget()', runner)
-        self.assertIn('ExchangeFrozenFileVersionOnce()', runner)
-        self.assertIn('M4_PAIRING_REQUIRED_NO_CONNECT', runner)
-        self.assertNotIn('Console.ReadLine', runner)
-
-    def test_authorized_manifest_is_exactly_ready(self) -> None:
+    def test_completed_m4_manifest_records_pass_and_consumed_authority(self) -> None:
         manifest = ROOT / "experiments/DAY1-M4-QUERY-PENDING.json"
-        proc = subprocess.run(
-            [sys.executable, str(ROOT / "cli/openditoo.py"), "manifest-check", "--file", str(manifest)],
-            text=True,
-            capture_output=True,
-            check=True,
-        )
-        result = json.loads(proc.stdout)
-        self.assertTrue(result["execution_ready"])
-        self.assertEqual(result["execution_blockers"], [])
         data = json.loads(manifest.read_text(encoding="utf-8"))
-        self.assertEqual(data["status"], "authorized_pending_execution")
-        self.assertTrue(data["authority"]["transmission_authorized"])
+        self.assertEqual(data["status"], "completed_pass_authority_consumed")
+        self.assertFalse(data["authority"]["transmission_authorized"])
+        self.assertTrue(data["authority"]["authorization_consumed"])
         self.assertEqual(data["operation"]["application_tx_hex"], "01040097009b0002")
-        self.assertFalse(data["operation"]["automatic_retry"])
-        self.assertEqual(data["budgets"]["connection_attempts"], 1)
-        self.assertEqual(data["budgets"]["application_requests"], 1)
+        self.assertEqual(data["result"]["status"], "pass")
+        self.assertEqual(data["result"]["decoded_version"], 42012)
+        self.assertEqual(data["result"]["requests_sent"], 1)
+        self.assertEqual(data["result"]["connections_attempted"], 1)
 
     def test_frame_preview_is_offline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

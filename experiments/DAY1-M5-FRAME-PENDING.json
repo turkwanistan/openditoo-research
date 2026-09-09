@@ -2,18 +2,22 @@
   "schema_version": 1,
   "experiment_id": "OPENDITOO-DAY1-M5-FRAME-PENDING",
   "milestone": "M5",
-  "status": "offline_template_not_executable",
+  "status": "awaiting_stock_pixel_coloring_capture",
   "target": {
-    "exact_unit_id": null,
-    "installed_firmware": null
+    "exact_unit_id": "Ditoo-plus@11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012 (version confirmed; exact binary not recovered)"
   },
   "transport": {
-    "kind": null,
-    "measured_endpoint": null,
-    "single_controller_required": true
+    "kind": "Bluetooth Classic RFCOMM/SPP",
+    "measured_endpoint": "11:75:58:CE:DE:C7 RFCOMM channel 1",
+    "single_controller_required": true,
+    "evidence": [
+      "captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json",
+      "captures/OPENDITOO-DAY1-M4-LIVE-RESULT-2026-09-08.json"
+    ]
   },
   "operation": {
-    "semantic_name": "volatile_diagnostic_frame_pending_proof",
+    "semantic_name": "volatile_diagnostic_frame_pending_stock_pixel_coloring_proof",
     "semantic_evidence": null,
     "entry_semantics": null,
     "paint_semantics": null,
@@ -24,9 +28,18 @@
     "application_tx_hex": null,
     "application_tx_sha256": null,
     "diagnostic_source": "host/diagnostic_frame.py",
+    "diagnostic_source_rgb_sha256": "fb69505977b1be5d067e907a29d4ca1ed4d18de9b66bfc6921762cda81940955",
     "source_format": "RGB888",
     "device_packing": null,
     "automatic_retry": false
+  },
+  "stock_capture_plan": {
+    "controller": "official Divoom Android app only",
+    "feature": "Pixel Coloring",
+    "goal": "observe one empty/cleared canvas, a few uniquely located color edits, visible live result if provided by the app, then ordinary exit without save/upload",
+    "do_not_use": ["save to cloud", "gallery upload", "firmware update", "persistent device upload"],
+    "raw_bugreport_private": true,
+    "commit_filtered_protocol_only": true
   },
   "budgets": {
     "entry_frame_sets": 1,
@@ -39,7 +52,7 @@
   "authority": {
     "transmission_authorized": false,
     "authorization_basis": null,
-    "note": "Requires separate proof of drawing entry, paint and exit plus reviewed volatility claim."
+    "note": "M4 authority is consumed and does not transfer. M5 custom transmission remains blocked until stock Pixel Coloring proves entry/paint/exit and persistence behavior."
   },
   "stop_policy": {
     "ambiguous_or_partial_send": "close locally; outcome unknown; no resend",

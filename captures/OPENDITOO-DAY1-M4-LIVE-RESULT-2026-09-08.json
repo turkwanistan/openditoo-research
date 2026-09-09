@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-DAY1-M4-FILE-VERSION-001",
+  "milestone": "M4",
+  "status": "pass",
+  "observed_at_local": "2026-09-08T21:19:00-04:00",
+  "controller": "Windows one-shot OpenDitoo M4 runner",
+  "target": {
+    "model": "Ditoo-plus",
+    "address": "11:75:58:CE:DE:C7",
+    "transport": "Bluetooth Classic RFCOMM/SPP",
+    "rfcomm_channel": 1
+  },
+  "operation": {
+    "tx_hex": "01040097009B0002",
+    "retry": false,
+    "connections_attempted": 1,
+    "requests_sent": 1,
+    "socket_closed": true
+  },
+  "result": {
+    "precheck": "PASS_EXACT_TARGET_PAIRED",
+    "protocol_result": "PASS",
+    "decoded_version": 42012
+  },
+  "interpretation": [
+    "The Windows control path independently connected to the exact purchased Ditoo Plus over the stock-measured RFCOMM channel 1 endpoint.",
+    "Exactly one frozen read-only file-version request was sent and decoded as firmware version 42012.",
+    "The socket was closed after the single complete response; no retry or second application command was issued.",
+    "This closes M4 transport + semantic validation for the typed file-version operation. It does not authorize M5 or any other command."
+  ],
+  "authority_scope_consumed": "OPENDITOO-DAY1-M4-FILE-VERSION-001 only",
+  "m5_authorized": false
+}
