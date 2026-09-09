@@ -57,7 +57,8 @@ smooth motion throughout.
 | R2a (50 ms delay) | 10 | 71 | 175.4 ms | 5.70 fps |
 | R2b (10 ms spacing) | 10 | 71 | 109.3 ms | 9.15 fps |
 | R3 (full colour) | 10 | 1054 | 118.2 ms | 8.46 fps |
-| **R4 (sustained)** | **512** | **1048** | **131.0 ms** | **7.63 fps** |
+| R4 (sustained) | 512 | 1048 | 131.0 ms | 7.63 fps |
+| **R5 (no sleep)** | **1024** | **1048** | **54.2 ms** | **18.46 fps** |
 
 Four things these settled, in order of importance to a streaming product:
 
@@ -71,6 +72,17 @@ Four things these settled, in order of importance to a streaming product:
   identical timing). Budget streaming at **7.6 fps**, not 8.5.
 - **The stock 40 ms send spacing is not load-bearing** down to 10 ms. It was the only
   timing value taken from observed stock behaviour rather than chosen by us.
+
+**Ceiling: 18.46 fps at full colour**, measured by `OPENDITOO-R5-NOSLEEP-CEILING-001` over
+1024 frames and 1.07 MB in 56 s, with quarter means of 54.1/54.1/54.1/54.4 ms and no
+tearing. That is the ceiling *for this protocol shape*: with no waits of ours left, the
+interval IS the ACK round trip, so nothing remains to remove without abandoning one ACK
+per frame. 20.5x the original accepted rate.
+
+Two caveats on using it. The device is about 20 % slower per turnaround when denied idle
+time (44 -> 53 ms), which is real but far cheaper than the 70 ms of waiting removed. And
+jitter is now ~28 % of the interval, with a 111 ms worst frame against a 53 ms median, so
+content assuming constant cadence should run **below** the ceiling.
 
 **Recommended operating rate: 6-7 fps** for the activity display, which is change-only and
 sent six frames in 300 seconds. Streaming can use the full 7.6 fps, but at ~131 ms the

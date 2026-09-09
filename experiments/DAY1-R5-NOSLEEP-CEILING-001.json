@@ -2,7 +2,7 @@
  "schema_version": 1,
  "experiment_id": "OPENDITOO-R5-NOSLEEP-CEILING-001",
  "milestone": "R5 \u2014 the ceiling with no sleeping at all",
- "status": "pending_operator_grant",
+ "status": "completed_pass_authority_consumed",
  "objective": "Remove every wait we impose -- inter-frame delay to 0, send spacing to 0 -- and run 1024 full-colour motion frames for about a minute. With no sleep the ACK becomes the clock, so the achieved rate IS the device's own pace. This measures the ceiling and whether it degrades when the device is given no breathing room.",
  "target": {
   "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -1331,13 +1331,15 @@
  },
  "authority": {
   "transmission_authorized": false,
-  "authorization_consumed": false,
+  "authorization_consumed": true,
   "experiment_id": "OPENDITOO-R5-NOSLEEP-CEILING-001",
-  "granted_by": null,
-  "grant_text": null,
-  "expires_at": null,
+  "granted_by": "operator, in-session, 2026-09-09",
+  "grant_text": "grant OPENDITOO-R5-NOSLEEP-CEILING-001",
+  "expires_at": "2026-09-10T00:00:00Z",
   "grant_scope_requested": "ONE execution: 1024 frames, 3072 packets, 1073152 application bytes, about 63 seconds continuous with zero inter-frame delay and zero send spacing, one connection, no retry, no reconnect. Not continuous or unattended display, not pipelining.",
-  "note": "Grants nothing as written."
+  "note": "Grants nothing as written.",
+  "grant_scope": "ONE execution: 1024 frames, 3072 packets, 1073152 application bytes, about 63 seconds continuous with zero inter-frame delay and zero send spacing, one connection, no retry, no reconnect.",
+  "consumed_at": "2026-09-09T16:50:47Z"
  },
  "explicitly_out_of_scope": [
   "pipelining or any change to the one-ACK-per-frame shape -- that is the only way past this ceiling and it is not in scope",
@@ -1369,5 +1371,93 @@
   "what_would_falsify_it": "An interval materially above ~80 ms would mean the device slows when denied breathing room -- that the waits we removed were doing something after all. That is a genuine possibility and is the main thing worth learning here.",
   "what_degradation_would_look_like": "ACK latency climbing across the run, interval drift between quarters, a missing or malformed ACK (which stops the run), or visible stutter, tearing or dropped motion. R4 showed none of these at 7.6 fps over 67 s; this asks the same question at roughly twice the rate."
  },
- "result": null
+ "result": {
+  "status": "pass",
+  "frames_acked": 1024,
+  "packets_sent_complete": 3072,
+  "tx_bytes_sent_complete": 1073152,
+  "elapsed_ms": 55540,
+  "connections_attempted": 1,
+  "socket_closed": true,
+  "retry": false,
+  "reconnect": false,
+  "operator_visual": "confirmed_no_tearing"
+ },
+ "measurements": {
+  "achieved_inter_frame_interval_ms": {
+   "n": 1023,
+   "mean": 54.2,
+   "min": 28,
+   "median": 53,
+   "max": 111,
+   "pstdev": 15.4
+  },
+  "achieved_fps": 18.46,
+  "sustained_throughput_kb_s": 18.9,
+  "drift_by_quarter_ms": [
+   54.1,
+   54.1,
+   54.1,
+   54.4
+  ],
+  "ack_median_by_quarter_ms": [
+   53,
+   54,
+   53,
+   52
+  ],
+  "drift_verdict": "NONE. Quarter interval means [54.1, 54.1, 54.1, 54.4] and ACK medians [53, 54, 53, 52] across 56 seconds of zero-idle operation. Flatter than R4, which had the device idling 70 ms of every 131.",
+  "prediction_check": "Predicted ~61 ms / 16.4 fps; achieved 54.2 ms / 18.46 fps -- better than predicted. The 18 ms of 'loop overhead' inferred from R4 was mostly Thread.Sleep(50) overshoot, not real work: with no sleep the interval is essentially the ACK latency itself (54.2 ms interval against a 53 ms ACK median).",
+  "vs_r4": {
+   "r4_ms": 131.0,
+   "r4_fps": 7.63,
+   "speedup": 2.42
+  },
+  "vs_original_ceiling": {
+   "original_ms": 1114.1,
+   "speedup": 20.57
+  },
+  "reported_ack_latency_ms": {
+   "n": 1024,
+   "min": 28,
+   "median": 53.0,
+   "max": 111,
+   "note": "with spacing at 0 this contains no waiting of ours at all; it is pure send plus ACK round trip."
+  },
+  "errors": 0,
+  "missing_acks": 0
+ },
+ "findings": [
+  {
+   "id": "CEILING-IS-ABOUT-18-FPS-FOR-THIS-SHAPE",
+   "confidence": "MATCHED",
+   "statement": "With every wait of ours removed, the exact unit sustains 54.2 ms per full-colour frame -- 18.46 fps -- for 1024 frames and 1.07 MB over 56 seconds, with 1024/1024 ACKs and zero errors. This IS the ceiling for one ACK per frame: the interval is now the ACK round trip itself, so nothing remains to remove.",
+   "significance": "20.5x the original accepted rate and 2.42x R4. It comfortably exceeds the operator's 10 fps target for streaming, at full RGB888 colour, with per-frame confirmation intact."
+  },
+  {
+   "id": "NO-DEGRADATION-AT-ZERO-IDLE",
+   "confidence": "MATCHED",
+   "statement": "Quarter means [54.1, 54.1, 54.1, 54.4] ms and ACK medians [53, 54, 53, 52] ms. Running the device with no idle time whatsoever for a minute produced flatter numbers than R4 did at half the rate.",
+   "not_claimed": "behaviour beyond about a minute, and nothing about thermal state, which only the operator can report."
+  },
+  {
+   "id": "THE-DEVICE-IS-MILDLY-SLOWER-WHEN-DENIED-IDLE-TIME",
+   "confidence": "MATCHED",
+   "statement": "Pure send-plus-ACK rose from about 44 ms in R4 -- where reported ACK latency of 64 ms contained 20 ms of our spacing -- to 53 ms here, where it contains none. Roughly a 20 percent slowdown in the device's own turnaround when it gets no gap between frames.",
+   "why_it_still_wins": "The effect is real but far smaller than the 70 ms of waiting removed, so the net is 2.42x faster. The 'breathing room' the stock app leaves does something measurable -- it just does not do enough to be worth 70 ms.",
+   "not_claimed": "that this is the device rather than the Windows stack; the two are not separated here."
+  },
+  {
+   "id": "JITTER-IS-NOW-RELATIVELY-LARGER",
+   "confidence": "MATCHED",
+   "statement": "Population stdev 15.4 ms on a 54.2 ms mean, about 28 percent, with a 111 ms worst interval against a 53 ms median. Absolute jitter is similar to earlier runs; it is simply a larger share of a much shorter interval.",
+   "consequence": "For smooth playback, budget below the ceiling. An occasional 111 ms frame at a nominal 54 ms cadence is a visible hitch if the content assumes constant timing."
+  }
+ ],
+ "acceptance": {
+  "transport_acceptance": "PASS \u2014 3072/3072 packets, 1073152 bytes, 1024/1024 ACKs, clean close, no retry, no reconnect.",
+  "ceiling_acceptance": "PASS \u2014 54.2 ms, 18.46 fps sustained; nothing left to remove within this protocol shape.",
+  "degradation_acceptance": "PASS \u2014 no drift in interval or ACK latency across the run.",
+  "motion_acceptance": "PASS \u2014 operator, watching the full run: \"i didnt notice any tearing, looks great to me\". At 18.46 fps the panel keeps up with no visible tearing or stutter. No unusual warmth was reported."
+ }
 }
