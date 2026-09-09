@@ -4,8 +4,20 @@ Written for a fresh session that will decide the next milestones from the reposi
 **The repository is authoritative; this note is a map, not a transcript.** Where this
 note and the code disagree, the code wins.
 
-Snapshot: `main` @ `b86dfcb`, clean, pushed.
-`DAY1_OFFLINE_PASS artifacts=19 tests=78 host=typed_image port=8796 device_io=false`
+Snapshot, re-verified 2026-09-09 during the N1 documentation pass: `main` @ `d957bda`,
+worktree clean apart from the untracked `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`.
+`DAY1_OFFLINE_PASS artifacts=19 tests=79 host=typed_image port=8796 device_io=false`
+
+The earlier snapshot line said `b86dfcb` / 78 tests. That was stale. The two commits after
+`b86dfcb` (`cfedb2f`, `d957bda`) concern handoff preparation, routing and capability
+wording only — **no M9 activation was completed**, and no new device evidence was added.
+Offline verification is all that line asserts: not a Windows build, not installed-identity
+re-verification, not transport acceptance, not visual acceptance.
+
+Forward routing: the current sequence is **N1-N5** in
+`OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`. N1 (this reconciliation) is done; N2 (bounded
+activity-session authority lifecycle) is in progress by another worker. M0-M8 are complete
+and are not to be repeated.
 
 ## 1. What is accepted and proven
 
@@ -93,14 +105,33 @@ our frame is on screen → unsolicited 0x46 observed → the canvas is no longer
 
 ## 4. Environment facts that correct earlier handoffs
 
-**Capability is a property of your environment, not of the project. Verify, do not
-inherit either claim below.**
+**Capability is a property of your environment, not of the project. Verify every claim
+below in your own session; inherit none of them.**
 
-- **From a local Claude Code session in WSL** (which produced this handoff):
-  `powershell.exe`, `cmd.exe` and `dotnet.exe` are reachable, the project builds over
-  `\\wsl.localhost\...`, and loopback plus LAN both work. The post-M5 note's claim that
-  build and deploy are operator-only was a property of the WSL_MCP sandbox, not of this
-  environment.
+**Two sessions ran the same three checks on 2026-09-09 and got opposite results. That is
+exactly why they are re-run, never inherited.**
+
+- **From the local WSL Claude Code session that performed the N1 reconciliation
+  (2026-09-09):** `powershell.exe`
+  (`/mnt/c/Windows/System32/WindowsPowerShell/v1.0//powershell.exe`), `cmd.exe` and
+  `dotnet.exe` (`/mnt/c/Program Files/dotnet//dotnet.exe`) are all reachable.
+  `python3 cli/openditoo.py status` returned a healthy Host on `127.0.0.1:8796` — uptime
+  ~1995 s, 3 operations since host start, `bluetoothTouched: false`.
+  `python3 cli/openditoo.py activity-probe` reported all three sources `reachable: true`:
+  `optiplex_mcp` 310 seed records / 305 ms, `wsl_mcp` 108 / 4 ms, `optiplex_lab` 0 / 161 ms.
+  None of these three touches the device.
+- **From the sandbox in which the forward roadmap was written (2026-09-09), the same three
+  checks failed:** `command -v powershell.exe` exited 1; `status` returned HTTP 504 with no
+  CLI result; `activity-probe` executed but reported all three sources `reachable: false`
+  with `SOURCE_READ_FAILED`, including the local WSL source. Its execution context was
+  bubblewrap with `write_scope=none` and network off.
+- Neither result is a property of the project. A 504 is not proof the Host is down, and a
+  reachable Host is not proof of anything about the device. Do not widen sandbox
+  permissions or change source access controls to make a session pass.
+- **From a local Claude Code session in WSL** (which produced the original handoff):
+  the project builds over `\\wsl.localhost\...`, and loopback plus LAN both work. The
+  post-M5 note's claim that build and deploy are operator-only was a property of the
+  WSL_MCP sandbox, not of this environment.
 - **From WSL_MCP**, expect less. Its `~/.config/wsl-mcp/config.toml` runs commands under
   bubblewrap with `default_network = "off"` and `fail_closed = true`, and it has
   historically had no Windows shell or SDK bridge. Under it, assume these may fail until
@@ -122,7 +153,15 @@ inherit either claim below.**
 - Deployed Host: `%LOCALAPPDATA%\OpenDitoo\Day1Host`, scheduled task `OpenDitoo Day1 Host`,
   at-logon, no terminal required. Installed DLL SHA-256
   `092ed38d4dd7aaeb3eedbdab15c2c0a0f8dac07ea6134545e18ad15398fa636c`, byte-identical to
-  the repository's `bin/Release/net8.0` build.
+  the repository's `bin/Release/net8.0` build. **That identity was verified at M6/M8 time.**
+  It supersedes the older "the installed Host may still be the status-only build" text in
+  `START_HERE.md` and `PROJECT_STATE.md`, but it is not a statement about the bytes
+  installed right now: no installed-hash re-verification was performed during the N1
+  documentation pass. Re-verify before any build-sensitive step; do not reinstall on the
+  strength of this bullet either.
+- The installed Host implements and advertises **two** typed image routes, `/v1/image/show`
+  and `/v1/image/sequence` (capabilities `status`, `image-show`, `image-sequence`). The
+  sequence route is an accepted, already-exercised M8 capability, not standing authority.
 - `OpenTivoo Product Runtime` and port 8779 were preserved throughout and never touched.
   OpenTivoo has **active concurrent work**; treat it as read-only reference.
 
@@ -132,9 +171,28 @@ Every experiment manifest is consumed. `manifest-check` on any of them reports
 `execution_ready: false` with `transmission_authority_missing`, and `sequence-run`
 exits 30.
 
-**Any new live operation needs a new manifest and an explicit operator grant naming its
-experiment id.** In particular, continuous or unattended display is a *larger* authority
-shape than any bounded run so far, and no bounded pass implies it.
+**Every live operation — `image-show` included — needs a NEW reviewed manifest and an
+explicit operator grant naming that manifest's experiment id.** `AGENTS.md` previously
+carved out `image-show` as self-authorizing on explicit operator invocation; that
+exception is superseded as of 2026-09-09 (N1) and `AGENTS.md` now states the stricter
+rule. A consumed manifest is never re-armed: a failed, ambiguous or partially sent attempt
+needs a fresh manifest and a fresh grant, never a reset flag. Build/deploy capability,
+possession of the Host token, a reachable Host, process startup and prior successful
+trials confer no transmission authority. In particular, continuous or unattended display
+is a *larger* authority shape than any bounded run so far, and no bounded pass implies it.
+
+### Known gap: enforcement depth (productization, not permission)
+
+`sequence_run` checks the manifest's `transmission_authorized` / `authorization_consumed`
+flags before dispatch, but it does **not** itself atomically consume or reserve that
+authority, and the request it sends the Host carries frames and budgets rather than an
+experiment identity. Consumption to date has been manual bookkeeping after the fact:
+adequate evidence of what happened, not a crash-safe automatic gate, and not proof that a
+crash mid-run leaves the authority unusable. Recorded honestly here as a gap.
+
+Closing it is **N2**, currently in progress by another worker — it is not done. Until it
+lands, do not describe the flag check as an end-to-end durable one-use gate, and do not
+exercise the route in order to test it.
 
 ## 6. Local state that is NOT in git
 
@@ -155,29 +213,60 @@ shape than any bounded run so far, and no bounded pass implies it.
 | Is `0x09` a volume level or a key identifier? | one 30 s stock trial: press minus 4x from mid volume | closes a LEAD | optional; gates nothing |
 | What is the ACK payload? | unknown, likely several experiments | none | **do not pursue** — nothing depends on it and the CLI refuses to validate it |
 
-## 8. Next objective
+## 8. Next objective — N5 first bounded activation, awaiting a grant
 
-**M9 display activation.** The offline half is done and tested: collector, normalized
-state, renderer, previews and CLI (`activity-probe`, `activity-status`,
-`activity-preview`). What remains is continuous operation, which is exactly the part
-that needs a new authority shape.
+**N1-N4 are complete.** See `notes/OPENDITOO-N2-N4-ACTIVATION-READINESS-2026-09-09.md`
+for the evidence; the short version:
 
-A next session should expect to write an activation manifest covering at minimum:
+- **N1** — routing and authority wording reconciled; the old `image-show` carve-out is
+  superseded, and eight documentation contradictions are closed.
+- **N2** — bounded session contract, durable one-use claim (`O_EXCL` in WSL, an
+  append-only ledger written before the socket exists on the Host), and Host-side
+  lifetime/pacing/budget enforcement by a watchdog the caller cannot cancel.
+- **N3** — the link now reassembles a byte stream and classifies each report; an
+  unsolicited state report ends the session with no reclaim frame, even when coalesced
+  into the same read as the ACK. Change-only scheduling with burst coalescing, pulse
+  freshness and a 1118 ms pacing floor. Nine shared receive cases agree between the WSL
+  Python assembler and the compiled Host (`--selftest`).
+- **N4** — three sources verified reachable from this environment; two scenario replays
+  through render, scheduler and a fake transport, differing only in whether the unit was
+  touched.
 
-- a bounded session lifetime and a defined activation source;
-- **send a frame only when the rendered image actually changes** — the accepted ceiling
-  is a ceiling, not a heartbeat;
-- the `0x46` canvas-invalidation fence above;
-- a fault policy where a Bluetooth fault stops the display while collection keeps running;
-- no replay of queued animation after any interruption — show current state only;
-- the WSL worker install and a sign-out/restart acceptance.
+Verified on 2026-09-09, and kept distinct:
+`DAY1_OFFLINE_PASS artifacts=19 tests=124 … m9_activation_authorized=false`;
+`dotnet publish` Release PASS with `OPENTIVOO_TASK=preserved` and the installed runtime
+unchanged; `HOST_SELFTEST_PASS cases=9 failures=0`. **No transport acceptance and no
+visual acceptance** — neither was attempted.
 
-Before widening scope, note what is deliberately **not** built and why:
+### What blocks N5
 
-- No installed worker yet — it would have had no display to drive.
-- No M7.4 custom receive window — proven useful on Tivoo, plausible here, but it buys
-  nothing until there is something to navigate.
-- No rate above the accepted ceiling.
+`experiments/DAY1-M9-ACTIVATION-001-PENDING.json` is complete except for the grant.
+It requests ONE bounded session: 300 s, change-only frames at no faster than one frame
+start per 1118 ms, at most 269 frames / 807 packets / 51 379 application bytes, one
+connection, no retry, no reconnect, no reclaim. `session-check` reports
+`TRANSMISSION_AUTHORITY_MISSING` and `activity-session` exits 30 until an operator fills
+`granted_by`, `grant_text` and `expires_at`.
+
+Two preconditions beyond the grant:
+
+1. **The installed Host is not the built Host.** Installed is `092ed38d…a636c` (M6-era,
+   no session routes); the built and self-checked binary is `d3ece014…a042a`.
+   `runtime/windows/refresh_openditoo_day1_host.ps1 -Apply` must be run and the installed
+   hash re-verified. Only the dry-run has been performed.
+2. The Android Divoom app must be disconnected — one controller owns the unit at a time.
+
+### After N5
+
+A1 installs collection (never display authority) under native supervision; A2 qualifies
+faults and incrementally longer sessions under their own grants; A3 packages the
+exact-unit release. L1-L3 stay parked.
+
+Deliberately still not built, and why:
+
+- No installed worker yet — startup would restore collection only, and there is nothing
+  to supervise until an activation is accepted.
+- No M7.4 custom receive window — it buys nothing until there is something to navigate.
+- No rate above the accepted ceiling, and no reconnect policy.
 
 ## 9. Traps — do not redo these
 

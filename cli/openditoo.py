@@ -27,12 +27,16 @@ from host.png16 import Png16Error, decode_png16_rgb, png_sha256  # noqa: E402
 from host import activity_render  # noqa: E402
 from host import btsnoop  # noqa: E402
 from host import mcp_activity  # noqa: E402
+from host import activity_session  # noqa: E402
 
 CLI_VERSION = "0.2.0-static-image"
 HOST_ORIGIN = "http://127.0.0.1:8796"
 STATUS_URL = f"{HOST_ORIGIN}/v1/status"
 IMAGE_SHOW_URL = f"{HOST_ORIGIN}/v1/image/show"
 IMAGE_SEQUENCE_URL = f"{HOST_ORIGIN}/v1/image/sequence"
+SESSION_OPEN_URL = f"{HOST_ORIGIN}/v1/session/open"
+SESSION_FRAME_URL = f"{HOST_ORIGIN}/v1/session/frame"
+SESSION_CLOSE_URL = f"{HOST_ORIGIN}/v1/session/close"
 MIN_TOKEN_CHARS = 32
 
 EXIT_OK = 0
@@ -529,6 +533,200 @@ def activity_preview(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _post(url: str, body: dict, token: str, timeout: float) -> dict:
+    request = urllib.request.Request(
+        url, data=json.dumps(body, separators=(",", ":")).encode("utf-8"), method="POST",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json",
+                 "Content-Type": "application/json", "User-Agent": f"OpenDitoo-CLI/{CLI_VERSION}"})
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read(65537).decode("utf-8"))
+
+
+class _HostSessionTransport:
+    """Drives one reviewed session through the separate authenticated Host.
+
+    It carries the experiment identity, not just frames and budgets: the Host consumes
+    that id on disk before it opens anything, and enforces lifetime, pacing and budgets
+    itself. This client cannot loosen any of them, and never retries or reconnects.
+    """
+
+    def __init__(self, token: str) -> None:
+        self.token = token
+        self.session_id: str | None = None
+        self.opened: dict = {}
+
+    def open(self, manifest) -> dict:
+        self.opened = _post(SESSION_OPEN_URL, {
+            "experimentId": manifest.experiment_id,
+            "lifetimeSeconds": manifest.lifetime_seconds,
+            "minFrameIntervalMs": manifest.min_frame_interval_ms,
+            "maxFrames": manifest.max_frames,
+            "maxTxBytes": manifest.max_tx_bytes,
+        }, self.token, timeout=30.0)
+        if self.opened.get("ok") is not True or not self.opened.get("sessionId"):
+            raise activity_session.SessionError("SESSION_OPEN_REJECTED", json.dumps(self.opened, sort_keys=True))
+        self.session_id = self.opened["sessionId"]
+        return self.opened
+
+    def send_frame(self, rgb: bytes, expected_packet_sha256: str) -> dict:
+        result = _post(SESSION_FRAME_URL, {
+            "sessionId": self.session_id,
+            "pixelsRgb888Hex": rgb.hex(),
+            "expectedImagePacketSha256": expected_packet_sha256,
+        }, self.token, timeout=30.0)
+        if result.get("ok") is not True or result.get("imagePacketSha256") != expected_packet_sha256:
+            raise activity_session.SessionError("SESSION_FRAME_REJECTED", json.dumps(result, sort_keys=True))
+        return result
+
+    def poll_reports(self) -> list[dict]:
+        # The Host observes the link continuously and reports a takeover as a refusal on
+        # the next frame, so there is nothing for the client to poll. Adding a polling
+        # route would only duplicate that with a staler answer.
+        return []
+
+    def close(self, reason: str) -> dict:
+        if self.session_id is None:
+            return {"closed": False}
+        return _post(SESSION_CLOSE_URL, {"sessionId": self.session_id, "reason": reason},
+                     self.token, timeout=15.0)
+
+
+def session_check(args: argparse.Namespace) -> int:
+    """Offline, fail-closed review of one activation manifest. Grants nothing."""
+    try:
+        # Reviewed WITHOUT requiring the grant, so a pending manifest is fully checkable.
+        # The grant is then reported as a blocker rather than hidden behind an error.
+        manifest = activity_session.load_session_manifest(Path(args.manifest), require_authority=False)
+    except activity_session.SessionError as exc:
+        emit({"ok": False, "command": "session-check", "device_io": False,
+              "execution_ready": False, "error_code": exc.code, "detail": exc.detail})
+        return EXIT_BLOCKED
+    claim = activity_session.SessionClaim(manifest.experiment_id)
+    existing = claim.read()
+    blockers = activity_session.authority_blockers(Path(args.manifest))
+    if existing is not None and "AUTHORITY_ALREADY_CONSUMED" not in blockers:
+        blockers.append("AUTHORITY_ALREADY_CONSUMED")
+    emit({
+        "ok": True, "command": "session-check", "device_io": False,
+        "execution_ready": not blockers,
+        "execution_blockers": blockers,
+        "experiment_id": manifest.experiment_id,
+        "lifetime_seconds": manifest.lifetime_seconds,
+        "min_frame_interval_ms": manifest.min_frame_interval_ms,
+        "max_frames": manifest.max_frames,
+        "max_application_packets": manifest.max_application_packets,
+        "max_tx_bytes": manifest.max_tx_bytes,
+        "activation_source": manifest.activation_source,
+        "host_build_sha256": manifest.host_build_sha256,
+        "repository_host_build_sha256": activity_session.sha256_file(activity_session.HOST_BUILD_DLL)
+        if activity_session.HOST_BUILD_DLL.is_file() else None,
+        "code_hashes_verified": True,
+        "existing_claim": existing,
+        "stop_conditions": list(manifest.stop_conditions),
+    })
+    return EXIT_OK
+
+
+def session_preview(args: argparse.Namespace) -> int:
+    """Offline: run one scenario through render, scheduler and a fake transport.
+
+    Nothing is dispatched and no authority is claimed. This is how a session's real
+    behaviour -- what it would send, and everything it would decline to send -- is
+    reviewed before any grant is requested.
+    """
+    try:
+        manifest = activity_session.load_session_manifest(Path(args.manifest), verify_code_hashes=False,
+                                                          require_authority=False)
+    except activity_session.SessionError as exc:
+        emit({"ok": False, "command": "session-preview", "error_code": exc.code, "detail": exc.detail})
+        return EXIT_USAGE
+    try:
+        scenario = json.loads(Path(args.scenario).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        emit({"ok": False, "command": "session-preview", "error_code": "INVALID_SCENARIO", "message": str(exc)})
+        return EXIT_USAGE
+
+    steps = scenario["steps"]
+    # Same pacing, budgets and stop policy; only the window is the scenario's length,
+    # so the run ends because the script ended and not as an unknown device outcome.
+    import dataclasses
+    manifest = dataclasses.replace(manifest, lifetime_seconds=len(steps) * manifest.poll_interval_ms // 1000)
+    clock = {"ms": 0}
+    reports = {int(k): v for k, v in scenario.get("reports_after_frame", {}).items()}
+    transport = activity_session.FakeSessionTransport(reports=reports)
+    index = {"i": 0}
+
+    def render(_now_ms: int):
+        step = steps[min(index["i"], len(steps) - 1)]
+        index["i"] += 1
+        state = mcp_activity.blank_state()
+        for source_id, view in step["sources"].items():
+            state["sources"][source_id].update(view)
+        pulses = set(step.get("pulses", []))
+        return activity_render.render_rgb888(state, now=mcp_activity.parse_timestamp(step["now"]),
+                                             pulses=pulses), bool(pulses)
+
+    def advance(ms: int) -> None:
+        clock["ms"] += ms
+
+    result = activity_session.run_session(
+        manifest, transport, render, lambda: clock["ms"], advance,
+        claim=None, max_iterations=len(steps) + 8)
+    emit({"ok": True, "command": "session-preview", "device_io": False, "dispatched": False,
+          "scenario_file": str(args.scenario), "frames_that_would_be_sent": len(transport.frames),
+          "would_send": transport.frames, "result": result})
+    return EXIT_OK
+
+
+def activity_session_run(args: argparse.Namespace) -> int:
+    """Run ONE reviewed activation manifest, exactly as written.
+
+    There are no lifetime, rate, budget or target arguments: everything comes from the
+    manifest. The experiment id is claimed durably here and again by the Host before
+    anything is dispatched, and neither claim can be released. A failed or ambiguous
+    session needs a new manifest under a new grant, never a reset.
+    """
+    try:
+        manifest = activity_session.load_session_manifest(Path(args.manifest))
+        token = read_token()
+    except activity_session.SessionError as exc:
+        emit({"ok": False, "command": "activity-session", "error_code": exc.code, "detail": exc.detail})
+        return EXIT_BLOCKED
+    except RuntimeError as exc:
+        emit({"ok": False, "command": "activity-session", "error_code": "LOCAL_AUTH_CONFIG", "message": str(exc)})
+        return EXIT_CONFIG
+
+    try:
+        config = _activity_config()
+    except mcp_activity.SourceError as exc:
+        emit({"ok": False, "command": "activity-session", "error_code": str(exc)})
+        return EXIT_SOURCE
+
+    claim = activity_session.SessionClaim(manifest.experiment_id)
+    try:
+        claim.claim({"manifest_file": str(manifest.path), "code_hashes": manifest.code_hashes,
+                     "host_build_sha256": manifest.host_build_sha256,
+                     "claimed_at": mcp_activity.iso(mcp_activity.utc_now())})
+    except activity_session.SessionError as exc:
+        emit({"ok": False, "command": "activity-session", "error_code": exc.code, "detail": exc.detail})
+        return EXIT_BLOCKED
+
+    state = mcp_activity.load_state()
+    render = activity_session.live_renderer(config, state)
+    transport = _HostSessionTransport(token)
+    import time
+    started = time.monotonic()
+    result = activity_session.run_session(
+        manifest, transport, render,
+        lambda: int((time.monotonic() - started) * 1000),
+        lambda ms: time.sleep(ms / 1000.0),
+        claim=claim)
+    emit({"ok": result["outcome"] != "unknown", "command": "activity-session",
+          "manifest_file": str(manifest.path), "claim_file": str(claim.path),
+          "host_session": transport.opened, **result})
+    return EXIT_OK if result["outcome"] != "unknown" else EXIT_DEVICE
+
+
 def manifest_check(args: argparse.Namespace) -> int:
     path = Path(args.file)
     try:
@@ -619,6 +817,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--scale", type=int, default=16)
     p.add_argument("--output-dir", default=str(local_dir() / "activity-preview"))
     p.set_defaults(func=activity_preview)
+    p = sub.add_parser("session-check", help="offline fail-closed review of one activation manifest")
+    p.add_argument("--manifest", required=True)
+    p.set_defaults(func=session_check)
+    p = sub.add_parser("session-preview", help="offline: replay a scenario through render, scheduler and a fake transport")
+    p.add_argument("--manifest", required=True)
+    p.add_argument("--scenario", required=True)
+    p.set_defaults(func=session_preview)
+    p = sub.add_parser("activity-session", help="run one reviewed activation manifest against the fixed paired Ditoo")
+    p.add_argument("--manifest", required=True)
+    p.set_defaults(func=activity_session_run)
     p = sub.add_parser("manifest-check", help="fail-closed review of a Day-1 experiment manifest")
     p.add_argument("--file", required=True)
     p.set_defaults(func=manifest_check)

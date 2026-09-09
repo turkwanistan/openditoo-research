@@ -134,10 +134,44 @@ All three report `device_io: false` and none can transmit.
 - **No key navigation** (M9.6 optional): waiting on M7.
 - **No device sends from the activity path at all.**
 
+### Superseded in part — 2026-09-09 (N1 pointer)
+
+The three bullets above are kept verbatim as dated history from the moment M9's offline
+half closed. Their "waiting on M7/M8" framing is superseded; the boundaries they state are
+not relaxed.
+
+- **"Waiting on M7" is closed as a negative result.** M7 ran: the left arrow, right arrow
+  and joystick produced no traffic and no visible effect under the tested context, and the
+  keys that do report (volume, brightness, `M`) emit unsolicited absolute *state* reports
+  with no key identity, press/release or repeat, each with a stock side effect. A physical
+  page cycle is **not deliverable** from this evidence. M9 keeps local navigation. This is
+  a completed negative, not an open task — see
+  `notes/OPENDITOO-M7-CONTROL-WORKSHEET-2026-09-09.md`.
+- **"Gated on M8's repeated-frame primitive, which has no authority yet" is superseded.**
+  M8 completed: two frames in one connection (step 1) and two consumed ten-frame finite
+  loops (step 2), giving an accepted ceiling of ~1118 ms/frame. The rate blocker is gone.
+  See `notes/OPENDITOO-M8-SEQUENCE-EVIDENCE-2026-09-09.md`.
+- **The installed worker and the display sends are still not built, and still not
+  authorized.** Every M8 authority is consumed; nothing is currently authorized. The
+  activity path performs no device I/O and must not acquire one by reusing `image-show` or
+  reopening a finite sequence. That work is now **N2-N5** in
+  `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`, and N5 needs its own new manifest and an
+  explicit operator grant naming its experiment id.
+- **One useful M7 by-product for the activation design:** an unsolicited `0x46` while our
+  frame is on screen means the canvas is no longer ours — mark display state unknown, stop
+  sending, and never send a reclaim or "restore stock" frame. The `M` key also produced an
+  unsolicited `0xBD` when a stock menu opened, so a `0x46` fence must not be described as
+  detecting every takeover.
+
 ## Verification
 
 `DAY1_OFFLINE_PASS artifacts=19 tests=51 host=typed_image port=8796 device_io=false
 m4_completed=true m4_authorized=false m5_authorized=false`
+
+That line is this note's dated verification. As of 2026-09-09 (N1) the repository verifies
+`DAY1_OFFLINE_PASS artifacts=19 tests=79 host=typed_image port=8796 device_io=false` at
+HEAD `d957bda`. Offline verification only — not a Windows build, not installed-identity
+re-verification, not transport acceptance, not visual acceptance.
 
 22 new offline tests cover the M9 acceptance matrix rows that do not need the device:
 seed-without-replay, incremental reads, torn final line, malformed line, truncation

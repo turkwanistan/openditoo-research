@@ -1,0 +1,88 @@
+{
+ "purpose": "Shared receive-framing cases for the WSL Python assembler and the Windows Host C# assembler. Offline: no device, no socket, no network.",
+ "framing": "0x01 | len_lo | len_hi | outer | inner | tag | payload... | ck_lo | ck_hi | 0x02; ack is outer 0x04, inner 0x44, tag 0x55, one payload byte.",
+ "evidence": "ACK shape from M5/M6/M8 live runs; the 22-byte 0x46 state report from captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json. No new command semantics are assigned here.",
+ "cases": [
+  {
+   "name": "exact_ack",
+   "chunks": [
+    "01060004445512b50002"
+   ],
+   "expect_kinds": [
+    "ack"
+   ]
+  },
+  {
+   "name": "fragmented_ack_three_reads",
+   "chunks": [
+    "01",
+    "060004",
+    "445512b50002"
+   ],
+   "expect_kinds": [
+    "ack"
+   ]
+  },
+  {
+   "name": "ack_and_state_report_coalesced_in_one_read",
+   "chunks": [
+    "01060004445512b50002011b00044655000102030405060708090a0b0c0d0e0f101112131415a10102"
+   ],
+   "expect_kinds": [
+    "ack",
+    "state_report"
+   ]
+  },
+  {
+   "name": "two_state_reports_one_read",
+   "chunks": [
+    "011b00044655000102030405060708090a0b0c0d0e0f101112131415a1010201060004bd55011d0102"
+   ],
+   "expect_kinds": [
+    "state_report",
+    "state_report"
+   ]
+  },
+  {
+   "name": "ack_then_trailing_fragment_stays_buffered",
+   "chunks": [
+    "01060004445512b50002011b000446"
+   ],
+   "expect_kinds": [
+    "ack"
+   ]
+  },
+  {
+   "name": "garbage_before_start_is_not_resynchronized",
+   "chunks": [
+    "9901060004445512b50002"
+   ],
+   "expect_kinds": [],
+   "expect_error": "IMAGE_RX_BAD_START"
+  },
+  {
+   "name": "corrupt_checksum_is_rejected",
+   "chunks": [
+    "010600044455edb50002"
+   ],
+   "expect_kinds": [],
+   "expect_error": "IMAGE_RX_CHECKSUM_REJECTED"
+  },
+  {
+   "name": "oversize_input_is_rejected",
+   "chunks": [
+    "013101044655000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d10002"
+   ],
+   "expect_kinds": [],
+   "expect_error": "IMAGE_RX_OVERSIZE"
+  },
+  {
+   "name": "unwrapped_frame_is_rejected",
+   "chunks": [
+    "01030080830002"
+   ],
+   "expect_kinds": [],
+   "expect_error": "IMAGE_RX_LENGTH_REJECTED"
+  }
+ ]
+}

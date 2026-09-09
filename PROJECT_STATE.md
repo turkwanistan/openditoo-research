@@ -10,7 +10,16 @@ The exact purchased Ditoo Plus successfully rendered the frozen custom diagnosti
 **Phase:** Day-1 M0-M5 complete; first custom frame PASS; typed 16×16 PNG runtime implementation in validation/deployment.
 **Safety posture:** preservation-first. No flashing, arbitrary proprietary writes, guessed service-mode entry, electrical probing, soldering, or destructive teardown has been authorized or performed.
 
-This file is the current human-readable project synthesis. It supersedes ad-hoc chat summaries for project state but does not replace raw evidence, hashes, or provenance under `artifacts/`.
+This file is the human-readable synthesis of the static/reconnaissance base and the
+2026-09-08 Day-1 execution. It supersedes ad-hoc chat summaries but does not replace raw
+evidence, hashes, or provenance under `artifacts/`.
+
+**Routing, 2026-09-09 (N1):** for *current* state read `START_HERE.md`,
+`notes/OPENDITOO-HANDOFF-2026-09-09.md` and `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`.
+M0-M8 are complete; the current sequence is N1-N5. Everything below dated 2026-09-08 or
+earlier — including the MassBoot/update/service-mode reconstruction research and its
+ranked priorities — is retained as **historical** research, not as an open backlog, and
+must not be restarted merely because those static paths exist.
 
 ## 0. 2026-09-08 Day-1 application-first execution update
 
@@ -18,7 +27,7 @@ The current objective is now stock characterization -> measured application-cont
 
 A synchronized WSL_MCP implementation checkout is established at `/home/wan/Projects/openditoo-research` and matches fetched `origin/main` at pre-Day-1 HEAD `0f000cbb2ff8ea79c7a48294f5886853ea906fba`. All 19 preserved artifact SHA-256 entries verify. The older OptiPlex checkout remains clean at `1e4fd070...`; updating it is blocked by unprovisioned project Git credentials.
 
-OpenDitoo tooling includes a separate CLI/token, candidate frame comparator, exact diagnostic RGB source, completed M4/M5 evidence, and a separate authenticated Windows Host on `127.0.0.1:8796`, isolated from OpenTivoo on 8779. Post-M5 productization adds a typed static-image Host route and exact 16×16 PNG CLI path; the installed Windows Host must be refreshed before that new route is live.
+OpenDitoo tooling includes a separate CLI/token, candidate frame comparator, exact diagnostic RGB source, completed M4/M5 evidence, and a separate authenticated Windows Host on `127.0.0.1:8796`, isolated from OpenTivoo on 8779. Post-M5 productization adds a typed static-image Host route and exact 16×16 PNG CLI path; as written on 2026-09-08 the installed Windows Host still had to be refreshed before that new route was live. **Superseded 2026-09-09 (M6/M8):** the refresh was performed and the installed `OpenDitoo.Day1.Host.dll` SHA-256 `092ed38d4dd7aaeb3eedbdab15c2c0a0f8dac07ea6134545e18ad15398fa636c` was verified byte-identical to the repository's `bin/Release/net8.0` build, deployed at `%LOCALAPPDATA%\OpenDitoo\Day1Host` under the at-logon scheduled task `OpenDitoo Day1 Host`. The Host now also carries the M8 `/v1/image/sequence` route. That identity was verified at M6 time and was **not** re-verified during the 2026-09-09 N1 documentation pass; re-check the hash before any build-sensitive step instead of inheriting it.
 
 Exact purchased-unit stock capture now proves the official app control route is Bluetooth Classic BR/EDR -> L2CAP RFCOMM PSM 0x0003 -> SDP Serial Port 1 -> RFCOMM channel 1 on `Ditoo-Plus-audio` / `11:75:58:CE:DE:C7`. The filtered channel-1 stream contains 56 host-to-device and 36 device-to-host application frames; all 92 satisfy the candidate normal framing/checksum, and all 36 responses use outer command `0x04` with inner-command echo and tag `0x55`. This promotes framing/transport compatibility, not Tivoo command semantics. Raw Android bugreport material remains private; filtered evidence is preserved under `captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json`.
 

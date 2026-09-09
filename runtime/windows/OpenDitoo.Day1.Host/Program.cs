@@ -13,6 +13,7 @@ static int Fail(string message)
 }
 
 string? tokenFile = null;
+string? sessionLedger = null;
 for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
@@ -20,6 +21,14 @@ for (var i = 0; i < args.Length; i++)
         case "--token-file" when i + 1 < args.Length:
             tokenFile = args[++i];
             break;
+        case "--session-ledger" when i + 1 < args.Length:
+            sessionLedger = args[++i];
+            break;
+        // Offline receive-assembler self-check over a shared fixture. Starts no server,
+        // opens no socket, needs no token: it is how the C# receive path is exercised
+        // from the repository without a device or a test framework.
+        case "--selftest" when i + 1 < args.Length:
+            return DitooReportAssembler.SelfTest(args[++i]);
         default:
             return Fail($"unknown or incomplete argument: {args[i]}");
     }
@@ -38,6 +47,12 @@ var builder = WebApplication.CreateSlimBuilder(args: Array.Empty<string>());
 builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, Port));
 var app = builder.Build();
 var imageGate = new SemaphoreSlim(1, 1);
+
+// A display session holds the SAME single-operation gate as image-show and
+// image-sequence, so the three can never overlap on one device link.
+ActivitySessionHost.ConfigureLedger(sessionLedger
+    ?? Path.Combine(Path.GetDirectoryName(tokenFile)!, "session-ledger.jsonl"));
+ActivitySessionHost.OnRelease = () => imageGate.Release();
 
 app.Use(async (context, next) =>
 {
@@ -72,7 +87,7 @@ app.MapGet("/v1/status", () => Results.Json(new
     transportConfigured = true,
     targetBound = true,
     rawSendEnabled = false,
-    capabilities = new[] { "status", "image-show", "image-sequence" },
+    capabilities = new[] { "status", "image-show", "image-sequence", "activity-session" },
     deviceIo = false,
     target = DitooStaticImageProtocol.TargetMac,
     purpose = "typed_runtime_static_image_control",
@@ -86,6 +101,7 @@ app.MapGet("/v1/status", () => Results.Json(new
     deviceConnectivityBasis = "no_active_observation",
     operationHistoryScope = "volatile_since_host_start",
     diagnostics = ImageOperationLog.Snapshot(),
+    activitySession = ActivitySessionHost.Snapshot(),
 }));
 
 app.MapPost("/v1/image/show", (ShowImageRequest request) =>
@@ -320,9 +336,156 @@ app.MapPost("/v1/image/sequence", (ShowSequenceRequest request) =>
     }
 });
 
+
+// --------------------------------------------------------------------------
+// Bounded activity display session (M9). Open once against a reviewed experiment
+// id, push only CHANGED frames, close. The Host owns the bounds: lifetime, pacing
+// floor and budgets are enforced here by a watchdog that outlives the caller, and
+// the experiment id is consumed on disk before the socket exists.
+// --------------------------------------------------------------------------
+
+IResult SessionFault(SessionRejectedException ex) =>
+    Results.Json(new { ok = false, errorCode = ex.Code, retry = false, reconnect = false, reclaim = false },
+                 statusCode: ex.StatusCode);
+
+app.MapPost("/v1/session/open", (OpenSessionRequest request) =>
+{
+    if (!imageGate.Wait(0))
+        return Results.Json(new { ok = false, errorCode = "IMAGE_BUSY" }, statusCode: StatusCodes.Status409Conflict);
+    try
+    {
+        var opened = ActivitySessionHost.Open(request.ExperimentId, request.LifetimeSeconds,
+                                              request.MinFrameIntervalMs, request.MaxFrames, request.MaxTxBytes);
+        return Results.Json(new
+        {
+            ok = true,
+            apiVersion = ApiVersion,
+            command = "session-open",
+            target = DitooStaticImageProtocol.TargetMac,
+            deviceIo = true,
+            experimentId = request.ExperimentId,
+            sessionId = opened.SessionId,
+            deadlineUtc = opened.DeadlineUtc,
+            minFrameIntervalMs = opened.MinFrameIntervalMs,
+            connectionsAttempted = 1,
+            retry = false,
+            reconnect = false,
+        });
+    }
+    catch (SessionRejectedException ex)
+    {
+        imageGate.Release();
+        return SessionFault(ex);
+    }
+    catch (PairingRequiredException ex)
+    {
+        imageGate.Release();
+        return Results.Json(new { ok = false, errorCode = "IMAGE_PAIRING_REQUIRED", message = ex.Message },
+                            statusCode: StatusCodes.Status409Conflict);
+    }
+    catch (Exception ex)
+    {
+        // Open failed after the id was consumed. The gate is released by the terminal
+        // record; the authority is not, and never will be.
+        return Results.Json(new
+        {
+            ok = false,
+            errorCode = "SESSION_OPEN_FAIL_CLOSED",
+            message = $"{ex.GetType().Name}: {ex.Message}",
+            retry = false,
+            reconnect = false,
+            session = ActivitySessionHost.Snapshot(),
+        }, statusCode: StatusCodes.Status502BadGateway);
+    }
+});
+
+app.MapPost("/v1/session/frame", (SessionFrameRequest request) =>
+{
+    byte[] rgb;
+    try
+    {
+        rgb = Convert.FromHexString(request.PixelsRgb888Hex ?? "");
+    }
+    catch (FormatException)
+    {
+        return Results.Json(new { ok = false, errorCode = "IMAGE_RGB_INVALID_HEX" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+    if (rgb.Length != DitooStaticImageProtocol.RgbBytes)
+        return Results.Json(new { ok = false, errorCode = "IMAGE_RGB_LENGTH", expectedBytes = DitooStaticImageProtocol.RgbBytes },
+                            statusCode: StatusCodes.Status400BadRequest);
+    try
+    {
+        var sent = ActivitySessionHost.SendFrame(request.SessionId ?? "", rgb, request.ExpectedImagePacketSha256 ?? "");
+        return Results.Json(new
+        {
+            ok = true,
+            apiVersion = ApiVersion,
+            command = "session-frame",
+            deviceIo = true,
+            frame = sent.Frame,
+            ackPayloadHex = sent.AckPayloadHex,
+            imagePacketSha256 = sent.ImagePacketSha256,
+            paletteColors = sent.PaletteColors,
+            packetCount = 3,
+            packetsSentTotal = sent.PacketsSent,
+            txBytesSentTotal = sent.TxBytesSent,
+            deadlineUtc = sent.DeadlineUtc,
+            retry = false,
+            reconnect = false,
+        });
+    }
+    catch (SessionRejectedException ex)
+    {
+        return Results.Json(new
+        {
+            ok = false,
+            errorCode = ex.Code,
+            retry = false,
+            reconnect = false,
+            reclaim = false,
+            session = ActivitySessionHost.Snapshot(),
+        }, statusCode: ex.StatusCode);
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new
+        {
+            ok = false,
+            errorCode = "SESSION_FRAME_FAIL_CLOSED",
+            message = $"{ex.GetType().Name}: {ex.Message}",
+            retry = false,
+            reconnect = false,
+            session = ActivitySessionHost.Snapshot(),
+        }, statusCode: StatusCodes.Status502BadGateway);
+    }
+});
+
+app.MapPost("/v1/session/close", (CloseSessionRequest request) =>
+{
+    try
+    {
+        return Results.Json(new
+        {
+            ok = true,
+            apiVersion = ApiVersion,
+            command = "session-close",
+            deviceIo = false,
+            socketClosed = true,
+            session = ActivitySessionHost.Close(request.SessionId ?? "", request.Reason ?? "operator_stop"),
+        });
+    }
+    catch (SessionRejectedException ex)
+    {
+        return SessionFault(ex);
+    }
+});
+
 await app.RunAsync();
 return 0;
 
 sealed record ShowImageRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256);
 sealed record SequenceFrameRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256);
 sealed record ShowSequenceRequest(SequenceFrameRequest[] Frames, int InterFrameDelayMs, int TotalBudgetMs);
+sealed record OpenSessionRequest(string ExperimentId, int LifetimeSeconds, int MinFrameIntervalMs, int MaxFrames, int MaxTxBytes);
+sealed record SessionFrameRequest(string SessionId, string PixelsRgb888Hex, string ExpectedImagePacketSha256);
+sealed record CloseSessionRequest(string SessionId, string Reason);

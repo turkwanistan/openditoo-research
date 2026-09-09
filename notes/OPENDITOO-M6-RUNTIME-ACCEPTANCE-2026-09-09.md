@@ -174,6 +174,23 @@ it. Persistence claims still require their own evidence.
 | --- | --- |
 | Installed identity reconciled with repository | PASS (hash-identical before and after) |
 | Status separates Host health, past transactions, unknown device state | PASS |
-| Exact PNG → Host → device acceptance | **PASS** — operator-invoked, visually confirmed, recorded in `captures/OPENDITOO-M6-IMAGE-SHOW-ACCEPTANCE-2026-09-09.json`; orientation, colour rendition and persistence remain unconfirmed |
+| Exact PNG → Host → device acceptance | **PASS** — operator-invoked, visually confirmed, recorded in `captures/OPENDITOO-M6-IMAGE-SHOW-ACCEPTANCE-2026-09-09.json`. See the reconciliation note below for what this row does and does not confirm. |
 | Existing static behaviour and offline verification pass | PASS (29 tests, verifier PASS) |
 | Startup needs no persistent user terminal | PASS — scheduled task `OpenDitoo Day1 Host`, at-logon, observed Running |
+
+### Reconciliation of this table's trailing claim — 2026-09-09 (N1)
+
+The acceptance row above originally ended "orientation, colour rendition and persistence
+remain unconfirmed". That contradicted the physical findings recorded earlier in this same
+note and is corrected here. Splitting it by evidence:
+
+| Property | State | Evidence |
+| --- | --- | --- |
+| Pixel geometry / orientation | **CONFIRMED (MATCHED)** | 3 yellow pixels reported in the top-left plus an upright smile excludes all eight dihedral orientations; row-major top-left-origin encoding is correct end to end. |
+| Display volatility across a power cycle | **CONFIRMED (MATCHED)** | The operator power-cycled the exact unit; it returned to stock and the default clock with no custom frame. The frame is display state, not a persisted boot selection. |
+| Complete colour rendition | **NOT confirmed** | Partial only: yellow rendered as yellow; magenta and cyan were never separately reported. |
+| Absence of non-volatile writes | **NOT confirmed** | Seeing the default clock after a power cycle shows the display does not restore the frame. It cannot exclude a byte having reached flash, a gallery slot or other non-volatile storage. Persistence claims still need their own evidence. |
+
+Nothing above is deleted or weakened: the two "NOT confirmed" rows remain open exactly as
+originally written. Only the blanket claim that orientation and persistence-volatility
+were unconfirmed is corrected, because this note's own physical evidence confirms them.

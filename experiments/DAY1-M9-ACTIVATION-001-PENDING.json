@@ -1,0 +1,131 @@
+{
+ "schema_version": 2,
+ "experiment_id": "OPENDITOO-M9-ACTIVATION-001",
+ "milestone": "N5 \u2014 first bounded M9 activity-display activation and stock-yield acceptance",
+ "status": "pending_operator_grant",
+ "objective": "Prove the M9 activity display on the exact purchased unit: that a runtime-generated frame is accepted and readable, that an unchanged scene sends nothing, that an unsolicited state report yields the canvas without a reclaim, and that stopping leaves collection running and display state honestly reported.",
+ "why_this_shape": "M0-M8 already proved the frame primitive, the geometry, the same-connection repeat and the rate ceiling. The only untested thing is the JOIN: app-driven frames under a bounded session authority. So this changes exactly one variable \u2014 who chooses the pixels \u2014 and holds the packets, target, rate and connection shape at their already-accepted values.",
+ "target": {
+  "exact_unit_id": "11:75:58:CE:DE:C7",
+  "installed_firmware": "v42012",
+  "model": "Ditoo Plus",
+  "pairing_precheck": "authenticated exact target required before any socket is created"
+ },
+ "transport": {
+  "measured_endpoint": "Windows Classic RFCOMM channel 1",
+  "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+  "one_controller_rule": "the Android app must be disconnected for the whole session; OpenTivoo's runtime, tasks and port 8779 are untouched"
+ },
+ "build": {
+  "code_sha256": {
+   "renderer_sha256": "bb1d1efb275bb37adf32091dc8a9bc3df19604f2679b8e7ae083f8adfd2d7af8",
+   "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+   "session_sha256": "e09cd3add22b4de7652d235044be2651e953d8127d726e6d2c53e4cf66261f51"
+  },
+  "host_dll_sha256": "d3ece014fc2c9229f5c62ecac05df5d60dbdfd11048d77a2ec55386eee6a042a",
+  "host_exe_sha256": "cd8cb2d4431834b65b2e061e076a9c56dd58771ef8be24e42e31f670c09694c6",
+  "installed_dll_sha256_at_authoring": "092ed38d4dd7aaeb3eedbdab15c2c0a0f8dac07ea6134545e18ad15398fa636c",
+  "installed_identity_note": "The installed Host is still the M6-era build and does NOT contain the session routes. `refresh_openditoo_day1_host.ps1 -Apply` must be run and its identity re-verified BEFORE this experiment can execute. That apply step is part of this experiment's preconditions, not something already done.",
+  "windows_build_verified": "dotnet publish Release PASS on 2026-09-09; refresh dry-run PASS with OPENTIVOO_TASK=preserved and the installed runtime unchanged.",
+  "receive_assembler_cross_check": "tests/receive_assembler_cases.json, 9 cases, replayed by the WSL Python assembler (offline suite) and by the Host itself (`--selftest`): HOST_SELFTEST_PASS cases=9 failures=0 device_io=false."
+ },
+ "session": {
+  "lifetime_seconds": 300,
+  "min_frame_interval_ms": 1118,
+  "poll_interval_ms": 1000,
+  "pulse_freshness_seconds": 30,
+  "activation_source": "the three MCP audit sources already collected offline (optiplex_mcp, optiplex_lab, wsl_mcp), rendered by host/activity_render.py",
+  "shape": "one connection; collect once per second; render; send ONLY when the rendered frame changes, never faster than one frame start per 1118 ms; observe the link continuously including while idle; then close",
+  "automatic_retry": false,
+  "automatic_reconnect": false,
+  "stock_screen_reclaim": false,
+  "replay_after_interruption": false,
+  "semantic_evidence": "No new command semantics. Every frame is the same stock-derived three-packet 0x44 transaction proven at M5/M6 and repeated at M8; only the pixels differ."
+ },
+ "budgets": {
+  "connection_attempts": 1,
+  "max_frames": 269,
+  "max_application_packets": 807,
+  "max_tx_bytes": 51379,
+  "ack_timeout_ms_per_frame": 5000,
+  "derivation": "300 s at a 1118 ms minimum frame interval admits at most 269 frame starts, so that is the worst case if literally every slot changed. Packets are 3 per frame by construction. 191 bytes is the measured worst-case frame over ALL 8000 age/health render combinations (max image packet 176 bytes at 10 palette colours, plus the two stock preambles at 7 and 8 bytes). A quiet session is expected to send FAR less: the budget is a ceiling, not a target.",
+  "expected_realistic_frames": "on the order of 10-60, driven by actual activity; an unchanged scene sends nothing at all"
+ },
+ "stop_policy": {
+  "stop_immediately_on": [
+   "any unsolicited state report on the link (canvas is no longer ours)",
+   "any inbound bytes that do not parse as exactly one valid wrapped report",
+   "any ACK that is not our wrapped 0x44 shape with a single payload byte",
+   "any send that does not complete in full",
+   "ACK timeout on any frame",
+   "session lifetime reached",
+   "frame or byte budget reached",
+   "pairing precheck failure or any conflicting controller on the link",
+   "the worker falling silent for longer than the Host's grace period"
+  ],
+  "on_ambiguous_outcome_resend": false,
+  "collection_continues_after_display_stop": true,
+  "on_ambiguous_outcome": "stop sending, close the link, record completed and unknown bytes and the last known display state, and report. Do NOT resend, reconnect, reclaim the screen or power-cycle before the result is recorded.",
+  "recovery": "operator-initiated only, after the outcome is recorded, using documented exact-Ditoo controls. Returning to stock is an operator action, never a command we send.",
+  "operator_abort": "the session is short and supervised; if it looks wrong, stop it with `session-close` or power off the Ditoo rather than letting it continue."
+ },
+ "persistence_analysis": {
+  "expected_effect": "display state only",
+  "basis": "M6.4 power cycle returned the unit to stock software and the default clock",
+  "not_claimed": "absence of any non-volatile write. Sending more distinct images than before does not test that either.",
+  "new_risk_vs_m8": "none identified: identical command, identical packet shape, same session shape, same rate ceiling. No new command id, no save/publish/upload, no gallery interaction."
+ },
+ "expected_observations": {
+  "transport": "one connection; three application packets per sent frame; one wrapped 0x44 ACK each; clean local close; zero reconnects",
+  "physical": "three horizontal bands \u2014 blue server glyph, violet flask, amber W \u2014 with an age field per band and a health pixel in column 15; the bands change as activity arrives and hold still when nothing happens",
+  "idle_silence": "during any period with no activity and no age/health transition, ZERO packets are sent",
+  "ack_payload": "recorded per frame, never asserted. It is not a success constant."
+ },
+ "acceptance_criteria": {
+  "transport_acceptance": "planned versus actual frames, packets, bytes and ACKs all agree; one connection; no retry; no reconnect; clean close; no frame sent after any observed state report",
+  "visual_acceptance": "the operator confirms, by looking at the unit, that the three bands render in the documented positions and colours and that they visibly change when activity arrives. ACKs do NOT establish this and must not be substituted for it.",
+  "change_only_acceptance": "the operator confirms at least one quiet interval in which the display held still, and the recorded frame count is materially below the budget ceiling",
+  "stock_yield_acceptance": "if a physical control is used during the session, the session stops, no further frame is sent, the reported display state becomes unknown_not_ours, and no reclaim frame is sent. If no takeover occurs naturally, this is recorded as NOT TESTED rather than assumed.",
+  "collection_survives": "after the display stops for any reason, `activity-status` still collects and the sources still report",
+  "authority_is_consumed": "the claim file and the Host ledger both show this experiment id terminal or unknown, and a second run of this manifest is refused",
+  "not_established_by_this_experiment": [
+   "any rate above the accepted ~1118 ms ceiling",
+   "unattended or installation-time transmission",
+   "sessions longer than this lifetime",
+   "absence of non-volatile writes",
+   "menu-takeover behaviour (0xBD) unless it happens to occur and is recorded"
+  ]
+ },
+ "preconditions": [
+  "operator grant naming OPENDITOO-M9-ACTIVATION-001",
+  "`refresh_openditoo_day1_host.ps1 -Apply` run, and the installed DLL hash re-verified equal to build.host_dll_sha256",
+  "the Android Divoom app disconnected from the Ditoo",
+  "`python3 cli/openditoo.py activity-probe` showing the sources reachable",
+  "`python3 scripts/verify_day1_offline.py` PASS at the commit being run",
+  "operator present and watching the unit for the whole session"
+ ],
+ "implementation_gate": {
+  "host_change_required": "yes \u2014 /v1/session/open, /v1/session/frame, /v1/session/close plus the receive assembler and watchdog. Implemented and built, NOT yet installed.",
+  "status": "implemented offline; awaiting install and grant"
+ },
+ "authority": {
+  "transmission_authorized": false,
+  "authorization_consumed": false,
+  "experiment_id": "OPENDITOO-M9-ACTIVATION-001",
+  "granted_by": null,
+  "grant_text": null,
+  "expires_at": null,
+  "grant_scope_requested": "ONE execution of this exact bounded session: up to 300 seconds, change-only frames at no faster than one frame start per 1118 ms, at most 269 frames / 807 packets / 51379 application bytes, one connection, no retry, no reconnect, no reclaim. Not continuous display, not unattended operation, not installation-time transmission, not a higher rate.",
+  "note": "This manifest grants nothing as written. `session-check` reports TRANSMISSION_AUTHORITY_MISSING and `activity-session` exits 30 until an operator fills granted_by, grant_text and expires_at and sets transmission_authorized true."
+ },
+ "explicitly_out_of_scope": [
+  "any rate above the accepted ceiling",
+  "unattended, installation-time or continuous display",
+  "reconnecting or resending after any fault",
+  "sending a frame to reclaim the screen after a takeover",
+  "delta or partial-frame updates",
+  "any new command id, command enumeration or raw send",
+  "firmware update, persistent upload, service/MassBoot entry or teardown"
+ ],
+ "result": null
+}

@@ -169,12 +169,25 @@ negative M7 does not block the product.
 | `K-F3` | right arrow | yes | app connected, normal page | none | none seen | `no_event_observed` |
 | `K-F2` | minus | yes | app connected, normal page | unsolicited `0x09` report, data `01` | volume down | `absolute_state_report` |
 | `K-B2` | plus | yes | app connected, normal page | unsolicited `0x09` report, data `02` | volume up | `absolute_state_report` |
-| `K-B3` | brightness | yes | app connected, normal page | unsolicited `0x46` report, 21-byte state | page changed; cleared the custom frame | `absolute_state_report` |
+| `K-B3` | brightness | yes | app connected, normal page | unsolicited `0x46` report, 22-byte state | page changed; cleared the custom frame | `absolute_state_report` |
 | `J-R1` | joystick (single down-press) | yes | app connected, normal page | none | none seen | `no_event_observed` |
 | `K-B1` | M | yes | app connected, normal page | unsolicited `0xBD` report, data `13014b00` | menu screen opened | `absolute_state_report` |
 | `P-S1` | power | no | manual-documented only | | battery / BT disconnect / power | not a candidate input |
 
 Full evidence: `captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json`.
+
+**Transcription correction — 2026-09-09 (N1).** The `K-B3` row above said "21-byte state".
+The capture is authoritative and says 22. Its record for that report is
+`wire_hex 011b00044655000000ffff00640001036400ffffff04010000000000860602`, from which the
+committed derived fields are `reported_command 0x46`,
+`data_hex 000000ffff00640001036400ffffff04010000000000` (44 hex characters) and
+`data_bytes 22`. `wire_hex` and the fields derived from it win over any prose; only the
+prose in this worksheet was changed, and no capture byte was touched. Note that the same
+"21-byte" figure still appears inside the capture's own `findings[]` prose
+(`DITOO-0X46-IS-NATIVE-EVIDENCE-NOT-INHERITED`); that file is immutable evidence and was
+deliberately left alone — read `data_bytes`, not that sentence. This is the second
+hand-transcription defect on this exact report, which is why the record derives its fields
+from `wire_hex` and a test re-derives them.
 
 **Inventory correction:** `J-R1` is a single down-press button, not a multi-direction
 stick. The FCC photo reading of a "joystick lever" implied throws that do not exist.

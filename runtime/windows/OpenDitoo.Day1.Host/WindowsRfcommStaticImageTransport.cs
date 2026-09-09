@@ -163,143 +163,233 @@ static class WindowsRfcommStaticImageTransport
                 throw new ArgumentException("IMAGE_SEQUENCE_BUDGET_EXCEEDS_CEILING");
             budgetMs = totalBudgetMsOverride;
         }
-        var total = Stopwatch.StartNew();
-        var wsaData = Marshal.AllocHGlobal(512);
-        var socketHandle = InvalidSocket;
-        var eventHandle = InvalidEvent;
-        var started = false;
         var acks = new byte[groups.Length];
-        try
+        using var link = DitooLink.Connect(operation);
+        var total = link.Elapsed;
+        var firstFrameAt = total.ElapsedMilliseconds;
+        for (var frame = 0; frame < groups.Length; frame++)
         {
-            for (var i = 0; i < 512; i++) Marshal.WriteByte(wsaData, i, 0);
-            var startup = WSAStartup(0x0202, wsaData);
-            if (startup != 0) throw new InvalidOperationException($"IMAGE_WSASTARTUP_FAILED WSA={startup}");
-            started = true;
-            var layoutSize = Marshal.SizeOf<SockAddrBth>();
-            if (layoutSize != 30) throw new InvalidOperationException($"IMAGE_SOCKADDR_BTH_LAYOUT_REJECTED SIZE={layoutSize}");
-            socketHandle = socket(AfBth, SockStream, BthProtoRfcomm);
-            if (socketHandle == InvalidSocket) throw new InvalidOperationException($"IMAGE_SOCKET_CREATE_FAILED WSA={WSAGetLastError()}");
-            eventHandle = WSACreateEvent();
-            if (eventHandle == InvalidEvent) throw new InvalidOperationException($"IMAGE_WSA_EVENT_CREATE_FAILED WSA={WSAGetLastError()}");
-
-            SelectEvents(socketHandle, eventHandle, FdConnect, "IMAGE_CONNECT");
-            var remote = new SockAddrBth
-            {
-                AddressFamily = AfBth,
-                BluetoothAddress = DitooStaticImageProtocol.TargetBluetoothAddress,
-                ServiceClassId = Guid.Empty,
-                Port = DitooStaticImageProtocol.TargetRfcommChannel,
-            };
-            var connectDeadline = new Deadline(DitooStaticImageProtocol.ConnectBudgetMs);
-            var result = connect(socketHandle, ref remote, layoutSize);
-            if (result == SocketError)
-            {
-                var error = WSAGetLastError();
-                if (error != WsaWouldBlock) throw new InvalidOperationException($"IMAGE_RFCOMM_CONNECT_FAILED WSA={error}");
-                WaitForExactEvent(socketHandle, eventHandle, FdConnect, FdConnectBit, connectDeadline, "IMAGE_RFCOMM_CONNECT");
-            }
-            if (total.ElapsedMilliseconds > DitooStaticImageProtocol.ConnectBudgetMs)
-                throw new TimeoutException("IMAGE_CONNECT_TOTAL_BUDGET_EXCEEDED");
-            operation?.StageCompleted("connect");
-
-            var initialSendDeadline = new Deadline(DitooStaticImageProtocol.AckBudgetMs);
-            SelectEvents(socketHandle, eventHandle, FdWrite | FdClose, "IMAGE_INITIAL_SEND_READY");
-            WaitForWriteOrClose(socketHandle, eventHandle, initialSendDeadline);
-            operation?.StageCompleted("send_ready");
-
-            var firstFrameAt = total.ElapsedMilliseconds;
-            for (var frame = 0; frame < groups.Length; frame++)
-            {
-                var packets = groups[frame];
-                var frameStartedAt = total.ElapsedMilliseconds;
-                if (frame == 0) firstFrameAt = frameStartedAt;
-                for (var index = 0; index < packets.Length; index++)
-                {
-                    var sent = send(socketHandle, packets[index], packets[index].Length, 0);
-                    if (sent != packets[index].Length)
-                    {
-                        operation?.SendOutcomeUnknown();
-                        var error = sent < 0 ? WSAGetLastError() : 0;
-                        var reason = error == WsaWouldBlock ? "WOULD_BLOCK" : "PARTIAL_OR_ERROR";
-                        throw new InvalidOperationException($"IMAGE_SEND_FAILED FRAME={frame + 1} INDEX={index + 1} REASON={reason} BYTES={sent} WSA={error}; NO_RETRY");
-                    }
-                    operation?.PacketSent(sent);
-                    if (index < packets.Length - 1)
-                        Thread.Sleep(DitooStaticImageProtocol.SendSpacingMs);
-                }
-
-                acks[frame] = ReadOneAck(socketHandle, eventHandle);
-                var ackAt = total.ElapsedMilliseconds;
-                operation?.FrameCompleted(frame + 1, ackAt - frameStartedAt, frameStartedAt - firstFrameAt, acks[frame]);
-                operation?.StageCompleted($"frame_{frame + 1}_ack");
-                if (total.ElapsedMilliseconds > budgetMs)
-                    throw new TimeoutException("IMAGE_TOTAL_BUDGET_EXCEEDED; NO_RETRY");
-                if (frame < groups.Length - 1 && interFrameDelayMs > 0)
-                    Thread.Sleep(interFrameDelayMs);
-            }
-            operation?.StageCompleted("ack");
-            return acks;
+            var frameStartedAt = total.ElapsedMilliseconds;
+            if (frame == 0) firstFrameAt = frameStartedAt;
+            link.SendFrameGroup(groups[frame], operation, frame);
+            acks[frame] = link.ReadOneAck(DitooStaticImageProtocol.AckBudgetMs).Payload[0];
+            var ackAt = total.ElapsedMilliseconds;
+            operation?.FrameCompleted(frame + 1, ackAt - frameStartedAt, frameStartedAt - firstFrameAt, acks[frame]);
+            operation?.StageCompleted($"frame_{frame + 1}_ack");
+            if (total.ElapsedMilliseconds > budgetMs)
+                throw new TimeoutException("IMAGE_TOTAL_BUDGET_EXCEEDED; NO_RETRY");
+            if (frame < groups.Length - 1 && interFrameDelayMs > 0)
+                Thread.Sleep(interFrameDelayMs);
         }
-        finally
-        {
-            if (socketHandle != InvalidSocket)
-            {
-                closesocket(socketHandle);
-                operation?.SocketWasClosed();
-            }
-            if (eventHandle != InvalidEvent) WSACloseEvent(eventHandle);
-            if (started) WSACleanup();
-            Marshal.FreeHGlobal(wsaData);
-        }
+        operation?.StageCompleted("ack");
+        return acks;
     }
 
-    private static byte ReadOneAck(IntPtr socketHandle, IntPtr eventHandle)
+    /// <summary>
+    /// One open link to the exact paired unit. Owns the socket for its whole life and
+    /// closes it exactly once. It never reconnects: a link that faults is finished, and
+    /// a caller that wants another one needs its own fresh authority.
+    /// </summary>
+    internal sealed class DitooLink : IDisposable
     {
-        SelectEvents(socketHandle, eventHandle, FdRead | FdClose, "IMAGE_ACK");
-        var ackDeadline = new Deadline(DitooStaticImageProtocol.AckBudgetMs);
-        var received = new List<byte>(32);
-        var expectedTotal = -1;
-        var chunk = new byte[32];
-        while (true)
+        private readonly IntPtr wsaData;
+        private IntPtr socketHandle = InvalidSocket;
+        private IntPtr eventHandle = InvalidEvent;
+        private readonly bool started;
+        private readonly ImageOperation? operation;
+        private readonly DitooReportAssembler assembler = new();
+        private readonly Stopwatch elapsed = Stopwatch.StartNew();
+        private bool disposed;
+
+        internal Stopwatch Elapsed => elapsed;
+        internal bool Faulted { get; private set; }
+
+        private DitooLink(IntPtr wsaData, IntPtr socketHandle, IntPtr eventHandle, bool started, ImageOperation? operation)
         {
-            var events = WaitForEvents(socketHandle, eventHandle, ackDeadline, "IMAGE_ACK_RECV");
+            this.wsaData = wsaData;
+            this.socketHandle = socketHandle;
+            this.eventHandle = eventHandle;
+            this.started = started;
+            this.operation = operation;
+        }
+
+        internal static DitooLink Connect(ImageOperation? operation)
+        {
+            var wsaData = Marshal.AllocHGlobal(512);
+            var socketHandle = InvalidSocket;
+            var eventHandle = InvalidEvent;
+            var started = false;
+            try
+            {
+                for (var i = 0; i < 512; i++) Marshal.WriteByte(wsaData, i, 0);
+                var startup = WSAStartup(0x0202, wsaData);
+                if (startup != 0) throw new InvalidOperationException($"IMAGE_WSASTARTUP_FAILED WSA={startup}");
+                started = true;
+                var layoutSize = Marshal.SizeOf<SockAddrBth>();
+                if (layoutSize != 30) throw new InvalidOperationException($"IMAGE_SOCKADDR_BTH_LAYOUT_REJECTED SIZE={layoutSize}");
+                socketHandle = socket(AfBth, SockStream, BthProtoRfcomm);
+                if (socketHandle == InvalidSocket) throw new InvalidOperationException($"IMAGE_SOCKET_CREATE_FAILED WSA={WSAGetLastError()}");
+                eventHandle = WSACreateEvent();
+                if (eventHandle == InvalidEvent) throw new InvalidOperationException($"IMAGE_WSA_EVENT_CREATE_FAILED WSA={WSAGetLastError()}");
+
+                var link = new DitooLink(wsaData, socketHandle, eventHandle, started, operation);
+                var total = link.elapsed;
+                SelectEvents(socketHandle, eventHandle, FdConnect, "IMAGE_CONNECT");
+                var remote = new SockAddrBth
+                {
+                    AddressFamily = AfBth,
+                    BluetoothAddress = DitooStaticImageProtocol.TargetBluetoothAddress,
+                    ServiceClassId = Guid.Empty,
+                    Port = DitooStaticImageProtocol.TargetRfcommChannel,
+                };
+                var connectDeadline = new Deadline(DitooStaticImageProtocol.ConnectBudgetMs);
+                var result = connect(socketHandle, ref remote, layoutSize);
+                if (result == SocketError)
+                {
+                    var error = WSAGetLastError();
+                    if (error != WsaWouldBlock) throw new InvalidOperationException($"IMAGE_RFCOMM_CONNECT_FAILED WSA={error}");
+                    WaitForExactEvent(socketHandle, eventHandle, FdConnect, FdConnectBit, connectDeadline, "IMAGE_RFCOMM_CONNECT");
+                }
+                if (total.ElapsedMilliseconds > DitooStaticImageProtocol.ConnectBudgetMs)
+                    throw new TimeoutException("IMAGE_CONNECT_TOTAL_BUDGET_EXCEEDED");
+                operation?.StageCompleted("connect");
+
+                var initialSendDeadline = new Deadline(DitooStaticImageProtocol.AckBudgetMs);
+                SelectEvents(socketHandle, eventHandle, FdWrite | FdClose, "IMAGE_INITIAL_SEND_READY");
+                WaitForWriteOrClose(socketHandle, eventHandle, initialSendDeadline);
+                operation?.StageCompleted("send_ready");
+
+                // From here the link stays armed for read: the device sends unsolicited
+                // state reports of its own accord, and a session must notice them even
+                // while it is otherwise idle.
+                SelectEvents(socketHandle, eventHandle, FdRead | FdClose, "IMAGE_RX");
+                return link;
+            }
+            catch
+            {
+                if (socketHandle != InvalidSocket) closesocket(socketHandle);
+                if (eventHandle != InvalidEvent) WSACloseEvent(eventHandle);
+                if (started) WSACleanup();
+                Marshal.FreeHGlobal(wsaData);
+                throw;
+            }
+        }
+
+        internal void SendFrameGroup(byte[][] packets, ImageOperation? operation, int frame)
+        {
+            if (packets.Length != 3)
+                throw new ArgumentException("IMAGE_TRANSACTION_PACKET_COUNT_REJECTED");
+            for (var index = 0; index < packets.Length; index++)
+            {
+                var sent = send(socketHandle, packets[index], packets[index].Length, 0);
+                if (sent != packets[index].Length)
+                {
+                    operation?.SendOutcomeUnknown();
+                    Faulted = true;
+                    var error = sent < 0 ? WSAGetLastError() : 0;
+                    var reason = error == WsaWouldBlock ? "WOULD_BLOCK" : "PARTIAL_OR_ERROR";
+                    throw new InvalidOperationException($"IMAGE_SEND_FAILED FRAME={frame + 1} INDEX={index + 1} REASON={reason} BYTES={sent} WSA={error}; NO_RETRY");
+                }
+                operation?.PacketSent(sent);
+                if (index < packets.Length - 1)
+                    Thread.Sleep(DitooStaticImageProtocol.SendSpacingMs);
+            }
+        }
+
+        /// <summary>
+        /// Wait for exactly our ACK. Any unsolicited state report seen on the way -- or
+        /// coalesced into the same read as the ACK -- ends the session: the canvas is no
+        /// longer ours, and no reclaim frame is sent to take it back.
+        /// </summary>
+        internal DitooReport ReadOneAck(int budgetMs)
+        {
+            var deadline = new Deadline(budgetMs);
+            DitooReport? ack = null;
+            while (true)
+            {
+                foreach (var report in ReadAvailable(deadline))
+                {
+                    if (report.IsAck && ack is null) { ack = report; continue; }
+                    Faulted = true;
+                    throw new DitooTakeoverException(report, ack is not null);
+                }
+                if (ack is not null) return ack.Value;
+            }
+        }
+
+        /// <summary>
+        /// Non-blocking look for input while idle. Returns whatever has already arrived
+        /// without waiting for more. Used between frames so a takeover is noticed even
+        /// when the scene is unchanged and nothing is being sent.
+        /// </summary>
+        internal List<DitooReport> PollIdle()
+        {
+            var events = TryEnumEvents(0);
+            if (events is null) return [];
+            return ReadReadyEvents(events.Value);
+        }
+
+        private List<DitooReport> ReadAvailable(Deadline deadline)
+        {
+            var events = WaitForEvents(socketHandle, eventHandle, deadline, "IMAGE_RX_RECV");
+            return ReadReadyEvents(events);
+        }
+
+        private List<DitooReport> ReadReadyEvents(WsaNetworkEvents events)
+        {
             if ((events.NetworkEvents & FdClose) != 0)
-                throw new InvalidOperationException($"IMAGE_ACK_CLOSED WSA={events.ErrorCodes[FdCloseBit]}; NO_RETRY");
-            if ((events.NetworkEvents & FdRead) == 0) continue;
+            {
+                Faulted = true;
+                throw new InvalidOperationException($"IMAGE_RX_CLOSED WSA={events.ErrorCodes[FdCloseBit]}; NO_RETRY");
+            }
+            if ((events.NetworkEvents & FdRead) == 0) return [];
             if (events.ErrorCodes[FdReadBit] != 0)
-                throw new InvalidOperationException($"IMAGE_ACK_EVENT_FAILED WSA={events.ErrorCodes[FdReadBit]}; NO_RETRY");
+            {
+                Faulted = true;
+                throw new InvalidOperationException($"IMAGE_RX_EVENT_FAILED WSA={events.ErrorCodes[FdReadBit]}; NO_RETRY");
+            }
+            var chunk = new byte[DitooReportAssembler.MaxFrameBytes];
             var got = recv(socketHandle, chunk, chunk.Length, 0);
             if (got <= 0)
             {
                 var error = got < 0 ? WSAGetLastError() : 0;
-                throw new InvalidOperationException($"IMAGE_ACK_RECV_FAILED BYTES={got} WSA={error}; NO_RETRY");
+                if (got < 0 && error == WsaWouldBlock) return [];
+                Faulted = true;
+                throw new InvalidOperationException($"IMAGE_RX_RECV_FAILED BYTES={got} WSA={error}; NO_RETRY");
             }
-            for (var i = 0; i < got; i++) received.Add(chunk[i]);
-            if (received.Count >= 3 && expectedTotal < 0)
-            {
-                if (received[0] != 0x01) throw new InvalidOperationException("IMAGE_ACK_BAD_START; NO_RETRY");
-                expectedTotal = (received[1] | (received[2] << 8)) + 4;
-                if (expectedTotal != 10) throw new InvalidOperationException($"IMAGE_ACK_LENGTH_REJECTED TOTAL={expectedTotal}; NO_RETRY");
-            }
-            if (expectedTotal > 0 && received.Count == expectedTotal) break;
-            if (received.Count > 32 || (expectedTotal > 0 && received.Count > expectedTotal))
-                throw new InvalidOperationException("IMAGE_ACK_TRAILING_OR_OVERSIZE; NO_RETRY");
+            assembler.Feed(chunk, got);
+            return assembler.Drain();
         }
-        return ValidateAck(received.ToArray());
-    }
 
-    private static byte ValidateAck(byte[] wire)
-    {
-        if (wire.Length != 10 || wire[0] != 0x01 || wire[^1] != 0x02)
-            throw new InvalidOperationException("IMAGE_ACK_BOUNDARY_REJECTED");
-        ushort sum = 0;
-        for (var i = 1; i < 7; i++) sum = unchecked((ushort)(sum + wire[i]));
-        var observed = (ushort)(wire[7] | (wire[8] << 8));
-        if (sum != observed)
-            throw new InvalidOperationException($"IMAGE_ACK_CHECKSUM_REJECTED OBSERVED=0x{observed:X4} EXPECTED=0x{sum:X4}");
-        if (wire[3] != 0x04 || wire[4] != 0x44 || wire[5] != 0x55)
-            throw new InvalidOperationException("IMAGE_ACK_WRAPPER_REJECTED");
-        return wire[6];
+        private WsaNetworkEvents? TryEnumEvents(uint timeoutMs)
+        {
+            var wait = WSAWaitForMultipleEvents(1, [eventHandle], false, timeoutMs, false);
+            if (wait == WsaWaitTimeout) return null;
+            if (wait == WsaWaitFailed) throw new InvalidOperationException($"IMAGE_RX_IDLE_WAIT_FAILED WSA={WSAGetLastError()}; NO_RETRY");
+            var events = WsaNetworkEvents.Create();
+            if (WSAEnumNetworkEvents(socketHandle, eventHandle, ref events) == SocketError)
+                throw new InvalidOperationException($"IMAGE_RX_IDLE_ENUM_FAILED WSA={WSAGetLastError()}; NO_RETRY");
+            return events;
+        }
+
+        public void Dispose()
+        {
+            if (disposed) return;
+            disposed = true;
+            if (socketHandle != InvalidSocket)
+            {
+                closesocket(socketHandle);
+                socketHandle = InvalidSocket;
+                operation?.SocketWasClosed();
+            }
+            if (eventHandle != InvalidEvent)
+            {
+                WSACloseEvent(eventHandle);
+                eventHandle = InvalidEvent;
+            }
+            if (started) WSACleanup();
+            Marshal.FreeHGlobal(wsaData);
+        }
     }
 
     private static void SelectEvents(IntPtr s, IntPtr e, int mask, string stage)

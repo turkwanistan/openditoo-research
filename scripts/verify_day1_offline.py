@@ -118,6 +118,50 @@ def verify_host_boundary() -> None:
             fail(f"typed image surface exposes forbidden escape/collision: {forbidden}")
 
 
+def verify_activation_boundary() -> None:
+    """The M9 session surface must stay bounded, one-use and unauthorized."""
+    manifest_path = ROOT / "experiments" / "DAY1-M9-ACTIVATION-001-PENDING.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    authority = manifest.get("authority", {})
+    if authority.get("transmission_authorized") is not False:
+        fail("M9 activation manifest is armed; it must stay pending until an operator grants it")
+    if authority.get("authorization_consumed") is not False:
+        fail("M9 activation manifest consumption flag drifted")
+    if authority.get("experiment_id") != manifest.get("experiment_id"):
+        fail("M9 grant does not name its own experiment")
+    session = manifest.get("session", {})
+    if session.get("min_frame_interval_ms") != 1118:
+        fail("M9 pacing floor drifted from the accepted ceiling")
+    for flag in ("automatic_retry", "automatic_reconnect", "stock_screen_reclaim",
+                 "replay_after_interruption"):
+        if session.get(flag) is not False:
+            fail(f"M9 activation manifest permits {flag}")
+
+    host = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/ActivitySessionHost.cs").read_text(encoding="utf-8")
+    session_py = (ROOT / "host/activity_session.py").read_text(encoding="utf-8")
+    if "AcceptedMinFrameIntervalMs = 1118;" not in host:
+        fail("Host pacing floor drifted from the accepted ceiling")
+    if "ACCEPTED_MIN_FRAME_INTERVAL_MS = 1118" not in session_py:
+        fail("CLI pacing floor drifted from the accepted ceiling")
+    if "AUTHORITY_ALREADY_CONSUMED" not in host or "AUTHORITY_ALREADY_CONSUMED" not in session_py:
+        fail("one-use authority enforcement is missing on one side")
+    # Authority must be consumed before the socket exists, on both sides.
+    if host.index('Append("open"') > host.index("DitooLink.Connect"):
+        fail("Host opens a link before consuming the experiment id")
+    for forbidden in ("def release", "def unclaim", "authorization_consumed = False"):
+        if forbidden in session_py:
+            fail(f"a consumed claim must never be releasable: {forbidden}")
+
+    transport = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/WindowsRfcommStaticImageTransport.cs").read_text(encoding="utf-8")
+    if "PollIdle()" not in transport:
+        fail("the link no longer observes the device while idle")
+    if "DitooTakeoverException" not in transport:
+        fail("an unsolicited state report no longer ends the session")
+    for forbidden in ("Reconnect(", "Reopen(", "Resend(", "ReclaimScreen"):
+        if forbidden in transport or forbidden in host:
+            fail(f"session surface gained a forbidden recovery path: {forbidden}")
+
+
 def verify_consumed_runner() -> None:
     runner = (ROOT / "runtime/windows/OpenDitoo.M4.Runner/Program.cs").read_text(encoding="utf-8")
     if "M4_AUTHORITY_CONSUMED" not in runner:
@@ -154,12 +198,14 @@ def main() -> int:
     test_count = run_tests()
     verify_manifests()
     verify_host_boundary()
+    verify_activation_boundary()
     verify_consumed_runner()
     verify_m5_runner_disarmed()
     print(
         "DAY1_OFFLINE_PASS "
         f"artifacts={artifact_count} tests={test_count} host=typed_image port=8796 "
-        "device_io=false m4_completed=true m4_authorized=false m5_authorized=false"
+        "device_io=false m4_completed=true m4_authorized=false m5_authorized=false "
+        "m9_activation_authorized=false"
     )
     return 0
 

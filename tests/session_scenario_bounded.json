@@ -1,0 +1,516 @@
+{
+ "purpose": "One bounded activity session replayed offline through render, scheduler and a fake transport, with no stock takeover: first frame, pulses, burst coalescing, an unreadable source, recovery and a quiet tail. No device, no socket, no authority.",
+ "covers": [
+  "first frame",
+  "unchanged idle",
+  "pulse inside its freshness window",
+  "burst coalescing",
+  "source unreadable then recovered",
+  "quiet tail with zero sends"
+ ],
+ "reports_after_frame": {},
+ "steps": [
+  {
+   "now": "2026-09-09T12:00:00Z",
+   "note": "steady state; only the first frame is a change",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T11:30:00Z",
+     "last_observed_at": "2026-09-09T12:00:00Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T11:20:00Z",
+     "last_observed_at": "2026-09-09T12:00:00Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T11:58:30Z",
+     "last_observed_at": "2026-09-09T12:00:00Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:01Z",
+   "note": "steady state; only the first frame is a change",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T11:30:00Z",
+     "last_observed_at": "2026-09-09T12:00:01Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T11:20:00Z",
+     "last_observed_at": "2026-09-09T12:00:01Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T11:58:30Z",
+     "last_observed_at": "2026-09-09T12:00:01Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:02Z",
+   "note": "steady state; only the first frame is a change",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T11:30:00Z",
+     "last_observed_at": "2026-09-09T12:00:02Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T11:20:00Z",
+     "last_observed_at": "2026-09-09T12:00:02Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T11:58:30Z",
+     "last_observed_at": "2026-09-09T12:00:02Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:03Z",
+   "note": "steady state; only the first frame is a change",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T11:30:00Z",
+     "last_observed_at": "2026-09-09T12:00:03Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T11:20:00Z",
+     "last_observed_at": "2026-09-09T12:00:03Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T11:58:30Z",
+     "last_observed_at": "2026-09-09T12:00:03Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:04Z",
+   "note": "pulse arrives; pacing may defer it but it is inside its freshness window",
+   "pulses": [
+    "wsl_mcp"
+   ],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T11:30:00Z",
+     "last_observed_at": "2026-09-09T12:00:04Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T11:20:00Z",
+     "last_observed_at": "2026-09-09T12:00:04Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:04Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:05Z",
+   "note": "pulse decays to 'recent' -- a legitimate second change",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T11:30:00Z",
+     "last_observed_at": "2026-09-09T12:00:05Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T11:20:00Z",
+     "last_observed_at": "2026-09-09T12:00:05Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:05Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:06Z",
+   "note": "burst: coalesce to newest, queue nothing",
+   "pulses": [
+    "optiplex_mcp"
+   ],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T12:00:06Z",
+     "last_observed_at": "2026-09-09T12:00:06Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T11:20:00Z",
+     "last_observed_at": "2026-09-09T12:00:06Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:06Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:07Z",
+   "note": "burst continued",
+   "pulses": [
+    "optiplex_lab"
+   ],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T12:00:06Z",
+     "last_observed_at": "2026-09-09T12:00:07Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T12:00:07Z",
+     "last_observed_at": "2026-09-09T12:00:07Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:07Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:08Z",
+   "note": "source unreadable: unavailable, not idle; display continues",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T12:00:06Z",
+     "last_observed_at": "2026-09-09T12:00:08Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T12:00:07Z",
+     "last_observed_at": "2026-09-09T12:00:08Z",
+     "source_health": "unavailable",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": "SOURCE_READ_FAILED"
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:08Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:09Z",
+   "note": "source unreadable: unavailable, not idle; display continues",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T12:00:06Z",
+     "last_observed_at": "2026-09-09T12:00:09Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T12:00:07Z",
+     "last_observed_at": "2026-09-09T12:00:09Z",
+     "source_health": "unavailable",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": "SOURCE_READ_FAILED"
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:09Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:10Z",
+   "note": "source unreadable: unavailable, not idle; display continues",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T12:00:06Z",
+     "last_observed_at": "2026-09-09T12:00:10Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T12:00:07Z",
+     "last_observed_at": "2026-09-09T12:00:10Z",
+     "source_health": "unavailable",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": "SOURCE_READ_FAILED"
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:10Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:11Z",
+   "note": "source recovered",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T12:00:06Z",
+     "last_observed_at": "2026-09-09T12:00:11Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T12:00:07Z",
+     "last_observed_at": "2026-09-09T12:00:11Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:11Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:12Z",
+   "note": "source recovered",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T12:00:06Z",
+     "last_observed_at": "2026-09-09T12:00:12Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T12:00:07Z",
+     "last_observed_at": "2026-09-09T12:00:12Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:12Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:13Z",
+   "note": "quiet: no frame",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T12:00:06Z",
+     "last_observed_at": "2026-09-09T12:00:13Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T12:00:07Z",
+     "last_observed_at": "2026-09-09T12:00:13Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:13Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:14Z",
+   "note": "quiet: no frame",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T12:00:06Z",
+     "last_observed_at": "2026-09-09T12:00:14Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T12:00:07Z",
+     "last_observed_at": "2026-09-09T12:00:14Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:14Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  },
+  {
+   "now": "2026-09-09T12:00:15Z",
+   "note": "quiet: no frame",
+   "pulses": [],
+   "sources": {
+    "optiplex_mcp": {
+     "last_activity_at": "2026-09-09T12:00:06Z",
+     "last_observed_at": "2026-09-09T12:00:15Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "optiplex_lab": {
+     "last_activity_at": "2026-09-09T12:00:07Z",
+     "last_observed_at": "2026-09-09T12:00:15Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    },
+    "wsl_mcp": {
+     "last_activity_at": "2026-09-09T12:00:04Z",
+     "last_observed_at": "2026-09-09T12:00:15Z",
+     "source_health": "healthy",
+     "last_outcome": "success",
+     "history_complete": true,
+     "error_code": null
+    }
+   }
+  }
+ ]
+}

@@ -121,3 +121,34 @@ Still not built, and each needs its own manifest and grant:
   about the official app, not an earned rate.
 - **Driving the display from the M9 collector.** M9 stays offline until a rate ceiling
   is accepted.
+
+### Superseded in part — 2026-09-09 (N1 pointer)
+
+The three bullets above are kept verbatim as dated history from the moment M8.3 step 1
+closed. Two of them have since been overtaken by evidence; nothing in them is relaxed.
+
+- **"Any loop" is superseded by the executed finite loop.** M8.3 step 2 ran twice, each
+  time under its own new manifest and its own explicit operator grant:
+  `OPENDITOO-M8-FINITE-LOOP-001` (`experiments/DAY1-M8-FINITE-LOOP-PENDING.json`) and
+  `OPENDITOO-M8-FINITE-LOOP-002` (`experiments/DAY1-M8-FINITE-LOOP-002-RERUN.json`).
+  Attempt 1 of 001 failed at connect (`IMAGE_RFCOMM_CONNECT_FAILED WSA=10060`) with zero
+  application bytes transmitted — the Android app still held the link — and is preserved
+  beside the successful run rather than overwritten. Each successful run: 1 connection,
+  30/30 packets, 710/710 bytes, 10/10 ACKs, no retry, no reconnect, clean close, ~10.26 s
+  against a 40 s ceiling. Reproducible across the two runs: median ACK latency 105 ms in
+  both, mean inter-ACK interval 1116.2 ms and 1114.1 ms, zero missing ACKs, zero errors.
+  **Both authorities are consumed.** A finite loop is now a *demonstrated* transport
+  capability and still not standing authority: any further loop needs a new manifest and a
+  new named grant.
+- **The rate bullet stands unchanged.** ~1118 ms/frame (0.894 frames/s) is the rate
+  measured and accepted, and the only rate later automatic display work may use without a
+  new grant. The 148 ms stock floor remains an observation about the official app.
+- **The M9 bullet is partly overtaken.** The rate ceiling is now accepted, so that
+  particular blocker is gone; M9 display activation is still not authorized and still not
+  built, and is now tracked as **N2-N5** in `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`.
+- **Transport pass is not visual acceptance.** `operator_visual_order` is still `pending`
+  on both loop manifests: 10/10 ACKs prove the unit accepted ten frames, not that an
+  operator watched ten frames alternate in order. Do not upgrade one to the other, and do
+  not re-run M8 merely to close the bookkeeping — ask the operator once, attribute the
+  answer as recollection if that is what it is, and otherwise obtain visual acceptance
+  during the N5 trial.

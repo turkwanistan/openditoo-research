@@ -1239,3 +1239,485 @@ class BtsnoopAgainstFrozenEvidenceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# --------------------------------------------------------------------------
+# N2/N3 — bounded activation authority, takeover-aware receive, change-only sending
+# --------------------------------------------------------------------------
+
+from host import activity_session  # noqa: E402
+
+HOST_DIR = ROOT / "runtime/windows/OpenDitoo.Day1.Host"
+
+
+def _valid_manifest(**overrides) -> dict:
+    """The smallest manifest that passes, so each test can break exactly one thing."""
+    session = {"lifetime_seconds": 300, "min_frame_interval_ms": 1118,
+               "pulse_freshness_seconds": 30, "poll_interval_ms": 1000,
+               "activation_source": "three MCP audit sources",
+               "automatic_retry": False, "automatic_reconnect": False,
+               "stock_screen_reclaim": False, "replay_after_interruption": False}
+    budgets = {"max_frames": 60, "max_application_packets": 180, "max_tx_bytes": 60 * 2000,
+               "connection_attempts": 1, "ack_timeout_ms_per_frame": 5000}
+    data = {
+        "schema_version": 2,
+        "experiment_id": "OPENDITOO-TEST-001",
+        "milestone": "test",
+        "target": {"exact_unit_id": "11:75:58:CE:DE:C7", "installed_firmware": "v42012"},
+        "transport": {"measured_endpoint": "Windows Classic serial channel 1"},
+        "session": session,
+        "budgets": budgets,
+        "build": {"code_sha256": activity_session.module_hashes(), "host_dll_sha256": "a" * 64},
+        "stop_policy": {"stop_immediately_on": ["unexpected state report"],
+                        "on_ambiguous_outcome_resend": False,
+                        "collection_continues_after_display_stop": True},
+        "authority": {"transmission_authorized": True, "authorization_consumed": False,
+                      "experiment_id": "OPENDITOO-TEST-001", "granted_by": "operator",
+                      "grant_text": "test", "expires_at": "2999-01-01T00:00:00Z"},
+    }
+    for path, value in overrides.items():
+        section, _, key = path.partition(".")
+        if key:
+            data[section][key] = value
+        else:
+            data[section] = value
+    return data
+
+
+class N2SessionManifestTests(unittest.TestCase):
+    def _load(self, **overrides):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "m.json"
+            path.write_text(json.dumps(_valid_manifest(**overrides)), encoding="utf-8")
+            return activity_session.load_session_manifest(path)
+
+    def _refuses(self, code: str, **overrides) -> None:
+        with self.assertRaises(activity_session.SessionError) as caught:
+            self._load(**overrides)
+        self.assertEqual(caught.exception.code, code)
+
+    def test_a_complete_manifest_loads_with_its_budgets_intact(self) -> None:
+        manifest = self._load()
+        self.assertEqual(manifest.experiment_id, "OPENDITOO-TEST-001")
+        self.assertEqual(manifest.max_application_packets, manifest.max_frames * 3)
+        self.assertGreaterEqual(manifest.min_frame_interval_ms,
+                                activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
+
+    def test_missing_or_consumed_or_expired_authority_all_refuse(self) -> None:
+        self._refuses("TRANSMISSION_AUTHORITY_MISSING",
+                      **{"authority": {**_valid_manifest()["authority"], "transmission_authorized": False}})
+        self._refuses("AUTHORITY_ALREADY_CONSUMED",
+                      **{"authority": {**_valid_manifest()["authority"], "authorization_consumed": True}})
+        self._refuses("AUTHORITY_EXPIRED",
+                      **{"authority": {**_valid_manifest()["authority"], "expires_at": "2020-01-01T00:00:00Z"}})
+
+    def test_a_grant_must_name_the_experiment_it_authorizes(self) -> None:
+        self._refuses("AUTHORITY_EXPERIMENT_ID_MISMATCH",
+                      **{"authority": {**_valid_manifest()["authority"], "experiment_id": "SOMETHING-ELSE"}})
+
+    def test_pacing_faster_than_the_accepted_ceiling_is_refused(self) -> None:
+        # 1000 ms is the proven inter-frame DELAY, not a proven 1 fps rate. The accepted
+        # measurement is ~1118 ms per frame start, and nothing may quietly beat it.
+        self._refuses("SESSION_PACING_BELOW_ACCEPTED_CEILING", **{"session.min_frame_interval_ms": 1000})
+
+    def test_budgets_must_be_derived_not_asserted(self) -> None:
+        self._refuses("BUDGET_PACKETS_NOT_DERIVED", **{"budgets.max_application_packets": 61})
+        self._refuses("BUDGET_FRAMES_EXCEED_LIFETIME",
+                      **{"budgets": {**_valid_manifest()["budgets"], "max_frames": 400,
+                                     "max_application_packets": 1200}})
+        self._refuses("BUDGET_CONNECTION_ATTEMPTS_INVALID", **{"budgets.connection_attempts": 2})
+
+    def test_a_lifetime_beyond_the_supervised_ceiling_is_refused(self) -> None:
+        self._refuses("SESSION_LIFETIME_INVALID", **{"session.lifetime_seconds": 100_000})
+
+    def test_retry_reconnect_reclaim_and_replay_must_all_be_disabled(self) -> None:
+        for field, code in (("automatic_retry", "SESSION_RETRY_NOT_DISABLED"),
+                            ("automatic_reconnect", "SESSION_RECONNECT_NOT_DISABLED"),
+                            ("stock_screen_reclaim", "SESSION_RECLAIM_NOT_DISABLED"),
+                            ("replay_after_interruption", "SESSION_REPLAY_NOT_DISABLED")):
+            self._refuses(code, **{f"session.{field}": True})
+
+    def test_a_fault_policy_that_stops_collection_or_resends_is_refused(self) -> None:
+        self._refuses("STOP_POLICY_PERMITS_RESEND",
+                      **{"stop_policy": {**_valid_manifest()["stop_policy"], "on_ambiguous_outcome_resend": True}})
+        self._refuses("STOP_POLICY_STOPS_COLLECTION",
+                      **{"stop_policy": {**_valid_manifest()["stop_policy"],
+                                         "collection_continues_after_display_stop": False}})
+
+    def test_renderer_or_collector_drift_invalidates_the_reviewed_envelope(self) -> None:
+        # A dynamic session cannot freeze future pixels, so it freezes the code that
+        # produces them instead. Change the renderer and the manifest is no longer it.
+        drifted = {**activity_session.module_hashes(), "renderer_sha256": "0" * 64}
+        self._refuses("BUILD_CODE_HASH_DRIFT",
+                      **{"build": {"code_sha256": drifted, "host_dll_sha256": "a" * 64}})
+
+    def test_the_target_is_the_exact_purchased_unit_and_firmware(self) -> None:
+        self._refuses("MANIFEST_TARGET_MISMATCH",
+                      **{"target": {"exact_unit_id": "11:75:58:C8:5E:FE", "installed_firmware": "v42012"}})
+        self._refuses("MANIFEST_FIRMWARE_MISMATCH",
+                      **{"target": {"exact_unit_id": "11:75:58:CE:DE:C7", "installed_firmware": "v1"}})
+
+
+class N2SessionClaimTests(unittest.TestCase):
+    def test_one_claim_per_experiment_id_and_no_release_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            claim = activity_session.SessionClaim("E-1", Path(tmp))
+            claim.claim({"manifest_file": "m.json"})
+            twin = activity_session.SessionClaim("E-1", Path(tmp))
+            with self.assertRaises(activity_session.SessionError) as caught:
+                twin.claim({"manifest_file": "m.json"})
+            self.assertEqual(caught.exception.code, "AUTHORITY_ALREADY_CONSUMED")
+
+    def test_a_crash_leaves_an_unknown_outcome_that_still_refuses_re_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            activity_session.SessionClaim("E-2", Path(tmp)).claim({})
+            # No finish() call: the worker died here.
+            record = activity_session.SessionClaim("E-2", Path(tmp)).read()
+            self.assertEqual((record["state"], record["outcome"]), ("claimed", "unknown"))
+            with self.assertRaises(activity_session.SessionError):
+                activity_session.SessionClaim("E-2", Path(tmp)).claim({})
+
+    def test_a_terminal_result_is_recorded_over_the_claim(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            claim = activity_session.SessionClaim("E-3", Path(tmp))
+            claim.claim({})
+            claim.finish("stopped_clean", {"terminal_reason": "lifetime_expired", "frames_sent": 4})
+            record = claim.read()
+            self.assertEqual(record["state"], "finished")
+            self.assertEqual(record["outcome"], "stopped_clean")
+            self.assertEqual(record["frames_sent"], 4)
+
+    def test_no_source_path_un_consumes_authority(self) -> None:
+        src = (ROOT / "host/activity_session.py").read_text(encoding="utf-8")
+        for forbidden in ("def release", "def unclaim", "def reset", "authorization_consumed = False",
+                          "os.remove", "os.unlink", "unlink()"):
+            self.assertNotIn(forbidden, src, msg=f"a claim must never be releasable: {forbidden}")
+
+
+class N3SchedulerTests(unittest.TestCase):
+    RED = bytes([255, 0, 0]) * 256
+    BLUE = bytes([0, 0, 255]) * 256
+    GREEN = bytes([0, 255, 0]) * 256
+
+    def _scheduler(self, interval: int = 1118, freshness: int = 30_000):
+        return activity_session.ChangeOnlyScheduler(interval, freshness)
+
+    def test_an_unchanged_scene_sends_nothing_ever(self) -> None:
+        s = self._scheduler()
+        s.observe(0, self.RED)
+        self.assertEqual(s.next_action(0), ("send", "changed"))
+        s.sending(0); s.sent()
+        for now in range(1000, 60_000, 1000):
+            s.observe(now, self.RED)
+            self.assertEqual(s.next_action(now), ("hold", "unchanged"))
+        self.assertEqual(s.frames_sent, 1)
+
+    def test_the_accepted_interval_is_a_ceiling_not_a_heartbeat(self) -> None:
+        s = self._scheduler()
+        s.observe(0, self.RED); s.sending(0); s.sent()
+        s.observe(500, self.BLUE)
+        self.assertEqual(s.next_action(500), ("hold", "pacing"))
+        self.assertEqual(s.next_action(1117), ("hold", "pacing"))
+        self.assertEqual(s.next_action(1118), ("send", "changed"))
+
+    def test_a_burst_coalesces_to_the_newest_frame_and_queues_nothing(self) -> None:
+        s = self._scheduler()
+        s.observe(0, self.RED); s.sending(0); s.sent()
+        for now, frame in ((100, self.BLUE), (200, self.GREEN), (300, self.BLUE)):
+            s.observe(now, frame)
+        self.assertEqual(s.next_action(1200)[0], "send")
+        self.assertEqual(s.sending(1200).rgb, self.BLUE)  # newest only; nothing replayed
+
+    def test_a_pulse_that_misses_its_window_is_dropped_not_replayed_later(self) -> None:
+        s = self._scheduler(freshness=5_000)
+        s.observe(0, self.RED); s.sending(0); s.sent()
+        s.observe(100, self.BLUE, from_pulse=True)
+        self.assertEqual(s.next_action(1000), ("hold", "pacing"))
+        self.assertEqual(s.next_action(20_000), ("hold", "pulse_expired"))
+        # It is gone, not deferred: a later slot must not resurrect it.
+        self.assertEqual(s.next_action(30_000), ("hold", "no_render_yet"))
+        self.assertEqual(s.dropped_expired_pulses, 1)
+
+    def test_a_pulse_survives_to_the_next_permitted_slot_inside_its_window(self) -> None:
+        s = self._scheduler(freshness=30_000)
+        s.observe(0, self.RED); s.sending(0); s.sent()
+        s.observe(100, self.BLUE, from_pulse=True)   # arrives while pacing forbids sending
+        self.assertEqual(s.next_action(200), ("hold", "pacing"))
+        self.assertEqual(s.next_action(1118), ("send", "changed"))
+
+    def test_a_persisting_scene_cannot_renew_a_pulse_window_indefinitely(self) -> None:
+        s = self._scheduler(freshness=5_000)
+        s.observe(0, self.RED); s.sending(0); s.sent()
+        s.observe(100, self.BLUE, from_pulse=True)
+        for now in range(200, 9_000, 200):
+            s.observe(now, self.BLUE, from_pulse=True)  # same image, re-observed
+        self.assertEqual(s.next_action(9_000), ("hold", "pulse_expired"))
+
+    def test_age_or_health_change_sends_without_any_new_activity(self) -> None:
+        # Not every legitimate frame change comes from a pulse.
+        s = self._scheduler()
+        s.observe(0, self.RED); s.sending(0); s.sent()
+        s.observe(60_000, self.GREEN, from_pulse=False)
+        self.assertEqual(s.next_action(60_000), ("send", "changed"))
+
+    def test_an_invalidated_canvas_holds_forever_and_never_reclaims(self) -> None:
+        s = self._scheduler()
+        s.observe(0, self.RED); s.sending(0); s.sent()
+        s.invalidate_canvas("state_report")
+        self.assertEqual(s.display_state(), "unknown_not_ours")
+        s.observe(5_000, self.BLUE)
+        self.assertEqual(s.next_action(5_000), ("hold", "canvas_invalidated"))
+        self.assertEqual(s.next_action(500_000), ("hold", "canvas_invalidated"))
+
+
+class N3ReceiveFramingTests(unittest.TestCase):
+    """The shared fixture. The Host's C# assembler runs these same cases via --selftest."""
+
+    FIXTURE = ROOT / "tests/receive_assembler_cases.json"
+
+    def test_every_shared_receive_case_agrees_with_the_fixture(self) -> None:
+        cases = json.loads(self.FIXTURE.read_text(encoding="utf-8"))["cases"]
+        self.assertGreaterEqual(len(cases), 9)
+        for case in cases:
+            with self.subTest(case["name"]):
+                assembler = activity_session.ReportAssembler()
+                kinds, error = [], None
+                try:
+                    for chunk in case["chunks"]:
+                        kinds += assembler.feed(bytes.fromhex(chunk))
+                except activity_session.ReportFramingError as exc:
+                    error = str(exc).split(" ")[0]
+                self.assertEqual(kinds, case["expect_kinds"])
+                self.assertEqual(error, case.get("expect_error"))
+
+    def test_an_ack_is_only_our_exact_wrapped_shape(self) -> None:
+        from host.ditoo_candidate_codec import encode_candidate_normal
+        self.assertEqual(activity_session.classify_report(
+            encode_candidate_normal(0x04, bytes([0x44, 0x55, 0x12]))), "ack")
+        # M7's unsolicited reports share the wrapper but not the command.
+        for inner in (0x46, 0xBD, 0x09):
+            self.assertEqual(activity_session.classify_report(
+                encode_candidate_normal(0x04, bytes([inner, 0x55, 0x01]))), "state_report")
+
+    def test_the_ack_payload_byte_is_never_validated_as_a_constant(self) -> None:
+        from host.ditoo_candidate_codec import encode_candidate_normal
+        for payload in (0x12, 0x75, 0xF0, 0xE5, 0x33, 0x00):
+            self.assertEqual(activity_session.classify_report(
+                encode_candidate_normal(0x04, bytes([0x44, 0x55, payload]))), "ack")
+
+
+class N3SessionRunTests(unittest.TestCase):
+    def _manifest(self, tmp: str, **overrides):
+        path = Path(tmp) / "m.json"
+        path.write_text(json.dumps(_valid_manifest(**overrides)), encoding="utf-8")
+        return activity_session.load_session_manifest(path)
+
+    def _run(self, frames, transport=None, **overrides):
+        """Drive a fixed list of rendered frames on a fake clock and fake transport."""
+        # One poll per second, so a lifetime of len(frames) seconds ends the run exactly
+        # when the scripted frames run out.
+        lifetime = len(frames)
+        overrides.setdefault("session", {**_valid_manifest()["session"],
+                                         "lifetime_seconds": lifetime})
+        cap = lifetime * 1000 // 1118 + 1
+        overrides.setdefault("budgets", {**_valid_manifest()["budgets"], "max_frames": cap,
+                                         "max_application_packets": cap * 3})
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._manifest(tmp, **overrides)
+            transport = transport or activity_session.FakeSessionTransport()
+            clock = {"ms": 0}
+            index = {"i": 0}
+
+            def render(_now):
+                frame = frames[min(index["i"], len(frames) - 1)]
+                index["i"] += 1
+                return frame if isinstance(frame, tuple) else (frame, False)
+
+            result = activity_session.run_session(
+                manifest, transport, render, lambda: clock["ms"],
+                lambda ms: clock.__setitem__("ms", clock["ms"] + ms),
+                max_iterations=len(frames) + 8)
+            return result, transport
+
+    RED = bytes([255, 0, 0]) * 256
+    BLUE = bytes([0, 0, 255]) * 256
+
+    def test_an_unchanged_session_dispatches_exactly_one_frame(self) -> None:
+        result, transport = self._run([self.RED] * 40)
+        self.assertEqual(len(transport.frames), 1)
+        self.assertEqual(result["frames_sent"], 1)
+        self.assertGreater(result["holds"]["unchanged"], 20)
+
+    def test_an_alternating_scene_is_paced_by_the_accepted_interval(self) -> None:
+        result, transport = self._run([self.RED, self.BLUE] * 20)
+        # 40 polls at 1000 ms cannot admit more frame starts than 1118 ms allows.
+        self.assertLessEqual(len(transport.frames), 40_000 // 1118 + 1)
+        self.assertIn("pacing", result["holds"])
+
+    def test_an_unsolicited_state_report_stops_the_session_and_yields(self) -> None:
+        transport = activity_session.FakeSessionTransport(
+            reports={1: [{"kind": "state_report", "inner": "0x46"}]})
+        result, transport = self._run([self.RED, self.BLUE] * 10, transport=transport)
+        self.assertEqual(result["terminal_reason"], "canvas_invalidated")
+        self.assertEqual(result["outcome"], "stopped_yielded_to_stock")
+        self.assertEqual(result["display_state"], "unknown_not_ours")
+        self.assertEqual(len(transport.frames), 1)  # nothing after the takeover
+        self.assertEqual(transport.closed_reason, "canvas_invalidated")
+
+    def test_a_transport_fault_stops_sending_with_an_honestly_unknown_outcome(self) -> None:
+        transport = activity_session.FakeSessionTransport(fail_on_frame=2)
+        result, transport = self._run([self.RED, self.BLUE] * 10, transport=transport)
+        self.assertEqual(result["terminal_reason"], "transport_fault")
+        self.assertEqual(result["outcome"], "unknown")
+        self.assertEqual(len(transport.frames), 1)  # no resend of the frame that failed
+        self.assertTrue(transport.closed_reason)
+
+    def test_the_frame_budget_stops_the_session_before_it_is_exceeded(self) -> None:
+        result, transport = self._run(
+            [self.RED, self.BLUE] * 40,
+            **{"budgets": {**_valid_manifest()["budgets"], "max_frames": 3,
+                           "max_application_packets": 9}})
+        self.assertEqual(result["terminal_reason"], "budget_exhausted")
+        self.assertLessEqual(len(transport.frames), 3)
+
+    def test_a_clean_run_ends_at_its_lifetime_with_a_terminal_record(self) -> None:
+        result, _ = self._run([self.RED] * 5)
+        self.assertEqual(result["outcome"], "stopped_clean")
+        self.assertEqual(result["terminal_reason"], "lifetime_expired")
+        self.assertEqual(result["packets_sent"], result["frames_sent"] * 3)
+
+    def test_a_source_failure_renders_but_never_stops_the_display(self) -> None:
+        # An unreadable source is an unavailable indicator, not a Bluetooth fault.
+        state = mcp_activity.blank_state()
+        state["sources"]["wsl_mcp"]["source_health"] = "unavailable"
+        state["sources"]["wsl_mcp"]["error_code"] = "SOURCE_READ_FAILED"
+        unavailable = activity_render.render_rgb888(state)
+        result, transport = self._run([self.RED] + [unavailable] * 20)
+        self.assertEqual(result["outcome"], "stopped_clean")
+        self.assertEqual(len(transport.frames), 2)
+
+
+class N3HostBoundaryTests(unittest.TestCase):
+    def test_the_host_enforces_the_same_pacing_floor_as_the_cli(self) -> None:
+        src = (HOST_DIR / "ActivitySessionHost.cs").read_text(encoding="utf-8")
+        self.assertIn(f"AcceptedMinFrameIntervalMs = {activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS};", src)
+        self.assertIn(f"MaxLifetimeSeconds = {activity_session.MAX_SESSION_LIFETIME_SECONDS};", src)
+        self.assertIn(f"MaxFrames = {activity_session.MAX_SESSION_FRAMES};", src)
+        self.assertIn("SESSION_PACING_BELOW_ACCEPTED_CEILING", src)
+
+    def test_the_host_bounds_a_session_without_the_worker(self) -> None:
+        src = (HOST_DIR / "ActivitySessionHost.cs").read_text(encoding="utf-8")
+        # A watchdog the caller cannot cancel is the whole point: a dropped HTTP client
+        # must not leave a live link running to its own schedule.
+        self.assertIn("watchdog = new Timer(_ => Tick()", src)
+        self.assertIn('Terminate("lifetime_expired"', src)
+        self.assertIn('Terminate("worker_silent"', src)
+        self.assertIn("WorkerSilenceGraceMs", src)
+
+    def test_the_host_consumes_the_experiment_id_before_it_opens_anything(self) -> None:
+        src = (HOST_DIR / "ActivitySessionHost.cs").read_text(encoding="utf-8")
+        claim = src.index('Append("open"')
+        self.assertLess(claim, src.index("RequireAuthenticatedExactTarget"))
+        self.assertLess(claim, src.index("DitooLink.Connect"))
+        self.assertIn("AUTHORITY_ALREADY_CONSUMED", src)
+        # A ledger line we cannot read must never be taken as "this id is free".
+        self.assertIn("catch (JsonException)", src)
+
+    def test_the_host_session_never_retries_reconnects_or_reclaims(self) -> None:
+        src = (HOST_DIR / "ActivitySessionHost.cs").read_text(encoding="utf-8")
+        self.assertIn("retry = false", src)
+        self.assertIn("reconnect = false", src)
+        self.assertIn("reclaim = false", src)
+        for forbidden in ("Reconnect(", "Reopen(", "Resend(", "ReclaimScreen", "RestoreStock"):
+            self.assertNotIn(forbidden, src)
+
+    def test_a_takeover_ends_the_session_even_if_the_ack_arrived_first(self) -> None:
+        transport = (HOST_DIR / "WindowsRfcommStaticImageTransport.cs").read_text(encoding="utf-8")
+        self.assertIn("throw new DitooTakeoverException(report, ack is not null)", transport)
+        report = (HOST_DIR / "DitooSessionReport.cs").read_text(encoding="utf-8")
+        self.assertIn("AckAlreadyReceived", report)
+        self.assertIn("NO_RECLAIM", report)
+
+    def test_the_link_observes_the_device_while_idle(self) -> None:
+        transport = (HOST_DIR / "WindowsRfcommStaticImageTransport.cs").read_text(encoding="utf-8")
+        self.assertIn("internal List<DitooReport> PollIdle()", transport)
+        # The link stays armed for read after send-readiness, so an unsolicited report
+        # is seen even when the scene is unchanged and nothing is being sent.
+        self.assertIn('SelectEvents(socketHandle, eventHandle, FdRead | FdClose, "IMAGE_RX")', transport)
+
+    def test_one_gate_still_covers_show_sequence_and_session(self) -> None:
+        program = (HOST_DIR / "Program.cs").read_text(encoding="utf-8")
+        self.assertIn("ActivitySessionHost.OnRelease = () => imageGate.Release();", program)
+        self.assertEqual(program.count("imageGate.Wait(0)"), 3)
+        self.assertIn('"activity-session"', program)
+
+    def test_the_session_cli_takes_no_free_form_operating_arguments(self) -> None:
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        block = cli[cli.index('sub.add_parser("activity-session"'):cli.index('sub.add_parser("manifest-check"')]
+        self.assertIn('p.add_argument("--manifest", required=True)', block)
+        for forbidden in ("--lifetime", "--rate", "--interval", "--frames", "--target", "--force"):
+            self.assertNotIn(forbidden, block)
+
+
+class N4SessionPreviewTests(unittest.TestCase):
+    def test_the_offline_preview_dispatches_nothing_and_claims_no_authority(self) -> None:
+        cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
+        block = cli[cli.index("def session_preview("):cli.index("def activity_session_run(")]
+        self.assertIn("FakeSessionTransport", block)
+        self.assertIn('"dispatched": False', block)
+        self.assertNotIn("read_token", block)
+        self.assertNotIn("SessionClaim", block)
+
+    def test_the_scenario_fixtures_cover_change_idle_source_failure_and_takeover(self) -> None:
+        bounded = json.loads((ROOT / "tests/session_scenario_bounded.json").read_text(encoding="utf-8"))
+        takeover = json.loads((ROOT / "tests/session_scenario_takeover.json").read_text(encoding="utf-8"))
+        self.assertGreaterEqual(len(bounded["steps"]), 12)
+        self.assertTrue(any(step.get("pulses") for step in bounded["steps"]))
+        self.assertTrue(any(view.get("source_health") == "unavailable"
+                            for step in bounded["steps"] for view in step["sources"].values()))
+        # The two differ only in whether someone touched the unit, so the difference in
+        # outcome is attributable to the takeover and to nothing else.
+        self.assertEqual(bounded["steps"], takeover["steps"])
+        self.assertEqual(bounded["reports_after_frame"], {})
+        self.assertTrue(takeover["reports_after_frame"])
+
+    def test_the_activation_manifest_is_pending_and_grants_nothing(self) -> None:
+        path = ROOT / "experiments/DAY1-M9-ACTIVATION-001-PENDING.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        authority = manifest["authority"]
+        self.assertIs(authority["transmission_authorized"], False)
+        self.assertIsNone(authority["granted_by"])
+        self.assertIsNone(authority["grant_text"])
+        self.assertIsNone(authority["expires_at"])
+        self.assertEqual(authority["experiment_id"], manifest["experiment_id"])
+        self.assertIn("TRANSMISSION_AUTHORITY_MISSING",
+                      activity_session.authority_blockers(path))
+        # Structurally complete even though it is unauthorized: the grant is the only
+        # thing missing, so nothing else has to be decided under time pressure later.
+        reviewed = activity_session.load_session_manifest(path, require_authority=False)
+        self.assertEqual(reviewed.min_frame_interval_ms,
+                         activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
+        self.assertEqual(reviewed.max_application_packets, reviewed.max_frames * 3)
+
+    def test_the_activation_manifest_budgets_match_their_stated_derivation(self) -> None:
+        manifest = json.loads((ROOT / "experiments/DAY1-M9-ACTIVATION-001-PENDING.json")
+                              .read_text(encoding="utf-8"))
+        lifetime = manifest["session"]["lifetime_seconds"]
+        interval = manifest["session"]["min_frame_interval_ms"]
+        budgets = manifest["budgets"]
+        self.assertEqual(budgets["max_frames"], lifetime * 1000 // interval + 1)
+        self.assertEqual(budgets["max_tx_bytes"], budgets["max_frames"] * 191)
+        # 191 is the measured worst case over every render combination, not a guess.
+        worst = max(len(encode_rgb888_static_image(
+            activity_render.render_rgb888(mcp_activity.blank_state()))[0]), 0)
+        self.assertLessEqual(worst + 15, 191)
+
+    def test_the_manifest_records_that_the_installed_host_is_not_yet_the_built_one(self) -> None:
+        # Build verified, installed identity NOT verified equal: never substitute one
+        # for the other.
+        manifest = json.loads((ROOT / "experiments/DAY1-M9-ACTIVATION-001-PENDING.json")
+                              .read_text(encoding="utf-8"))
+        build = manifest["build"]
+        self.assertNotEqual(build["host_dll_sha256"], build["installed_dll_sha256_at_authoring"])
+        self.assertIn("refresh_openditoo_day1_host.ps1 -Apply", build["installed_identity_note"])
+        self.assertIn("preconditions", manifest)
