@@ -286,4 +286,7 @@ The post-rate-integration Windows boundary is now closed: changed Host build/dep
 
 ### Activation 006 result / 007 pending — 2026-09-09
 
-006 cleanly held the idle dashboard for 30 s (1 frame, 552 unchanged holds) but saw no source event, so animation remained unexercised. 007 is a deterministic visual trial using one genuine WSL_MCP audit event created by a harmless read-only WSL_MCP call while the bounded session is live. No synthetic collector state or fake failure is used. No current transmission is authorized.
+006 cleanly held the idle dashboard for 30 s (1 frame, 552 unchanged holds) but saw no source event, so animation remained unexercised. 007 is a deterministic visual trial using one genuine WSL_MCP audit event created by a harmless read-only WSL_MCP call while the bounded session is live. No synthetic collector state or fake failure is used. At that historical point no transmission authority was live.
+
+
+**`OPENDITOO-M9-ACTIVATION-007` is currently authorized for exactly one bounded execution** under the operator grant `Grant OPENDITOO-M9-ACTIVATION-007`; no other transmission is authorized.

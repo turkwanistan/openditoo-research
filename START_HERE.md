@@ -96,6 +96,6 @@ No firmware updates, persistent uploads, teardown, service/test/MassBoot entry, 
 
 ### Activation 006 result / 007 pending — 2026-09-09
 
-**Nothing is currently authorized.** 007 still requires a fresh explicit operator grant naming `OPENDITOO-M9-ACTIVATION-007`.
+**`OPENDITOO-M9-ACTIVATION-007` is currently authorized for exactly one bounded execution** under the operator grant `Grant OPENDITOO-M9-ACTIVATION-007`; no other transmission is authorized.
 
-`OPENDITOO-M9-ACTIVATION-006` is consumed after a clean 30 s idle-hold run: one base frame, 552 unchanged holds, no activity event, so animation was not exercised. `OPENDITOO-M9-ACTIVATION-007` is the fresh deterministic visual trial: after the operator starts it and messages `RUNNING`, the assistant will perform one harmless read-only WSL_MCP call, creating a genuine audit event for the existing collector to animate. No current transmission is authorized.
+`OPENDITOO-M9-ACTIVATION-006` is consumed after a clean 30 s idle-hold run: one base frame, 552 unchanged holds, no activity event, so animation was not exercised. `OPENDITOO-M9-ACTIVATION-007` is the fresh deterministic visual trial: after the operator starts it and messages `RUNNING`, the assistant will perform one harmless read-only WSL_MCP call, creating a genuine audit event for the existing collector to animate. At that historical point no transmission authority was live.

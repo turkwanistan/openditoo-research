@@ -491,6 +491,6 @@ Operator product decision: each activity event should cycle a few times. Source 
 
 ### Activation 006 result / 007 pending — 2026-09-09
 
-**Nothing is currently authorized.** 007 still requires a fresh explicit operator grant naming `OPENDITOO-M9-ACTIVATION-007`.
+**`OPENDITOO-M9-ACTIVATION-007` is currently authorized for exactly one bounded execution** under the operator grant `Grant OPENDITOO-M9-ACTIVATION-007`; no other transmission is authorized.
 
-006 was a clean idle-hold pass, not an animation failure: one ACKed base frame, 552 `unchanged` holds, clean 30 s lifetime close, and zero qualifying source events. The operator therefore did not miss an animation; none was generated. 007 preserves the same transport/pacing envelope and changes only test procedure: once the operator starts the session and says `RUNNING`, one harmless read-only WSL_MCP call will create a genuine completed audit record, which should trigger the 10-frame / ~2 s three-sweep program. No current transmission is authorized.
+006 was a clean idle-hold pass, not an animation failure: one ACKed base frame, 552 `unchanged` holds, clean 30 s lifetime close, and zero qualifying source events. The operator therefore did not miss an animation; none was generated. 007 preserves the same transport/pacing envelope and changes only test procedure: once the operator starts the session and says `RUNNING`, one harmless read-only WSL_MCP call will create a genuine completed audit record, which should trigger the 10-frame / ~2 s three-sweep program. At that historical point no transmission authority was live.
