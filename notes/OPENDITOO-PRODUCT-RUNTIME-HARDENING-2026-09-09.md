@@ -78,3 +78,12 @@ Do not claim plug-and-play complete until all are observed:
 ## Current state
 
 Implementation is frozen at the reviewed product boundary. The committed product policy remains disabled. **Persistent authority `OPENDITOO-PRODUCT-RUNTIME-001` is now granted only through the local mode-0600 `.openditoo-local/product-runtime-policy.json`, and `product-check` reports `execution_ready:true`.** `scripts/verify_day1_offline.py` must remain PASS before install/start.
+
+### Persistent product runtime live acceptance — initial attach + stock reclaim — 2026-09-09
+
+`OPENDITOO-PRODUCT-RUNTIME-001` is now installed under its local mode-0600 persistent policy. Windows installer reported `PRODUCT_SERVICE=ACTIVE`, `WINDOWS_STARTUP=AT_LOGON_START_WHEN_AVAILABLE`, and `INSTALL_STATUS=PASS_PRODUCT_RUNTIME`; the committed policy template remains disabled. The dashboard became physically visible without a manual activity-session invocation, so automatic initial attach is **PASS**.
+
+Physical reclaim is also **PASS**. The operator pressed brightness once; the Ditoo briefly showed the stock clock and then automatically returned to the MCP dashboard. Runtime telemetry recorded `canvas_invalidated / stopped_yielded_to_stock`, `reclaims=1`, `reconnects=0`, `connected_sessions=1`, and advanced from product session `...000001` to `...000002`, proving this was immediate stock-screen reclaim rather than disconnect backoff.
+
+Known observability defect: while a bounded product session is actively running, `product-status` remains at `status=connecting` because the supervisor persists that state before entering `run_session()` and receives no mid-session callback after Host open/first ACK. This is telemetry-only: physical display plus Host/session evidence prove attach/reclaim. Do not modify the hash-frozen live runtime in place; fix under a fresh reviewed product revision after live acceptance of reconnect/startup.
+

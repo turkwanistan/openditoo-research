@@ -123,3 +123,12 @@ The operator does not intend to use the stock Ditoo UI. Future hardened product 
 `OPENDITOO-M9-ACTIVATION-008` is consumed and PASS. The test-only virtual-clock profile produced exactly four ACKed changed frames over 15 s (12 packets / 714 bytes), clean `lifetime_expired`, with 287 unchanged holds and no pacing/refusal. Operator observation: **all green → yellow → red → grey transitions were visible and looked good**. Production thresholds remain unchanged: green <5 min, yellow 5–20 min, red >=20 min; grey remains no usable activity data. At completion of 008, no standing product authority had yet been granted; that historical state is superseded by the current `OPENDITOO-PRODUCT-RUNTIME-001` grant.
 
 Product decision recorded immediately after acceptance: stock UI is not desired while OpenDitoo owns the device. Future plug-and-play product mode should automatically restore the last/current MCP dashboard after a physical input causes stock takeover, rather than yielding until reconnect. This is a new product-runtime authority shape and is not authorized by 008.
+
+### Persistent product runtime live acceptance — initial attach + stock reclaim — 2026-09-09
+
+`OPENDITOO-PRODUCT-RUNTIME-001` is now installed under its local mode-0600 persistent policy. Windows installer reported `PRODUCT_SERVICE=ACTIVE`, `WINDOWS_STARTUP=AT_LOGON_START_WHEN_AVAILABLE`, and `INSTALL_STATUS=PASS_PRODUCT_RUNTIME`; the committed policy template remains disabled. The dashboard became physically visible without a manual activity-session invocation, so automatic initial attach is **PASS**.
+
+Physical reclaim is also **PASS**. The operator pressed brightness once; the Ditoo briefly showed the stock clock and then automatically returned to the MCP dashboard. Runtime telemetry recorded `canvas_invalidated / stopped_yielded_to_stock`, `reclaims=1`, `reconnects=0`, `connected_sessions=1`, and advanced from product session `...000001` to `...000002`, proving this was immediate stock-screen reclaim rather than disconnect backoff.
+
+Known observability defect: while a bounded product session is actively running, `product-status` remains at `status=connecting` because the supervisor persists that state before entering `run_session()` and receives no mid-session callback after Host open/first ACK. This is telemetry-only: physical display plus Host/session evidence prove attach/reclaim. Do not modify the hash-frozen live runtime in place; fix under a fresh reviewed product revision after live acceptance of reconnect/startup.
+
