@@ -2,7 +2,7 @@
   "schema_version": 2,
   "experiment_id": "OPENDITOO-M9-ACTIVATION-008",
   "milestone": "MCP dashboard accelerated status-colour transition acceptance",
-  "status": "pending_operator_grant",
+  "status": "authorized_pending_execution",
   "objective": "Physically verify the production green/yellow/red/grey dashboard states on the exact Ditoo using a test-only virtual clock; production 5/20-minute thresholds remain unchanged.",
   "why_this_shape": "006 was a clean idle-hold pass but no source event occurred, so animation was not exercised. 007 keeps the same accepted transport/pacing envelope and changes only the test procedure: after the operator starts the session, the assistant performs one harmless read-only WSL_MCP call, which appends a genuine completed WSL_MCP audit record that the existing collector should observe.",
   "target": {
@@ -99,14 +99,14 @@
     "operator present and watching the unit"
   ],
   "authority": {
-    "transmission_authorized": false,
+    "transmission_authorized": true,
     "authorization_consumed": false,
     "experiment_id": "OPENDITOO-M9-ACTIVATION-008",
-    "granted_by": null,
-    "grant_text": null,
-    "expires_at": null,
+    "granted_by": "operator, in-session, 2026-09-09",
+    "grant_text": "Grant OPENDITOO-M9-ACTIVATION-008",
+    "expires_at": "2026-09-10T00:00:00Z",
     "grant_scope_requested": "ONE execution only: up to 15 seconds; deterministic MCP dashboard status-colour acceptance using the test-only virtual clock profile; exactly production rendering semantics; expected 4 changed frames and hard ceiling 8 frames / 24 packets / 1624 application bytes; one RFCOMM connection; ACK per frame; no MCP source collection, retry, reconnect, reclaim, pipelining, streaming, unattended operation, or second attempt.",
-    "grant_scope": null
+    "grant_scope": "ONE execution only: up to 15 seconds; deterministic MCP dashboard status-colour acceptance using the test-only virtual clock profile; exactly production rendering semantics; expected 4 changed frames and hard ceiling 8 frames / 24 packets / 1624 application bytes; one RFCOMM connection; ACK per frame; no MCP source collection, retry, reconnect, reclaim, pipelining, streaming, unattended operation, or second attempt."
   },
   "explicitly_out_of_scope": [
     "streaming or video milestone work",
