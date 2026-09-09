@@ -7,7 +7,7 @@ The exact purchased Ditoo Plus successfully rendered the frozen custom diagnosti
 
 **Target:** Divoom Ditoo Plus (pink purchased unit)  
 **State date:** 2026-09-08
-**Phase:** Day-1 application-first execution active; M1-M4 PASS, exact Pixel Coloring/image encoding proven, M5 frozen pending explicit authority.
+**Phase:** Day-1 M0-M5 complete; first custom frame PASS; typed 16×16 PNG runtime implementation in validation/deployment.
 **Safety posture:** preservation-first. No flashing, arbitrary proprietary writes, guessed service-mode entry, electrical probing, soldering, or destructive teardown has been authorized or performed.
 
 This file is the current human-readable project synthesis. It supersedes ad-hoc chat summaries for project state but does not replace raw evidence, hashes, or provenance under `artifacts/`.
@@ -18,7 +18,7 @@ The current objective is now stock characterization -> measured application-cont
 
 A synchronized WSL_MCP implementation checkout is established at `/home/wan/Projects/openditoo-research` and matches fetched `origin/main` at pre-Day-1 HEAD `0f000cbb2ff8ea79c7a48294f5886853ea906fba`. All 19 preserved artifact SHA-256 entries verify. The older OptiPlex checkout remains clean at `1e4fd070...`; updating it is blocked by unprovisioned project Git credentials.
 
-Offline Day-1 tooling includes a separate OpenDitoo CLI/token, candidate frame comparator, exact diagnostic RGB source, fail-closed M4/M5 manifests, and a separate authenticated Windows Host on `127.0.0.1:8796`. Windows installation/status proof is PASS while remaining status-only and isolated from OpenTivoo on 8779.
+OpenDitoo tooling includes a separate CLI/token, candidate frame comparator, exact diagnostic RGB source, completed M4/M5 evidence, and a separate authenticated Windows Host on `127.0.0.1:8796`, isolated from OpenTivoo on 8779. Post-M5 productization adds a typed static-image Host route and exact 16×16 PNG CLI path; the installed Windows Host must be refreshed before that new route is live.
 
 Exact purchased-unit stock capture now proves the official app control route is Bluetooth Classic BR/EDR -> L2CAP RFCOMM PSM 0x0003 -> SDP Serial Port 1 -> RFCOMM channel 1 on `Ditoo-Plus-audio` / `11:75:58:CE:DE:C7`. The filtered channel-1 stream contains 56 host-to-device and 36 device-to-host application frames; all 92 satisfy the candidate normal framing/checksum, and all 36 responses use outer command `0x04` with inner-command echo and tag `0x55`. This promotes framing/transport compatibility, not Tivoo command semantics. Raw Android bugreport material remains private; filtered evidence is preserved under `captures/OPENDITOO-DAY1-STOCK-RFCOMM-2026-09-08.json`.
 
@@ -26,7 +26,7 @@ The exact-unit stock initialization also contains `0x97 00` with wrapped payload
 
 M4 physically passed from Windows: the exact one-shot `0x97` file-version request independently returned v42012, one connection/request was used, and the socket closed. Its authority is consumed and the M4 runner is disarmed.
 
-A second exact-unit Pixel Coloring capture proves command `0x58` uses RGB888 plus row-major pixel indices and proves the complete command-`0x44` 16x16 palette-image encoding. Eight captured full snapshots re-encode byte-for-byte exactly, establishing orientation, palette construction and bit packing without inheriting Tivoo semantics. This path uses RGB888 palettes; OpenTivoo RGB222 is not a Ditoo `0x44` requirement. The first custom diagnostic `0x44` frame is frozen at SHA-256 `db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b`. M5 remains separately unauthorized pending explicit approval. Current milestone state and exact next action are canonicalized in `notes/OPENDITOO-DAY1-EXECUTION-STATE-2026-09-08.md`.
+A second exact-unit Pixel Coloring capture proves command `0x58` uses RGB888 plus row-major pixel indices and proves the complete command-`0x44` 16x16 palette-image encoding. Eight captured full snapshots re-encode byte-for-byte exactly, establishing orientation, palette construction and bit packing without inheriting Tivoo semantics. This path uses RGB888 palettes; OpenTivoo RGB222 is not a Ditoo `0x44` requirement. The first custom diagnostic `0x44` frame is frozen at SHA-256 `db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b`. M5 attempt 2 physically passed: all three packets sent once, wrapped `0x44` ACK payload `0x12` returned, socket closed, and the operator confirmed the diagnostic marks visibly rendered. M5 authority is consumed. Current post-M5 productization state is in `notes/OPENDITOO-POST-M5-TYPED-IMAGE-RUNTIME-2026-09-08.md`.
 
 ## 1. Project boundaries and evidence discipline
 

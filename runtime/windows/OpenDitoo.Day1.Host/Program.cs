@@ -37,6 +37,7 @@ if (token.Length < MinTokenChars)
 var builder = WebApplication.CreateSlimBuilder(args: Array.Empty<string>());
 builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, Port));
 var app = builder.Build();
+var imageGate = new SemaphoreSlim(1, 1);
 
 app.Use(async (context, next) =>
 {
@@ -66,15 +67,105 @@ app.MapGet("/v1/status", () => Results.Json(new
     hostRuntime = ".NET",
     bind = "127.0.0.1",
     port = Port,
-    masterTransmitEnabled = false,
+    masterTransmitEnabled = true,
     bluetoothTouched = false,
-    transportConfigured = false,
-    targetBound = false,
-    capabilities = new[] { "status" },
+    transportConfigured = true,
+    targetBound = true,
+    rawSendEnabled = false,
+    capabilities = new[] { "status", "image-show" },
     deviceIo = false,
-    purpose = "offline_environment_readiness_only"
+    target = DitooStaticImageProtocol.TargetMac,
+    purpose = "typed_runtime_static_image_control"
 }));
 
-// Deliberately no discovery, pairing, Bluetooth, target, raw-send or device routes.
+app.MapPost("/v1/image/show", (ShowImageRequest request) =>
+{
+    if (!imageGate.Wait(0))
+        return Results.Json(new { ok = false, errorCode = "IMAGE_BUSY" }, statusCode: StatusCodes.Status409Conflict);
+    try
+    {
+        if (string.IsNullOrWhiteSpace(request.PixelsRgb888Hex))
+            return Results.BadRequest(new { ok = false, errorCode = "IMAGE_RGB_REQUIRED" });
+        byte[] rgb;
+        try
+        {
+            rgb = Convert.FromHexString(request.PixelsRgb888Hex);
+        }
+        catch (FormatException)
+        {
+            return Results.BadRequest(new { ok = false, errorCode = "IMAGE_RGB_INVALID_HEX" });
+        }
+        if (rgb.Length != DitooStaticImageProtocol.RgbBytes)
+            return Results.BadRequest(new { ok = false, errorCode = "IMAGE_RGB_LENGTH", expectedBytes = DitooStaticImageProtocol.RgbBytes, actualBytes = rgb.Length });
+
+        DitooStaticImageProtocol.EncodedImage encoded;
+        try
+        {
+            encoded = DitooStaticImageProtocol.EncodeRgb888(rgb);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(new { ok = false, errorCode = "IMAGE_ENCODING_REJECTED", message = ex.Message });
+        }
+        if (string.IsNullOrWhiteSpace(request.ExpectedImagePacketSha256) ||
+            !encoded.PacketSha256.Equals(request.ExpectedImagePacketSha256, StringComparison.OrdinalIgnoreCase))
+        {
+            return Results.BadRequest(new
+            {
+                ok = false,
+                errorCode = "IMAGE_ENCODER_HASH_MISMATCH",
+                hostImagePacketSha256 = encoded.PacketSha256,
+            });
+        }
+
+        try
+        {
+            PairedDitooTargetGuard.RequireAuthenticatedExactTarget();
+        }
+        catch (PairingRequiredException ex)
+        {
+            return Results.Json(new { ok = false, errorCode = "IMAGE_PAIRING_REQUIRED", message = ex.Message }, statusCode: StatusCodes.Status409Conflict);
+        }
+
+        var packets = DitooStaticImageProtocol.BuildTransaction(encoded.Packet);
+        try
+        {
+            var ack = WindowsRfcommStaticImageTransport.ExchangeOnce(packets);
+            return Results.Json(new
+            {
+                ok = true,
+                apiVersion = ApiVersion,
+                command = "image-show",
+                target = DitooStaticImageProtocol.TargetMac,
+                deviceIo = true,
+                packetCount = packets.Length,
+                txBytesTotal = packets.Sum(packet => packet.Length),
+                imagePacketSha256 = encoded.PacketSha256,
+                paletteColors = encoded.PaletteColors,
+                ackPayloadHex = $"0x{ack:X2}",
+                connectionsAttempted = 1,
+                socketClosed = true,
+                retry = false,
+            });
+        }
+        catch (Exception ex)
+        {
+            return Results.Json(new
+            {
+                ok = false,
+                errorCode = "IMAGE_TRANSPORT_FAIL_CLOSED",
+                message = $"{ex.GetType().Name}: {ex.Message}",
+                retry = false,
+            }, statusCode: StatusCodes.Status502BadGateway);
+        }
+    }
+    finally
+    {
+        imageGate.Release();
+    }
+});
+
 await app.RunAsync();
 return 0;
+
+sealed record ShowImageRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256);

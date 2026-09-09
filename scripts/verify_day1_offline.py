@@ -83,31 +83,34 @@ def verify_manifests() -> None:
 
 def verify_host_boundary() -> None:
     program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
+    protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooStaticImageProtocol.cs").read_text(encoding="utf-8")
+    transport = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/WindowsRfcommStaticImageTransport.cs").read_text(encoding="utf-8")
     cli = (ROOT / "cli/openditoo.py").read_text(encoding="utf-8")
-    combined = program + "\n" + cli
-    required = [
-        '127.0.0.1:8796',
-        'masterTransmitEnabled = false',
-        'transportConfigured = false',
-        'targetBound = false',
-    ]
     if 'HOST_ORIGIN = "http://127.0.0.1:8796"' not in cli:
         fail("CLI origin is not fixed to OpenDitoo 8796")
-    for needle in required[1:]:
+    required_program = (
+        'masterTransmitEnabled = true',
+        'transportConfigured = true',
+        'targetBound = true',
+        'rawSendEnabled = false',
+        'app.MapPost("/v1/image/show"',
+        'ShowImageRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256)',
+    )
+    for needle in required_program:
         if needle not in program:
-            fail(f"Host boundary missing {needle}")
-    forbidden = [
-        "11:75:58:C8:5E:FE",
-        "Windows.Devices.Bluetooth",
-        "Ws2_32",
-        "AF_BTH",
-        "send_hex",
-    ]
-    for needle in forbidden:
-        if needle in combined:
-            fail(f"status-only control plane contains forbidden transport/target surface: {needle}")
-    if "127.0.0.1:8779" in cli or "const int Port = 8779" in program:
-        fail("OpenDitoo control plane collides with OpenTivoo Host port")
+            fail(f"typed image Host boundary missing {needle}")
+    if 'TargetMac = "11:75:58:CE:DE:C7"' not in protocol or 'TargetRfcommChannel = 1' not in protocol:
+        fail("typed image Host target/channel is not fixed")
+    if transport.count('connect(socketHandle, ref remote, layoutSize)') != 1:
+        fail("typed image Host connect-call source count drifted")
+    if transport.count('send(socketHandle, packets[index], packets[index].Length, 0)') != 1:
+        fail("typed image Host send-call source count drifted")
+    if 'NO_RETRY' not in transport:
+        fail("typed image Host lost no-retry boundary")
+    combined = program + "\n" + cli
+    for forbidden in ("send_hex", "packetHex", "127.0.0.1:8779"):
+        if forbidden.lower() in combined.lower():
+            fail(f"typed image surface exposes forbidden escape/collision: {forbidden}")
 
 
 def verify_consumed_runner() -> None:
@@ -150,7 +153,7 @@ def main() -> int:
     verify_m5_runner_disarmed()
     print(
         "DAY1_OFFLINE_PASS "
-        f"artifacts={artifact_count} tests=14 host=status_only port=8796 "
+        f"artifacts={artifact_count} tests=22 host=typed_image port=8796 "
         "device_io=false m4_completed=true m4_authorized=false m5_authorized=false"
     )
     return 0

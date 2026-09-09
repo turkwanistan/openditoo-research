@@ -4,9 +4,9 @@ OpenDitoo is a preservation-first reverse-engineering project for the owner's Di
 
 ## Current objective
 
-Application-first Day-1 portability:
+Day-1 application-first portability M0-M5 is complete through the first visible custom 16x16 frame. Current objective is bounded productization of that proven primitive:
 
-`stock characterization -> measured application-control transport -> codec verdict -> one bounded custom query -> one independently justified volatile 16x16 frame`
+`exact 16x16 PNG -> deterministic RGB888 decode -> stock-derived image encoder -> authenticated fixed-target Host -> Ditoo`
 
 The older MassBoot/update research remains preserved but is not the current execution priority.
 
@@ -23,9 +23,11 @@ Never convert matching framing, command numbers, device-family firmware, or a te
 
 ## Physical boundary
 
-Repository work, parsing, fixtures, preview generation, static analysis and local status-only Host work are offline and do not grant device authority.
+Repository work, parsing, fixtures, preview generation and static analysis are offline and do not grant device authority.
 
-Before any custom Ditoo application transmission, require a concrete reviewed experiment manifest binding:
+M4/M5 experimental transmissions required frozen manifests and explicit session authority. Those milestones are complete and their authority is consumed. The product `image-show` command is a narrower operational primitive: an operator's explicit invocation authorizes exactly one fixed-target static-image transaction derived from the supplied validated 16x16 PNG. It must remain one connection, three stock-derived packets, no automatic retry, no target override and no raw-packet override. Automation must not invoke `image-show` merely because a PNG exists.
+
+Any new command family, protocol semantic, persistence behavior, streaming mode, retry behavior or target still requires a concrete reviewed experiment boundary binding:
 
 - exact unit and installed firmware evidence;
 - measured endpoint/transport;
@@ -54,7 +56,7 @@ Target topology is:
 
 OpenDitoo must keep its Host port, token, state directory, target binding and process ownership separate from OpenTivoo. Never replace the OpenTivoo Host, its scheduled task, or port 8779.
 
-Until an exact Ditoo transport is measured, the OpenDitoo Host is status-only and must expose no Bluetooth operation.
+The measured Ditoo transport and M5 image primitive are proven. The OpenDitoo Host may expose only the typed static-image route documented in the repository; raw-send, target selection and generic Bluetooth operations remain prohibited.
 
 ## Discipline
 

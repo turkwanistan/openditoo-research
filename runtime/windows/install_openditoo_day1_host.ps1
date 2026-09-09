@@ -57,8 +57,9 @@ try {
     Step 'WINDOWS_RUNTIME_ROOT' $WindowsRoot
     Step 'WSL_REPOSITORY_PATH' $WslRepositoryPath
     Step 'DEVICE_IO' 'false'
-    Step 'BLUETOOTH_CONFIGURED' 'false'
-    Step 'TARGET_BOUND' 'false'
+    Step 'BLUETOOTH_CONFIGURED' 'true'
+    Step 'TARGET_BOUND' 'true'
+    Step 'RAW_SEND_ENABLED' 'false'
     Step 'APPLY' $Apply.IsPresent.ToString().ToLowerInvariant()
 
     if (-not $Apply) {
@@ -100,12 +101,13 @@ try {
         } catch { Start-Sleep -Milliseconds 200 }
     }
     if ($null -eq $status -or [string]$status.service -ne 'OpenDitoo Day1 Host' -or
-        [int]$status.port -ne $Port -or $status.masterTransmitEnabled -ne $false -or
-        $status.bluetoothTouched -ne $false -or $status.transportConfigured -ne $false -or
-        $status.targetBound -ne $false) {
-        throw 'Installed OpenDitoo Host failed its exact status-only identity gate.'
+        [int]$status.port -ne $Port -or $status.masterTransmitEnabled -ne $true -or
+        $status.bluetoothTouched -ne $false -or $status.transportConfigured -ne $true -or
+        $status.targetBound -ne $true -or $status.rawSendEnabled -ne $false -or
+        -not (@($status.capabilities) -contains 'image-show')) {
+        throw 'Installed OpenDitoo Host failed its typed-image identity gate.'
     }
-    Step 'INSTALL_STATUS' 'PASS_STATUS_ONLY'
+    Step 'INSTALL_STATUS' 'PASS_TYPED_IMAGE'
 } finally {
     if (Test-Path -LiteralPath $Stage) { Remove-Item -LiteralPath $Stage -Recurse -Force -ErrorAction SilentlyContinue }
 }

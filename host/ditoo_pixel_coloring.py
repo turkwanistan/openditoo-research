@@ -64,6 +64,30 @@ def encode_static_image(palette: list[tuple[int, int, int]], indices: list[int])
     return build_packet(CMD_IMAGE, payload)
 
 
+
+def palette_and_indices_from_rgb888(rgb: bytes) -> tuple[list[tuple[int, int, int]], list[int]]:
+    if len(rgb) != 16 * 16 * 3:
+        raise ValueError(f"Ditoo static image requires exactly 768 RGB888 bytes; got {len(rgb)}")
+    palette: list[tuple[int, int, int]] = []
+    lookup: dict[tuple[int, int, int], int] = {}
+    indices: list[int] = []
+    for offset in range(0, len(rgb), 3):
+        color = tuple(rgb[offset:offset + 3])
+        index = lookup.get(color)
+        if index is None:
+            if len(palette) >= 255:
+                raise ValueError("Ditoo static image supports at most 255 distinct RGB888 colors")
+            index = len(palette)
+            lookup[color] = index
+            palette.append(color)
+        indices.append(index)
+    return palette, indices
+
+
+def encode_rgb888_static_image(rgb: bytes) -> tuple[bytes, int]:
+    palette, indices = palette_and_indices_from_rgb888(rgb)
+    return encode_static_image(palette, indices), len(palette)
+
 def diagnostic_frame() -> bytes:
     # Six RGB888 colors; exact 16x16 row-major geometry from Day-1 plan.
     palette = [

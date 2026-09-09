@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import binascii
 import json
+import struct
+import zlib
 from pathlib import Path
 import subprocess
 import sys
@@ -24,8 +27,10 @@ from host.ditoo_pixel_coloring import (
     DIAGNOSTIC_FRAME_SHA256,
     diagnostic_frame,
     drawing_pad_packet,
+    encode_rgb888_static_image,
     sha256_hex as pixel_sha256_hex,
 )
+from host.png16 import Png16Error, decode_png16_rgb
 from host.ditoo_candidate_codec import (
     CandidateStreamDecoder,
     FrameDecodeError,
@@ -33,6 +38,36 @@ from host.ditoo_candidate_codec import (
     decode_candidate_wrapped,
     encode_candidate_normal,
 )
+
+
+def _png_chunk(kind: bytes, data: bytes) -> bytes:
+    return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", binascii.crc32(kind + data) & 0xFFFFFFFF)
+
+
+def _write_rgb_png16(path: Path, rgb: bytes) -> None:
+    if len(rgb) != 16 * 16 * 3:
+        raise ValueError("fixture RGB must be exactly 768 bytes")
+    rows = b"".join(b"\x00" + rgb[y * 48:(y + 1) * 48] for y in range(16))
+    ihdr = struct.pack(">IIBBBBB", 16, 16, 8, 2, 0, 0, 0)
+    path.write_bytes(
+        b"\x89PNG\r\n\x1a\n"
+        + _png_chunk(b"IHDR", ihdr)
+        + _png_chunk(b"IDAT", zlib.compress(rows))
+        + _png_chunk(b"IEND", b"")
+    )
+
+
+
+def _write_png16(path: Path, color_type: int, channels: int, rows_payload: bytes, *, palette: bytes | None = None, transparency: bytes | None = None) -> None:
+    ihdr = struct.pack(">IIBBBBB", 16, 16, 8, color_type, 0, 0, 0)
+    data = bytearray(b"\x89PNG\r\n\x1a\n" + _png_chunk(b"IHDR", ihdr))
+    if palette is not None:
+        data.extend(_png_chunk(b"PLTE", palette))
+    if transparency is not None:
+        data.extend(_png_chunk(b"tRNS", transparency))
+    data.extend(_png_chunk(b"IDAT", zlib.compress(rows_payload)))
+    data.extend(_png_chunk(b"IEND", b""))
+    path.write_bytes(bytes(data))
 
 
 class DiagnosticFrameTests(unittest.TestCase):
@@ -103,18 +138,29 @@ class BoundaryTests(unittest.TestCase):
         self.assertNotIn("socket.socket", src)
         self.assertNotIn("AF_BTH", src)
         self.assertNotIn("RFCOMM", src)
+        self.assertNotIn('"--target"', src)
+        self.assertNotIn('"--packet"', src)
 
-    def test_status_host_source_is_transport_free(self) -> None:
-        src = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
-        self.assertIn('const int Port = 8796;', src)
-        self.assertIn('masterTransmitEnabled = false', src)
-        self.assertIn('transportConfigured = false', src)
-        self.assertIn('targetBound = false', src)
-        self.assertNotIn("using Windows.Devices.Bluetooth", src)
-        self.assertNotIn("using System.Net.Sockets", src)
-        self.assertNotIn("Ws2_32", src)
-        self.assertNotIn("AF_BTH", src)
-        self.assertNotIn("8779", src)
+    def test_runtime_host_is_fixed_target_typed_image_only(self) -> None:
+        program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
+        protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooStaticImageProtocol.cs").read_text(encoding="utf-8")
+        transport = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/WindowsRfcommStaticImageTransport.cs").read_text(encoding="utf-8")
+        self.assertIn('const int Port = 8796;', program)
+        self.assertIn('masterTransmitEnabled = true', program)
+        self.assertIn('transportConfigured = true', program)
+        self.assertIn('targetBound = true', program)
+        self.assertIn('rawSendEnabled = false', program)
+        self.assertIn('app.MapPost("/v1/image/show"', program)
+        self.assertIn('ShowImageRequest(string PixelsRgb888Hex, string ExpectedImagePacketSha256)', program)
+        self.assertNotIn('TargetMac', program.split('sealed record ShowImageRequest', 1)[1])
+        self.assertNotIn('packetHex', program, msg="Host API must not accept a raw packet field")
+        self.assertNotIn('send_hex', program.lower())
+        self.assertIn('TargetMac = "11:75:58:CE:DE:C7"', protocol)
+        self.assertIn('TargetRfcommChannel = 1', protocol)
+        self.assertEqual(transport.count('connect(socketHandle, ref remote, layoutSize)'), 1)
+        self.assertEqual(transport.count('send(socketHandle, packets[index], packets[index].Length, 0)'), 1)
+        self.assertIn('NO_RETRY', transport)
+        self.assertNotIn('8779', program)
 
     def test_windows_installer_preserves_opentivoo(self) -> None:
         src = (ROOT / "runtime/windows/install_openditoo_day1_host.ps1").read_text(encoding="utf-8")
@@ -129,6 +175,18 @@ class BoundaryTests(unittest.TestCase):
         self.assertNotIn("Unregister-ScheduledTask -TaskName 'OpenTivoo Product Runtime'", src)
         self.assertNotIn("Stop-Process", src)
         self.assertNotIn("$Port = 8779", src)
+
+    def test_refresh_script_owns_only_openditoo_runtime(self) -> None:
+        src = (ROOT / "runtime/windows/refresh_openditoo_day1_host.ps1").read_text(encoding="utf-8")
+        self.assertIn("$TaskName = 'OpenDitoo Day1 Host'", src)
+        self.assertIn("Get-ScheduledTask -TaskName 'OpenTivoo Product Runtime'", src)
+        self.assertIn("Stop-ScheduledTask -TaskName $TaskName", src)
+        self.assertNotIn("Stop-ScheduledTask -TaskName 'OpenTivoo Product Runtime'", src)
+        self.assertNotIn("Stop-Process", src)
+        self.assertIn("rawSendEnabled -ne $false", src)
+        self.assertIn("PASS_TYPED_IMAGE", src)
+        self.assertIn("$Backup", src)
+        self.assertIn("Copy-Item -Path (Join-Path $backupRoot '*') -Destination $WindowsRoot", src)
 
     def test_completed_m4_transport_is_archived_and_runner_disarmed(self) -> None:
         protocol = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/DitooM4FileVersionProtocol.cs").read_text(encoding="utf-8")
@@ -188,6 +246,92 @@ class PixelColoringEvidenceTests(unittest.TestCase):
         self.assertEqual(pixel_sha256_hex(wire), DIAGNOSTIC_FRAME_SHA256)
         self.assertEqual(DIAGNOSTIC_FRAME_SHA256, "db336e89123dc472d5e4d2815fb6df6115a4feb436b8678de4b33bd18ba3cb9b")
         self.assertEqual(wire[:14].hex(), "01800044000a0a04aa7900f40100")
+
+
+class Png16Tests(unittest.TestCase):
+    def test_rgb_png_roundtrip_and_static_encoder(self) -> None:
+        raw = build_diagnostic_rgb()
+        with tempfile.TemporaryDirectory() as tmp:
+            png = Path(tmp) / "diagnostic.png"
+            _write_rgb_png16(png, raw)
+            decoded = decode_png16_rgb(png)
+            self.assertEqual(decoded, raw)
+            wire, palette_colors = encode_rgb888_static_image(decoded)
+            self.assertEqual(palette_colors, 6)
+            self.assertEqual(pixel_sha256_hex(wire), "08520cb02dc7f448dfbad0457873444cbed7b48e5f302c123ad0657451c9773a")
+
+    def test_cli_image_prepare_is_offline_and_exact(self) -> None:
+        raw = build_diagnostic_rgb()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            png = tmp_path / "diagnostic.png"
+            out = tmp_path / "out"
+            _write_rgb_png16(png, raw)
+            proc = subprocess.run(
+                [sys.executable, str(ROOT / "cli/openditoo.py"), "image-prepare", "--png", str(png), "--output-dir", str(out)],
+                text=True, capture_output=True, check=True,
+            )
+            result = json.loads(proc.stdout)
+            self.assertFalse(result["device_io"])
+            self.assertEqual(result["rgb_bytes"], 768)
+            self.assertEqual(result["palette_colors"], 6)
+            self.assertEqual(result["image_packet_sha256"], "08520cb02dc7f448dfbad0457873444cbed7b48e5f302c123ad0657451c9773a")
+            self.assertEqual((out / "image.rgb888").read_bytes(), raw)
+            self.assertEqual(pixel_sha256_hex((out / "image.packet.bin").read_bytes()), "08520cb02dc7f448dfbad0457873444cbed7b48e5f302c123ad0657451c9773a")
+
+    def test_committed_sample_is_frozen(self) -> None:
+        path = ROOT / "examples/openditoo-smile-16.png"
+        rgb = decode_png16_rgb(path)
+        wire, palette_colors = encode_rgb888_static_image(rgb)
+        self.assertEqual(palette_colors, 4)
+        self.assertEqual(pixel_sha256_hex(rgb), "fbed71941831927c926c15f897f3335de45d9becc53c28793c9fefa146f96067")
+        self.assertEqual(pixel_sha256_hex(wire), "e4fe7ff42632495cdcb5eceb9131a720eb77fccad2183dc98dcf0e881b2e37ea")
+
+    def test_rgba_alpha_composites_to_black(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rgba.png"
+            pixels = bytearray()
+            for y in range(16):
+                row = bytearray()
+                for x in range(16):
+                    row.extend((255, 0, 0, 0))
+                if y == 0:
+                    row[0:4] = bytes((0, 255, 0, 255))
+                pixels.extend(b"\x00" + row)
+            _write_png16(path, 6, 4, bytes(pixels))
+            rgb = decode_png16_rgb(path)
+            self.assertEqual(rgb[:3], bytes((0, 255, 0)))
+            self.assertEqual(rgb[3:6], bytes((0, 0, 0)))
+
+    def test_indexed_png_palette_decodes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "indexed.png"
+            palette = bytes((0, 0, 0, 255, 0, 255))
+            rows = bytearray()
+            for y in range(16):
+                row = bytes([1 if (x == y) else 0 for x in range(16)])
+                rows.extend(b"\x00" + row)
+            _write_png16(path, 3, 1, bytes(rows), palette=palette)
+            rgb = decode_png16_rgb(path)
+            self.assertEqual(rgb[:3], bytes((255, 0, 255)))
+            self.assertEqual(rgb[3:6], bytes((0, 0, 0)))
+            self.assertEqual(rgb[(17 * 3):(18 * 3)], bytes((255, 0, 255)))
+
+    def test_static_encoder_rejects_256_distinct_colors(self) -> None:
+        rgb = bytearray()
+        for value in range(256):
+            rgb.extend((value, value ^ 0x55, value ^ 0xAA))
+        with self.assertRaises(ValueError):
+            encode_rgb888_static_image(bytes(rgb))
+
+    def test_png_wrong_geometry_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad.png"
+            ihdr = struct.pack(">IIBBBBB", 15, 16, 8, 2, 0, 0, 0)
+            rows = b"".join(b"\x00" + bytes(15 * 3) for _ in range(16))
+            path.write_bytes(b"\x89PNG\r\n\x1a\n" + _png_chunk(b"IHDR", ihdr) + _png_chunk(b"IDAT", zlib.compress(rows)) + _png_chunk(b"IEND", b""))
+            with self.assertRaises(Png16Error):
+                decode_png16_rgb(path)
 
 
 if __name__ == "__main__":
