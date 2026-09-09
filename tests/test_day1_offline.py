@@ -2886,26 +2886,36 @@ class S1FrameStreamTests(unittest.TestCase):
         self.assertEqual(result["display_state"], "unknown_not_ours")
         self.assertEqual(result["frames_sent"], 3)
 
-    def test_the_stream_loop_dispatches_on_the_manifest_floor_not_the_dashboard_floor(self) -> None:
-        # This is the whole reason the loop exists: run_session rounds every client up to
-        # the 200 ms dashboard cadence, which a stream must not inherit.
+    def test_the_client_must_add_measured_jitter_margin_over_the_host_floor(self) -> None:
+        # OPENDITOO-S2-STREAM-RATE-001 dispatched at exactly the 150 ms Host floor and died
+        # on frame 10 with HTTP 429. The margin is that trial's result, so it is asserted
+        # against the Host floor rather than hardcoded twice.
         self.assertEqual(frame_stream.MIN_PLAYBACK_INTERVAL_MS,
-                         activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
-        self.assertLess(frame_stream.MIN_PLAYBACK_INTERVAL_MS,
-                        activity_session.MCP_CLIENT_FRAME_INTERVAL_MS)
-        manifest, frame_set, stream = self._load(
-            lambda d: (d["stream"].__setitem__("playback_interval_ms", 150),
-                       d["budgets"].update(max_frames=48, max_application_packets=144)))
+                         activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS
+                         + frame_stream.CLIENT_JITTER_MARGIN_MS)
+        self._refuses("STREAM_PLAYBACK_INTERVAL_INVALID",
+                      lambda d: d["stream"].__setitem__(
+                          "playback_interval_ms",
+                          activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS))
+
+    def test_the_loop_itself_dispatches_on_whatever_interval_it_is_given(self) -> None:
+        # The margin is enforced by the manifest validator, not by the loop: the loop must
+        # honour its interval exactly, so lowering the Host floor later needs no change
+        # here. Built directly, bypassing validation, to test the loop alone.
+        manifest, frame_set, stream = self._load()
+        fast = {**stream, "playback_interval_ms": 150}
+        manifest = dataclasses.replace(manifest, lifetime_seconds=3, max_frames=21,
+                                       max_tx_bytes=21 * frame_set.max_frame_tx_bytes)
         clock = {"ms": 0}
         transport = activity_session.FakeSessionTransport()
         result = frame_stream.stream_session(
-            manifest, frame_set, stream, transport,
+            manifest, frame_set, fast, transport,
             lambda: clock["ms"], lambda ms: clock.__setitem__("ms", clock["ms"] + max(ms, 1)),
             claim=None)
-        self.assertEqual(result["frames_sent"], 48)
         intervals = [b["since_start_ms"] - a["since_start_ms"]
                      for a, b in zip(result["frame_timings"], result["frame_timings"][1:])]
         self.assertTrue(all(gap == 150 for gap in intervals), intervals)
+        self.assertGreater(result["realized_fps"], 6.0)
 
     # -- boundary ------------------------------------------------------
 

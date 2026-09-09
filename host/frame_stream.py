@@ -37,12 +37,21 @@ FRAME_BYTES = 16 * 16 * 3
 # with at most this many distinct colours. Arbitrary photographic 16x16 content routinely
 # exceeds it, which is why quantisation happens offline in prepare, never at send time.
 MAX_PALETTE_COLORS = 255
-# The Host's own hard floor, and the real one. `run_session` additionally rounds every
-# client up to MCP_CLIENT_FRAME_INTERVAL_MS (200 ms), which is a dashboard policy: a
-# change-only display gains nothing from going faster. A stream does, so `stream_session`
-# below dispatches on the manifest's floor instead. Nothing may ask for less than the Host
-# will accept, whatever it claims.
-MIN_PLAYBACK_INTERVAL_MS = _session.ACCEPTED_MIN_FRAME_INTERVAL_MS
+# Why a client may not dispatch AT the Host floor, measured rather than assumed.
+#
+# OPENDITOO-S2-STREAM-RATE-001 dispatched on a phase-stable 150 ms grid -- exactly
+# `ActivitySessionHost.AcceptedMinFrameIntervalMs` -- and died on frame 10 with HTTP 429
+# SESSION_PACING_VIOLATION. The Host times the interval on its own clock from when IT
+# starts a frame, so a client gap of 149-151 ms can arrive early, and a pacing violation is
+# terminal with no retry. The margin must therefore cover HTTP scheduling jitter, and it
+# must be paid on every frame, not on average.
+#
+# 50 ms is the value the MCP dashboard has used across every activation and the whole
+# product runtime without a single pacing refusal. Smaller margins are untested, and the
+# failure mode is losing the session, so this takes the proven number rather than the
+# tightest plausible one.
+CLIENT_JITTER_MARGIN_MS = 50
+MIN_PLAYBACK_INTERVAL_MS = _session.ACCEPTED_MIN_FRAME_INTERVAL_MS + CLIENT_JITTER_MARGIN_MS
 # Unused by a stream: no frame is a pulse, so nothing can expire. Present because the
 # shared manifest record requires it.
 _STREAM_PULSE_FRESHNESS_SECONDS = 30
@@ -254,8 +263,12 @@ def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
     playback_ms = stream.get("playback_interval_ms")
     require(isinstance(playback_ms, int) and playback_ms >= MIN_PLAYBACK_INTERVAL_MS,
             "STREAM_PLAYBACK_INTERVAL_INVALID",
-            f"the shared runner dispatches no faster than {MIN_PLAYBACK_INTERVAL_MS} ms")
-    require(playback_ms >= interval, "STREAM_PLAYBACK_FASTER_THAN_FLOOR")
+            f"the Host floor is {_session.ACCEPTED_MIN_FRAME_INTERVAL_MS} ms and a client must add "
+            f"{CLIENT_JITTER_MARGIN_MS} ms of jitter margin on top of it; see "
+            "OPENDITOO-S2-STREAM-RATE-001")
+    require(playback_ms >= interval + CLIENT_JITTER_MARGIN_MS, "STREAM_PLAYBACK_FASTER_THAN_FLOOR",
+            f"a stream must dispatch at least {CLIENT_JITTER_MARGIN_MS} ms slower than the floor it "
+            "asks the Host to enforce")
     loop = stream.get("loop")
     require(isinstance(loop, bool), "STREAM_LOOP_INVALID")
     require(stream.get("source_description"), "STREAM_SOURCE_DESCRIPTION_MISSING")

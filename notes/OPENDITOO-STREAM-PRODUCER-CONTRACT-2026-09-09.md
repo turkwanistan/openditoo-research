@@ -36,29 +36,52 @@ floating-point accumulation across frames, no wall-clock-dependent behaviour. Th
 frame must always produce the same 768 bytes, because manifests freeze code hashes and
 results have to be reproducible.
 
-## 3. The rate budget — measured, not assumed
+## 3. The rate budget — measured, including one refuted assumption
 
 | Component | Cost per frame | Source |
 | --- | --- | --- |
-| Device wire: 3 packets + one ACK, full colour, no sleeps | **54.2 ms** | R5, 1024 frames / 55.54 s, operator confirmed no tearing |
-| Same, sustained with 10 ms intra-frame spacing | 131.0 ms | R4, 512 frames / 67.2 s, no degradation |
-| Our encode + sha256 + hex (250-colour frame) | 0.24 ms median | measured offline, this session |
-| WSL → Windows Host loopback HTTP RTT | 2.17 ms median (p95 3.9) | measured offline, this session |
-| **Our total client overhead** | **~2.5 ms** | sum of the above two |
+| **Dispatch → ACK, 1039 bytes, 250 colours** | **median 66 ms, min 50, p95 93** | **S2, measured on the exact unit** |
+| Device wire: 3 packets + one ACK, full colour, no sleeps | 54.2 ms | R5, 1024 frames / 55.54 s |
+| Same, sustained with 10 ms intra-frame spacing | 131.0 ms | R4, 512 frames / 67.2 s |
+| Our encode + sha256 + hex (250-colour frame) | 0.24 ms median | measured offline |
+| WSL → Windows Host loopback HTTP RTT | 2.17 ms median (p95 3.9) | measured offline |
 
-**The client is ~4% of the frame budget.** Our software is not, and never was, the
-constraint. `18.46 fps` (R5) is therefore very close to what this architecture can realize:
-54.2 + 2.5 ≈ 57 ms ⇒ **~17.5 fps realizable ceiling**, synchronous, one ACK per frame.
+The S2 figure is the first clean isolation of per-frame round-trip cost — earlier ACK-latency
+numbers in this project included our own packet-spacing sleeps and must not be compared
+against it.
 
-What actually limits us today is two **policy constants**, neither of them physics:
+Our client CPU plus loopback is ~2.5 ms, so **our software is ~4% of the frame budget and was
+never the constraint.**
 
-| Constant | Value | Where | Cost to change |
-| --- | --- | --- | --- |
-| `MCP_CLIENT_FRAME_INTERVAL_MS` | 200 ms | `host/activity_session.py:503` | **already bypassed** — `frame_stream.stream_session()` dispatches on the manifest floor instead |
-| `AcceptedMinFrameIntervalMs` | 150 ms | `ActivitySessionHost.cs` (C#) | Host rebuild → new DLL hash → **Runtime 003 product policy + grant**, because the live policy binds `fb750078...` |
+### The ceiling is set by latency VARIANCE, not mean
 
-So: **6.67 fps is available now** with no Host change. Going beyond it to ~15 fps is one
-one-line C# change plus the product-policy ceremony that a new Host binary requires.
+S2 dispatched on a phase-stable 150 ms grid — exactly the Host's floor — and died on frame 10
+with `HTTP 429 SESSION_PACING_VIOLATION`. The Host times the interval on its own clock from
+when *it* starts a frame, so a client gap of 149–151 ms can still arrive early, and **a pacing
+violation is terminal: there is no retry.**
+
+Consequences:
+
+- A client must pace against **p95 (93 ms), not median (66 ms)**, plus jitter margin. Every
+  frame has to clear the bar; an average that clears it is not enough.
+- `CLIENT_JITTER_MARGIN_MS = 50` is now enforced by the manifest validator. It is the margin
+  the MCP dashboard has used across every activation and the whole product runtime with zero
+  pacing refusals; smaller margins are untested and the failure mode is losing the session.
+- **At the current 150 ms Host floor, the safe client cadence is therefore 200 ms — the same
+  value the dashboard already used.** The client-side rate lift buys nothing until the Host
+  floor drops. Plan for **~5 fps today.**
+
+### What actually unlocks the rate
+
+The Host refuses an early frame. It should **wait** for the floor to elapse and then send.
+The device still never sees frames faster than the floor — the hard rate bound is unchanged —
+but the session-killing race disappears, and with it the client's need for margin. Then the
+cadence can approach the measured round-trip directly.
+
+That is a small change to `ActivitySessionHost.SendFrame`, but it rebuilds the Host DLL, whose
+hash the live product policy binds, so it needs a **Runtime 003 product policy and its own
+grant**. Realistic target after it: **10–13 fps** (paced against p95 round-trip), not 17.5 —
+the arithmetic ceiling assumed a mean, and means are not what a no-retry protocol can pace on.
 
 ## 4. Why we are not going to stop waiting for ACKs
 
@@ -78,9 +101,9 @@ properties that make the transport trustworthy. It stays prohibited.
 
 ## 5. Latency, for a live source
 
-Glass-to-panel ≈ capture + downscale/quantise + one cadence period + 54 ms wire. At 150 ms
-cadence that is roughly 210–260 ms; at a lifted 66 ms cadence, roughly 120–140 ms. The wire
-is not the dominant term — the chosen cadence is.
+Glass-to-panel ≈ capture + downscale/quantise + one cadence period + ~66 ms measured
+round-trip. At today's safe 200 ms cadence that is roughly 280–330 ms. After the Host pacing
+change, at a ~100 ms cadence, roughly 180–200 ms. The chosen cadence dominates, not the wire.
 
 ## 6. What still has to be built on our side for a LIVE source
 

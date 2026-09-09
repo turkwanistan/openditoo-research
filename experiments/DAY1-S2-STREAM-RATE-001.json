@@ -3,7 +3,7 @@
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-S2-STREAM-RATE-001",
   "milestone": "S2 realized stream-rate ceiling of the client path",
-  "status": "pending_authority",
+  "status": "completed_authority_consumed",
   "objective": "Measure what fraction of the accepted R5 ceiling our WSL -> HTTP -> Host -> RFCOMM path actually realizes, at the 150 ms Host floor, with webcam-representative full-palette payloads and per-frame dispatch-to-ACK timing. R1-R5 measured the DEVICE; this measures OUR OVERHEAD, which is the unknown that a live webcam pipeline has to be designed against.",
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -108,12 +108,13 @@
   "authority": {
     "experiment_id": "OPENDITOO-S2-STREAM-RATE-001",
     "transmission_authorized": false,
-    "authorization_consumed": false,
+    "authorization_consumed": true,
     "grant_scope_requested": "ONE execution only of OPENDITOO-S2-STREAM-RATE-001: stop the persistent MCP product supervisor, stream the frozen 60-frame near-full-palette field (frame_set_sha256 c8200bb34ddd65fc32238c894c7bd215e1118a576528dafdda4d7a6a7b66f280) on loop to exact Ditoo 11:75:58:CE:DE:C7 through the existing typed /v1/session/* transaction at the 150 ms Host floor for a 60 s bounded lifetime (401 frames, 1203 packets, 416639 application bytes, one connection, one ACK per frame), capturing per-frame dispatch-to-ACK timing, then restart the persistent product supervisor; no retry, reconnect, reclaim, pipelining, raw send, target override, firmware or persistent write, and no change to the Windows Host build.",
-    "granted_by": null,
-    "grant_text": null,
-    "grant_scope": null,
-    "expires_at": null
+    "granted_by": "operator, in-session, 2026-09-09",
+    "grant_text": "Grant OPENDITOO-S2-STREAM-RATE-001",
+    "grant_scope": "ONE execution only of OPENDITOO-S2-STREAM-RATE-001: stop the persistent MCP product supervisor, stream the frozen 60-frame near-full-palette field (frame_set_sha256 c8200bb34ddd65fc32238c894c7bd215e1118a576528dafdda4d7a6a7b66f280) on loop to exact Ditoo 11:75:58:CE:DE:C7 through the existing typed /v1/session/* transaction at the 150 ms Host floor for a 60 s bounded lifetime (401 frames, 1203 packets, 416639 application bytes, one connection, one ACK per frame), capturing per-frame dispatch-to-ACK timing, then restart the persistent product supervisor; no retry, reconnect, reclaim, pipelining, raw send, target override, firmware or persistent write, and no change to the Windows Host build.",
+    "expires_at": "2026-09-10T00:00:00Z",
+    "consumed_at_utc": "2026-09-09T20:14:00Z"
   },
   "explicitly_out_of_scope": [
     "lowering the Windows Host 150 ms floor (needs a Host rebuild and a Runtime 003 product policy)",
@@ -125,5 +126,120 @@
     "firmware, gallery or any persistent write",
     "automatic retry, reconnect or reclaim",
     "any target other than the exact unit"
-  ]
+  ],
+  "result": {
+    "status": "measurement_pass_cadence_fail",
+    "acceptance": "the measurement objective is met and the tested cadence is refuted: dispatching at exactly the Host floor is not survivable",
+    "connections_attempted": 1,
+    "frames_sent": 9,
+    "packets_sent": 27,
+    "tx_bytes_sent": 9351,
+    "elapsed_ms": 1962,
+    "terminal_reason": "transport_fault",
+    "outcome": "unknown",
+    "display_state": "ours_last_acked",
+    "detail": "HTTPError: HTTP Error 429: Too Many Requests",
+    "host_terminal": {
+      "reason": "transport_fault",
+      "outcome": "stopped_clean",
+      "framesSent": 9,
+      "packetsSent": 27,
+      "txBytesSent": 9351,
+      "displayState": "ours_last_acked",
+      "note": "Host and client agree exactly on frames and bytes; the socket was closed cleanly and the dashboard reclaimed the device on supervisor restart"
+    },
+    "realized_fps": 4.587,
+    "mean_frame_interval_ms": 218.0,
+    "playback_steps_dropped": 0,
+    "ack_latency_ms": {
+      "max": 93,
+      "median": 66,
+      "min": 50,
+      "p95": 93
+    },
+    "frame_timings": [
+      {
+        "ack_latency_ms": 79,
+        "application_bytes": 1039,
+        "frame": 1,
+        "palette_colors": 250,
+        "playback_index": 0,
+        "since_start_ms": 109
+      },
+      {
+        "ack_latency_ms": 58,
+        "application_bytes": 1039,
+        "frame": 2,
+        "palette_colors": 250,
+        "playback_index": 2,
+        "since_start_ms": 304
+      },
+      {
+        "ack_latency_ms": 59,
+        "application_bytes": 1039,
+        "frame": 3,
+        "palette_colors": 250,
+        "playback_index": 4,
+        "since_start_ms": 604
+      },
+      {
+        "ack_latency_ms": 85,
+        "application_bytes": 1039,
+        "frame": 4,
+        "palette_colors": 250,
+        "playback_index": 5,
+        "since_start_ms": 763
+      },
+      {
+        "ack_latency_ms": 66,
+        "application_bytes": 1039,
+        "frame": 5,
+        "palette_colors": 250,
+        "playback_index": 6,
+        "since_start_ms": 912
+      },
+      {
+        "ack_latency_ms": 91,
+        "application_bytes": 1039,
+        "frame": 6,
+        "palette_colors": 250,
+        "playback_index": 8,
+        "since_start_ms": 1223
+      },
+      {
+        "ack_latency_ms": 63,
+        "application_bytes": 1039,
+        "frame": 7,
+        "palette_colors": 250,
+        "playback_index": 10,
+        "since_start_ms": 1506
+      },
+      {
+        "ack_latency_ms": 50,
+        "application_bytes": 1039,
+        "frame": 8,
+        "palette_colors": 250,
+        "playback_index": 11,
+        "since_start_ms": 1655
+      },
+      {
+        "ack_latency_ms": 93,
+        "application_bytes": 1039,
+        "frame": 9,
+        "palette_colors": 250,
+        "playback_index": 12,
+        "since_start_ms": 1806
+      }
+    ],
+    "headline_measurement": "Per-frame dispatch-to-ACK latency at 1039 application bytes and 250 palette colours: median 66 ms, min 50 ms, p95 93 ms, max 93 ms over 9 frames. This is the first clean isolation of that figure -- earlier ACK-latency numbers in this project included our own packet-spacing sleeps and must not be compared against it.",
+    "failure_cause": "HTTP 429 SESSION_PACING_VIOLATION on frame 10. The client dispatched on a phase-stable 150 ms grid, exactly the Host's AcceptedMinFrameIntervalMs, leaving zero jitter margin; the Host measures the interval on its own clock from when IT starts a frame, so a dispatch 149-151 ms after the previous one can arrive early. Observed client gaps were 149-151 ms. This is exactly the race that MCP_CLIENT_FRAME_INTERVAL_MS = 200 was documented to protect against in host/activity_session.py; that comment was correct and this trial under-weighted it.",
+    "architectural_conclusion": "The sustainable ceiling of the CURRENT Host design is set by ACK-latency VARIANCE, not mean: a pacing violation is terminal and there is no retry, so the client must pace against p95 (93 ms) rather than median (66 ms), plus margin. That caps this synchronous shape near 10 fps even if the Host floor were removed. The change that actually unlocks the rate is to make the Host's pacing floor WAIT until the floor elapses instead of refusing an early frame: the device still never sees frames faster than the floor, the hard rate bound is unchanged, and the session-killing race disappears along with the client's need for margin. That requires a Host rebuild and therefore a Runtime 003 product policy, and is NOT authorized here.",
+    "retry": false,
+    "reconnect": false,
+    "reclaim": false,
+    "resend_after_ambiguity": false,
+    "product_supervisor": "stopped before the run (clean operator_stop) and restarted immediately afterward; the MCP dashboard reclaimed the device automatically",
+    "scope_note": "Measures our client path at the current Host floor. Establishes no new device ceiling: 9 frames at 1039 bytes is far inside accepted R4/R5 territory."
+  },
+  "revalidation_note": "This manifest's 150 ms playback_interval_ms is no longer accepted by the current validator: the trial's own result is what added the CLIENT_JITTER_MARGIN_MS rule that now refuses it. It is preserved as an immutable record of what ran, not as a loadable configuration -- the same way its frozen code hashes record the code that ran rather than today's code."
 }
