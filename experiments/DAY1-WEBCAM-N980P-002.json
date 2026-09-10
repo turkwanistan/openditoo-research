@@ -3,13 +3,13 @@
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-N980P-002",
   "milestone": "W7 first physical webcam acceptance trial \u2014 rerun after status-contract fix",
-  "status": "grant_ready_awaiting_named_grant",
-  "objective": "Fresh replacement for consumed attempt 001. Same 10-second exact-unit webcam envelope. Only client status parsing changed: successful GET /v1/status no longer requires the POST-only ok field. No new transport, target, timing, retry, reconnect, reclaim, camera, transform, or encoder authority is introduced.",
+  "status": "authorized_awaiting_live_preflight",
+  "objective": "Fresh replacement for consumed attempt 001. Same 10-second exact-unit webcam envelope. The corrected status parser is verified against the real read-only Host status contract, the exact W7 rerun grant is recorded, and execution remains one-use and gated on the live one-controller preflight plus durable camera-ready claim handshake.",
   "readiness": {
     "execution_ready": false,
     "grant_ready": true,
     "blockers": [],
-    "required_followup": "Obtain the fresh exact grant `Grant OPENDITOO-WEBCAM-N980P-002`. Only after that grant: stop Runtime 003, verify Host idle, allow the camera-ready nonce claim handshake, and execute the single bounded 10-second W7 rerun. Never replay attempt 001."
+    "required_followup": "Run the guarded W7 launcher. It must stop Runtime 003, verify Host idle, revalidate the frozen envelope and exact named authority, acquire a fresh camera frame before consuming the one-use claim, execute exactly one bounded 10-second trial, and restore Runtime 003 after terminal ownership is known. Never replay attempt 001."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -140,13 +140,13 @@
   },
   "authority": {
     "experiment_id": "OPENDITOO-WEBCAM-N980P-002",
-    "transmission_authorized": false,
+    "transmission_authorized": true,
     "authorization_consumed": false,
-    "granted_by": null,
-    "grant_text": null,
-    "expires_at": null,
+    "granted_by": "operator, in-session, 2026-09-09",
+    "grant_text": "Grant OPENDITOO-WEBCAM-N980P-002",
+    "expires_at": "2026-09-10T02:30:00Z",
     "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-N980P-002",
-    "grant_scope_requested": "ONE 10-second live-camera execution to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile, 40 ms Host floor plus 90 ms client dispatch cadence, at most 112 frames / 336 packets / 118048 application bytes; one connection and one frame in flight, no retry/reconnect/reclaim; suspend and restore the MCP controller separately. Fresh identity replaces consumed pre-open attempt 001 and remains unauthorized until exact named grant."
+    "grant_scope_requested": "ONE 10-second live-camera execution to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile, 40 ms Host floor plus 90 ms client dispatch cadence, at most 112 frames / 336 packets / 118048 application bytes; one connection and one frame in flight, no retry/reconnect/reclaim; suspend and restore the MCP controller separately. Fresh identity replaces consumed pre-open attempt 001; exact named grant recorded and consumable once after live preflight."
   },
   "adapter": {
     "kind": "windows_native_camera_to_typed_session",
