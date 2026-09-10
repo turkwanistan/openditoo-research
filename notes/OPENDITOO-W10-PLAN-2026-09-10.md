@@ -191,3 +191,20 @@ Owner chose to remove rollovers instead of pacing them ("do A").
 
 **Webcam 002 granted 2026-09-10** (`Grant OPENDITOO-WEBCAM-PRODUCT-002`): local policy materialized
 (mode 0600, `policy-check` PASS); committed template stays unauthorized. First launch pending.
+
+### First webcam 002 launch — run e6e80228, 2026-09-10 13:05Z — PASS
+
+One connection, 13:05:44 → 13:11:36 (5 min 52 s): **5,786 frames / 17,358 packets / 5,987,969 bytes**,
+16.42 fps ACKed transport, frame budget 36001 of the new Host ceiling. Ended when the owner pressed
+Ditoo buttons: Host `canvas_invalidated` / `stopped_yielded_to_stock` (`outer=0x04 inner=0x46`), the
+designed stock yield; no retry; dashboard restored `connected`, `last_error=null`. Owner: "it ran great.
+i clicked some buttons on the ditoo and that killed it but that should be expected."
+
+This is the first streaming session beyond 500 frames on Host `4a735bab…`: the separate streaming
+ceiling works on the device and no reopen occurred.
+
+Known reporting defect (not fixed; would drift the frozen Studio hash and cost a re-prep + re-grant):
+the Studio treats `SESSION_CANVAS_INVALIDATED` as a generic Host refusal and then fails to close a
+session the Host already ended, so the client/launch log says `unknown` /
+`SESSION_CANVAS_INVALIDATED;close_unconfirmed`. The Host ledger (authoritative) says
+`stopped_yielded_to_stock`. Fix with the next Studio revision: map that code to a clean yield.
