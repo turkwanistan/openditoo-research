@@ -234,3 +234,21 @@ press is recorded as `canvas_invalidated` / `stopped_yielded_to_stock` only when
 session record for that exact id says so (otherwise `unknown`); covers both a refused frame and a
 yield noticed by the Host's idle observer during a quiet scene. Selftests: confirmed yield, and an
 unconfirmed one (record names another id) stays `unknown`. Envelope unchanged from 002.
+
+### Host outage 09:34 local (13:34Z) — recovered
+
+The Host process exited at ~13:34:01Z with `0xC000013A` (`STATUS_CONTROL_C_EXIT`: console Ctrl+C /
+close event), 30.5 min after the Runtime 004 cutover restarted it at 13:03:32Z. Not a timeout (task
+`ExecutionTimeLimit` is 72 h) and not a crash. The task runs the console-subsystem Host exe with an
+Interactive logon, so the cutover restart gave it a console window on the owner's desktop; closing
+that window produces exactly this code. Unconfirmed; owner asked. The dashboard supervisor exited once
+(URLError), systemd restarted it, and it waited in `waiting_for_host_or_device` (25 reconnect tries).
+Recovery: `Start-ScheduledTask 'OpenDitoo Day1 Host'` (same deployed `4a735bab…` build, no new
+authority) → Host up, dashboard `connected`, `last_error=null`.
+
+Candidate hardening (not done): a windowless Host launch. The policies bind only the Host DLL, so a
+task-action change (or a WinExe apphost) would not move any policy hash, but `refresh_openditoo_day1_host.ps1`
+asserts the task action equals the exe and would need the same change.
+
+Also fixed: `prepare_webcam_w10.py product` named its evidence file after 002 and overwrote it when
+preparing 003; the name now follows the policy id and the 002 record was restored from git.
