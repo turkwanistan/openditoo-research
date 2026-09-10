@@ -4,6 +4,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## Current session route — 2026-09-10
 
+**Owner-selected next objective (2026-09-10): physical button navigation / pagination.** After the W10 handoff baseline below, read `notes/OPENDITOO-BUTTON-AVRCP-PAGINATION-PLAN-2026-09-10.md`. The preserved M7 HCI capture has been re-analysed as containing left/right/lever AVRCP events on AVCTP PSM `0x0017`; the immediate route is offline AVRCP reproduction -> receive-only Windows ButtonProbe -> exact Windows physical proof -> two-page Dashboard <-> animation pagination. Do not modify the Runtime 005 Host or pursue firmware/MassBoot for these controls.
+
 0. **Read `notes/OPENDITOO-HANDOFF-2026-09-10-W10.md` first** — W10 is CLOSED: on-demand webcam (desktop shortcut,
    policy `OPENDITOO-WEBCAM-PRODUCT-004`) and dashboard Runtime 005 are live. The W9 handoff below is history.
    Previous: `notes/OPENDITOO-HANDOFF-2026-09-10-W9.md`. W8 is closed PASS and
