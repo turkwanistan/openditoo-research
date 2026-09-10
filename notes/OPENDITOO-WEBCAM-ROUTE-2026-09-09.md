@@ -773,3 +773,16 @@ The wrapper then failed only while trying to recover Git HEAD through `bash -lc`
 The prep wrapper is also corrected for future use: direct `wsl.exe ... git -C` and direct absolute-path Python invocations replace nested Bash quoting, and UTF-8 JSON writes are explicitly BOM-free for Windows PowerShell 5.1. These bookkeeping fixes do not alter producer/runtime behavior.
 
 `OPENDITOO-WEBCAM-N980P-002` is now **grant-ready but unauthorized**, with no claim and no Host/device I/O. Its distinct future grant is `Grant OPENDITOO-WEBCAM-N980P-002`. The guarded W7 launcher is rebound to 002 and uses distinct rerun result paths so consumed attempt-001 evidence cannot be overwritten.
+
+
+## 20. W7 physical webcam acceptance PASS — 2026-09-09
+
+Fresh identity `OPENDITOO-WEBCAM-N980P-002` executed once after the exact named grant. The guarded launcher stopped Runtime 003, observed the Host idle, completed the camera-ready claim handshake, opened the reviewed `streaming_ack_clock` Host profile, and restored Runtime 003 after terminal close.
+
+Measured result: **108 frames**, **324 application packets**, **110,532 application bytes** over **10,014.4804 ms** (~**10.78 fps**). HTTP/ACK round-trip was mean **34.58 ms**, p50 **27.17 ms**, p95 **57.37 ms**, max **91.18 ms**. Source age at send was mean **35.56 ms**, p50 **36.12 ms**, p95 **50.61 ms**, max **56.85 ms**; source age at ACK was mean **70.35 ms**, p50 **69.22 ms**, p95 **100.49 ms**, max **128.25 ms**. The terminal result was `lifetime_expired` / `stopped_clean` with **no retry, reconnect, or reclaim**.
+
+The Host ledger independently records the exact reviewed open envelope (10 s, 40 ms floor, 112-frame ceiling, 118,048-byte ceiling, `streaming_ack_clock`, zero packet spacing) and the same terminal totals: 108 frames / 324 packets / 110,532 bytes, `ours_last_acked`. The operator visually confirmed that the live webcam feed genuinely worked on the Ditoo. Structured acceptance evidence is `captures/OPENDITOO-WEBCAM-W7-RERUN-002-ACCEPTANCE-2026-09-09.json`.
+
+Post-trial recovery was separately checked after the launcher's immediate snapshot: Runtime 003 had started a fresh product run, reported `status=connected`, and owned a fresh active `activity` Host session with ACKed dashboard frames. W7 is therefore fully closed. Both 001 and 002 are consumed and replay-forbidden.
+
+**Next boundary: W8.** If useful, perform one separately reviewed near-ceiling ACK-clock characterization. Do not create a new rate ladder and do not reuse either W7 grant. W9 remains the optional optical scene-to-display latency measurement; W10 remains product/operator polish and the separate standing webcam-authority decision.

@@ -2,14 +2,16 @@
   "schema_version": 1,
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-N980P-002",
-  "milestone": "W7 first physical webcam acceptance trial \u2014 rerun after status-contract fix",
-  "status": "authorized_awaiting_live_preflight",
-  "objective": "Fresh replacement for consumed attempt 001. Same 10-second exact-unit webcam envelope. The corrected status parser is verified against the real read-only Host status contract, the exact W7 rerun grant is recorded, and execution remains one-use and gated on the live one-controller preflight plus durable camera-ready claim handshake.",
+  "milestone": "W7 first physical webcam acceptance trial \u2014 PASS",
+  "status": "completed_pass_authority_consumed",
+  "objective": "Completed W7 physical webcam acceptance trial. The corrected Windows camera-to-typed-Host path streamed a real NexiGo N980P feed to the exact Ditoo for the bounded 10-second envelope and ended cleanly at lifetime expiry. The operator visually confirmed the live webcam display worked.",
   "readiness": {
     "execution_ready": false,
-    "grant_ready": true,
-    "blockers": [],
-    "required_followup": "Run the guarded W7 launcher. It must stop Runtime 003, verify Host idle, revalidate the frozen envelope and exact named authority, acquire a fresh camera frame before consuming the one-use claim, execute exactly one bounded 10-second trial, and restore Runtime 003 after terminal ownership is known. Never replay attempt 001."
+    "grant_ready": false,
+    "blockers": [
+      "AUTHORITY_ALREADY_CONSUMED"
+    ],
+    "required_followup": "W7 is closed and must not be replayed. Next milestone is W8: one separately reviewed, separately authorized near-ceiling ACK-clock characterization if still useful; do not infer authority from the consumed W7 grant."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -141,12 +143,12 @@
   "authority": {
     "experiment_id": "OPENDITOO-WEBCAM-N980P-002",
     "transmission_authorized": true,
-    "authorization_consumed": false,
+    "authorization_consumed": true,
     "granted_by": "operator, in-session, 2026-09-09",
     "grant_text": "Grant OPENDITOO-WEBCAM-N980P-002",
     "expires_at": "2026-09-10T02:30:00Z",
     "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-N980P-002",
-    "grant_scope_requested": "ONE 10-second live-camera execution to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile, 40 ms Host floor plus 90 ms client dispatch cadence, at most 112 frames / 336 packets / 118048 application bytes; one connection and one frame in flight, no retry/reconnect/reclaim; suspend and restore the MCP controller separately. Fresh identity replaces consumed pre-open attempt 001; exact named grant recorded and consumable once after live preflight."
+    "grant_scope_requested": "ONE 10-second live-camera execution to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile, 40 ms Host floor plus 90 ms client dispatch cadence, at most 112 frames / 336 packets / 118048 application bytes; one connection and one frame in flight, no retry/reconnect/reclaim; suspend and restore the MCP controller separately. Fresh identity replaces consumed pre-open attempt 001; exact named grant was consumed by the completed W7 rerun; replay is forbidden."
   },
   "adapter": {
     "kind": "windows_native_camera_to_typed_session",
@@ -184,5 +186,69 @@
     "claim_created": false,
     "host_session_io": false,
     "device_io": false
+  },
+  "w7_attempt": {
+    "status": "pass",
+    "claim_created": true,
+    "host_session_opened": true,
+    "device_io": true,
+    "frames": 108,
+    "packets": 324,
+    "tx_bytes": 110532,
+    "elapsed_ms": 10014.480400003493,
+    "terminal_reason": "lifetime_expired",
+    "outcome": "stopped_clean",
+    "retry": false,
+    "reconnect": false,
+    "reclaim": false,
+    "ack_ms": {
+      "count": 108,
+      "max": 91.17549999803305,
+      "mean": 34.576445370636606,
+      "p50": 27.173600003123283,
+      "p95": 57.36860000342131,
+      "percentileWindow": 108
+    },
+    "source_age_at_send_ms": {
+      "count": 108,
+      "max": 56.852200001478195,
+      "mean": 35.557146296250046,
+      "p50": 36.11720000207424,
+      "p95": 50.607799999415874,
+      "percentileWindow": 108
+    },
+    "source_age_at_ack_ms": {
+      "count": 108,
+      "max": 128.25400000065565,
+      "mean": 70.34842037037015,
+      "p50": 69.21560000628233,
+      "p95": 100.48809999972582,
+      "percentileWindow": 108
+    },
+    "result_file": "captures/OPENDITOO-WEBCAM-W7-RERUN-002-LIVE-RESULT-2026-09-09.json",
+    "result_sha256": "fa6ab794fac3ecbb16ab1dd07f1bf5bb750256010e17a0ad0c41ff5be6d4e3ec",
+    "raw_file": "captures/OPENDITOO-WEBCAM-W7-RERUN-002-LIVE-RAW-2026-09-09.log",
+    "raw_sha256": "fa6ab794fac3ecbb16ab1dd07f1bf5bb750256010e17a0ad0c41ff5be6d4e3ec",
+    "host_ledger_open": {
+      "lifetime_seconds": 10,
+      "min_interval_ms": 40,
+      "frame_budget": 112,
+      "tx_byte_budget": 118048,
+      "session_profile": "streaming_ack_clock",
+      "send_spacing_ms": 0
+    },
+    "host_ledger_terminal": {
+      "reason": "lifetime_expired",
+      "outcome": "stopped_clean",
+      "frames_sent": 108,
+      "packets_sent": 324,
+      "tx_bytes_sent": 110532,
+      "display_state": "ours_last_acked"
+    },
+    "owner_visible_acceptance": "pass",
+    "owner_observation": "Operator reported that the webcam feed genuinely worked on the Ditoo.",
+    "product_runtime_restored": true,
+    "acceptance_file": "captures/OPENDITOO-WEBCAM-W7-RERUN-002-ACCEPTANCE-2026-09-09.json",
+    "acceptance_sha256": "81250ee05c41a1e417c298d87459fe219a20e428c77e37c5ba782e4cecf45e03"
   }
 }

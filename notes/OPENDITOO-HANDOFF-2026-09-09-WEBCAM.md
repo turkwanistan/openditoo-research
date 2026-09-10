@@ -4,7 +4,7 @@ The live repository is authoritative over this note. Re-verify rather than inher
 
 This recovery started from committed baseline `da77b6f`; the interrupted W6 adapter work was
 recovered from the local Codex session and preserved as the next coherent checkpoint.
-`python3 scripts/verify_day1_offline.py` passes **243 tests** with `device_io=false`. The source
+`python3 scripts/verify_day1_offline.py` passes **244 tests** with `device_io=false`. The source
 session recorded a successful Windows Release build of `OpenDitoo.Webcam.Runner` with zero
 warnings/errors. This WSL_MCP sandbox does **not** expose `powershell.exe`, `/mnt/c`, Windows
 `dotnet`, or `/dev/video*`; direct PE launch also fails under its isolated `/proc`, so it cannot
@@ -116,7 +116,7 @@ refuses an unknown name. **The streaming profile has never been exercised live.*
 | W4 Host streaming profile | done, built, **deployed** |
 | W5 dry run + fault injection | **done** — healthy path + terminal fault boundaries verified offline |
 | W6 freeze trial manifest | **PASS / grant-ready** — exact W6-passing Windows build frozen; adapter/parity tests, nonce negative control, and 300.12 s real-camera soak passed |
-| W7 first physical trial | **attempt 001 consumed pre-open; rerun 002 grant-ready** — 001 sent 0 frames/bytes; corrected 002 runner built cleanly, adapter/parity tests passed, and staged C# status parser passed against the real read-only Host; no 002 claim/session/device I/O yet |
+| W7 first physical trial | **PASS / consumed** — attempt 002 streamed 108 frames / 324 packets / 110,532 bytes in 10.0145 s (~10.78 fps), clean lifetime expiry, no retry/reconnect/reclaim; operator visually confirmed the webcam feed worked; Runtime 003 restored and verified connected |
 | W8 near-ceiling ACK-clock trial | after W7 acceptance; one bounded identity, no new rate ladder |
 | W9 optical latency | after W8 if useful; camera and Ditoo filmed together, separate from ACK latency |
 | W10 product polish/authority | only after experimental acceptance; decide whether webcam gets separate standing product authority |
@@ -134,10 +134,10 @@ device receives:
 
 ## 6. Next objective, in order
 
-1. **Preserve attempt 001 as consumed.** It ended `not_opened`, 0 frames / 0 bytes, after the camera-ready nonce claim because `TypedSession.Request()` wrongly required `ok=true` on the live Host's successful `/v1/status` response. There is no Host ledger entry for 001, so `ActivitySessionHost.Open()` was never reached. Never replay 001.
-2. **Fresh rerun 002 preparation is PASS without transmission.** The corrected Windows build completed with 0 warnings/errors; adapter + transform + encoder selftests passed; the staged C# client passed against the real read-only Host `/v1/status` contract with `status_has_ok_field=false`. The later wrapper failure was bookkeeping-only; exact post-build artifact hashes were recovered and frozen, with no claim/session/device I/O.
-3. Request the fresh exact grant `Grant OPENDITOO-WEBCAM-N980P-002`. The prior 001 grant is consumed and cannot authorize 002.
-4. After the 002 grant, execute only `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_webcam_w7_windows.ps1`, now bound to 002 with distinct result files, for one guarded 10-second physical rerun with no retry/reconnect/reclaim; then proceed to W8 only if transport and owner-visible output are accepted.
+1. **W7 is closed PASS.** Preserve both consumed identities: 001 is the zero-I/O status-contract failure; 002 is the successful physical acceptance trial and must not be replayed.
+2. W7 attempt 002 evidence: 108 frames / 324 packets / 110,532 bytes in 10.0145 s (~10.78 fps), ACK p50 27.17 ms / p95 57.37 ms, source age at send p50 36.12 ms / p95 50.61 ms, source age at ACK p50 69.22 ms / p95 100.49 ms, `lifetime_expired` / `stopped_clean`, no retry/reconnect/reclaim. Owner-visible acceptance PASS.
+3. Runtime 003 cleanup is independently verified: a fresh product runtime session connected and the Host again owns an active `activity` session with ACKed dashboard frames.
+4. **Next: W8**, one separately reviewed near-ceiling ACK-clock characterization if it still adds value. Do not infer or reuse W7 authority. W9 optical latency remains optional; W10 is product polish/separate webcam-authority decision.
 
 ## 7. Working style that earned its keep
 

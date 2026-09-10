@@ -36,7 +36,11 @@ def main() -> int:
             "WINDOWS_STATUS_CONTRACT_FIX_NOT_VERIFIED",
             "WINDOWS_RUNNER_REBUILD_NOT_FROZEN",
         }
-        if readiness.get("grant_ready"):
+        completed = doc.get("status") == "completed_pass_authority_consumed"
+        if completed:
+            if readiness.get("grant_ready") or readiness.get("blockers") != ["AUTHORITY_ALREADY_CONSUMED"]:
+                raise ValueError("completed webcam trial must be consumed and non-grant-ready")
+        elif readiness.get("grant_ready"):
             if readiness.get("blockers") != []:
                 raise ValueError("grant-ready webcam candidate must have no engineering blockers")
         elif set(readiness.get("blockers", [])) != pending:
@@ -70,12 +74,16 @@ def main() -> int:
             raise ValueError("repository Host build changed")
 
         blockers = list(readiness.get("blockers", []))
-        blockers.extend(frame_stream.authority_blockers(path))
-        if activity_session.SessionClaim(manifest.experiment_id).read() is not None:
+        for blocker in frame_stream.authority_blockers(path):
+            if blocker not in blockers:
+                blockers.append(blocker)
+        if activity_session.SessionClaim(manifest.experiment_id).read() is not None and "AUTHORITY_ALREADY_CONSUMED" not in blockers:
             blockers.append("AUTHORITY_ALREADY_CONSUMED")
-        blockers.append("LIVE_PREFLIGHT_NOT_PERFORMED")
+        if not completed:
+            blockers.append("LIVE_PREFLIGHT_NOT_PERFORMED")
+        claim_present = activity_session.SessionClaim(manifest.experiment_id).read() is not None
         print(json.dumps({
-            "ok": True, "manifest_valid": True, "device_io": False, "claim_created": False,
+            "ok": True, "manifest_valid": True, "device_io": completed, "claim_created": claim_present,
             "execution_ready": False, "grant_ready": bool(readiness.get("grant_ready")),
             "experiment_id": manifest.experiment_id, "blockers": blockers,
             "manifest_sha256": activity_session.sha256_file(path),

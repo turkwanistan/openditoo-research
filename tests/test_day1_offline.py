@@ -3536,7 +3536,10 @@ class W6WebcamReviewTests(unittest.TestCase):
         self.assertEqual(manifest.max_tx_bytes, 112 * frame_stream.worst_case_frame_tx_bytes())
         readiness = manifest.raw["readiness"]
         self.assertFalse(readiness["execution_ready"])
-        if readiness["grant_ready"]:
+        if manifest.raw["status"] == "completed_pass_authority_consumed":
+            self.assertFalse(readiness["grant_ready"])
+            self.assertEqual(readiness["blockers"], ["AUTHORITY_ALREADY_CONSUMED"])
+        elif readiness["grant_ready"]:
             self.assertEqual(readiness["blockers"], [])
         else:
             self.assertEqual(set(readiness["blockers"]), {
@@ -3603,23 +3606,41 @@ class W6WebcamReviewTests(unittest.TestCase):
         project = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/OpenDitoo.Webcam.Runner.csproj").read_text(encoding="utf-8")
         self.assertIn("<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>", project)
 
-    def test_active_webcam_authority_is_exact_named_and_always_one_use(self) -> None:
+    def test_completed_w7_authority_is_consumed_and_not_replayable(self) -> None:
         manifest, _, _ = frame_stream.load_stream_manifest(self.MANIFEST, require_authority=False)
         self.assertEqual(manifest.experiment_id, "OPENDITOO-WEBCAM-N980P-002")
         authority = manifest.raw["authority"]
-        blockers = frame_stream.authority_blockers(self.MANIFEST)
-        if authority["transmission_authorized"]:
-            self.assertEqual(blockers, [])
-            self.assertEqual(authority["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-002")
-        else:
-            self.assertIn("TRANSMISSION_AUTHORITY_MISSING", blockers)
-            self.assertEqual(authority["grant_string_after_readiness"], "Grant OPENDITOO-WEBCAM-N980P-002")
+        self.assertTrue(authority["transmission_authorized"])
+        self.assertTrue(authority["authorization_consumed"])
+        self.assertEqual(authority["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-002")
+        self.assertIn("AUTHORITY_ALREADY_CONSUMED", frame_stream.authority_blockers(self.MANIFEST))
+        self.assertFalse(manifest.raw["readiness"]["grant_ready"])
+        self.assertEqual(manifest.raw["readiness"]["blockers"], ["AUTHORITY_ALREADY_CONSUMED"])
+
+    def test_w7_rerun_002_live_evidence_is_clean_and_owner_accepted(self) -> None:
         data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
-        data["authority"]["authorization_consumed"] = True
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "consumed.json"
-            path.write_text(json.dumps(data), encoding="utf-8")
-            self.assertIn("AUTHORITY_ALREADY_CONSUMED", frame_stream.authority_blockers(path))
+        attempt = data["w7_attempt"]
+        self.assertEqual(data["status"], "completed_pass_authority_consumed")
+        self.assertEqual(attempt["outcome"], "stopped_clean")
+        self.assertEqual(attempt["terminal_reason"], "lifetime_expired")
+        self.assertTrue(attempt["claim_created"])
+        self.assertTrue(attempt["host_session_opened"])
+        self.assertTrue(attempt["device_io"])
+        self.assertEqual((attempt["frames"], attempt["packets"], attempt["tx_bytes"]), (108, 324, 110532))
+        self.assertFalse(attempt["retry"] or attempt["reconnect"] or attempt["reclaim"] )
+        self.assertEqual(attempt["owner_visible_acceptance"], "pass")
+        self.assertTrue(attempt["product_runtime_restored"])
+        for path_key, sha_key in (("result_file", "result_sha256"), ("raw_file", "raw_sha256")):
+            evidence = ROOT / attempt[path_key]
+            self.assertTrue(evidence.is_file())
+            self.assertEqual(activity_session.sha256_file(evidence), attempt[sha_key])
+        acceptance = ROOT / attempt["acceptance_file"]
+        self.assertTrue(acceptance.is_file())
+        self.assertEqual(activity_session.sha256_file(acceptance), attempt["acceptance_sha256"])
+        accepted = json.loads(acceptance.read_text(encoding="utf-8"))
+        self.assertEqual(accepted["status"], "pass")
+        self.assertTrue(accepted["cleanup"]["post_restore_verified_connected"])
+        self.assertGreater(accepted["transport"]["effective_fps"], 10.0)
 
     def test_consumed_attempt_001_is_preserved_and_never_rearmed(self) -> None:
         data = json.loads(self.CONSUMED_ATTEMPT.read_text(encoding="utf-8"))

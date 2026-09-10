@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-WEBCAM-N980P-002",
+  "milestone": "W7 first physical webcam acceptance trial",
+  "status": "pass",
+  "transport": {
+    "outcome": "stopped_clean",
+    "terminal_reason": "lifetime_expired",
+    "elapsed_ms": 10014.480400003493,
+    "frames": 108,
+    "effective_fps": 10.784383780906131,
+    "packets": 324,
+    "tx_bytes": 110532,
+    "ack_ms": {
+      "count": 108,
+      "max": 91.17549999803305,
+      "mean": 34.576445370636606,
+      "p50": 27.173600003123283,
+      "p95": 57.36860000342131,
+      "percentileWindow": 108
+    },
+    "source_age_at_send_ms": {
+      "count": 108,
+      "max": 56.852200001478195,
+      "mean": 35.557146296250046,
+      "p50": 36.11720000207424,
+      "p95": 50.607799999415874,
+      "percentileWindow": 108
+    },
+    "source_age_at_ack_ms": {
+      "count": 108,
+      "max": 128.25400000065565,
+      "mean": 70.34842037037015,
+      "p50": 69.21560000628233,
+      "p95": 100.48809999972582,
+      "percentileWindow": 108
+    },
+    "retry": false,
+    "reconnect": false,
+    "reclaim": false
+  },
+  "host_ledger": {
+    "open": {
+      "lifetime_seconds": 10,
+      "min_interval_ms": 40,
+      "frame_budget": 112,
+      "tx_byte_budget": 118048,
+      "session_profile": "streaming_ack_clock",
+      "send_spacing_ms": 0
+    },
+    "terminal": {
+      "reason": "lifetime_expired",
+      "outcome": "stopped_clean",
+      "frames_sent": 108,
+      "packets_sent": 324,
+      "tx_bytes_sent": 110532,
+      "display_state": "ours_last_acked"
+    }
+  },
+  "owner_visible_acceptance": {
+    "status": "pass",
+    "observation": "Operator reported that the live webcam feed genuinely worked on the Ditoo."
+  },
+  "cleanup": {
+    "product_runtime_restored": true,
+    "post_restore_verified_connected": true,
+    "post_restore_active_session": true
+  },
+  "authority": {
+    "claim_created": true,
+    "authorization_consumed": true,
+    "replay_forbidden": true
+  }
+}

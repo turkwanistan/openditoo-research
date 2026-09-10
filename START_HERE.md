@@ -37,11 +37,11 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | M0-M8 | complete; accepted evidence preserved |
 | M9 MCP activity application | complete; layout/activity/status/fault-display acceptance recorded |
 | R1-R5 rate ladder | complete; measured through 18.46 fps full-colour one-ACK-per-frame ceiling |
-| W4 streaming session profile | deployed under Runtime 003; installed/repository Host hash `0da3a18b...`. Streaming profile has not been exercised live |
+| W4 streaming session profile | deployed under Runtime 003; installed/repository Host hash `0da3a18b...`; now physically exercised by successful W7 webcam trial |
 | W5 fault injection | PASS: 11 camera-free cases + 5 real-camera/in-memory-Host controls; both parity fixtures pass; route §13 |
 | W2 visual ranking | owner-dependent; harness complete, `srgb_area` remains provisional |
-| W6 trial freeze | **in progress**: adapter source/build checkpoint recovered; Windows-local selftests/handshake/5-minute soak and final hash freeze remain; route §15 |
-| W7 first webcam acceptance | blocked on W6 final freeze + fresh named grant; one 10 s exact-unit trial |
+| W6 trial freeze | **PASS**: Windows-local selftests, camera-ready handshake negative control, 300.12 s soak, and final hash freeze complete |
+| W7 first webcam acceptance | **PASS / consumed**: attempt 002 streamed 108 frames in 10.0145 s (~10.78 fps), clean lifetime expiry, owner visual PASS |
 | W8 near-ceiling webcam rate | after W7 acceptance; one bounded ACK-clock characterization, no new ladder |
 | W9 optical latency | after W8 if useful; physical scene→display measurement, not inferred from ACKs |
 | W10 webcam productization | after experimental acceptance; separate standing-authority decision |
@@ -63,7 +63,7 @@ webcam transmission requires its own reviewed manifest and fresh named grant.
 The historical Runtime 002 cutover used `Grant OPENDITOO-PRODUCT-RUNTIME-002`; that revision
 is superseded, and its grant must not be reused for the webcam.
 
-### Current objective — complete webcam offline preparation
+### Current objective — W8 near-ceiling webcam characterization
 
 The MCP dashboard is already the owner's working everyday baseline. Do not reopen durability, firmware, MassBoot, ACK decoding, command enumeration, or speculative UI work as release blockers.
 
@@ -72,7 +72,7 @@ runner rebuilt/staged successfully, adapter/transform/encoder tests passed, the 
 negative control passed with no claim/Host session, and the real-camera allocation soak passed for
 300.1216 s with only 9,416 bytes growth after warmup. Exact evidence is
 `captures/OPENDITOO-WEBCAM-W6-WINDOWS-OFFLINE-RESULT-2026-09-09.json`. The coordinator refuses a
-non-idle Host before one-use claim consumption. **W7 attempt 001 is consumed and must never be replayed.** It created the WSL claim but opened no Host session and sent 0 frames / 0 bytes because the Windows client incorrectly required an `ok=true` field on the established HTTP-200 `/v1/status` document. Runtime 003 was restored cleanly. The active candidate is now `OPENDITOO-WEBCAM-N980P-002`. Corrected-runner preparation is PASS: Windows build 0 warnings/errors, adapter/transform/encoder selftests PASS, and the staged C# client successfully parsed the real read-only Host `/v1/status` document with `status_has_ok_field=false`; no claim/session/device I/O occurred. The exact corrected DLL is frozen and the candidate is grant-ready but still unauthorized. Next boundary is the distinct fresh grant `Grant OPENDITOO-WEBCAM-N980P-002`; after it is recorded, execute only through `scripts/run_webcam_w7_windows.ps1`, now bound to 002 and separate result filenames.
+non-idle Host before one-use claim consumption. **W7 is now PASS.** Attempt 001 is preserved as a consumed zero-I/O pre-open failure caused by the status-contract client bug. Fresh attempt `OPENDITOO-WEBCAM-N980P-002` then completed the real 10-second webcam trial cleanly: 108 frames / 324 packets / 110,532 bytes in 10.0145 s (~10.78 fps), ACK p50 27.17 ms / p95 57.37 ms, no retry/reconnect/reclaim, terminal `lifetime_expired` / `stopped_clean`. The Host ledger independently records the same 108/324/110532 totals. The operator visually confirmed the live webcam feed genuinely worked on the Ditoo. Runtime 003 was restored and separately verified connected with a fresh active dashboard session. Attempt 002 is consumed and must never be replayed. **Next milestone is W8**, one separately reviewed near-ceiling ACK-clock characterization if useful; W7 authority does not carry forward.
 
 Use `PRODUCT.md` for normal operation. The reliable startup design boundary remains current-user Windows logon / StartWhenAvailable; a real Windows reboot/login observation is intentionally deferred and is not to be invented as accepted evidence.
 
