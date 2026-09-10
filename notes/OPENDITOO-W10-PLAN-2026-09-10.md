@@ -255,3 +255,22 @@ preparing 003; the name now follows the policy id and the 002 record was restore
 
 **Webcam 003 granted 2026-09-10** (`Grant OPENDITOO-WEBCAM-PRODUCT-003`): local policy materialized (mode 0600,
 `policy-check` PASS); 002 local was revoked at the merge. First 003 launch (live look switching) pending.
+
+### First webcam 003 launch — run 3c5398de, 2026-09-10 13:49Z — looks PASS, pacing refusal found
+
+Owner: "it looked great, default is maybe best but the first benchmark had really sharp colors, nice
+options to have." **W2 is closed by owner ranking on the device**: `srgb_area` stays the default;
+`BENCHMARK_ONLY_linear_area_normalized` noted as the sharp-colour alternative (framing at end: that
+preset, zoom 0.2, 255 colours). The provisional status of `srgb_area` is resolved.
+
+The launch did not end by operator choice: after **3,631 frames (13:49:41 → 13:53:21)** the Host refused
+a frame with `SESSION_PACING_VIOLATION` and closed `stopped_clean`; client/launch `unknown`; no retry;
+dashboard restored `connected`.
+
+**Root cause (measured, not guessed):** the Host checks its 40 ms floor with `Environment.TickCount64`,
+whose resolution here is ~15.625 ms — its own `hostFrameElapsedMs` values are quantized (W10-001 p50
+32, p95 63 = 2 and 4 ticks). A difference of two quantized readings is < 40 only when it is ≤ 31.25,
+i.e. whenever the true gap is under ~46.9 ms. The effective Host floor is therefore ~46.9 ms, so the
+"10 ms" client margin (50 ms dispatch gap) is really ~3 ms of arrival-jitter tolerance. Short runs
+never hit it; one stall in 3,631 frames did. Same family as W8-003 (margin) and W8-004 (coarse Host
+clock), now with the combination identified.
