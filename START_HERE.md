@@ -4,11 +4,12 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## Current session route — 2026-09-10
 
-0. **Read `notes/OPENDITOO-HANDOFF-2026-09-10-W9.md` first** — the current handoff. W8 is closed PASS,
-   W9A is done offline, and W9B is **parked**: its tooling and operator framing are verified, attempt 006
-   is consumed/unknown with no optical evidence, and 007 is prepared, grant-ready and unauthorized. That
-   note also argues W9B is optional and recommends W10 productization next. Panel refresh and visible
-   unique-frame cadence remain **UNMEASURED** — do not describe 16.285 fps as what the panel does.
+0. **Read `notes/OPENDITOO-HANDOFF-2026-09-10-W9.md` first** — the current handoff. W8 is closed PASS and
+   W9A is done offline. **W9B is DEFERRED by owner decision (2026-09-10)** — do not re-propose, re-prepare
+   or execute it; 007 stays prepared, grant-ready and unauthorized so revival costs one grant. Panel refresh
+   and visible unique-frame cadence are therefore **UNMEASURED and stay that way** — never describe
+   16.285 fps as what the panel does. Post-v1 >18.46 fps research stays closed by default, since its gate
+   was W9B. **Next objective: W10 productization**; that note lists every remaining open item in value order.
    Then `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` for the earlier webcam handoff. Then
    `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md`. The external N980P webcam
    plan is adopted as the route, with recorded amendments. Runtime 003 is deployed;
@@ -49,9 +50,9 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | W7 first webcam acceptance | **PASS / consumed**: attempt 002 streamed 108 frames in 10.0145 s (~10.78 fps), clean lifetime expiry, owner visual PASS |
 | W8 near-ceiling webcam rate | **PASS / consumed**: 005 completed its full 10 s lifetime — 163 frames / 489 packets / 170,737 bytes, **16.285 fps** (quarters 15.6/16.4/16.4/16.8), source age at send p95 51.86 ms, ACK p50 42.31 / p95 69.58 ms, 0 duplicate source frames, `lifetime_expired` / `stopped_clean`, Host ledger in exact agreement, no retry/reconnect/reclaim, Runtime 003 restored `connected`. owner visual PASS. **W8 closed PASS.** 003 and 004 remain consumed failures; all three are replay-forbidden |
 | W9A source identity + motion truth | **implemented offline**: `SourceId` assigned once at acquisition, propagated unchanged through raw slot → transform → ready slot → sender selection; bounded `sourceIdentity` telemetry; offline control `ADAPTER_W9A_SOURCE_IDENTITY_PASS`; `host/motion_truth.py` + `tools/w9a_motion_truth_stimulus.html` decode all 4096 counters through the real production transform. Transport untouched. See route §27 |
-| W9B optical unique-frame/latency trial | **attempt 006 consumed/unknown — no optical evidence yet**. Offline tooling verified end to end and operator framing verified (monotonic Gray decode through the real transform), but the live trial failed with `transport_fault` / `IMAGE_RX_RECV_TIMEOUT; NO_RETRY`, Host ledger 0/0/0, `displayState=unknown_nothing_sent`, nothing displayed and no usable footage. Not a code/hash/authority/pacing/camera fault: W9A identity populated correctly. Runtime 003 restored and verified `connected`. Root cause held at LOW confidence. See route §29 |
+| W9B optical unique-frame/latency trial | **DEFERRED by owner decision 2026-09-10** — do not start unprompted. Offline tooling and operator framing verified; attempt 006 consumed/unknown with no optical evidence; 007 prepared, grant-ready and unauthorized (no claim, no ledger entry). Revival costs one grant. See route §29-§30 |
 | W10 webcam productization | **recommended next**; does not depend on W9B. Fixed-rate modes use monotonic absolute deadlines, skip missed logical slots with no catch-up burst, never treat a duplicate/no-new-frame selection as a transmitted interval. Standing webcam authority is a separate explicit decision |
-| Post-v1 >ACK-ceiling research | **deferred/conditional**; only if W9 shows visible benefit. Do not infer Tivoo's 30/54 fps results apply to Ditoo or reopen R1-R5 |
+| Post-v1 >ACK-ceiling research | **closed by default** — its gate was W9B, which is deferred, so the answer is no unless the owner reopens W9B first. Do not infer Tivoo's 30/54 fps results apply to Ditoo or reopen R1-R5 |
 | S2 stream-rate measurement | `OPENDITOO-S2-STREAM-RATE-001` consumed. Measured dispatch→ACK: median 66 ms, p95 93 ms at 1039 bytes. Dispatching at the 150 ms Host floor is FATAL (HTTP 429 on frame 10) — client must add 50 ms margin, so ~5 fps is today's safe cadence. Higher rates need a Host pacing change + Runtime 003. See `notes/OPENDITOO-STREAM-PRODUCER-CONTRACT-2026-09-09.md` |
 | S1 general frame streaming | **accepted**; `OPENDITOO-S1-STREAM-001` consumed, transport PASS (42 frames / 126 packets / 2982 bytes, clean close) and operator visual PASS |
 | A1 collection worker | installed/preserved; product owns collection while active |

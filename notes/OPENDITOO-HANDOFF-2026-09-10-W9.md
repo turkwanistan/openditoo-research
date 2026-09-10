@@ -1,4 +1,4 @@
-# OpenDitoo handoff — W8 closed, W9A landed, W9B parked — 2026-09-10
+# OpenDitoo handoff — W8 closed, W9A landed, W9B DEFERRED — 2026-09-10
 
 Read this first, then `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md` §26–§29. Repository state is
 authoritative over this note.
@@ -15,8 +15,8 @@ Runtime 003 (MCP dashboard) is live, verified `connected`, `last_error=null`.
 | W9B optical latency tooling | **DONE, offline** — verified end to end |
 | W9B operator framing | **VERIFIED** — camera-only |
 | W9B live trial 006 | **CONSUMED / unknown** — device never ACKed |
-| W9B live trial 007 | **PREPARED, grant-ready, UNAUTHORIZED** — parked |
-| W10 productization | not started |
+| W9B live trial 007 | **PREPARED, grant-ready, UNAUTHORIZED** — DEFERRED by owner decision, do not start |
+| W10 productization | **not started — next objective** |
 
 ## Accepted evidence
 
@@ -31,8 +31,8 @@ Owner visual observation: PASS — "looked great", no tearing versus the W7 ~10.
 `clientMinusHostElapsedMs` (p50 1.14, p95 11.57, max 16.91 ms) is a signed observational
 residual only. It is never a cross-process ordering invariant and is **not** HTTP overhead.
 
-**Transport FPS is not physical panel FPS.** That distinction is unresolved and is exactly what
-W9B exists for. Nothing in the accepted evidence licenses a claim about panel refresh.
+**Transport FPS is not physical panel FPS.** That distinction is unresolved, W9B is deferred, so it
+stays unresolved. Nothing in the accepted evidence licenses a claim about panel refresh.
 
 ## Decisions worth keeping
 
@@ -75,9 +75,11 @@ Bluetooth link opened and torn down within seconds then reopened 4 s later is a 
 for the device ignoring the new connection. **Plausible, not demonstrated.** It may simply be a
 transient Bluetooth fault.
 
-## Is W9B actually necessary?
+## W9B is DEFERRED — owner decision, 2026-09-10
 
-**Recommendation: no, not now. It is optional and its value is conditional.**
+**The owner decided on 2026-09-10 not to run W9B.** This is a decision, not a pending question.
+Do not re-propose it, re-prepare it, or treat it as a blocker for anything downstream. It may be
+revived only if the owner explicitly asks.
 
 W9B's purpose in the roadmap is to decide whether the physical Ditoo visibly benefits from more
 unique update cadence — the gate on reopening >18.46 fps research. If that research is not
@@ -100,24 +102,72 @@ The expensive groundwork is done and preserved, so deferring costs almost nothin
 the decoder, the correlation tooling, the verified framing and a grant-ready 007 all survive. If
 the question ever becomes worth answering, it is one grant away.
 
-**If W9B is deferred, the honest position to keep stating is that panel refresh and visible
-unique-frame cadence are UNMEASURED.** Do not let 16.285 fps drift into being described as what
-the panel does.
+### The standing consequence of deferring
 
-## Next objective
+**Panel refresh and visible unique-frame cadence are UNMEASURED, and will stay that way.** This is
+the single most important thing to carry forward from W9. 16.285 fps is ACKed transport. Do not
+let it drift into being described as what the panel does, in docs, in the product UI, or in a
+future summary. Any claim about visible cadence or scene-to-display latency requires W9B, and W9B
+is deferred.
 
-Either:
+The knock-on: **post-v1 >18.46 fps research stays closed.** Its gate was "only if W9B shows the
+physical Ditoo visibly benefits". With W9B deferred that gate is never satisfied, so the answer is
+no by default. OpenTivoo's 30/54 fps results remain methodology, not Ditoo evidence.
 
-- **W10 productization** (recommended): camera/mode display, ROI/zoom, source and exact 16×16
-  matrix preview, robust stop/disconnect, concise operator workflow. Fixed-rate modes use
-  monotonic absolute deadlines (`next_due += interval`), advance/skip missed logical slots,
-  select the newest transformed frame, never issue catch-up bursts, and never treat a duplicate
-  or no-new-frame selection as a transmitted interval or update the Host-floor clock. Standing
-  webcam authority is a **separate** explicit decision; Runtime 003 is dashboard authority only
-  and must not silently widen.
-- or **W9B-007**, if the latency question is wanted after all. See below.
+## What is actually next
 
-## If W9B-007 is resumed
+W9B is off the list. In rough value order, here is everything genuinely open:
+
+### 1. W10 webcam productization — the main objective
+
+Not started. Turns the proven primitive into something usable: camera/mode display, ROI/zoom,
+source and exact 16×16 matrix preview, robust stop/disconnect behaviour, and a concise operator
+workflow.
+
+Design constraints already settled, so they do not need re-deriving. Fixed-rate modes use a
+monotonic absolute-deadline scheduler (`next_due += interval`) — never "finish the work, then
+sleep one interval". On a missed deadline, advance or skip the missed logical slots and select
+the newest available transformed frame; **never issue a catch-up burst**. If there is no new
+source frame, or the logical selection duplicates the last one, do not transmit it merely to hit
+a nominal rate, and do not update the last-transmit/Host-floor clock as though a frame was sent.
+
+**Standing webcam authority is a separate explicit decision.** Runtime 003 is dashboard authority
+only and must never silently widen to webcam transmission.
+
+W9A source identity is already in the runner and costs nothing to carry; W10 can surface
+duplicate/skip counts from it directly.
+
+### 2. Windows reboot / logon autostart — PENDING, cheap, needs the owner
+
+The reliable-startup design boundary is current-user Windows logon / `StartWhenAvailable`, but a
+real reboot-and-observe has never been done. It is deliberately deferred and non-blocking, and it
+**must not be invented as accepted evidence**. One reboot and one look at the Ditoo closes it.
+
+### 3. `product-status` reports `connecting` during a live session — telemetry-only defect
+
+The supervisor persists `connecting` before entering `run_session()` and gets no mid-session
+callback after Host open / first ACK, so a visibly healthy session can report `connecting` with a
+stale `last_error`. Physical display plus Host/session evidence prove attach and reclaim, so this
+is observability only. **Do not patch the hash-frozen live runtime in place** — it needs a fresh
+reviewed product revision (Runtime 004).
+
+### 4. Genuine source outage — never tested end to end
+
+The fault bar is physically accepted only from a *simulated* `source_health=unavailable`. A real
+Lab outage has never been driven end to end. P3 waived this for v1; it is the honest gap in the
+dashboard's fault path.
+
+### 5. W2 visual transform ranking — owner-dependent
+
+The harness is complete but `srgb_area` remains **provisional**: it was never ranked against the
+candidate presets by eye. Cheap to run, needs the owner's judgement, and only matters if the
+webcam image quality is ever in question.
+
+### 6. Post-v1 >18.46 fps research — closed by default
+
+See above. Gated on W9B, which is deferred.
+
+## If W9B-007 is ever revived (deferred — do not start this unprompted)
 
 `OPENDITOO-WEBCAM-N980P-007` is prepared and **grant-ready but unauthorized**. Preparation
 passed with `claim_created=false`, `host_session_io=false`, `device_io=false`; no 007 claim

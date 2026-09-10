@@ -1148,3 +1148,35 @@ usable.
 Evidence: `captures/OPENDITOO-WEBCAM-W9B-006-FAILURE-2026-09-10.json`, plus the live result and
 raw log, all hash-pinned in the manifest's `w9b_attempt`. Runtime 003 was restored and verified
 `connected` with `last_error=null` and fresh `run_nonce=54537468`.
+
+
+## 30. W9B deferred by owner decision; 007 parked grant-ready — 2026-09-10
+
+The owner decided on 2026-09-10 **not to run W9B**. This is a decision, not a pending question:
+do not re-propose it, re-prepare it, or treat it as a blocker for anything downstream.
+
+Rationale. W9B's role in the roadmap is to gate reopening >18.46 fps research. That research is
+not being pursued, the owner has already visually accepted the webcam at 16.285 fps, and W10
+productization does not depend on W9B. It is also the most expensive remaining step and has
+already consumed one identity (006) for zero optical evidence.
+
+`OPENDITOO-WEBCAM-N980P-007` stays **prepared, grant-ready and unauthorized**, with
+`claim_created=false`, `host_session_io=false`, `device_io=false`, no claim on disk and no Host
+ledger entry. Manifest `2ef724294b779b7d516cee98d037af5cd2fcefee5b7115586c05e2219a3eab22`. The
+stimulus, decoder, correlation tooling and verified operator framing all survive, so revival
+costs one grant rather than a rebuild.
+
+**Standing consequence, and the thing most likely to be lost:** panel refresh and visible
+unique-frame cadence are **UNMEASURED and will stay that way**. 16.285 fps is ACKed transport.
+It must not drift into being described as what the panel does — in docs, in product UI, or in a
+future summary. Any claim about visible cadence or scene-to-display latency requires W9B.
+
+Knock-on: **post-v1 >18.46 fps research stays closed.** Its gate was "only if W9B shows the
+physical Ditoo visibly benefits"; with W9B deferred that gate is never satisfied, so the answer
+is no by default. OpenTivoo's 30/54 fps results remain methodology, not Ditoo evidence.
+
+Next objective is **W10 productization**. The remaining open items, in rough value order, are
+listed in `notes/OPENDITOO-HANDOFF-2026-09-10-W9.md`: W10; the pending Windows reboot/logon
+autostart observation; the telemetry-only `product-status` `connecting` defect (needs a fresh
+reviewed product revision, never an in-place patch); the never-tested genuine source outage; and
+the provisional `srgb_area` transform ranking.
