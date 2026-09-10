@@ -3,7 +3,7 @@
   "kind": "interactive_page_acceptance",
   "experiment_id": "OPENDITOO-INTERACTIVE-HF3-003",
   "milestone": "HF-3 one-use high-FPS interactive page / repeated profile-open acceptance",
-  "status": "prepared_unauthorized",
+  "status": "grant_withdrawn_before_use",
   "predecessors": [
     {
       "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
@@ -130,9 +130,11 @@
     "required_grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-003",
     "transmission_authorized": false,
     "authorization_consumed": false,
-    "granted_by": null,
-    "grant_text": null,
-    "expires_at": null,
-    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 32 child session attempts (one planned session; the rest only device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately."
+    "granted_by": "operator, in-session",
+    "grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-003",
+    "expires_at": "2026-09-10T20:27:41.398159Z",
+    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 32 child session attempts (one planned session; the rest only device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
+    "withdrawn_at": "2026-09-10T19:58:00Z",
+    "withdrawn_reason": "Withdrawn by the assistant BEFORE any claim or device I/O: a webcam launch at 19:49Z also got IMAGE_RX_RECV_TIMEOUT on a streaming open after a 99 s-old predecessor and a 12 s gap, so the design premise (streaming opens are safe) is in doubt. The owner grant is not consumed; any re-arm needs a fresh grant."
   }
 }

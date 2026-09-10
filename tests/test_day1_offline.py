@@ -2463,7 +2463,9 @@ class N3HostBoundaryTests(unittest.TestCase):
         self.assertIn("ActivitySendSpacingMs = 10;", src)
         # Spacing is resolved from the session's profile, which is a name the Host maps to
         # its own frozen constants. What must never appear is spacing as a caller argument.
-        self.assertIn("SendFrameGroup(packets, null, framesSent, SpacingFor(profile))", src)
+        # A session's FIRST frame always uses the proven 10 ms spacing (first-frame
+        # IMAGE_RX_RECV_TIMEOUT: 5/19 streaming vs 0/195 activity opens); later frames use the profile's.
+        self.assertIn("framesSent == 0 ? ActivitySendSpacingMs : SpacingFor(profile));", src)
         self.assertNotIn("SpacingFor(request", src)
 
     def test_the_host_bounds_a_session_without_the_worker(self) -> None:

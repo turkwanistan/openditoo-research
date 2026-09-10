@@ -17,21 +17,41 @@ The owner granted `Grant OPENDITOO-INTERACTIVE-HF3-002`. The GO popup worked. At
 
 Diagnosis from exact-unit ledgers: a **Host-initiated close followed by a reopen**, most often of a seconds-old link, leaves the Ditoo silent. This is 4 cases: W9B-006, the W10 15:04 launch (after an 8 s settle), webcam-product-001 #4, and HF3-002. Device-ended `0xBD` sessions of the same age reopen cleanly in 46–69 ms (BTN-7), as do aged Host rollovers (HF3-001, Runtime 006). A longer settle is not the cure. The Host already encodes this lesson (W10C, "one connection"). HF-2's close-and-reopen-per-profile paging is therefore structurally unsafe. Do not retry that shape.
 
-## HF3-003 — prepared, grant-ready, UNAUTHORIZED
+## Root cause revised: streaming first-frame timeout (not young links)
 
-`OPENDITOO-INTERACTIVE-HF3-003`, manifest `experiments/DAY1-INTERACTIVE-HF3-003.json` (`ab9cecdc…`).
+At 19:49:22Z the owner launched the webcam shortcut under its own policy. It stopped a **99 s-old** Runtime 006 session, and its streaming session opened 12 s later, then **also** got first-frame `IMAGE_RX_RECV_TIMEOUT`. That falsifies the young-link/fast-reopen explanation above.
 
-- **`PageCarousel`** (`host/interactive_pages.py`) runs Dashboard and Slots inside **one** `streaming_ack_clock` session. Left/Right change pixels only.
-- The Dashboard keeps its ~200 ms change-only cadence by repeating its last ACKed frame, which the scheduler holds.
-- Child lifetime and frames equal the outer envelope, so no rollovers are planned. The only session boundaries left are device-ended canvas yields.
-- Allowed profiles are narrowed to `streaming_ack_clock`. Envelope: 150 s, 32 child attempts, 1500 frames.
-- Paced dry-run: 10 cycles, 21 sessions (1 + 20 `0xBD` reclaims), 951 frames, 60/60 inputs correlated.
-- Fast dry-run: 20 page transitions in 1 session. 40/40 PASS.
+The whole Host ledger (`scripts/analyze_first_frame_timeouts.py`, capture `captures/OPENDITOO-STREAMING-FIRST-FRAME-TIMEOUT-ANALYSIS-2026-09-10.json`) shows:
 
-It requires the exact grant `Grant OPENDITOO-INTERACTIVE-HF3-003`. The GO/FINAL operator-assist is unchanged.
+| Opens | First-frame `IMAGE_RX_RECV_TIMEOUT` |
+|---|---|
+| **5 of 19** `streaming_ack_clock` | 5 |
+| **0 of 199** `activity` | 0 |
 
-Run: start `python3 scripts/hf3_operator_assist.py` in the background, then `bash scripts/run_interactive_hf3.sh`, after `python3 scripts/interactive_hf3.py grant 'Grant OPENDITOO-INTERACTIVE-HF3-003'` and `check`. Never use `--sandbox-skip-probe`.
+- Gap and predecessor age do not separate the outcomes.
+- After frame 1 ACKs, streaming sessions run thousands of frames cleanly.
+- The only per-profile transport difference is intra-frame packet spacing: 0 ms for streaming vs 10 ms for activity.
 
-**HF-4 implication:** the standing successor must page in-session the same way, and must never Host-close a young link to change pages.
+Hypothesis: the Ditoo sometimes drops a zero-spacing burst sent right after RFCOMM connect.
+
+## HF3-003 — prepared, then grant WITHDRAWN before use
+
+The owner granted `Grant OPENDITOO-INTERACTIVE-HF3-003` and I materialized it. I then withdrew it **before any claim or device I/O**, because HF3-003 needs about 21 streaming opens (1 plus about 20 `0xBD` reclaims). At a 26 % first-frame failure rate it would almost certainly fail. The manifest status is `grant_withdrawn_before_use`, and any re-arm needs a fresh grant. Its single-session `PageCarousel` design remains correct: it still removes planned close/reopen and is the right HF-4 shape.
+
+## Candidate Host fix — built, NOT deployed (authority boundary)
+
+`ActivitySessionHost.SendFrame`: every session's **first frame uses the proven 10 ms spacing**, and later frames use the profile's spacing.
+- Source is on this branch. The static pin test is updated.
+- Legacy suite: 321/322. The one error, `test_006_template_hashes_match_this_tree`, predates this change: `host/frame_stream.py` was already changed by `65723e6`.
+- Successor suite: 40/40.
+- Built side-by-side at `%LOCALAPPDATA%\OpenDitoo\build\host-firstframe\out`, DLL `07e44ee6…`. **Not installed.**
+
+Installing it changes the Host hash that Runtime 006 (`f7bd60d4…`) and webcam policy 005 bind. Both then need re-bound successor revisions (precedent: Runtime 004 was a Host re-bind only) and owner grants.
+
+**Next (owner decision):**
+1. Approve a reviewed Host re-bind revision that installs the first-frame-spacing Host, with Runtime 006 → re-bound runtime and webcam 005 → re-bound policy, preserving rollback to the `f7bd60d4` Host.
+2. Then run a fresh HF-3 (`…-HF3-004`) on the `PageCarousel` design.
+
+The webcam shortcut is also affected (5/19 is mostly webcam launches), so this fix benefits the webcam product too.
 
 WSL trap: this worktree's `.git` link pointed at the WSL_MCP mount (`/run/wsl-mcp/workspace`). `git worktree repair` from the main checkout fixes it.

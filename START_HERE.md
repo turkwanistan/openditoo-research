@@ -87,7 +87,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | HF-1 high-FPS page primitive | **offline PASS** on `feat/high-fps-interactive-pages` (`65723e6`): generic `activity` / `streaming_ack_clock` page contract, buffered physical inputs, ACK-driven state, change-only output, 50 ms idle poll |
 | GAME-1 slots | **offline PASS**: procedural 3-reel 16x16 game; successive short lever pulls stop L/M/R, fourth starts a new round; 1000 deterministic rounds |
 | HF-2 profile orchestrator | **offline PASS**: one-controller activity <-> streaming transitions, 100 transition stress + 1000 mixed inputs; known canvas yield reclaims same page, ambiguity never retries |
-| HF-3 one-use interactive acceptance | **001 consumed**: 0 cycles, no start cue. **002 consumed/unknown**: `IMAGE_RX_RECV_TIMEOUT` when the first Right closed a young activity session and reopened as streaming; a Host-initiated close → reopen is the failure signature. **HF3-003 prepared, grant-ready, UNAUTHORIZED**: one streaming session per run with in-session `PageCarousel` paging, 40/40 tests, paced dry-run PASS. Needs `Grant OPENDITOO-INTERACTIVE-HF3-003`. See `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` |
+| HF-3 one-use interactive acceptance | 001 consumed (0 cycles, no start cue). 002 consumed/unknown (first-frame `IMAGE_RX_RECV_TIMEOUT`). 003 grant **withdrawn before use**. **Root cause:** first-frame timeouts happen only on `streaming_ack_clock` opens (5/19 vs 0/199 activity), so it's a Host issue, not the page design. A first-frame-10 ms-spacing Host fix is **built, not deployed**; installing it needs Host re-bind revisions of Runtime 006 and webcam 005 plus owner grants. See `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` |
 
 ### Authority state
 
@@ -234,4 +234,4 @@ do not change the shared runner. Details:
 ### MCP Dashboard v1 closed — Runtime 002 accepted
 
 `OPENDITOO-PRODUCT-RUNTIME-002` is now the active local standing product revision. Live cutover is PASS: `runtime_revision=2`, `status=connected`, first frame ACK recorded, session-open/ACK timestamps present, and `last_error=null`. P2/P3/P4 are complete; stop product-hardening work here. Windows reboot/login autostart observation is deferred and non-blocking. **Next objective: streaming and other OpenDitoo capabilities.**
-**HF-3 handoff:** read `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` first. HF3-001 and HF3-002 are consumed. HF3-003 (single-session carousel) is prepared and needs its own exact grant.
+**HF-3 handoff:** read `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` first. HF3-001/002 consumed; HF3-003 withdrawn; next is an owner decision on a Host re-bind (first-frame spacing fix).
