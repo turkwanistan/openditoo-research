@@ -3,13 +3,13 @@
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-W10-001",
   "milestone": "W10B first live webcam Studio session",
-  "status": "grant_ready_awaiting_named_grant",
+  "status": "authorized_awaiting_execution",
   "objective": "One bounded live session driven from the W10 Studio window: the operator frames the shot live (zoom/pan/mirror/rotate) while the exact 16x16 matrix streams, and ends it with the Stop button. Proves the product path end to end: absolute-deadline scheduler, unchanged/duplicate suppression with heartbeat, and a clean operator stop. Not a rate measurement and not a panel-refresh claim.",
   "readiness": {
-    "execution_ready": false,
+    "execution_ready": true,
     "grant_ready": true,
     "blockers": [],
-    "required_followup": "Run python3 scripts/prepare_webcam_w10.py (zero device I/O). Then the fresh exact grant `Grant OPENDITOO-WEBCAM-W10-001`, then only bash scripts/run_webcam_w10_once.sh, once."
+    "required_followup": "Execute only bash scripts/run_webcam_w10_once.sh, once. Never replay after any outcome."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -166,11 +166,11 @@
   },
   "authority": {
     "experiment_id": "OPENDITOO-WEBCAM-W10-001",
-    "transmission_authorized": false,
+    "transmission_authorized": true,
     "authorization_consumed": false,
-    "granted_by": null,
-    "grant_text": null,
-    "expires_at": null,
+    "granted_by": "operator, in-session, 2026-09-10",
+    "grant_text": "Grant OPENDITOO-WEBCAM-W10-001",
+    "expires_at": "2026-09-10T14:00:51Z",
     "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-W10-001",
     "grant_scope_requested": "ONE live W10 Studio session, at most 60 s, to exact Ditoo 11:75:58:CE:DE:C7 v42012 via the existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile: 40 ms Host floor, 50 ms client floor, absolute 50 ms slots with missed slots skipped, at most 500 frames / 1500 packets / 527000 application bytes, one connection, one frame in flight, heartbeat on a quiet scene; operator-adjustable framing; no retry/reconnect/reclaim/pipelining; suspend and restore Runtime 003 separately. Confers no standing webcam authority. Grants for N980P-001..007 are separate and confer nothing."
   },
