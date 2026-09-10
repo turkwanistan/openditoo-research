@@ -116,7 +116,7 @@ refuses an unknown name. **The streaming profile has never been exercised live.*
 | W4 Host streaming profile | done, built, **deployed** |
 | W5 dry run + fault injection | **done** — healthy path + terminal fault boundaries verified offline |
 | W6 freeze trial manifest | **PASS / grant-ready** — exact W6-passing Windows build frozen; adapter/parity tests, nonce negative control, and 300.12 s real-camera soak passed |
-| W7 first physical trial | **next** — blocked only on a fresh exact named grant; no claim/transmission yet |
+| W7 first physical trial | **authorized / next** — exact named grant recorded; no claim/transmission yet |
 | W8 near-ceiling ACK-clock trial | after W7 acceptance; one bounded identity, no new rate ladder |
 | W9 optical latency | after W8 if useful; camera and Ditoo filmed together, separate from ACK latency |
 | W10 product polish/authority | only after experimental acceptance; decide whether webcam gets separate standing product authority |
@@ -134,9 +134,9 @@ device receives:
 
 ## 6. Next objective, in order
 
-1. **W7 authority boundary:** obtain the exact fresh grant `Grant OPENDITOO-WEBCAM-N980P-001`. Generic standing/full authorization is not substituted for the manifest-named grant.
-2. After that grant only: record authority/expiry, stop the MCP product supervisor, verify the Host has no active session/operation, and run the single fixed `cli/webcam.py run --manifest experiments/DAY1-WEBCAM-N980P-001.json` path. The runner itself produces a fresh camera frame before claim consumption.
-3. Capture the 10-second result and restore Runtime 003 separately after terminal ownership is known. No retry/reconnect/reclaim.
+1. **W7 exact named grant is recorded:** `Grant OPENDITOO-WEBCAM-N980P-001`; authority is one-use and currently unconsumed.
+2. Execute the guarded Windows entry point: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_webcam_w7_windows.ps1`. It stops Runtime 003, waits for Host idle, invokes the fixed `cli/webcam.py run --manifest experiments/DAY1-WEBCAM-N980P-001.json` path, captures evidence, and restores Runtime 003 in cleanup. The runner itself produces a fresh camera frame before claim consumption.
+3. Capture/ingest the 10-second result. No retry/reconnect/reclaim.
 4. After W7 visual/transport acceptance: W8 one near-ceiling ACK-clock characterization, W9 optional optical latency, W10 product polish/separate webcam-authority decision. W2 seven-scene owner ranking remains optional.
 
 ## 7. Working style that earned its keep

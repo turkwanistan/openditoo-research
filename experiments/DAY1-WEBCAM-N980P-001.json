@@ -2,14 +2,14 @@
   "schema_version": 1,
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-N980P-001",
-  "milestone": "W6 verified review freeze; W7 awaiting fresh named grant",
-  "status": "grant_ready_awaiting_named_grant",
-  "objective": "One bounded first physical webcam trial. W6 Windows-native build/staging, adapter/parity selftests, camera-ready-before-claim negative control, and five-minute real-camera allocation soak all passed offline with no Ditoo I/O. The envelope is now frozen and grant-ready but remains unauthorized and non-executable until the fresh exact W7 named grant and live preflight.",
+  "milestone": "W7 first physical webcam acceptance trial",
+  "status": "authorized_awaiting_live_preflight",
+  "objective": "One bounded first physical webcam trial. W6 Windows-native build/staging, adapter/parity selftests, camera-ready-before-claim negative control, and five-minute real-camera allocation soak all passed offline with no Ditoo I/O. The envelope is frozen, the fresh exact W7 named grant is recorded, and execution remains one-use and gated on the live one-controller preflight plus durable claim handshake.",
   "readiness": {
     "execution_ready": false,
     "grant_ready": true,
     "blockers": [],
-    "required_followup": "Obtain the fresh exact grant `Grant OPENDITOO-WEBCAM-N980P-001`. Only after that grant: stop the MCP product supervisor, verify its Host session is idle, revalidate exact hashes/target/authority, allow the camera-ready nonce claim handshake, and run the single bounded 10-second W7 trial."
+    "required_followup": "Stop the MCP product supervisor, verify its Host session is idle, revalidate exact hashes/target/authority, allow the camera-ready nonce claim handshake, and run the single bounded 10-second W7 trial. The named grant is already recorded and may be consumed exactly once."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -140,13 +140,13 @@
   },
   "authority": {
     "experiment_id": "OPENDITOO-WEBCAM-N980P-001",
-    "transmission_authorized": false,
+    "transmission_authorized": true,
     "authorization_consumed": false,
-    "granted_by": null,
-    "grant_text": null,
-    "expires_at": null,
+    "granted_by": "operator, in-session, 2026-09-09",
+    "grant_text": "Grant OPENDITOO-WEBCAM-N980P-001",
+    "expires_at": "2026-09-10T02:15:00Z",
     "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-N980P-001",
-    "grant_scope_requested": "ONE 10-second live-camera execution to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile, 40 ms Host floor plus 90 ms client dispatch cadence, at most 112 frames / 336 packets / 118048 application bytes; one connection and one frame in flight, no retry/reconnect/reclaim; suspend and restore the MCP controller separately. W6 is grant-ready, but this scope remains unauthorized until the exact named grant is recorded."
+    "grant_scope_requested": "ONE 10-second live-camera execution to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile, 40 ms Host floor plus 90 ms client dispatch cadence, at most 112 frames / 336 packets / 118048 application bytes; one connection and one frame in flight, no retry/reconnect/reclaim; suspend and restore the MCP controller separately. W6 is closed and the exact named W7 grant is recorded; this scope may be consumed exactly once after live preflight."
   },
   "adapter": {
     "kind": "windows_native_camera_to_typed_session",

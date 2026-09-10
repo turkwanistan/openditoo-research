@@ -3596,13 +3596,28 @@ class W6WebcamReviewTests(unittest.TestCase):
         project = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/OpenDitoo.Webcam.Runner.csproj").read_text(encoding="utf-8")
         self.assertIn("<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>", project)
 
-    def test_review_does_not_grant_or_rearm_authority(self) -> None:
-        with self.assertRaises(frame_stream.SessionError) as caught:
-            frame_stream.load_stream_manifest(self.MANIFEST)
-        self.assertEqual(caught.exception.code, "TRANSMISSION_AUTHORITY_MISSING")
+    def test_w7_exact_named_grant_is_live_but_still_one_use(self) -> None:
+        manifest, _, _ = frame_stream.load_stream_manifest(self.MANIFEST)
+        self.assertEqual(manifest.experiment_id, "OPENDITOO-WEBCAM-N980P-001")
+        self.assertEqual(frame_stream.authority_blockers(self.MANIFEST), [])
+        self.assertEqual(manifest.raw["authority"]["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-001")
         data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
         data["authority"]["authorization_consumed"] = True
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "consumed.json"
             path.write_text(json.dumps(data), encoding="utf-8")
             self.assertIn("AUTHORITY_ALREADY_CONSUMED", frame_stream.authority_blockers(path))
+
+    def test_w7_guarded_launcher_preserves_one_controller_and_restore_boundaries(self) -> None:
+        shell = (ROOT / "scripts/run_webcam_w7_once.sh").read_text(encoding="utf-8")
+        windows = (ROOT / "scripts/run_webcam_w7_windows.ps1").read_text(encoding="utf-8")
+        stop = shell.index('systemctl --user stop "$SERVICE"')
+        live = shell.index('python3 cli/webcam.py run --manifest "$MANIFEST"')
+        restore = shell.index('restore_product', live)
+        self.assertLess(stop, live)
+        self.assertLess(live, restore)
+        self.assertIn("trap cleanup EXIT INT TERM", shell)
+        self.assertIn("W7_HOST_IDLE_PASS", shell)
+        self.assertIn("claim_created", shell)
+        self.assertIn("W7_LIVE_PASS outcome=stopped_clean claim_created=true", shell)
+        self.assertIn("bash scripts/run_webcam_w7_once.sh", windows)
