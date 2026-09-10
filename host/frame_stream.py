@@ -513,7 +513,8 @@ def derived_budgets(frame_set: FrameSet, lifetime_seconds: int, playback_interva
 
 def stream_session(manifest, frame_set: FrameSet | None, stream: dict, transport,
                    clock, sleep, claim: SessionClaim | None = None,
-                   renderer=None) -> dict:
+                   renderer=None, stop_requested: Callable[[], bool] | None = None,
+                   stop_reason: str = "operator_stop") -> dict:
     """Drive one bounded stream to a terminal or explicitly unknown result.
 
     Semantics are deliberately identical to `run_session` wherever they overlap: an
@@ -574,6 +575,8 @@ def stream_session(manifest, frame_set: FrameSet | None, stream: dict, transport
             now = clock()
             if now >= deadline_ms:
                 return finish("lifetime_expired", "stopped_clean", "")
+            if stop_requested is not None and stop_requested():
+                return finish(stop_reason, "stopped_clean", "external stop requested")
 
             for report in transport.poll_reports():
                 kind = report.get("kind")
@@ -602,9 +605,11 @@ def stream_session(manifest, frame_set: FrameSet | None, stream: dict, transport
                 hold(reason)
                 if ack_clocked:
                     # ACK-clocked, so there is no next step to wait for. A hold here means
-                    # the clip has nothing new (its end, un-looped), and the lifetime is what
-                    # ends the session -- so idle cheaply rather than spinning.
-                    sleep(manifest.poll_interval_ms)
+                    # the source is currently stationary. Interactive callers may choose a
+                    # slightly slower idle control poll without changing moving-frame cadence;
+                    # default remains the manifest value for every historical caller.
+                    idle_poll = int(stream.get("idle_poll_interval_ms", manifest.poll_interval_ms))
+                    sleep(max(manifest.poll_interval_ms, idle_poll))
                 else:
                     # Wake at the next playback step rather than on a poll grid: there is
                     # nothing else for a stream to do between frames.

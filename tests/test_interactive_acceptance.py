@@ -1,0 +1,231 @@
+from __future__ import annotations
+
+from pathlib import Path
+import tempfile
+import unittest
+
+from host import activity_session, frame_stream
+from host.interactive_acceptance import (
+    AcceptanceManifest, OuterBudget, child_manifest, run_acceptance,
+)
+from host.interactive_pages import BufferedButtonEvents, RATE_ACTIVITY, RATE_STREAMING
+from host.slots_page import SlotsPage
+
+
+class FakeClock:
+    def __init__(self):
+        self.ms = 0
+    def __call__(self):
+        return self.ms
+    def sleep(self, ms):
+        self.ms += max(1, int(ms))
+
+
+class SequenceEvents:
+    def __init__(self, batches):
+        self.batches = list(batches)
+        self.index = 0
+    def poll(self):
+        if self.index >= len(self.batches):
+            return []
+        batch = self.batches[self.index]
+        self.index += 1
+        return list(batch)
+    @property
+    def done(self):
+        return self.index >= len(self.batches)
+
+
+class DryDashboard:
+    name = "dashboard"
+    rate_mode = RATE_ACTIVITY
+    def __init__(self):
+        self.enter_count = 0
+        self.exit_count = 0
+        self.frames = 0
+        self.background = 0
+        self.last_from_pulse = False
+    def on_enter(self): self.enter_count += 1
+    def on_exit(self): self.exit_count += 1
+    def render(self, _now): return bytes([0, 85, 0]) * 256
+    def handle_input(self, _event): return None
+    def frame_sent(self): self.frames += 1
+    def background_tick(self, _now): self.background += 1
+    def telemetry(self): return {"frames": self.frames, "background": self.background}
+
+
+class FakeHost:
+    def __init__(self, clock, *, ack_ms=55):
+        self.clock = clock
+        self.ack_ms = ack_ms
+        self.child = None
+        self.frames = 0
+        self.closed = False
+    def open(self, child):
+        self.child = child
+        return {"sessionId": child.experiment_id,
+                "sessionProfile": (child.raw.get("stream") or {}).get("session_profile", RATE_ACTIVITY)}
+    def send_frame(self, _rgb, expected_packet_sha256):
+        self.clock.sleep(self.ack_ms)
+        self.frames += 1
+        return {"ok": True, "imagePacketSha256": expected_packet_sha256, "ackPayloadHex": "0x00"}
+    def poll_reports(self): return []
+    def close(self, _reason):
+        self.closed = True
+        return {"closed": True}
+
+
+class InvalidatingHost(FakeHost):
+    def __init__(self, clock, invalidate_after=2):
+        super().__init__(clock)
+        self.invalidate_after = invalidate_after
+        self.reported = False
+    def poll_reports(self):
+        if self.frames >= self.invalidate_after and not self.reported:
+            self.reported = True
+            return [{"kind": "session_ended", "reason": "canvas_invalidated",
+                     "outcome": "stopped_yielded_to_stock"}]
+        return []
+
+
+def event(seq, kind, raw="Play"):
+    return {"epoch": "dry", "seq": seq, "type": kind, "raw_button": raw, "at_utc": None}
+
+
+def manifest(tmp: Path | None = None, *, max_sessions=28, max_frames=500):
+    path = (tmp or Path(".")) / "HF3.json"
+    return AcceptanceManifest(
+        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-001",
+        lifetime_seconds=90, max_child_sessions=max_sessions,
+        max_frames=max_frames,
+        max_tx_bytes=max_frames * frame_stream.worst_case_frame_tx_bytes(),
+        activity_child_max_frames=20, streaming_child_max_frames=120,
+        target_profile_cycles=10, host_dll_sha256="0" * 64,
+        button_probe_sha256={"a": "1" * 64, "b": "2" * 64},
+    )
+
+
+def choreography(cycles=10):
+    batches = []
+    seq = 0
+    for _ in range(cycles):
+        seq += 1; batches.append([event(seq, "nav_right", "Next")])
+        batches.append([])
+        for raw in ("Pause", "Play", "Pause", "Play"):
+            seq += 1; batches.append([event(seq, "lever_candidate", raw)])
+            batches.append([])
+        seq += 1; batches.append([event(seq, "nav_left", "Previous")])
+    batches.extend([[], []])
+    return batches
+
+
+class AcceptanceEnvelopeTests(unittest.TestCase):
+    def test_child_ids_and_profile_budgets_are_deterministic(self):
+        m = manifest()
+        high = child_manifest(m, 7, RATE_STREAMING, 500, m.max_tx_bytes, 90)
+        low = child_manifest(m, 8, RATE_ACTIVITY, 500, m.max_tx_bytes, 90)
+        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-001-S007")
+        self.assertEqual(high.max_frames, 120)
+        self.assertEqual(high.raw["stream"]["session_profile"], RATE_STREAMING)
+        self.assertEqual(low.max_frames, 20)
+        self.assertEqual(low.raw, {})
+
+    def test_outer_budget_counts_attempt_before_open_and_ack_after_success(self):
+        m = manifest(max_sessions=4, max_frames=2)
+        b = OuterBudget(m)
+        b.before_open(m.child_experiment_id(1), profile=RATE_ACTIVITY, at_monotonic=1.0)
+        self.assertEqual((b.child_attempts, b.child_opens, b.frames_acked), (1, 0, 0))
+        b.session_opened(m.child_experiment_id(1), at_monotonic=1.1)
+        b.frame_acked(100, child_experiment_id=m.child_experiment_id(1),
+                      profile=RATE_ACTIVITY, at_monotonic=1.2)
+        self.assertEqual((b.child_attempts, b.child_opens, b.frames_acked), (1, 1, 1))
+        self.assertEqual(b.ack_events[0]["application_bytes"], 100)
+
+    def test_ten_cycle_dry_run_meets_profile_target_and_correlates_inputs(self):
+        clock = FakeClock()
+        source = SequenceEvents(choreography())
+        mailbox = BufferedButtonEvents(source)
+        created = []
+        def factory():
+            host = FakeHost(clock)
+            created.append(host)
+            return host
+        dashboard = DryDashboard()
+        result = run_acceptance(
+            manifest(), [dashboard, SlotsPage(seed=20260910)], mailbox,
+            factory, clock, clock.sleep,
+            stop_requested=lambda: source.done and mailbox.pending_count == 0,
+        )
+        self.assertEqual(result["outcome"], "stopped_clean")
+        self.assertTrue(result["cycle_target_met"])
+        self.assertEqual(result["completed_profile_cycles"], 10)
+        self.assertEqual(result["orchestrator"]["profile_transitions"], 20)
+        self.assertEqual(result["budget"]["child_attempts"], 21)
+        self.assertEqual(result["budget"]["child_opens"], 21)
+        # 6 physical events/cycle (right, 3 stops, new-round lever, left), each represented once.
+        latency = result["input_to_first_later_ack"]
+        self.assertEqual(len(latency), 60)
+        self.assertEqual(len({(item["epoch"], item["seq"]) for item in latency}), 60)
+        self.assertTrue(all(item["first_later_ack_ms"] is not None for item in latency))
+        self.assertGreater(dashboard.background, 0)
+
+    def test_known_canvas_yield_reopens_same_slots_page_without_reset(self):
+        clock = FakeClock()
+        # no navigation: first child invalidates after two frames, second is externally stopped
+        source = SequenceEvents([[], [], [], []])
+        mailbox = BufferedButtonEvents(source)
+        slots = SlotsPage(seed=5)
+        hosts = [InvalidatingHost(clock, 2), FakeHost(clock)]
+        calls = {"n": 0}
+        # Run the generic orchestrator directly because HF-3 exact page set always starts dashboard.
+        from host.interactive_runtime import ProfilePageOrchestrator
+        from host.interactive_stream import run_interactive_stream
+        from host.interactive_pages import InteractivePageDriver
+        def runner(driver: InteractivePageDriver):
+            host = hosts[calls["n"]]
+            calls["n"] += 1
+            m = activity_session.SessionManifest(
+                experiment_id=f"T-{calls['n']}", lifetime_seconds=5, min_frame_interval_ms=40,
+                pulse_freshness_seconds=30, poll_interval_ms=10, max_frames=5,
+                max_application_packets=15, max_tx_bytes=5 * frame_stream.worst_case_frame_tx_bytes(),
+                ack_timeout_ms_per_frame=5000, activation_source="test", host_build_sha256="0" * 64,
+                code_hashes={}, stop_conditions=("x",), acceptance_profile=None,
+                path=Path("x"), raw={"stream": {"session_profile": RATE_STREAMING}},
+            )
+            if calls["n"] == 1:
+                return run_interactive_stream(m, {"session_profile": RATE_STREAMING, "playback_interval_ms": 40},
+                                              host, clock, clock.sleep, driver)
+            return {"terminal_reason": "operator_stop", "outcome": "stopped_clean"}
+        runtime = ProfilePageOrchestrator([slots], mailbox, {RATE_STREAMING: runner},
+                                          monotonic=lambda: clock.ms / 1000)
+        out = runtime.run(max_sessions=2)
+        self.assertEqual(out["status"], "stopped")
+        self.assertEqual(out["session_reclaims"], 1)
+        self.assertEqual(slots.enter_count, 1)
+        self.assertEqual(slots.exit_count, 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+class LiveCoordinatorStaticBoundaryTests(unittest.TestCase):
+    def test_outer_claim_is_after_final_host_idle_check(self):
+        source = (Path(__file__).resolve().parents[1] / "scripts/interactive_hf3.py").read_text()
+        live = source[source.index("def live_run()") : source.index("def main()")]
+        self.assertLess(live.index("host_idle_status(token)"), live.index("claim = hf3.claim_outer"))
+        self.assertIn("verify_button_probe=True", live)
+        self.assertNotIn("raw_send", live.lower())
+
+    def test_shell_refuses_before_stopping_runtime_when_not_execution_ready(self):
+        source = (Path(__file__).resolve().parents[1] / "scripts/run_interactive_hf3.sh").read_text()
+        self.assertLess(source.index("execution_ready"), source.index('systemctl --user stop "$SERVICE"'))
+        self.assertIn("HF3_RUNTIME006_CONNECTED_RESTORED", source)
+        self.assertIn("trap - EXIT INT TERM", source)
+
+    def test_all_live_behavior_surfaces_are_hash_frozen(self):
+        from host import interactive_acceptance as hf3
+        required = {
+            "cli_transport_sha256", "hf3_entry_sha256", "hf3_coordinator_sha256",
+            "pagination_input_sha256", "interactive_acceptance_sha256",
+        }
+        self.assertTrue(required <= set(hf3.HASHED_MODULES))
