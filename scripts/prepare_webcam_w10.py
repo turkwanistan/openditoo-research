@@ -26,11 +26,7 @@ MANIFEST = webcam_studio.POLICY_TEMPLATE if PRODUCT else ROOT / f"experiments/DA
 EVIDENCE = ROOT / (f"captures/{webcam_studio.POLICY_ID}-PREPARATION-2026-09-10.json" if PRODUCT
                    else f"captures/OPENDITOO-WEBCAM-W10-{ATTEMPT}-PREPARATION-2026-09-10.json")
 # The product installs where the Day1 Host does; a trial stages under C:\temp.
-# A candidate (not-yet-deployed Host) must never overwrite the installed Studio a live policy uses:
-# it stages to C:\temp and the cutover installs it.
-STAGE = (r"C:\temp\openditoo-webcam-studio-candidate" if PRODUCT and EXPECT_HOST
-         else r"C:\Users\Wanstation\AppData\Local\OpenDitoo\WebcamStudio" if PRODUCT
-         else r"C:\temp\openditoo-webcam-studio-w10")
+STAGE = r"C:\Users\Wanstation\AppData\Local\OpenDitoo\WebcamStudio" if PRODUCT else r"C:\temp\openditoo-webcam-studio-w10"
 INSTALLED_HOST = Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/Day1Host/OpenDitoo.Day1.Host.dll")
 
 
@@ -85,9 +81,7 @@ def main() -> None:
     for marker in ("STUDIO_SELFTEST_PASS", "TRANSFORM_SELFTEST_PASS", "ENCODER_SELFTEST_PASS"):
         if marker not in output:
             raise SystemExit("W10_PREP_MARKER_MISSING " + marker)
-    # A candidate Host is not the installed one, so reading /v1/status proves nothing about it; the
-    # cutover re-checks identity after deploying. Candidate prep therefore needs no token.
-    identity = "deferred_to_cutover" if EXPECT_HOST else host_identity()
+    identity = host_identity()
     if EXPECT_HOST:
         if not (PRODUCT and re.fullmatch(r"[0-9a-f]{64}", EXPECT_HOST)):
             raise SystemExit("W10_PREP_EXPECTED_HOST_INVALID")

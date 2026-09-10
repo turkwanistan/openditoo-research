@@ -11,9 +11,6 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
     <EnableSourceLink>false</EnableSourceLink>
-    <!-- ...nor on the checkout path. Linked sources live in sibling projects, so map their shared
-         parent (runtime/windows); their paths feed the PDB id stamped into the DLL. -->
-    <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))=/_/</PathMap>
   </PropertyGroup>
   <!-- Linked read-only. Every file below is hash-frozen by the parked W9B-007 manifest, so W10
        adds files and never edits these. -->
