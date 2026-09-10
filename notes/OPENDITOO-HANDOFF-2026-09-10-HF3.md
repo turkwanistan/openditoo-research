@@ -131,4 +131,6 @@ Evidence: `captures/OPENDITOO-INTERACTIVE-HF3-008-LIVE-2026-09-10.json`.
 - Hidden-page MCP collection runs on a joined worker thread.
 - Runtime 007's Host has first-frame 10 ms spacing.
 
+**Next session:** HF-4, per `notes/OPENDITOO-HF4-STANDING-SUCCESSOR-PLAN-2026-09-10.md` (build side-by-side offline; Runtime 008 needs its own grant).
+
 WSL trap: this worktree's `.git` link pointed at the WSL_MCP mount (`/run/wsl-mcp/workspace`). `git worktree repair` from the main checkout fixes it.
