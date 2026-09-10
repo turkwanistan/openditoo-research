@@ -56,4 +56,14 @@ Installing it changes the Host hash that Runtime 006 (`f7bd60d4…`) and webcam 
 
 The webcam shortcut is also affected (5/19 is mostly webcam launches), so this fix benefits the webcam product too.
 
+## Runtime 007 live → HF3-004 prepared, grant-ready, UNAUTHORIZED
+
+- **Runtime 007 + webcam 006:** live since 20:42Z. They run the first-frame-spacing Host `3faf520f…`. Evidence: `captures/OPENDITOO-RUNTIME-007-CUTOVER-2026-09-10.json`.
+- **Merge:** `main` is merged into this branch. Only the Runtime 007 template hash tests fail here, and only on `frame_stream_sha256` (this branch's HF-1 change, inherent until HF-4).
+- **HF3-004** (`experiments/DAY1-INTERACTIVE-HF3-004.json`, `e2a8790b…`) keeps HF3-003's single-session `PageCarousel` design and envelope (150 s / 32 / 1500, streaming only), bound to Host `3faf520f…`.
+  - Paced dry-run: 10 cycles, 21 sessions.
+  - Successor suite: 40/40.
+  - It is also the first on-device evidence for the first-frame fix. The Host ledger's open record still shows the profile spacing (0); the first-frame 10 ms exception lives in `SendFrame`.
+  - It needs the exact grant `Grant OPENDITOO-INTERACTIVE-HF3-004`. The run procedure is unchanged: operator-assist, then `grant`, `check`, and `run_interactive_hf3.sh`.
+
 WSL trap: this worktree's `.git` link pointed at the WSL_MCP mount (`/run/wsl-mcp/workspace`). `git worktree repair` from the main checkout fixes it.

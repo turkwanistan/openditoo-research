@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "kind": "interactive_page_acceptance",
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-004",
+  "milestone": "HF-3 one-use high-FPS interactive page / repeated profile-open acceptance",
+  "status": "prepared_unauthorized",
+  "predecessors": [
+    {
+      "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
+      "state": "consumed; transport clean (2 activity children, 13 frames) but 0 cycles: no operator GO cue",
+      "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-001-LIVE-2026-09-10.json"
+    },
+    {
+      "experiment_id": "OPENDITOO-INTERACTIVE-HF3-002",
+      "state": "consumed/unknown; first Right closed a 4.3 s-old activity child and the streaming child opened 29 ms later got IMAGE_RX_RECV_TIMEOUT; NO_RETRY on its first frame",
+      "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-002-LIVE-2026-09-10.json"
+    },
+    {
+      "experiment_id": "OPENDITOO-INTERACTIVE-HF3-003",
+      "state": "grant withdrawn before any claim or device I/O: streaming first-frame IMAGE_RX_RECV_TIMEOUT (5/19 vs 0/199 activity) made ~21 streaming opens on the f7bd60d4 Host near-certain to fail",
+      "evidence": "captures/OPENDITOO-STREAMING-FIRST-FRAME-TIMEOUT-ANALYSIS-2026-09-10.json"
+    }
+  ],
+  "host_change": "Runtime 007 Host 3faf520f...: every session's first frame uses the proven 10 ms packet spacing (later frames 0 ms). Note: the Host ledger's open record still reports the profile spacing (sendSpacingMs 0); the first-frame exception is in ActivitySessionHost.SendFrame. HF3-004 is also the first on-device evidence for that fix.",
+  "design_change": "Single streaming_ack_clock Host session per run: PageCarousel owns Dashboard (held to its ~200 ms low-rate cadence) and Slots; Left/Right change pixels only and never close the session. Remaining session boundaries are device-ended 0xBD/0x09 canvas yields (BTN-7: reopen clean in 46-69 ms) and none planned for rollover (child lifetime/frames = outer envelope).",
+  "objective": "Prove the generic Dashboard <-> streaming_ack_clock page boundary with the three-reel slots app, including one-reel-per-lever behavior and ten complete high-rate profile cycles without retry after ambiguity.",
+  "readiness": {
+    "offline_ready": true,
+    "grant_ready": true,
+    "blockers": [],
+    "required_followup": null
+  },
+  "target": {
+    "exact_unit_id": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012",
+    "model": "Ditoo Plus",
+    "rfcomm_channel": 1,
+    "target_override_enabled": false
+  },
+  "transport": {
+    "measured_endpoint": "Windows Classic RFCOMM channel 1",
+    "host_origin": "http://127.0.0.1:8796",
+    "one_controller": true,
+    "allowed_session_profiles": [
+      "streaming_ack_clock"
+    ],
+    "one_frame_in_flight": true,
+    "pipelining": false,
+    "raw_send_enabled": false,
+    "retry_after_ambiguous": false,
+    "known_canvas_reclaim": "Only exact canvas_invalidated with stopped_clean or stopped_yielded_to_stock may open a fresh child while the page remains selected; any other non-clean child outcome terminates the outer experiment."
+  },
+  "build": {
+    "source_checkpoint": "2590de91bf61ace0480c1d3e679e50ffb4f62f85",
+    "code_sha256": {
+      "interactive_acceptance_sha256": "12dddacd72b0d7507dc45f9293ab24f3d9b4ac668c96ddd2440426577abf4e8c",
+      "interactive_pages_sha256": "ea7840af6fa4a222542e8ad9ddec221d6dfb7604d272e438c4fcca922284b3a4",
+      "interactive_runtime_sha256": "f92c6f47ff328ceb3cee4501d72105e52baa7a605e8b92323c832ab3fc8b93c6",
+      "interactive_stream_sha256": "79886686439d1a602fb7af7ff61d09e6977a1c9c46b9df557d49903d98c5b2c2",
+      "interactive_activity_sha256": "96a8a75742a17ae04b00a9334b5a0ebc8e0b3ebf0b76d8983a9ee48220028df6",
+      "dashboard_page_sha256": "16bf19fd963b9c91548deb6aeed038e0514ee0a219bf6290b04ef0b042da20f4",
+      "slots_page_sha256": "0f6116af8b56ad74295c1637f88dd6a857b80a3855e1f61dfef3558f48dc158b",
+      "activity_lightning_sha256": "e264db92df9416e2fa004e0101eccb37d0e9bb66b7f86d45c734e01fdebb4714",
+      "activity_lightning_renderer_sha256": "74389183ca694d46822eefe41ac941783bbd0ac70a5067d410dc827fc7c3f436",
+      "frame_stream_sha256": "880970a6d494197b78adfeac0309cb2d86ce447dd6bb826c7ae5b0c270af7fa6",
+      "activity_session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+      "activity_render_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+      "activity_ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+      "mcp_activity_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+      "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+      "pagination_input_sha256": "b2e31de5399dd8bf8bf83a37ff4f20d0b9201de1a82fd5c6d7736326d775db91",
+      "cli_transport_sha256": "07ebf960fb2208ddf8afe34dedc52d5275645584e41bae20fa8a6a063d821119",
+      "hf3_entry_sha256": "2b5f8c0838159db1f7000d828d3f164809561b5e36d4a6e36fd8206fc4b03cc3",
+      "hf3_coordinator_sha256": "c5b847d79d5c4ceaded1132823ed3e0e708ce23b8952acb58028802d8e0a6215"
+    },
+    "host_dll_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+    "button_probe_sha256": {
+      "/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.exe": "79521fba144fac4f4922b95236e4a3bedd62a49f1a5ede22f2b71d9909471252",
+      "/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.dll": "d85c12982f94893362c10faecae789f7421d4125663f2b9ce17b0eb1afa3a4b8"
+    },
+    "button_probe_hash_source": "accepted Runtime 006 policy/template",
+    "button_probe_verified_now": true
+  },
+  "acceptance": {
+    "lifetime_seconds": 150,
+    "max_child_sessions": 32,
+    "max_total_frames": 1500,
+    "max_total_tx_bytes": 1581000,
+    "activity_child_max_frames": 20,
+    "streaming_child_max_frames": 1500,
+    "target_profile_cycles": 10,
+    "pages": [
+      {
+        "name": "dashboard",
+        "page_rate": "low (<=5 fps change-only, inside the streaming session)",
+        "renderer": "accepted MCP dashboard + successor lightning pulse"
+      },
+      {
+        "name": "slots",
+        "page_rate": "streaming_ack_clock",
+        "renderer": "procedural three-reel slots; ACK-advanced motion"
+      }
+    ],
+    "long_lever_holds_mapped": false,
+    "manual_choreography": [
+      "Start from a healthy Runtime 006 dashboard; coordinator suspends it and verifies Host idle.",
+      "scripts/hf3_operator_assist.py (no Ditoo/Host I/O) shows a topmost Windows GO popup when the first HF-3 child opens; no audio cue, because the Ditoo is also a Windows audio endpoint.",
+      "HF-3 opens ONE streaming session showing the Dashboard; Right selects Slots in the same session.",
+      "Confirm three reels spin; three short lever pulls stop reel 1, then 2, then 3.",
+      "One more short lever starts a new round.",
+      "Use Left/Right to complete ten Dashboard <-> Slots page cycles total (pixel-only paging).",
+      "On the final Dashboard the operator-assist shows a FINAL popup, makes one genuine read-only WSL_MCP run_command call, waits for the lightning, then SIGINTs the runner (operator_stop).",
+      "Coordinator restores Runtime 006 and verifies connected."
+    ],
+    "specific_regression_target": "No IMAGE_RX_RECV_TIMEOUT or other ambiguous failure on/after the fourth streaming-profile reopen."
+  },
+  "stop_policy": {
+    "stop_immediately_on": [
+      "any Host open/send/refusal/ACK timeout not reported as the exact known canvas-invalidated outcome",
+      "outer 150 second lifetime",
+      "outer 1500 ACKed-frame / derived byte budget",
+      "32 attempted Host child sessions",
+      "operator Ctrl+C"
+    ],
+    "on_ambiguous_outcome_resend": false,
+    "automatic_retry": false,
+    "automatic_reconnect_after_ambiguous": false,
+    "restore_runtime006_after_terminal": true
+  },
+  "persistence_analysis": {
+    "expected_effect": "volatile display/game state only",
+    "forbidden": "firmware/update/gallery persistence, raw send, target selection, command enumeration, pipelining"
+  },
+  "authority": {
+    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-004",
+    "required_grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-004",
+    "transmission_authorized": false,
+    "authorization_consumed": false,
+    "granted_by": null,
+    "grant_text": null,
+    "expires_at": null,
+    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 32 child session attempts (one planned session; the rest only device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately."
+  }
+}
