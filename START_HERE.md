@@ -7,7 +7,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 **Current handoff / owner-selected objective (2026-09-10): physical button navigation + pagination.** Read `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md` first, then `notes/OPENDITOO-BUTTON-AVRCP-RESEARCH-2026-09-10.md` and `notes/OPENDITOO-BUTTON-AVRCP-PAGINATION-PLAN-2026-09-10.md`. A ready-to-paste local-Claude executor prompt is `notes/OPENDITOO-BUTTONS-CLAUDE-KICKOFF-PROMPT-2026-09-10.md`. The preserved M7 HCI capture has been re-analysed as containing left/right/lever AVRCP events on AVCTP PSM `0x0017`; the immediate route is offline AVRCP reproduction -> receive-only Windows ButtonProbe -> exact Windows physical proof -> two-page Dashboard <-> animation pagination. Do not modify the Runtime 005 Host or pursue firmware/MassBoot for these controls. The W10 material below is the accepted prior product baseline, not the active objective.
 
 0. **Prior accepted product baseline:** after the current button handoff/plan, use `notes/OPENDITOO-HANDOFF-2026-09-10-W10.md` selectively — W10 is CLOSED: on-demand webcam (desktop shortcut,
-   policy `OPENDITOO-WEBCAM-PRODUCT-004`) and dashboard Runtime 005 are live. The W9 handoff below is history.
+   policy `OPENDITOO-WEBCAM-PRODUCT-005`, proven 6,307-frame run) and dashboard Runtime 005 (headless Host) are live. The W9 handoff below is history.
    Previous: `notes/OPENDITOO-HANDOFF-2026-09-10-W9.md`. W8 is closed PASS and
    W9A is done offline. **W9B is DEFERRED by owner decision (2026-09-10)** — do not re-propose, re-prepare
    or execute it; 007 stays prepared, grant-ready and unauthorized so revival costs one grant. Panel refresh

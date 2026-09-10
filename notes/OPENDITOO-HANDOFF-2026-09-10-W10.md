@@ -47,8 +47,8 @@ evidence; a long clean run closes it.
 
 ## Open, in rough value order
 
-1. Long webcam session on Runtime 005 (evidence for the pacing fix) — happens with normal use.
-2. Host console-window outage: confirm cause with the owner; windowless launch if confirmed.
+1. ~~Long webcam session~~ — CLOSED (launch `8de31b4a`, 6,307 frames). ~~Host console window~~ — CLOSED (headless task).
+2. Young-link guard (30 s) is a mitigation on a moderate-confidence theory; watch for any further `IMAGE_RX_RECV_TIMEOUT`.
 3. Pagination (owner's next product idea) — would replace the shortcut's suspend/restore.
 4. Older items unchanged: reboot/logon autostart observation, `product-status connecting` defect,
    genuine source outage never tested end to end. W9B stays deferred; >18.46 fps stays closed
@@ -90,3 +90,13 @@ Policy 005 prepared against the deployed Host; awaiting `Grant OPENDITOO-WEBCAM-
 
 **Webcam 005 granted 2026-09-10** (`Grant OPENDITOO-WEBCAM-PRODUCT-005`): 004 revoked, 005 local policy materialized,
 `policy-check` PASS, dashboard `connected`. A >5 min launch is the evidence that closes the pacing issue.
+
+## Final — pacing issue CLOSED (2026-09-10 15:18–15:25Z)
+
+Launch `8de31b4a` under webcam 005 on Runtime 005: **6,307 frames / 18,921 packets / 6,416,707 bytes in
+6 min 24 s**, 16.42 fps ACKed transport, ended by the owner's Stop: `operator_stop` / `stopped_clean`,
+Host ledger identical, launch summary `stopped_clean`, dashboard restored `connected`. Past both earlier
+failure points (3,631 and 3,513 frames). Owner: "it works now".
+
+End state: dashboard Runtime 005 (Host `f7bd60d4…`, headless task), webcam policy 005 granted, shortcut
+live. Remaining open items are those listed above (pagination next; older low-priority items unchanged).
