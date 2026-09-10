@@ -25,7 +25,7 @@ from host.interactive_stream import run_interactive_stream
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = 1
 KIND = "interactive_page_acceptance"
-EXPERIMENT_ID = "OPENDITOO-INTERACTIVE-HF3-001"
+EXPERIMENT_ID = "OPENDITOO-INTERACTIVE-HF3-002"
 REQUIRED_GRANT_TEXT = f"Grant {EXPERIMENT_ID}"
 HOST_BUILD = activity_session.HOST_BUILD_DLL
 BUTTON_PROBE_EXE = Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.exe")
@@ -160,10 +160,10 @@ def load_manifest(path: Path, *, verify_hashes: bool = True,
     activity_child = acceptance.get("activity_child_max_frames")
     streaming_child = acceptance.get("streaming_child_max_frames")
     cycles = acceptance.get("target_profile_cycles")
-    _require(isinstance(lifetime, int) and 1 <= lifetime <= 120, "ACCEPTANCE_LIFETIME_INVALID")
-    _require(isinstance(max_sessions, int) and 4 <= max_sessions <= 32,
+    _require(isinstance(lifetime, int) and 1 <= lifetime <= 180, "ACCEPTANCE_LIFETIME_INVALID")
+    _require(isinstance(max_sessions, int) and 4 <= max_sessions <= 48,
              "ACCEPTANCE_SESSION_BUDGET_INVALID")
-    _require(isinstance(max_frames, int) and 1 <= max_frames <= 500,
+    _require(isinstance(max_frames, int) and 1 <= max_frames <= 1500,
              "ACCEPTANCE_FRAME_BUDGET_INVALID")
     _require(isinstance(max_tx, int) and max_tx == max_frames * frame_stream.worst_case_frame_tx_bytes(),
              "ACCEPTANCE_TX_BUDGET_NOT_DERIVED")

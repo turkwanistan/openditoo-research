@@ -1,0 +1,371 @@
+{
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
+  "captured_at": "2026-09-10T19:40:00Z",
+  "environment": "normal local WSL2 with /mnt/c + powershell.exe interop (not WSL_MCP)",
+  "pre_grant_verification": {
+    "offline_verifier": "37/37 PASS",
+    "check_full_probe": "grant_ready=true, environment_blockers=[]",
+    "manifest_sha256_before_grant": "7ad8ef4d3eba00e8c4170757868be55e29b046e72b2dd448661bad0ca4184a23",
+    "manifest_sha256_after_grant": "285b3d2f8dab78723e7234dd0c4a6502a1a51fe9b9b9ad18edf970e12b3d5aba",
+    "hashed_code_vs_65723e6": "no drift",
+    "outer_claim_before": null,
+    "button_probe_installed_sha256": {
+      "exe": "79521fba144fac4f4922b95236e4a3bedd62a49f1a5ede22f2b71d9909471252",
+      "dll": "d85c12982f94893362c10faecae789f7421d4125663f2b9ce17b0eb1afa3a4b8"
+    },
+    "host_installed_dll_sha256": "f7bd60d4a56de4f4740bd84f7c645e201ddfd7ce29bf6c0f1e7512b1b67cd34e",
+    "host_status": {
+      "target": "11:75:58:CE:DE:C7",
+      "targetBound": true,
+      "rawSendEnabled": false,
+      "bind": "127.0.0.1:8796"
+    },
+    "runtime006_before": {
+      "status": "connected",
+      "last_error": null,
+      "run_nonce": "d4613634"
+    },
+    "second_controller": "none (only Runtime 006 session; no webcam Studio process)"
+  },
+  "grant": {
+    "text": "Grant OPENDITOO-INTERACTIVE-HF3-001",
+    "given_by": "owner (earlier, recorded in GRANT-BLOCKED capture)",
+    "materialized_at": "2026-09-10T19:33:23Z"
+  },
+  "outer_claim": {
+    "claimed_at": "2026-09-10T19:34:09.627117Z",
+    "code_hashes": {
+      "activity_lightning_renderer_sha256": "74389183ca694d46822eefe41ac941783bbd0ac70a5067d410dc827fc7c3f436",
+      "activity_lightning_sha256": "e264db92df9416e2fa004e0101eccb37d0e9bb66b7f86d45c734e01fdebb4714",
+      "activity_render_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+      "activity_session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+      "activity_ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+      "cli_transport_sha256": "07ebf960fb2208ddf8afe34dedc52d5275645584e41bae20fa8a6a063d821119",
+      "dashboard_page_sha256": "16bf19fd963b9c91548deb6aeed038e0514ee0a219bf6290b04ef0b042da20f4",
+      "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+      "frame_stream_sha256": "880970a6d494197b78adfeac0309cb2d86ce447dd6bb826c7ae5b0c270af7fa6",
+      "hf3_coordinator_sha256": "0bb4a4bab10ea17452bc0c0216f1a7804e16128f4a67faebf55d206b162a74b4",
+      "hf3_entry_sha256": "6f4f353d0b6df8ec5a0c5b1c2908c1f89a36ee9c119c6d90e39596f1f72e199a",
+      "interactive_acceptance_sha256": "075018af40959ac68be182087c5323c4578e366caab4e2981d19501fd14932ea",
+      "interactive_activity_sha256": "96a8a75742a17ae04b00a9334b5a0ebc8e0b3ebf0b76d8983a9ee48220028df6",
+      "interactive_pages_sha256": "7cf9e04f4c0fffcede49d03d0e7d9e73a1e51e75b2fc30d5a3373a45f21d8cdf",
+      "interactive_runtime_sha256": "f92c6f47ff328ceb3cee4501d72105e52baa7a605e8b92323c832ab3fc8b93c6",
+      "interactive_stream_sha256": "79886686439d1a602fb7af7ff61d09e6977a1c9c46b9df557d49903d98c5b2c2",
+      "mcp_activity_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+      "pagination_input_sha256": "fd4a2437667b5d955736995a55dcbad11fe73686c2be8e61746b5bfd7bc288ca",
+      "slots_page_sha256": "0f6116af8b56ad74295c1637f88dd6a857b80a3855e1f61dfef3558f48dc158b"
+    },
+    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
+    "host_build_sha256": "f7bd60d4a56de4f4740bd84f7c645e201ddfd7ce29bf6c0f1e7512b1b67cd34e",
+    "manifest_file": "/home/wan/Projects/openditoo-research/.openditoo-local/worktrees/high-fps-interactive-pages/experiments/DAY1-INTERACTIVE-HF3-001.json",
+    "manifest_sha256": "285b3d2f8dab78723e7234dd0c4a6502a1a51fe9b9b9ad18edf970e12b3d5aba",
+    "outcome": "stopped_clean",
+    "state": "finished",
+    "terminal_reason": "lifetime_expired"
+  },
+  "result": {
+    "terminal_reason": "lifetime_expired",
+    "outcome": "stopped_clean",
+    "elapsed_ms": 90015,
+    "completed_profile_cycles": 0,
+    "cycle_target_met": false
+  },
+  "budget": {
+    "child_attempts": 2,
+    "child_opens": 2,
+    "frames_acked": 13,
+    "tx_bytes_acked": 2534
+  },
+  "orchestrator": {
+    "status": "stopped",
+    "current_page": "dashboard",
+    "current_rate_mode": "activity",
+    "session_sequence": 3,
+    "page_transitions": 0,
+    "profile_transitions": 0,
+    "session_reclaims": 0,
+    "buffered_inputs": 0,
+    "last_error": null,
+    "page_state": {
+      "pulse_step": null,
+      "pulse_sources": [],
+      "next_collect_ms": 90508,
+      "enter_count": 1,
+      "exit_count": 0,
+      "background_polls": 0,
+      "hidden_pulses_dropped": 0
+    },
+    "recent_sessions": [
+      {
+        "sequence": 1,
+        "page": "dashboard",
+        "rate_mode": "activity",
+        "terminal_reason": "lifetime_expired",
+        "outcome": "stopped_clean",
+        "navigation_direction": null
+      },
+      {
+        "sequence": 2,
+        "page": "dashboard",
+        "rate_mode": "activity",
+        "terminal_reason": "lifetime_expired",
+        "outcome": "stopped_clean",
+        "navigation_direction": null
+      },
+      {
+        "sequence": 3,
+        "page": "dashboard",
+        "rate_mode": "activity",
+        "terminal_reason": "outer_lifetime_expired",
+        "outcome": "stopped_clean",
+        "navigation_direction": null
+      }
+    ]
+  },
+  "host_ledger": [
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T19:34:09.6636502+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-001-S001",
+      "sessionId": "280638e2220c",
+      "detail": {
+        "lifetimeSeconds": 60,
+        "minIntervalMs": 150,
+        "frameBudget": 20,
+        "txByteBudget": 21080,
+        "sessionProfile": "activity",
+        "sendSpacingMs": 10
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T19:35:09.6306633+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-001-S001",
+      "sessionId": "280638e2220c",
+      "detail": {
+        "reason": "lifetime_expired",
+        "outcome": "stopped_clean",
+        "detail": "",
+        "framesSent": 12,
+        "packetsSent": 36,
+        "txBytesSent": 2340,
+        "displayState": "ours_last_acked"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T19:35:09.6587614+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-001-S002",
+      "sessionId": "7a85bc266a1d",
+      "detail": {
+        "lifetimeSeconds": 30,
+        "minIntervalMs": 150,
+        "frameBudget": 20,
+        "txByteBudget": 21080,
+        "sessionProfile": "activity",
+        "sendSpacingMs": 10
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T19:35:39.6367151+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-001-S002",
+      "sessionId": "7a85bc266a1d",
+      "detail": {
+        "reason": "lifetime_expired",
+        "outcome": "stopped_clean",
+        "detail": "",
+        "framesSent": 1,
+        "packetsSent": 3,
+        "txBytesSent": 194,
+        "displayState": "ours_last_acked"
+      }
+    }
+  ],
+  "client_host_agreement": "exact: 13 frames / 39 packets / 2534 application bytes",
+  "ack_events_monotonic_s": [
+    0.319,
+    2.417,
+    2.648,
+    2.855,
+    3.11,
+    3.249,
+    3.447,
+    3.733,
+    3.897,
+    4.147,
+    4.409,
+    4.617,
+    60.169
+  ],
+  "probe_events": [
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 1,
+      "at_monotonic_ms": 38060203.222,
+      "at_utc": "2026-09-10T19:34:09.5504660Z",
+      "type": "probe_started",
+      "pid": 10544,
+      "seconds": 0,
+      "smtc": {
+        "acquired": true,
+        "playback_status": "Playing",
+        "status_mode": "mirror"
+      },
+      "rawinput_registered": true,
+      "merging": "none; every source logged separately"
+    },
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 2,
+      "at_monotonic_ms": 38063349.931,
+      "at_utc": "2026-09-10T19:34:12.6970393Z",
+      "type": "event",
+      "source": "rawinput_consumer",
+      "raw_button": "04EA00",
+      "normalized_candidate": null
+    },
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 3,
+      "at_monotonic_ms": 38063350.737,
+      "at_utc": "2026-09-10T19:34:12.6978435Z",
+      "type": "event",
+      "source": "rawinput_consumer",
+      "raw_button": "040000",
+      "normalized_candidate": null
+    },
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 4,
+      "at_monotonic_ms": 38063475.564,
+      "at_utc": "2026-09-10T19:34:12.8226715Z",
+      "type": "event",
+      "source": "rawinput_consumer",
+      "raw_button": "04EA00",
+      "normalized_candidate": null
+    },
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 5,
+      "at_monotonic_ms": 38063477.441,
+      "at_utc": "2026-09-10T19:34:12.8245483Z",
+      "type": "event",
+      "source": "rawinput_consumer",
+      "raw_button": "040000",
+      "normalized_candidate": null
+    },
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 6,
+      "at_monotonic_ms": 38063681.534,
+      "at_utc": "2026-09-10T19:34:13.0286417Z",
+      "type": "event",
+      "source": "rawinput_consumer",
+      "raw_button": "04EA00",
+      "normalized_candidate": null
+    },
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 7,
+      "at_monotonic_ms": 38063683.745,
+      "at_utc": "2026-09-10T19:34:13.0308535Z",
+      "type": "event",
+      "source": "rawinput_consumer",
+      "raw_button": "040000",
+      "normalized_candidate": null
+    },
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 8,
+      "at_monotonic_ms": 38063887.562,
+      "at_utc": "2026-09-10T19:34:13.2346687Z",
+      "type": "event",
+      "source": "rawinput_consumer",
+      "raw_button": "04EA00",
+      "normalized_candidate": null
+    },
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 9,
+      "at_monotonic_ms": 38063889.42,
+      "at_utc": "2026-09-10T19:34:13.2365259Z",
+      "type": "event",
+      "source": "rawinput_consumer",
+      "raw_button": "040000",
+      "normalized_candidate": null
+    },
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 10,
+      "at_monotonic_ms": 38064534.535,
+      "at_utc": "2026-09-10T19:34:13.8816424Z",
+      "type": "event",
+      "source": "rawinput_consumer",
+      "raw_button": "04EA00",
+      "normalized_candidate": null
+    },
+    {
+      "epoch": "e868c1feaa8f",
+      "seq": 11,
+      "at_monotonic_ms": 38064536.468,
+      "at_utc": "2026-09-10T19:34:13.8835752Z",
+      "type": "event",
+      "source": "rawinput_consumer",
+      "raw_button": "040000",
+      "normalized_candidate": null
+    }
+  ],
+  "physical_inputs": {
+    "smtc_events": 0,
+    "ignored_keyboard_rawinput": "5x consumer 0xEA (Volume Down) from keyboard VID_3434, 19:34:12-13Z; correctly not typed input"
+  },
+  "image_rx_recv_timeout": false,
+  "reclaims": 0,
+  "reconnects": 0,
+  "retries": 0,
+  "runtime006_restore": {
+    "coordinator": "HF3_RUNTIME006_SERVICE_RESTORED, HF3_RUNTIME006_CONNECTED_RESTORED, RC=0",
+    "independent": {
+      "status": "connected",
+      "last_error": null,
+      "run_nonce": "8cf02a97",
+      "session_opened_at": "2026-09-10T19:35:39.907625Z"
+    },
+    "post_restore_owner_check": "owner pressed Ditoo RIGHT under Runtime 006 -> switched page (SMTC path healthy)"
+  },
+  "smtc_snapshot_after": {
+    "current": "OpenDitoo.ButtonProbe.exe",
+    "sessions": [
+      "Chrome (OpenTivoo TV tab) Playing",
+      "OpenDitoo.ButtonProbe.exe Playing"
+    ]
+  },
+  "operator_assist": {
+    "watcher": "scratch hf3_watch.py (no Ditoo/Host I/O): would chime + fire one read-only WSL_MCP run_command on final Dashboard; never triggered (no navigation)",
+    "log": [
+      {
+        "event": "runner_seen",
+        "pid": 1637455,
+        "at_utc": "2026-09-10T19:34:09.355089Z"
+      },
+      {
+        "event": "runner_exited_before_trigger",
+        "at_utc": "2026-09-10T19:35:39.697989Z"
+      }
+    ]
+  },
+  "owner_report": "Didn't press in time - no cue marked when the 90 s window opened (Dashboard looks identical before/after suspension).",
+  "verdict": {
+    "transport": "CLEAN (stopped_clean, lifetime_expired, exact ledger agreement, restore verified)",
+    "acceptance": "NOT MET - 0 of 10 profile cycles; no slots, reopen-stress or input-latency evidence",
+    "visual": "NOT OBSERVED (a pulse-shaped 10-frame ACK run at t~2.4 s, likely concurrent genuine WSL_MCP activity, was not owner-confirmed)",
+    "root_cause": "operator start cue missing from the coordinator; not a transport/probe fault",
+    "design_findings": [
+      "No audible/visible GO cue when the outer window opens.",
+      "Envelope under-sized for human pace: 500 ACKed frames at ~18 fps spinning is ~28 s of Slots; 28 child attempts with the BTN-7 every-other-pull 0xBD reclaim is ~6 cycles; dry-run FakeHost models neither.",
+      "Dashboard child renewal at 60 s is an extra child attempt."
+    ],
+    "replay": "FORBIDDEN - HF3-001 consumed; retry requires a fresh id/manifest/grant"
+  }
+}

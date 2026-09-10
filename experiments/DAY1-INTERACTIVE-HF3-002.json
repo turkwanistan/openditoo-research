@@ -1,15 +1,21 @@
 {
   "schema_version": 1,
   "kind": "interactive_page_acceptance",
-  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-002",
   "milestone": "HF-3 one-use high-FPS interactive page / repeated profile-open acceptance",
-  "status": "completed_transport_clean",
+  "status": "prepared_unauthorized",
+  "predecessor": {
+    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
+    "state": "consumed; transport clean (2 activity children, 13 frames) but 0 cycles: no operator GO cue",
+    "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-001-LIVE-2026-09-10.json",
+    "changes": "GO/FINAL popups via operator-assist; envelope re-sized for human pace plus the BTN-7 every-other-pull 0xBD reclaim (paced dry-run proves 10 cycles fit)"
+  },
   "objective": "Prove the generic Dashboard <-> streaming_ack_clock page boundary with the three-reel slots app, including one-reel-per-lever behavior and ten complete high-rate profile cycles without retry after ambiguity.",
   "readiness": {
     "offline_ready": true,
     "grant_ready": true,
     "blockers": [],
-    "required_followup": "Re-run this preparation from normal local WSL where /mnt/c is visible; installed ButtonProbe hashes must match accepted Runtime 006 before grant."
+    "required_followup": null
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -33,9 +39,9 @@
     "known_canvas_reclaim": "Only exact canvas_invalidated with stopped_clean or stopped_yielded_to_stock may open a fresh child while the page remains selected; any other non-clean child outcome terminates the outer experiment."
   },
   "build": {
-    "source_checkpoint": "65723e66182ee22373d4c39b50c8730c348c51ac",
+    "source_checkpoint": "96beaffa9cd76890a8d7e594644ab6c13196a84c",
     "code_sha256": {
-      "interactive_acceptance_sha256": "075018af40959ac68be182087c5323c4578e366caab4e2981d19501fd14932ea",
+      "interactive_acceptance_sha256": "a061bd1214499d0d3b607549cadb4c871a398ea90cdd27243a8e1d325f0cf1b2",
       "interactive_pages_sha256": "7cf9e04f4c0fffcede49d03d0e7d9e73a1e51e75b2fc30d5a3373a45f21d8cdf",
       "interactive_runtime_sha256": "f92c6f47ff328ceb3cee4501d72105e52baa7a605e8b92323c832ab3fc8b93c6",
       "interactive_stream_sha256": "79886686439d1a602fb7af7ff61d09e6977a1c9c46b9df557d49903d98c5b2c2",
@@ -52,7 +58,7 @@
       "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
       "pagination_input_sha256": "fd4a2437667b5d955736995a55dcbad11fe73686c2be8e61746b5bfd7bc288ca",
       "cli_transport_sha256": "07ebf960fb2208ddf8afe34dedc52d5275645584e41bae20fa8a6a063d821119",
-      "hf3_entry_sha256": "6f4f353d0b6df8ec5a0c5b1c2908c1f89a36ee9c119c6d90e39596f1f72e199a",
+      "hf3_entry_sha256": "d266a5d17d4534728c78e3fb5ac16247456089059eef29599665c4f22049e628",
       "hf3_coordinator_sha256": "0bb4a4bab10ea17452bc0c0216f1a7804e16128f4a67faebf55d206b162a74b4"
     },
     "host_dll_sha256": "f7bd60d4a56de4f4740bd84f7c645e201ddfd7ce29bf6c0f1e7512b1b67cd34e",
@@ -61,15 +67,15 @@
       "/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.dll": "d85c12982f94893362c10faecae789f7421d4125663f2b9ce17b0eb1afa3a4b8"
     },
     "button_probe_hash_source": "accepted Runtime 006 policy/template",
-    "button_probe_verified_now": false
+    "button_probe_verified_now": true
   },
   "acceptance": {
-    "lifetime_seconds": 90,
-    "max_child_sessions": 28,
-    "max_total_frames": 500,
-    "max_total_tx_bytes": 527000,
+    "lifetime_seconds": 150,
+    "max_child_sessions": 48,
+    "max_total_frames": 1500,
+    "max_total_tx_bytes": 1581000,
     "activity_child_max_frames": 20,
-    "streaming_child_max_frames": 120,
+    "streaming_child_max_frames": 400,
     "target_profile_cycles": 10,
     "pages": [
       {
@@ -86,21 +92,22 @@
     "long_lever_holds_mapped": false,
     "manual_choreography": [
       "Start from a healthy Runtime 006 dashboard; coordinator suspends it and verifies Host idle.",
+      "scripts/hf3_operator_assist.py (no Ditoo/Host I/O) shows a topmost Windows GO popup when the first HF-3 child opens; no audio cue, because the Ditoo is also a Windows audio endpoint.",
       "HF-3 opens its own dashboard child; Right selects slots.",
       "Confirm three reels spin; three short lever pulls stop reel 1, then 2, then 3.",
       "One more short lever starts a new round.",
       "Use Left/Right to complete ten Dashboard <-> Slots high-rate profile cycles total.",
-      "Return to Dashboard, cause one genuine MCP activity event and visually inspect the lightning strike.",
-      "Ctrl+C after the tenth cycle/pulse; coordinator restores Runtime 006."
+      "On the final Dashboard the operator-assist shows a FINAL popup, makes one genuine read-only WSL_MCP run_command call, waits for the lightning, then SIGINTs the runner (operator_stop).",
+      "Coordinator restores Runtime 006 and verifies connected."
     ],
     "specific_regression_target": "No IMAGE_RX_RECV_TIMEOUT or other ambiguous failure on/after the fourth streaming-profile reopen."
   },
   "stop_policy": {
     "stop_immediately_on": [
       "any Host open/send/refusal/ACK timeout not reported as the exact known canvas-invalidated outcome",
-      "outer 90 second lifetime",
-      "outer 500 ACKed-frame / derived byte budget",
-      "28 attempted Host child sessions",
+      "outer 150 second lifetime",
+      "outer 1500 ACKed-frame / derived byte budget",
+      "48 attempted Host child sessions",
       "operator Ctrl+C"
     ],
     "on_ambiguous_outcome_resend": false,
@@ -113,14 +120,13 @@
     "forbidden": "firmware/update/gallery persistence, raw send, target selection, command enumeration, pipelining"
   },
   "authority": {
-    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
-    "required_grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-001",
+    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-002",
+    "required_grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-002",
     "transmission_authorized": false,
-    "authorization_consumed": true,
-    "granted_by": "operator, in-session",
-    "grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-001",
-    "expires_at": "2026-09-10T20:03:23.326136Z",
-    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 90 s, 28 child session attempts, 500 ACKed frames and derived byte ceiling; only activity + streaming_ack_clock profiles; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
-    "consumed_at": "2026-09-10T19:35:39.643950Z"
+    "authorization_consumed": false,
+    "granted_by": null,
+    "grant_text": null,
+    "expires_at": null,
+    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 48 child session attempts, 1500 ACKed frames and derived byte ceiling; only activity + streaming_ack_clock profiles; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately."
   }
 }

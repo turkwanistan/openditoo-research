@@ -92,14 +92,15 @@ def event(seq, kind, raw="Play"):
     return {"epoch": "dry", "seq": seq, "type": kind, "raw_button": raw, "at_utc": None}
 
 
-def manifest(tmp: Path | None = None, *, max_sessions=28, max_frames=500):
+def manifest(tmp: Path | None = None, *, max_sessions=28, max_frames=500, lifetime=90,
+             streaming_child=120):
     path = (tmp or Path(".")) / "HF3.json"
     return AcceptanceManifest(
-        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-001",
-        lifetime_seconds=90, max_child_sessions=max_sessions,
+        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-002",
+        lifetime_seconds=lifetime, max_child_sessions=max_sessions,
         max_frames=max_frames,
         max_tx_bytes=max_frames * frame_stream.worst_case_frame_tx_bytes(),
-        activity_child_max_frames=20, streaming_child_max_frames=120,
+        activity_child_max_frames=20, streaming_child_max_frames=streaming_child,
         target_profile_cycles=10, host_dll_sha256="0" * 64,
         button_probe_sha256={"a": "1" * 64, "b": "2" * 64},
     )
@@ -124,7 +125,7 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         m = manifest()
         high = child_manifest(m, 7, RATE_STREAMING, 500, m.max_tx_bytes, 90)
         low = child_manifest(m, 8, RATE_ACTIVITY, 500, m.max_tx_bytes, 90)
-        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-001-S007")
+        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-002-S007")
         self.assertEqual(high.max_frames, 120)
         self.assertEqual(high.raw["stream"]["session_profile"], RATE_STREAMING)
         self.assertEqual(low.max_frames, 20)
@@ -168,6 +169,29 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         self.assertEqual(len({(item["epoch"], item["seq"]) for item in latency}), 60)
         self.assertTrue(all(item["first_later_ack_ms"] is not None for item in latency))
         self.assertGreater(dashboard.background, 0)
+
+    def _paced(self, m):
+        from scripts import interactive_hf3 as entry
+        clock, invalidations = FakeClock(), []
+        schedule, last_left = entry.paced_schedule(m.target_profile_cycles)
+        source = entry.PacedEvents(schedule, clock, invalidations)
+        return run_acceptance(
+            m, [DryDashboard(), SlotsPage(seed=7)], BufferedButtonEvents(source),
+            lambda: entry.FakeHost(clock, invalidations), clock, clock.sleep,
+            stop_requested=lambda: clock() >= last_left + 12000)
+
+    def test_hf3_002_envelope_fits_ten_human_paced_cycles_with_lever_reclaims(self):
+        r = self._paced(manifest(max_sessions=48, max_frames=1500, lifetime=150, streaming_child=400))
+        self.assertEqual((r["outcome"], r["terminal_reason"]), ("stopped_clean", "operator_stop"))
+        self.assertTrue(r["cycle_target_met"])
+        self.assertEqual(r["orchestrator"]["session_reclaims"], 20)
+        self.assertLessEqual(r["budget"]["child_attempts"], 48 - 5)
+        self.assertTrue(all(i["first_later_ack_ms"] is not None for i in r["input_to_first_later_ack"]))
+
+    def test_hf3_001_envelope_could_not_fit_ten_human_paced_cycles(self):
+        # Negative control for the HF3-001 finding: 90 s / 28 children / 500 frames is too small.
+        r = self._paced(manifest())
+        self.assertFalse(r["cycle_target_met"])
 
     def test_known_canvas_yield_reopens_same_slots_page_without_reset(self):
         clock = FakeClock()

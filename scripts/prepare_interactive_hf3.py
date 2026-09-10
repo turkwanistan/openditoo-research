@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze OPENDITOO-INTERACTIVE-HF3-001 to an unauthorized, reviewable manifest.
+"""Freeze OPENDITOO-INTERACTIVE-HF3-002 to an unauthorized, reviewable manifest.
 
 Zero device I/O, zero Host-session I/O and no claim. In environments where /mnt/c is not
 visible (notably WSL_MCP's sandbox), the accepted Runtime 006 ButtonProbe hashes are inherited
@@ -19,8 +19,8 @@ if str(ROOT) not in sys.path:
 
 from host import activity_session, frame_stream, interactive_acceptance as hf3
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-001.json"
-EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-001-PREPARATION-2026-09-10.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-002.json"
+EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-002-PREPARATION-2026-09-10.json"
 R006 = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json"
 
 
@@ -62,7 +62,7 @@ def main() -> int:
     probe_verified_now = _probe_verified(probe_hashes)
     host_hash = hf3.sha256_file(hf3.HOST_BUILD)
     code_hashes = hf3.module_hashes()
-    max_frames = 500
+    max_frames = 1500
     max_tx = max_frames * frame_stream.worst_case_frame_tx_bytes()
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
 
@@ -72,6 +72,12 @@ def main() -> int:
         "experiment_id": hf3.EXPERIMENT_ID,
         "milestone": "HF-3 one-use high-FPS interactive page / repeated profile-open acceptance",
         "status": "prepared_unauthorized" if probe_verified_now else "offline_prepared_probe_reverification_required",
+        "predecessor": {
+            "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
+            "state": "consumed; transport clean (2 activity children, 13 frames) but 0 cycles: no operator GO cue",
+            "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-001-LIVE-2026-09-10.json",
+            "changes": "GO/FINAL popups via operator-assist; envelope re-sized for human pace plus the BTN-7 every-other-pull 0xBD reclaim (paced dry-run proves 10 cycles fit)",
+        },
         "objective": "Prove the generic Dashboard <-> streaming_ack_clock page boundary with the three-reel slots app, including one-reel-per-lever behavior and ten complete high-rate profile cycles without retry after ambiguity.",
         "readiness": {
             "offline_ready": True,
@@ -106,12 +112,12 @@ def main() -> int:
             "button_probe_verified_now": probe_verified_now,
         },
         "acceptance": {
-            "lifetime_seconds": 90,
-            "max_child_sessions": 28,
+            "lifetime_seconds": 150,
+            "max_child_sessions": 48,
             "max_total_frames": max_frames,
             "max_total_tx_bytes": max_tx,
             "activity_child_max_frames": 20,
-            "streaming_child_max_frames": 120,
+            "streaming_child_max_frames": 400,
             "target_profile_cycles": 10,
             "pages": [
                 {"name": "dashboard", "session_profile": hf3.RATE_ACTIVITY,
@@ -122,21 +128,22 @@ def main() -> int:
             "long_lever_holds_mapped": False,
             "manual_choreography": [
                 "Start from a healthy Runtime 006 dashboard; coordinator suspends it and verifies Host idle.",
+                "scripts/hf3_operator_assist.py (no Ditoo/Host I/O) shows a topmost Windows GO popup when the first HF-3 child opens; no audio cue, because the Ditoo is also a Windows audio endpoint.",
                 "HF-3 opens its own dashboard child; Right selects slots.",
                 "Confirm three reels spin; three short lever pulls stop reel 1, then 2, then 3.",
                 "One more short lever starts a new round.",
                 "Use Left/Right to complete ten Dashboard <-> Slots high-rate profile cycles total.",
-                "Return to Dashboard, cause one genuine MCP activity event and visually inspect the lightning strike.",
-                "Ctrl+C after the tenth cycle/pulse; coordinator restores Runtime 006.",
+                "On the final Dashboard the operator-assist shows a FINAL popup, makes one genuine read-only WSL_MCP run_command call, waits for the lightning, then SIGINTs the runner (operator_stop).",
+                "Coordinator restores Runtime 006 and verifies connected.",
             ],
             "specific_regression_target": "No IMAGE_RX_RECV_TIMEOUT or other ambiguous failure on/after the fourth streaming-profile reopen.",
         },
         "stop_policy": {
             "stop_immediately_on": [
                 "any Host open/send/refusal/ACK timeout not reported as the exact known canvas-invalidated outcome",
-                "outer 90 second lifetime",
-                "outer 500 ACKed-frame / derived byte budget",
-                "28 attempted Host child sessions",
+                "outer 150 second lifetime",
+                "outer 1500 ACKed-frame / derived byte budget",
+                "48 attempted Host child sessions",
                 "operator Ctrl+C",
             ],
             "on_ambiguous_outcome_resend": False,
@@ -156,7 +163,7 @@ def main() -> int:
             "granted_by": None,
             "grant_text": None,
             "expires_at": None,
-            "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 90 s, 28 child session attempts, 500 ACKed frames and derived byte ceiling; only activity + streaming_ack_clock profiles; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
+            "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 48 child session attempts, 1500 ACKed frames and derived byte ceiling; only activity + streaming_ack_clock profiles; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
         },
     }
 

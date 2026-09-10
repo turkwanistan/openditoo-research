@@ -30,7 +30,7 @@ from host.interactive_pages import BufferedButtonEvents, RATE_ACTIVITY
 from host.pagination import Broker, ButtonEvents
 from host.slots_page import SlotsPage
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-001.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-002.json"
 LOCAL = ROOT / ".openditoo-local/hf3"
 
 
@@ -104,15 +104,48 @@ class DryDashboard:
 
 
 class FakeHost:
-    def __init__(self, clock): self.clock = clock; self.profile = RATE_ACTIVITY
+    def __init__(self, clock, invalidations=None):
+        self.clock = clock; self.profile = RATE_ACTIVITY
+        self.invalidations = [] if invalidations is None else invalidations
     def open(self, child):
         self.profile = (child.raw.get("stream") or {}).get("session_profile", RATE_ACTIVITY)
         return {"sessionId": child.experiment_id, "sessionProfile": self.profile}
     def send_frame(self, _rgb, expected):
         self.clock.sleep(55 if self.profile != RATE_ACTIVITY else 40)
         return {"ok": True, "imagePacketSha256": expected, "ackPayloadHex": "0x00"}
-    def poll_reports(self): return []
+    def poll_reports(self):
+        # BTN-7: a Play-direction lever pull also sends RFCOMM 0xBD -> exact known canvas yield.
+        if self.invalidations:
+            self.invalidations.pop()
+            return [{"kind": "session_ended", "reason": "canvas_invalidated",
+                     "outcome": "stopped_yielded_to_stock"}]
+        return []
     def close(self, _reason): return {"closed": True}
+
+
+class PacedEvents:
+    """Release scheduled inputs by clock time (human pace), flagging a 0xBD per Play pull."""
+    def __init__(self, schedule, clock, invalidations):
+        self.schedule, self.clock, self.invalidations, self.index = schedule, clock, invalidations, 0
+    def poll(self):
+        out = []
+        while self.index < len(self.schedule) and self.schedule[self.index][0] <= self.clock():
+            event = self.schedule[self.index][1]; self.index += 1; out.append(event)
+            if event["raw_button"] == "Play": self.invalidations.append(1)
+        return out
+
+
+def paced_schedule(cycles=10, start_ms=1000, pull_ms=1200, dwell_ms=1700):
+    """Right, 4 short pulls ~1.2 s apart, Left, ~1.7 s on Dashboard: ~8 s/cycle (HF3-001 lesson)."""
+    schedule, seq, t = [], 0, start_ms
+    for _ in range(cycles):
+        seq += 1; schedule.append((t, _event(seq, "nav_right", "Next")))
+        for i, raw in enumerate(("Pause", "Play", "Pause", "Play"), 1):
+            seq += 1; schedule.append((t + 300 + i * pull_ms, _event(seq, "lever_candidate", raw)))
+        t += 300 + 5 * pull_ms
+        seq += 1; schedule.append((t, _event(seq, "nav_left", "Previous")))
+        t += dwell_ms
+    return schedule, t
 
 
 def _event(seq, kind, raw):
@@ -150,19 +183,28 @@ def check(full_probe: bool) -> dict:
             "existing_outer_claim": claim, "device_io": False}
 
 
-def dry_run() -> dict:
+def dry_run(paced: bool = False) -> dict:
     m = hf3.load_manifest(MANIFEST, verify_hashes=True, verify_button_probe=False,
                           require_authority=False)
-    clock = FakeClock(); source = SequenceEvents(dry_batches(m.target_profile_cycles))
+    clock = FakeClock(); invalidations: list = []
+    if paced:
+        schedule, last_left_ms = paced_schedule(m.target_profile_cycles)
+        source = PacedEvents(schedule, clock, invalidations)
+        stop = lambda: clock() >= last_left_ms + 12000  # final Dashboard + lightning window
+    else:
+        source = SequenceEvents(dry_batches(m.target_profile_cycles))
+        stop = lambda: source.done and mailbox.pending_count == 0
     mailbox = BufferedButtonEvents(source)
     result = hf3.run_acceptance(
         m, [DryDashboard(), SlotsPage(seed=20260910)], mailbox,
-        lambda: FakeHost(clock), clock, clock.sleep,
-        stop_requested=lambda: source.done and mailbox.pending_count == 0)
+        lambda: FakeHost(clock, invalidations), clock, clock.sleep, stop_requested=stop)
     if result["outcome"] != "stopped_clean" or not result["cycle_target_met"]:
         raise RuntimeError("HF3_DRY_RUN_FAILED")
+    if paced and (result["orchestrator"]["session_reclaims"] != 2 * m.target_profile_cycles
+                  or result["terminal_reason"] != "operator_stop"):
+        raise RuntimeError("HF3_PACED_DRY_RUN_ENVELOPE_TOO_SMALL")
     return {"ok": True, "device_io": False, "claim_created": False,
-            "HF3_DRY_RUN": "PASS", **result}
+            ("HF3_PACED_DRY_RUN" if paced else "HF3_DRY_RUN"): "PASS", **result}
 
 
 def grant(grant_text: str) -> dict:
@@ -264,13 +306,13 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("check"); p.add_argument("--sandbox-skip-probe", action="store_true")
-    sub.add_parser("dry-run")
+    p = sub.add_parser("dry-run"); p.add_argument("--paced", action="store_true")
     p = sub.add_parser("grant"); p.add_argument("grant_text")
     sub.add_parser("run")
     args = parser.parse_args()
     try:
         if args.command == "check": result = check(not args.sandbox_skip_probe)
-        elif args.command == "dry-run": result = dry_run()
+        elif args.command == "dry-run": result = dry_run(args.paced)
         elif args.command == "grant": result = grant(args.grant_text)
         else: result = live_run()
     except (hf3.AcceptanceError, activity_session.SessionError, RuntimeError, OSError, ValueError) as exc:

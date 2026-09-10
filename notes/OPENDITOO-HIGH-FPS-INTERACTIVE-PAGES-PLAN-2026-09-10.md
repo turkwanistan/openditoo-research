@@ -30,6 +30,10 @@ The owner issued the exact named grant `Grant OPENDITOO-INTERACTIVE-HF3-001` aft
 
 **Next capable local WSL session:** in this feature worktree run `python3 scripts/interactive_hf3.py check`, then materialize the already-issued exact grant with `python3 scripts/interactive_hf3.py grant 'Grant OPENDITOO-INTERACTIVE-HF3-001'`, then `bash scripts/run_interactive_hf3.sh`. Do not use `--sandbox-skip-probe` for grant/run. If direct installed-byte verification fails there, stop; do not weaken or bypass the verifier.
 
+## HF3-001 result / HF3-002 checkpoint — 2026-09-10
+
+HF3-001 ran from local WSL and is **consumed**. Transport was clean (2 activity children, 13 frames, exact ledger agreement, Runtime 006 restored `connected`), but acceptance was **not met**: 0 cycles and 0 SMTC events, because the window opened without any operator cue. The 001 envelope was also too small for 10 human-paced cycles with the BTN-7 `0xBD` reclaims (a negative-control test pins this). HF3-002 adds GO/FINAL popups through `scripts/hf3_operator_assist.py` and an envelope of 150 s / 48 children / 1500 frames / 400 per streaming child. Its paced dry-run fits 10 cycles in 41 attempts and 951 frames. 39/39 PASS. It awaits `Grant OPENDITOO-INTERACTIVE-HF3-002`. Evidence: `captures/OPENDITOO-INTERACTIVE-HF3-001-LIVE-2026-09-10.json`.
+
 ## 1. Goal
 
 Turn the physical-button pagination proof into a reusable interactive application platform rather than optimizing one spiral asset.
