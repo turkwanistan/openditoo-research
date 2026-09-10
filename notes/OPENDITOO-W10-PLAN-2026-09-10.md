@@ -188,3 +188,6 @@ Owner chose to remove rollovers instead of pacing them ("do A").
   product policy hash-checks. The supervisor only checks at start, so restoring the DLL at once was
   enough; build candidates somewhere that cannot touch `bin/Release`, or only at cutover.
 - Not yet exercised on the device: a streaming session beyond 500 frames on the new Host.
+
+**Webcam 002 granted 2026-09-10** (`Grant OPENDITOO-WEBCAM-PRODUCT-002`): local policy materialized
+(mode 0600, `policy-check` PASS); committed template stays unauthorized. First launch pending.
