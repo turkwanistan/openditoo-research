@@ -153,3 +153,19 @@ policy shape: `product/OPENDITOO-WEBCAM-PRODUCT-001.json` (committed, unauthoriz
 **Granted 2026-09-10:** owner gave `Grant OPENDITOO-WEBCAM-PRODUCT-001`; local policy materialized
 (mode 0600, `policy-check` PASS, template in git unchanged/unauthorized). Launch logs land in
 `.openditoo-local/webcam-product-log/`. First device launch (rollover evidence) pending.
+
+### First granted launch — run 8f36a6d3, 2026-09-10 12:51Z
+
+Rollover worked on the device: sessions 001–003 each 500 frames / 1500 packets, `budget_exhausted` /
+`stopped_clean`, ~16.4 fps ACKed transport, reopened 1.07–1.08 s after the previous close. Session
+004 opened 1.04 s after 003 closed; the Host connected but got **no ACK for the first frame within
+5000 ms** → Host `transport_fault` / `IMAGE_RX_RECV_TIMEOUT; NO_RETRY`, 0/0/0, `unknown_nothing_sent`;
+client `SESSION_FRAME_FAIL_CLOSED;close_unconfirmed` → `unknown`. The launch ended as designed (no
+retry) and Runtime 003 was restored `connected`, `last_error=null`. Owner: "it rolled over … but
+eventually it shutdown".
+
+Same signature as W9B-006 (a connection opened soon after another closed, device silent). This is a
+second occurrence consistent with the fast-reopen theory, but it is **not demonstrated**: 002 and 003
+reopened at the same ~1 s gap and worked, so the failure is intermittent (1 of 3 fast reopens here).
+Log: `.openditoo-local/webcam-product-log/20260910T125111Z.json` (local); Host ledger entries for
+`OPENDITOO-WEBCAM-LIVE-8f36a6d3-00{1..4}`.
