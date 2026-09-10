@@ -24,6 +24,7 @@ internal sealed class StudioCamera : IFrameSource, IAsyncDisposable
     private string? fault;
     private long sourceSequence;
     private FrameTransform.Preset preset;
+    private int colours = FrameTransform.MaxPaletteColors;
     // Boxed so preview reads are atomic; a struct written from another thread can tear.
     private StrongBox<TimedFrame>? latestSource, latestMatrix;
     internal readonly Samples TransformMs = new();
@@ -35,6 +36,8 @@ internal sealed class StudioCamera : IFrameSource, IAsyncDisposable
     public long LastAcquiredSourceId => Interlocked.Read(ref sourceSequence);
     /// <summary>Read by the transform thread per frame; replaced whole, never mutated.</summary>
     internal FrameTransform.Preset Preset { get => Volatile.Read(ref preset); set => Volatile.Write(ref preset, value); }
+    /// <summary>Palette cap after the transform; 255 means none beyond the encoder's own guard.</summary>
+    internal int Colours { get => Volatile.Read(ref colours); set => Volatile.Write(ref colours, value); }
     /// <summary>Preview only. BGRA at camera resolution.</summary>
     internal TimedFrame? LatestSource => Volatile.Read(ref latestSource)?.Value;
     /// <summary>Preview only. The exact 768 RGB888 bytes the sender would transmit.</summary>
@@ -110,8 +113,8 @@ internal sealed class StudioCamera : IFrameSource, IAsyncDisposable
                 {
                     if (!raw.Wait(stopping.Token) || !raw.TryTake(out var frame)) continue;
                     var started = WebcamFrames.NowMs;
-                    var pixels = FrameTransform.Transform(frame.Pixels, frame.Width, frame.Height,
-                        Preset, FrameTransform.SourceFormat.Bgra32);
+                    var pixels = ColourReduce.MedianCut(FrameTransform.Transform(frame.Pixels, frame.Width, frame.Height,
+                        Preset, FrameTransform.SourceFormat.Bgra32), Colours);
                     TransformMs.Add(WebcamFrames.NowMs - started);
                     var item = new TimedFrame(pixels, 16, 16, frame.CapturedQpcMs, frame.SourceId);
                     Volatile.Write(ref latestMatrix, new StrongBox<TimedFrame>(item));

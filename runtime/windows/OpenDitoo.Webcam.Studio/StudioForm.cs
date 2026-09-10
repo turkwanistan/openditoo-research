@@ -7,11 +7,13 @@ using OpenDitoo.Webcam.Probe;
 namespace OpenDitoo.Webcam.Studio;
 
 /// <summary>Framing the operator chose. Persisted locally; transform parameters only.</summary>
-internal sealed record Framing(double Zoom = 1, double OffsetX = 0, double OffsetY = 0, bool Mirror = true, int QuarterTurns = 0)
+internal sealed record Framing(double Zoom = 1, double OffsetX = 0, double OffsetY = 0, bool Mirror = true, int QuarterTurns = 0,
+                               string Preset = "srgb_area", int Colours = 255)
 {
     internal static readonly string PathOnDisk = System.IO.Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenDitoo", "webcam-framing.json");
-    internal FrameTransform.Preset ToPreset() => FrameTransform.Default with
+    internal FrameTransform.Preset ToPreset() =>
+        (ColourReduce.Presets.TryGetValue(Preset, out var look) ? look : FrameTransform.Default) with
     { Zoom = Zoom, OffsetX = OffsetX, OffsetY = OffsetY, Mirror = Mirror, QuarterTurns = QuarterTurns };
     internal static Framing Load()
     {
@@ -47,6 +49,8 @@ internal sealed class StudioForm : Form
     private readonly TrackBar offsetX = new() { Minimum = -100, Maximum = 100, TickFrequency = 25, Dock = DockStyle.Fill };
     private readonly TrackBar offsetY = new() { Minimum = -100, Maximum = 100, TickFrequency = 25, Dock = DockStyle.Fill };
     private readonly CheckBox mirror = new() { Text = "Mirror", AutoSize = true };
+    private readonly ComboBox look = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
+    private readonly ComboBox colours = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 110 };
     private readonly Button rotate = new() { Text = "Rotate 90°", AutoSize = true };
     private readonly Button save = new() { Text = "Save framing", AutoSize = true };
     private readonly Button reset = new() { Text = "Reset", AutoSize = true };
@@ -62,6 +66,7 @@ internal sealed class StudioForm : Form
     private double lastTickMs;
     private double cameraFps;
     private string matrixSha = "";
+    private int matrixPalette, matrixBytes;
     private readonly CancellationTokenSource? sessionStop;
 
     internal StudioCamera? Camera => camera;
@@ -90,7 +95,10 @@ internal sealed class StudioForm : Form
             sliders.Controls.Add(bar);
         }
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
-        buttons.Controls.AddRange([mirror, rotate, reset, save, reconnect, stopButton]);
+        look.Items.AddRange(ColourReduce.Presets.Keys.ToArray<object>());
+        colours.Items.AddRange(ColourReduce.Choices.Select(n => (object)$"{n} colours").ToArray());
+        buttons.Controls.AddRange([mirror, rotate, new Label { Text = "Look", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(12, 8, 0, 0) },
+            look, colours, reset, save, reconnect, stopButton]);
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1 };
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         foreach (Control row in new Control[] { views, sliders, buttons, sessionLabel, cameraLabel, statsLabel })
@@ -109,6 +117,8 @@ internal sealed class StudioForm : Form
         offsetY.ValueChanged += (_, _) => Apply(framing with { OffsetY = offsetY.Value / 100.0 });
         mirror.CheckedChanged += (_, _) => Apply(framing with { Mirror = mirror.Checked, OffsetX = -framing.OffsetX });
         rotate.Click += (_, _) => Apply(framing with { QuarterTurns = (framing.QuarterTurns + 1) % 4 });
+        look.SelectedIndexChanged += (_, _) => Apply(framing with { Preset = (string)look.SelectedItem! });
+        colours.SelectedIndexChanged += (_, _) => Apply(framing with { Colours = ColourReduce.Choices[colours.SelectedIndex] });
         reset.Click += (_, _) => { Apply(new Framing()); ShowFraming(); };
         save.Click += (_, _) =>
         {
@@ -144,6 +154,8 @@ internal sealed class StudioForm : Form
     {
         showing = true;
         mirror.Checked = framing.Mirror;
+        look.SelectedItem = ColourReduce.Presets.ContainsKey(framing.Preset) ? framing.Preset : "srgb_area";
+        colours.SelectedIndex = Math.Max(0, Array.IndexOf(ColourReduce.Choices, framing.Colours));
         zoom.Value = (int)Math.Round(Math.Clamp(framing.Zoom, 0.05, 1) * 100);
         offsetX.Value = (int)Math.Round(Math.Clamp(ScreenSign * framing.OffsetX, -1, 1) * 100);
         offsetY.Value = (int)Math.Round(Math.Clamp(framing.OffsetY, -1, 1) * 100);
@@ -156,7 +168,7 @@ internal sealed class StudioForm : Form
     {
         if (showing) return; // control values are being set from `framing`, not by the operator
         framing = next;
-        if (camera is not null) camera.Preset = framing.ToPreset();
+        if (camera is not null) { camera.Preset = framing.ToPreset(); camera.Colours = framing.Colours; }
     }
 
     internal async Task Reconnect()
@@ -172,6 +184,7 @@ internal sealed class StudioForm : Form
             if (old is not null) await Task.Run(() => old.DisposeAsync().AsTask());
             var preset = framing.ToPreset();
             camera = await Task.Run(() => StudioCamera.Open(preset));
+            camera.Colours = framing.Colours;
         }
         catch (Exception ex) { cameraLabel.Text = "Camera unavailable: " + ex.Message; reconnect.Enabled = true; }
     }
@@ -197,7 +210,7 @@ internal sealed class StudioForm : Form
         var transform = System.Text.Json.JsonSerializer.SerializeToElement(camera.TransformMs.Snapshot());
         var roi = RoiText();
         statsLabel.Text = $"ROI {roi}  mirror={framing.Mirror}  rotation={framing.QuarterTurns * 90}°  " +
-            $"transform p95 {transform.GetProperty("p95").GetDouble():F2} ms  packet sha256 {matrixSha}";
+            $"transform p95 {transform.GetProperty("p95").GetDouble():F2} ms  {matrixPalette} colours, {matrixBytes} B/frame  sha256 {matrixSha}";
         source.Invalidate();
         matrix.Invalidate();
     }
@@ -248,7 +261,10 @@ internal sealed class StudioForm : Form
             Marshal.Copy(row, 0, data.Scan0 + y * data.Stride, row.Length);
         }
         matrixBitmap.UnlockBits(data);
-        matrixSha = DitooEncoder.Sha256Hex(DitooEncoder.EncodeRgb888(frame.Pixels).Packet)[..12];
+        var (packet, palette) = DitooEncoder.EncodeRgb888(frame.Pixels);
+        matrixSha = DitooEncoder.Sha256Hex(packet)[..12];
+        matrixPalette = palette;
+        matrixBytes = packet.Length + 15; // application bytes on the wire, as the Host counts them
         var side = Math.Min(matrix.Width, matrix.Height) - 8;
         g.InterpolationMode = InterpolationMode.NearestNeighbor;
         g.PixelOffsetMode = PixelOffsetMode.Half;

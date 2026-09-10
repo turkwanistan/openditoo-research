@@ -101,9 +101,28 @@ internal static class StudioTests
     private static long Long(JsonObject result, string key) => result[key]!.GetValue<long>();
     private static string Str(JsonObject result, string key) => result[key]!.GetValue<string>();
 
+    private static void ColourCases()
+    {
+        var gradient = new byte[FrameTransform.FrameBytes];
+        for (var i = 0; i < 256; i++) { gradient[i * 3] = (byte)i; gradient[i * 3 + 1] = (byte)(255 - i); gradient[i * 3 + 2] = (byte)(i * 7); }
+        var full = DitooEncoder.EncodeRgb888(FrameTransform.QuantizeToPaletteLimit(gradient));
+        foreach (var n in new[] { 64, 16, 8 })
+        {
+            var reduced = ColourReduce.MedianCut(gradient, n);
+            var (packet, palette) = DitooEncoder.EncodeRgb888(reduced);
+            Check($"COLOURS_{n}", palette <= n && packet.Length < full.Packet.Length &&
+                reduced.SequenceEqual(ColourReduce.MedianCut(gradient, n)),
+                $"palette={palette} bytes={packet.Length} full_bytes={full.Packet.Length}");
+        }
+        Check("COLOURS_255_IS_IDENTITY", ReferenceEquals(ColourReduce.MedianCut(gradient, 255), gradient));
+        Check("PRESETS_MATCH_W2_NAMES", ColourReduce.Presets.All(p => p.Key == p.Value.Name) &&
+            ColourReduce.Presets["srgb_area"] == FrameTransform.Default);
+    }
+
     internal static async Task<int> Run()
     {
         ClockCases();
+        ColourCases();
 
         // 10 fps against a 65 ms fake ACK: every slot is served on the absolute grid. A late send is
         // followed by a shorter gap back onto the grid (not a burst), so the mean, not p50, is ~100.

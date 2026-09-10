@@ -208,3 +208,19 @@ the Studio treats `SESSION_CANVAS_INVALIDATED` as a generic Host refusal and the
 session the Host already ended, so the client/launch log says `unknown` /
 `SESSION_CANVAS_INVALIDATED;close_unconfirmed`. The Host ledger (authoritative) says
 `stopped_yielded_to_stock`. Fix with the next Studio revision: map that code to a clean yield.
+
+## W10D look pickers (branch `w10d-look-pickers`, preview only) — 2026-09-10
+
+Owner: skip chasing FPS unless the gain is big (precise pacing would reach at most ~19–20 fps under the
+50 ms client floor; more needs floor changes = the closed >18.46 line). Try colour instead.
+
+- Studio preview gains **Look** (the five C#-parity W2 presets: `srgb_area`, `linear_area`,
+  `linear_area_contrast108`, and the two `BENCHMARK_ONLY_…normalized` references) and **Colours**
+  (255 / 64 / 32 / 16 / 8, deterministic median cut after the transform). Status line shows the
+  actual palette and wire bytes per frame. Selftest: 16 colours → 194 B vs 1039 B full.
+- Real camera: `linear_area` @ 16 colours = 209 B/frame. Framing file gains `Preset`/`Colours`; the
+  installed policy-002 Studio ignores unknown fields, so live launches stay `srgb_area`/255 until a
+  new Studio revision is prepared and the webcam policy re-granted (batch with the stock-yield label fix).
+- Kept off `main` on purpose: editing Studio sources in the main checkout drifts the granted
+  policy's hashes and would disable the working desktop shortcut.
+- The median cut is Studio-only; if a reduced palette goes live, add a Python mirror + shared fixture.
