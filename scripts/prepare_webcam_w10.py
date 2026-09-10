@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare OPENDITOO-WEBCAM-W10-<NNN> (default 001) to grant-ready. Zero device I/O, no claim, no Host session.
+"""Prepare OPENDITOO-WEBCAM-W10-<NNN> (default 001), or `product` (the W10C policy template), to grant-ready. Zero device I/O, no claim, no Host session.
 
 Builds and stages the Studio under C:\\temp (WinRT capture fails from the WSL share), runs its
 selftest and both parity fixtures from the staged copy, checks the Host identity read-only, then
@@ -17,11 +17,14 @@ from host import activity_session, frame_stream, webcam_studio, webcam_trial
 
 ROOT = frame_stream.ROOT
 ATTEMPT = sys.argv[1] if len(sys.argv) > 1 else "001"
-if not re.fullmatch(r"[0-9]{3}", ATTEMPT):
+PRODUCT = ATTEMPT == "product"
+if not PRODUCT and not re.fullmatch(r"[0-9]{3}", ATTEMPT):
     raise SystemExit("W10_PREP_ATTEMPT_INVALID")
-MANIFEST = ROOT / f"experiments/DAY1-WEBCAM-W10-{ATTEMPT}.json"
-EVIDENCE = ROOT / f"captures/OPENDITOO-WEBCAM-W10-{ATTEMPT}-PREPARATION-2026-09-10.json"
-STAGE = r"C:\temp\openditoo-webcam-studio-w10"
+MANIFEST = webcam_studio.POLICY_TEMPLATE if PRODUCT else ROOT / f"experiments/DAY1-WEBCAM-W10-{ATTEMPT}.json"
+EVIDENCE = ROOT / ("captures/OPENDITOO-WEBCAM-PRODUCT-001-PREPARATION-2026-09-10.json" if PRODUCT
+                   else f"captures/OPENDITOO-WEBCAM-W10-{ATTEMPT}-PREPARATION-2026-09-10.json")
+# The product installs where the Day1 Host does; a trial stages under C:\temp.
+STAGE = r"C:\Users\Wanstation\AppData\Local\OpenDitoo\WebcamStudio" if PRODUCT else r"C:\temp\openditoo-webcam-studio-w10"
 INSTALLED_HOST = Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/Day1Host/OpenDitoo.Day1.Host.dll")
 
 
@@ -51,11 +54,16 @@ def host_identity() -> dict:
 def main() -> None:
     doc = json.loads(MANIFEST.read_text(encoding="utf-8"))
     authority = doc["authority"]
-    if authority["transmission_authorized"] or authority["authorization_consumed"]:
-        raise SystemExit("W10_PREP_REFUSES_AUTHORIZED_OR_CONSUMED_MANIFEST")
-    if activity_session.SessionClaim(doc["experiment_id"]).path.exists():
-        raise SystemExit("W10_PREP_CLAIM_ALREADY_EXISTS")
-    print("W10_PREP_BEGIN experiment_id=%s device_io=false host_session_io=false claim_created=false" % doc["experiment_id"])
+    name = doc["policy_id"] if PRODUCT else doc["experiment_id"]
+    if PRODUCT:
+        if authority["webcam_product_authorized"] or authority["grant_text"]:
+            raise SystemExit("W10_PREP_COMMITTED_TEMPLATE_MUST_STAY_UNAUTHORIZED")
+    else:
+        if authority["transmission_authorized"] or authority["authorization_consumed"]:
+            raise SystemExit("W10_PREP_REFUSES_AUTHORIZED_OR_CONSUMED_MANIFEST")
+        if activity_session.SessionClaim(name).path.exists():
+            raise SystemExit("W10_PREP_CLAIM_ALREADY_EXISTS")
+    print("W10_PREP_BEGIN target=%s device_io=false host_session_io=false claim_created=false" % name)
     project = webcam_trial.windows_path(webcam_studio.STUDIO / "OpenDitoo.Webcam.Studio.csproj")
     release = webcam_trial.windows_path(webcam_studio.STUDIO_BIN)
     exe = STAGE + r"\OpenDitoo.Webcam.Studio.exe"
@@ -75,15 +83,19 @@ def main() -> None:
     host_dll = activity_session.sha256_file(activity_session.HOST_BUILD_DLL)
     if activity_session.sha256_file(INSTALLED_HOST) != host_dll:
         raise SystemExit("W10_PREP_INSTALLED_HOST_DRIFT")
-    doc["stream"]["live_source"]["producer_code_sha256"] = {
-        str(p.relative_to(ROOT)): activity_session.sha256_file(p)
-        for p in webcam_studio.producer_sources() + webcam_studio.producer_binaries()}
+    frozen = {str(p.relative_to(ROOT)): activity_session.sha256_file(p)
+              for p in webcam_studio.producer_sources() + webcam_studio.producer_binaries()}
+    if PRODUCT:
+        doc["build"]["producer_code_sha256"] = frozen
+    else:
+        doc["stream"]["live_source"]["producer_code_sha256"] = frozen
     doc["build"]["host_dll_sha256"] = host_dll
-    doc["build"]["code_sha256"] = frame_stream.module_hashes()
+    if not PRODUCT:
+        doc["build"]["code_sha256"] = frame_stream.module_hashes()
     head = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip()
     doc["build"]["source_checkpoint"] = head + " + Studio build staged at " + STAGE
     evidence = {
-        "schema_version": 1, "experiment_id": doc["experiment_id"], "status": "pass",
+        "schema_version": 1, "target": name, "status": "pass",
         "prepared_from_git_head": head, "staged_executable": exe,
         "checks": {"studio_selftest": "pass", "transform_parity": "pass", "encoder_parity": "pass",
                    "host_identity_read_only": identity, "installed_host_dll_sha256": host_dll},
@@ -91,16 +103,23 @@ def main() -> None:
         "operation": {"claim_created": False, "host_session_io": False, "device_io": False},
     }
     EVIDENCE.write_text(json.dumps(evidence, indent=1) + "\n", encoding="utf-8")
-    doc["status"] = "grant_ready_awaiting_named_grant"
-    doc["readiness"].update({"grant_ready": True, "blockers": []})
+    if PRODUCT:
+        doc["status"] = "template_unauthorized_grant_ready"
+    else:
+        doc["status"] = "grant_ready_awaiting_named_grant"
+        doc["readiness"].update({"grant_ready": True, "blockers": []})
     doc["adapter"]["deployment_state"] = (
         f"PASS preparation at {head}: Studio built, staged to {STAGE}, selftest + transform/encoder parity passed "
         "from the staged copy, Host identity checked read-only. No claim, session or device I/O.")
     MANIFEST.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
-    manifest, _, _ = webcam_studio.review(MANIFEST)  # the WSL review must pass as prepared
-    print(json.dumps({"W10_PREP_PASS": manifest.experiment_id, "grant_ready": True,
-                      "blockers_until_grant": frame_stream.authority_blockers(MANIFEST),
-                      "manifest_sha256": activity_session.sha256_file(MANIFEST), "device_io": False}))
+    if PRODUCT:
+        webcam_studio.load_policy(MANIFEST, authority=False)  # the WSL policy review must pass as prepared
+        blockers = ["WEBCAM_PRODUCT_GRANT_REQUIRED"]
+    else:
+        webcam_studio.review(MANIFEST)  # the WSL review must pass as prepared
+        blockers = frame_stream.authority_blockers(MANIFEST)
+    print(json.dumps({"W10_PREP_PASS": name, "grant_ready": True, "blockers_until_grant": blockers,
+                      "sha256": activity_session.sha256_file(MANIFEST), "device_io": False}))
 
 
 if __name__ == "__main__":

@@ -56,7 +56,13 @@ internal static class StudioTrial
             camera["acquisition_mode"]!.GetValue<string>() == "Realtime", "CAMERA_ENVELOPE_MISMATCH");
         Trial.Require(stream["live_source"]!["transform"]!["preset"]!.GetValue<string>() == "srgb_area",
             "TRANSFORM_ENVELOPE_MISMATCH");
-        var files = stream["live_source"]!["producer_code_sha256"]!.AsObject();
+        VerifyBuild(root, stream["live_source"]!["producer_code_sha256"]!.AsObject(), doc["build"]!["host_dll_sha256"]!.GetValue<string>());
+        return new(id, lifetime, frames, frames * Trial.WorstCaseFrameTxBytes, interval);
+    }
+
+    /// <summary>Every producer file, this very binary, and the repository + installed Host DLL.</summary>
+    private static void VerifyBuild(string root, JsonObject files, string expectedHost)
+    {
         var ownDllVerified = false;
         foreach (var (relative, expected) in files)
         {
@@ -70,10 +76,40 @@ internal static class StudioTrial
             }
         }
         Trial.Require(ownDllVerified, "STUDIO_BUILD_NOT_FROZEN");
-        var expectedHost = doc["build"]!["host_dll_sha256"]!.GetValue<string>();
         Trial.Require(Trial.Hash(Path.Combine(root, "runtime/windows/OpenDitoo.Day1.Host/bin/Release/net8.0/OpenDitoo.Day1.Host.dll")) == expectedHost &&
             Trial.Hash(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "OpenDitoo/Day1Host/OpenDitoo.Day1.Host.dll")) == expectedHost, "HOST_HASH_DRIFT");
-        return new(id, lifetime, frames, frames * Trial.WorstCaseFrameTxBytes, interval);
+    }
+
+    internal const string PolicyId = "OPENDITOO-WEBCAM-PRODUCT-001";
+    internal static readonly Regex SessionId = new("^OPENDITOO-WEBCAM-LIVE-[0-9a-f]{8}-[0-9]{3}$");
+
+    /// <summary>
+    /// W10C standing webcam policy (local, mode 0600, materialized only after the owner's exact
+    /// grant). Returns the per-session envelope; each session still gets its own fresh id and
+    /// durable one-use claim from the WSL coordinator.
+    /// </summary>
+    internal static (int Seconds, int MaxFrames, int MaxBytes, int IntervalMs) LoadPolicy(string root, string path)
+    {
+        var doc = JsonNode.Parse(File.ReadAllText(path))!;
+        var authority = doc["authority"]!;
+        Trial.Require(doc["policy_id"]!.GetValue<string>() == PolicyId &&
+            authority["webcam_product_authorized"]!.GetValue<bool>() &&
+            !authority["revoked"]!.GetValue<bool>() &&
+            authority["grant_text"]?.GetValue<string>() == "Grant " + PolicyId &&
+            !string.IsNullOrWhiteSpace(authority["granted_by"]?.GetValue<string>()), "WEBCAM_PRODUCT_GRANT_REQUIRED");
+        Trial.Require(doc["target"]!["exact_unit_id"]!.GetValue<string>() == Trial.Target &&
+            doc["target"]!["installed_firmware"]!.GetValue<string>() == "v42012", "TARGET_MISMATCH");
+        var e = doc["envelope"]!;
+        int Get(string key) => e[key]!.GetValue<int>();
+        Trial.Require(e["session_profile"]!.GetValue<string>() == Trial.Profile && Get("host_floor_ms") == Trial.HostFloor &&
+            Get("slot_interval_ms") == StudioModes.IntervalMs["max"] && Get("session_lifetime_seconds") == 60 &&
+            Get("max_frames") == 500 && Get("max_application_packets") == 1500 &&
+            Get("max_tx_bytes") == 500 * Trial.WorstCaseFrameTxBytes && Get("ack_timeout_ms_per_frame") == Trial.AckTimeoutMs,
+            "WEBCAM_PRODUCT_ENVELOPE_MISMATCH");
+        foreach (var flag in new[] { "automatic_retry", "automatic_reconnect", "stock_screen_reclaim" })
+            Trial.Require(!doc["behavior"]![flag]!.GetValue<bool>(), "RETRY_OR_RECLAIM_FORBIDDEN");
+        VerifyBuild(root, doc["build"]!["producer_code_sha256"]!.AsObject(), doc["build"]!["host_dll_sha256"]!.GetValue<string>());
+        return (60, 500, 500 * Trial.WorstCaseFrameTxBytes, StudioModes.IntervalMs["max"]);
     }
 }

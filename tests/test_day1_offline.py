@@ -4261,8 +4261,11 @@ class W10WebcamStudioTests(unittest.TestCase):
         program = (self.STUDIO / "Program.cs").read_text(encoding="utf-8")
         live = program.index("static async Task<int> Live(")
         dry = program.index("static async Task<int> DryRun(")
-        self.assertEqual(program.count("host.token"), 1)
-        self.assertTrue(live < program.index("host.token") < dry)
+        # Only the two granted live modes read the token; preview (top) and dryrun (bottom) never do.
+        self.assertNotIn("host.token", program[:live])
+        self.assertNotIn("host.token", program[dry:])
+        self.assertNotIn("HostClient(", program[dry:])
+        self.assertEqual(program.count("host.token"), 2)
         self.assertIn("OfflineTests.FakeHandler", program[dry:])
 
     def test_sender_never_retries_and_never_calls_telemetry_fps_panel_fps(self) -> None:
@@ -4281,3 +4284,77 @@ class W10WebcamStudioTests(unittest.TestCase):
         self.assertTrue(stop < settle < live < restore)
         self.assertNotIn("cli/webcam.py", shell)
         self.assertIn("experiments/DAY1-WEBCAM-W10-001.json", shell)
+
+
+class W10CWebcamProductPolicyTests(unittest.TestCase):
+    """W10C: standing on-demand webcam policy. Committed template stays unauthorized."""
+
+    FAKE_STUDIO = r'''
+import json, sys
+script = sys.argv[1].split(",")  # per session: terminal reason, or "die"
+for seq, reason in enumerate(script, 1):
+    print(json.dumps({"kind": "session_ready", "policy_sha256": "p" * 64, "seq": seq, "nonce": "%032x" % seq}), flush=True)
+    line = sys.stdin.readline().strip()
+    if line == "end":
+        break
+    kind, experiment_id, nonce = line.split(":")
+    assert kind == "execute" and nonce == "%032x" % seq
+    if reason == "die":
+        sys.exit(3)
+    result = {"experimentId": experiment_id, "outcome": "stopped_clean", "terminalReason": reason,
+              "frames": 500, "packets": 1500, "bytes": 501200, "ackedTransportFps": 16.4}
+    print(json.dumps({"kind": "session_result", "experiment_id": experiment_id, "result": result}), flush=True)
+    if reason not in ("budget_exhausted", "lifetime_expired"):
+        break
+print(json.dumps({"kind": "done"}), flush=True)
+'''
+
+    def _run(self, script: str, **limits):
+        import subprocess, sys, tempfile
+        from host import webcam_studio
+        claims = Path(tempfile.mkdtemp())
+        with subprocess.Popen([sys.executable, "-c", self.FAKE_STUDIO, script], stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE, bufsize=0) as process:
+            summary = webcam_studio.run_sessions(process, "p" * 64, claim_dir=claims, **limits)
+        return summary, {p.stem: json.loads(p.read_text()) for p in claims.glob("*.json")}
+
+    def test_committed_template_is_unauthorized_and_bounded(self) -> None:
+        from host import webcam_studio
+        doc = webcam_studio.load_policy(webcam_studio.POLICY_TEMPLATE, authority=False, verify=False)
+        self.assertFalse(doc["authority"]["webcam_product_authorized"])
+        self.assertIsNone(doc["authority"]["grant_text"])
+        self.assertFalse(doc["behavior"]["start_at_logon"])
+        self.assertIn("does not widen Runtime 003", doc["authority"]["grant_scope_requested"])
+        with self.assertRaises(ValueError):
+            webcam_studio.load_policy(webcam_studio.POLICY_TEMPLATE, authority=True, verify=False)
+        with self.assertRaisesRegex(ValueError, "EXACT_NAMED_GRANT_REQUIRED"):
+            webcam_studio.grant_policy("yolo send it", "anyone")
+
+    def test_sessions_roll_over_only_after_a_clean_budget_end(self) -> None:
+        summary, claims = self._run("budget_exhausted,budget_exhausted,operator_stop")
+        self.assertEqual(summary["outcome"], "stopped_clean")
+        ids = [s["experimentId"] for s in summary["sessions"]]
+        self.assertEqual(len(ids), 3)
+        self.assertEqual(len(set(ids)), 3)
+        self.assertTrue(all(i.endswith(f"-{n:03d}") for n, i in enumerate(ids, 1)))
+        self.assertEqual({c["state"] for c in claims.values()}, {"finished"})
+        self.assertEqual(set(claims), set(ids))
+
+    def test_launch_cap_ends_with_end_not_a_claim(self) -> None:
+        summary, claims = self._run("budget_exhausted,budget_exhausted,budget_exhausted", max_sessions=2)
+        self.assertEqual(len(summary["sessions"]), 2)
+        self.assertEqual(len(claims), 2)
+        self.assertEqual(summary["final"]["kind"], "done")
+
+    def test_studio_dying_mid_session_leaves_that_claim_unknown(self) -> None:
+        summary, claims = self._run("budget_exhausted,die")
+        self.assertEqual(summary["outcome"], "unknown")
+        self.assertEqual(sorted(c["outcome"] for c in claims.values()), ["stopped_clean", "unknown"])
+
+    def test_launcher_checks_policy_before_touching_the_dashboard(self) -> None:
+        shell = (ROOT / "scripts/webcam_on_demand.sh").read_text(encoding="utf-8")
+        check = shell.index("python3 host/webcam_studio.py policy-check")
+        stop = shell.index('systemctl --user stop "$SERVICE"')
+        run = shell.index("python3 host/webcam_studio.py policy-run")
+        self.assertTrue(check < stop < shell.index("sleep 8") < run)
+        self.assertIn("trap 'rc=$?; restore_product", shell)

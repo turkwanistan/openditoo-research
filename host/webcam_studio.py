@@ -7,6 +7,10 @@ budgets already assume the encoder's worst-case frame, so the reviewed envelope 
 """
 import argparse
 import json
+import os
+import secrets
+import stat
+import time
 from pathlib import Path
 import re
 import select
@@ -135,12 +139,190 @@ def run(path: Path) -> dict:
                 claim.finish(result.get("outcome", "unknown"), {"result": result})
 
 
+# -- W10C: standing on-demand webcam policy -------------------------------------------------------
+#
+# Same shape as Runtime 003 for the dashboard: a committed template that stays unauthorized, and a
+# local mode-0600 copy materialized only after the owner's exact grant. It authorizes one thing:
+# while the owner has the Studio window open, back-to-back bounded sessions, each under a fresh
+# one-use id claimed against the Studio's nonce. The next session starts only after a clean budget
+# or lifetime end; anything else ends the launch with no retry. Runtime 003 is not widened.
+
+POLICY_ID = "OPENDITOO-WEBCAM-PRODUCT-001"
+POLICY_TEMPLATE = ROOT / "product/OPENDITOO-WEBCAM-PRODUCT-001.json"
+LOCAL_POLICY = ROOT / ".openditoo-local/webcam-product-policy.json"
+ENVELOPE = {"session_profile": "streaming_ack_clock", "host_floor_ms": 40, "slot_interval_ms": 50,
+            "session_lifetime_seconds": 60, "max_frames": 500, "max_application_packets": 1500,
+            "max_tx_bytes": 527000, "ack_timeout_ms_per_frame": 5000, "handover_settle_seconds": 8,
+            "max_sessions_per_launch": 60, "max_launch_seconds": 1800}
+CONTINUE_ONLY_AFTER = ["budget_exhausted", "lifetime_expired"]
+
+
+def load_policy(path: Path = LOCAL_POLICY, *, authority: bool = True, verify: bool = True) -> dict:
+    doc = json.loads(Path(path).read_text(encoding="utf-8"))
+    if doc.get("policy_id") != POLICY_ID:
+        raise ValueError("WEBCAM_PRODUCT_POLICY_ID_MISMATCH")
+    if doc.get("target") != {"exact_unit_id": activity_session.EXACT_UNIT_ID,
+                             "installed_firmware": activity_session.INSTALLED_FIRMWARE}:
+        raise ValueError("WEBCAM_PRODUCT_TARGET_MISMATCH")
+    if doc.get("envelope") != ENVELOPE:
+        raise ValueError("WEBCAM_PRODUCT_ENVELOPE_MISMATCH")
+    behavior = doc.get("behavior") or {}
+    if any(behavior.get(flag) is not False for flag in
+           ("automatic_retry", "automatic_reconnect", "stock_screen_reclaim", "raw_send_enabled",
+            "target_override_enabled", "start_at_logon")):
+        raise ValueError("WEBCAM_PRODUCT_BEHAVIOR_FORBIDDEN")
+    if behavior.get("continue_only_after") != CONTINUE_ONLY_AFTER or behavior.get("restore_dashboard_on_exit") is not True:
+        raise ValueError("WEBCAM_PRODUCT_CONTINUATION_RULE_MISMATCH")
+    grant = doc.get("authority") or {}
+    if authority:
+        info = Path(path).stat()
+        if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077:
+            raise ValueError("WEBCAM_PRODUCT_POLICY_MODE_INVALID")
+        if not (grant.get("webcam_product_authorized") is True and grant.get("revoked") is False
+                and grant.get("grant_text") == "Grant " + POLICY_ID and grant.get("granted_by")
+                and grant.get("grant_scope") == grant.get("grant_scope_requested")):
+            raise ValueError("WEBCAM_PRODUCT_GRANT_REQUIRED")
+    if verify:
+        hashes = doc["build"]["producer_code_sha256"]
+        required = {str(p.relative_to(ROOT)) for p in producer_sources() + producer_binaries()}
+        if not hashes or not required <= hashes.keys():
+            raise ValueError("WEBCAM_PRODUCT_HASHES_INCOMPLETE")
+        for relative, expected in hashes.items():
+            if activity_session.sha256_file(ROOT / relative) != expected:
+                raise ValueError(f"PRODUCER_HASH_DRIFT:{relative}")
+        exe = executable_path(doc["adapter"]["windows_executable"])
+        for binary in producer_binaries():
+            if activity_session.sha256_file(exe.parent / binary.name) != hashes[str(binary.relative_to(ROOT))]:
+                raise ValueError(f"INSTALLED_STUDIO_HASH_DRIFT:{binary.name}")
+        if activity_session.sha256_file(activity_session.HOST_BUILD_DLL) != doc["build"]["host_dll_sha256"]:
+            raise ValueError("HOST_BUILD_HASH_DRIFT")
+    return doc
+
+
+def grant_policy(grant_text: str, granted_by: str) -> Path:
+    """Materialize the local policy from the committed template after the owner's exact grant."""
+    if grant_text != "Grant " + POLICY_ID:
+        raise ValueError("EXACT_NAMED_GRANT_REQUIRED")
+    if LOCAL_POLICY.exists():
+        raise ValueError("WEBCAM_PRODUCT_POLICY_ALREADY_PRESENT")
+    doc = load_policy(POLICY_TEMPLATE, authority=False)
+    if doc["authority"]["webcam_product_authorized"] is not False:
+        raise ValueError("COMMITTED_TEMPLATE_MUST_STAY_UNAUTHORIZED")
+    doc["authority"].update({"webcam_product_authorized": True, "revoked": False, "grant_text": grant_text,
+                             "granted_by": granted_by, "grant_scope": doc["authority"]["grant_scope_requested"]})
+    fd = os.open(LOCAL_POLICY, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        json.dump(doc, handle, indent=2)
+    load_policy(LOCAL_POLICY)
+    return LOCAL_POLICY
+
+
+def revoke_policy() -> Path:
+    doc = json.loads(LOCAL_POLICY.read_text(encoding="utf-8"))
+    doc["authority"].update({"webcam_product_authorized": False, "revoked": True})
+    target = ROOT / ".openditoo-local/revoked" / time.strftime("webcam-product-policy-%Y%m%dT%H%M%S.json")
+    target.parent.mkdir(mode=0o700, exist_ok=True)
+    target.write_text(json.dumps(doc, indent=2), encoding="utf-8")
+    LOCAL_POLICY.unlink()
+    return target
+
+
+def run_sessions(process, policy_sha: str, *, claim_dir: Path = activity_session.CLAIM_DIR,
+                 max_sessions: int = ENVELOPE["max_sessions_per_launch"],
+                 max_seconds: float = ENVELOPE["max_launch_seconds"], host_build_sha256: str = "") -> dict:
+    """The per-session claim protocol with the Studio. `process` has unbuffered binary pipes:
+    a buffered reader could hold the next message while select() waits on the empty fd."""
+    run_nonce = secrets.token_hex(4)
+    started = time.monotonic()
+    sessions, final, pending = [], None, None
+
+    def send(text: str) -> None:
+        process.stdin.write((text + "\n").encode())
+        process.stdin.flush()
+
+    try:
+        while True:
+            if not select.select([process.stdout], [], [], ENVELOPE["session_lifetime_seconds"] + SESSION_SLACK_SECONDS)[0]:
+                raise ValueError("STUDIO_SILENT")
+            line = process.stdout.readline(1 << 20)
+            if not line:
+                break
+            message = json.loads(line)
+            kind = message.get("kind")
+            if kind == "session_ready":
+                nonce = message.get("nonce", "")
+                if pending or message.get("policy_sha256") != policy_sha or not re.fullmatch(r"[a-f0-9]{32}", nonce):
+                    raise ValueError("STUDIO_PROTOCOL_VIOLATION")
+                if len(sessions) >= max_sessions or time.monotonic() - started >= max_seconds:
+                    send("end")
+                    continue
+                experiment_id = f"OPENDITOO-WEBCAM-LIVE-{run_nonce}-{len(sessions) + 1:03d}"
+                claim = activity_session.SessionClaim(experiment_id, claim_dir)
+                claim.claim({"policy_sha256": policy_sha, "nonce": nonce, "host_build_sha256": host_build_sha256})
+                pending = (claim, experiment_id)
+                send(f"execute:{experiment_id}:{nonce}")
+            elif kind == "session_result":
+                if not pending or message.get("experiment_id") != pending[1]:
+                    raise ValueError("STUDIO_PROTOCOL_VIOLATION")
+                result = message["result"]
+                pending[0].finish(result.get("outcome", "unknown"), {"result": result})
+                sessions.append({key: result.get(key) for key in (
+                    "experimentId", "outcome", "terminalReason", "frames", "packets", "bytes", "ackedTransportFps")})
+                pending = None
+            elif kind in ("done", "error"):
+                final = message
+    finally:
+        if pending:
+            pending[0].finish("unknown", {"result": {"terminalReason": "studio_ended_without_result"}})
+    return {"policy_id": POLICY_ID, "run_nonce": run_nonce, "sessions": sessions, "final": final,
+            "outcome": "stopped_clean" if sessions and all(s["outcome"] == "stopped_clean" for s in sessions)
+            and (final or {}).get("kind") == "done" else "unknown"}
+
+
+def run_policy(path: Path = LOCAL_POLICY) -> dict:
+    doc = load_policy(path)
+    exe = executable_path(doc["adapter"]["windows_executable"])
+    service = subprocess.run(["systemctl", "--user", "is-active", "openditoo-product.service"],
+                             capture_output=True, text=True, timeout=5)
+    if service.stdout.strip() != "inactive":
+        raise ValueError("PRODUCT_CONTROLLER_MUST_BE_STOPPED")
+    webcam_trial._host_preclaim_status()
+    with subprocess.Popen([str(exe), "live-policy", webcam_trial.windows_path(path), webcam_trial.windows_path(ROOT)],
+                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                          bufsize=0) as process:
+        try:
+            return run_sessions(process, activity_session.sha256_file(path),
+                                host_build_sha256=doc["build"]["host_dll_sha256"])
+        finally:
+            if process.poll() is None:
+                try:
+                    process.wait(timeout=15)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="One W10 Studio live session. No target, timing, raw-send or retry switches.")
-    parser.add_argument("command", choices=("review", "run"))
-    parser.add_argument("--manifest", required=True)
+    parser.add_argument("command", choices=("review", "run", "policy-check", "policy-run", "policy-grant", "policy-revoke"))
+    parser.add_argument("--manifest")
+    parser.add_argument("--grant-text")
+    parser.add_argument("--granted-by")
     args = parser.parse_args()
     try:
+        if args.command == "policy-check":
+            doc = load_policy()
+            print(json.dumps({"ok": True, "policy_id": POLICY_ID, "envelope": doc["envelope"], "device_io": False}))
+            raise SystemExit(0)
+        if args.command == "policy-grant":
+            print(json.dumps({"ok": True, "policy": str(grant_policy(args.grant_text or "", args.granted_by or ""))}))
+            raise SystemExit(0)
+        if args.command == "policy-revoke":
+            print(json.dumps({"ok": True, "revoked_record": str(revoke_policy())}))
+            raise SystemExit(0)
+        if args.command == "policy-run":
+            outcome = run_policy()
+            print(json.dumps(outcome, sort_keys=True))
+            raise SystemExit(0 if outcome["outcome"] == "stopped_clean" else 2)
         if args.command == "review":
             manifest, stream, exe = review(Path(args.manifest))
             print(json.dumps({"ok": True, "experiment_id": manifest.experiment_id,
