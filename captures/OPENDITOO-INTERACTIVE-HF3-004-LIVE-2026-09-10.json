@@ -1,0 +1,172 @@
+{
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-004",
+  "grant": "Grant OPENDITOO-INTERACTIVE-HF3-004 (owner, in-session)",
+  "host": "3faf520f (Runtime 007)",
+  "outer_claim": {
+    "claimed_at": "2026-09-10T20:48:28.155374Z",
+    "code_hashes": {
+      "activity_lightning_renderer_sha256": "74389183ca694d46822eefe41ac941783bbd0ac70a5067d410dc827fc7c3f436",
+      "activity_lightning_sha256": "e264db92df9416e2fa004e0101eccb37d0e9bb66b7f86d45c734e01fdebb4714",
+      "activity_render_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+      "activity_session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+      "activity_ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+      "cli_transport_sha256": "07ebf960fb2208ddf8afe34dedc52d5275645584e41bae20fa8a6a063d821119",
+      "dashboard_page_sha256": "16bf19fd963b9c91548deb6aeed038e0514ee0a219bf6290b04ef0b042da20f4",
+      "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+      "frame_stream_sha256": "880970a6d494197b78adfeac0309cb2d86ce447dd6bb826c7ae5b0c270af7fa6",
+      "hf3_coordinator_sha256": "c5b847d79d5c4ceaded1132823ed3e0e708ce23b8952acb58028802d8e0a6215",
+      "hf3_entry_sha256": "2b5f8c0838159db1f7000d828d3f164809561b5e36d4a6e36fd8206fc4b03cc3",
+      "interactive_acceptance_sha256": "12dddacd72b0d7507dc45f9293ab24f3d9b4ac668c96ddd2440426577abf4e8c",
+      "interactive_activity_sha256": "96a8a75742a17ae04b00a9334b5a0ebc8e0b3ebf0b76d8983a9ee48220028df6",
+      "interactive_pages_sha256": "ea7840af6fa4a222542e8ad9ddec221d6dfb7604d272e438c4fcca922284b3a4",
+      "interactive_runtime_sha256": "f92c6f47ff328ceb3cee4501d72105e52baa7a605e8b92323c832ab3fc8b93c6",
+      "interactive_stream_sha256": "79886686439d1a602fb7af7ff61d09e6977a1c9c46b9df557d49903d98c5b2c2",
+      "mcp_activity_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+      "pagination_input_sha256": "b2e31de5399dd8bf8bf83a37ff4f20d0b9201de1a82fd5c6d7736326d775db91",
+      "slots_page_sha256": "0f6116af8b56ad74295c1637f88dd6a857b80a3855e1f61dfef3558f48dc158b"
+    },
+    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-004",
+    "host_build_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+    "manifest_file": "/home/wan/Projects/openditoo-research/.openditoo-local/worktrees/high-fps-interactive-pages/experiments/DAY1-INTERACTIVE-HF3-004.json",
+    "manifest_sha256": "82949bb40fcb031f3c91ec72ea3362638b91cbfafd78d3d5b1c4da6295e5bf35",
+    "outcome": "unknown",
+    "state": "finished",
+    "terminal_reason": "transport_fault"
+  },
+  "result": {
+    "terminal_reason": "transport_fault",
+    "outcome": "unknown",
+    "elapsed_ms": 7421,
+    "completed_profile_cycles": 0
+  },
+  "child": {
+    "frames_sent": 2,
+    "packets_sent": 6,
+    "tx_bytes_sent": 341,
+    "acks": [
+      "0x0B",
+      "0xE6"
+    ],
+    "frame_timings": [
+      {
+        "frame": 1,
+        "playback_index": 0,
+        "since_start_ms": 223,
+        "ack_latency_ms": 47,
+        "palette_colors": 10,
+        "application_bytes": 191
+      },
+      {
+        "frame": 2,
+        "playback_index": 1,
+        "since_start_ms": 7387,
+        "ack_latency_ms": 15,
+        "palette_colors": 7,
+        "application_bytes": 150
+      }
+    ],
+    "terminal_reason": "transport_fault",
+    "outcome": "unknown",
+    "detail": "HTTPError: HTTP Error 429: Too Many Requests"
+  },
+  "host_ledger": [
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T20:48:28.1834677+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-004-S001",
+      "sessionId": "1b2d84a8ae3d",
+      "detail": {
+        "lifetimeSeconds": 150,
+        "minIntervalMs": 40,
+        "frameBudget": 1500,
+        "txByteBudget": 1581000,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T20:48:35.5727593+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-004-S001",
+      "sessionId": "1b2d84a8ae3d",
+      "detail": {
+        "reason": "transport_fault",
+        "outcome": "stopped_clean",
+        "detail": "",
+        "framesSent": 2,
+        "packetsSent": 6,
+        "txBytesSent": 341,
+        "displayState": "ours_last_acked"
+      }
+    }
+  ],
+  "probe_events": [
+    {
+      "epoch": "9775e01805cc",
+      "seq": 1,
+      "at_monotonic_ms": 42518736.042,
+      "at_utc": "2026-09-10T20:48:28.0832905Z",
+      "type": "probe_started",
+      "pid": 25956,
+      "seconds": 0,
+      "smtc": {
+        "acquired": true,
+        "playback_status": "Playing",
+        "status_mode": "mirror"
+      },
+      "rawinput_registered": true,
+      "merging": "none; every source logged separately"
+    },
+    {
+      "epoch": "9775e01805cc",
+      "seq": 2,
+      "at_monotonic_ms": 42526139.583,
+      "at_utc": "2026-09-10T20:48:35.4866948Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    }
+  ],
+  "input_to_first_later_ack": [
+    {
+      "epoch": "9775e01805cc",
+      "seq": 2,
+      "type": "nav_right",
+      "result": "navigate",
+      "observed_at_monotonic": 7.382,
+      "first_later_ack_ms": 21.0,
+      "ack_child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-004-S001"
+    }
+  ],
+  "operator_assist_log": [
+    {
+      "event": "runner_seen",
+      "pid": 1781217,
+      "at_utc": "2026-09-10T20:48:27.846388Z"
+    },
+    {
+      "event": "go_popup",
+      "hf3_opens": 1,
+      "at_utc": "2026-09-10T20:48:28.285730Z"
+    },
+    {
+      "event": "runner_exited_before_final",
+      "at_utc": "2026-09-10T20:48:35.702247Z"
+    }
+  ],
+  "findings": {
+    "first_frame_fix": "first streaming_ack_clock frame on the 3faf520f Host ACKed (1 of 1 so far; baseline 5/19 failures)",
+    "failure": "after the owner's Right (Slots via PageCarousel, same session), frame 2 ACKed in 21 ms; the ACK-clocked loop dispatched frame 3 inside the Host's 40 ms floor -> HTTP 429 SESSION_PACING_VIOLATION, which is terminal; client transport_fault/unknown, Host terminal transport_fault/stopped_clean, 2 frames/6 packets/341 B on both sides; no retry",
+    "root_cause": "interactive path had no client dispatch floor; the Host's comment assumed ACK >= ~53 ms (full-colour R5), but simple 16x16 frames ACK faster. W8 had already proven 50 ms client over 40 ms Host",
+    "latent_second_risk": "a 0xBD mid-send returns 409 SESSION_CANVAS_INVALIDATED, which the Python path treated as transport_fault (dashboard hides it by reconnecting; BTN-7 '409 race'); at ACK-clock rates it would hit most Play pulls",
+    "fix_for_HF3_005": "InteractiveTransport: 50 ms client floor + W10 Studio's Host-confirmed stock-yield rule; hidden-page MCP collection (~150 ms measured) moved off the streaming loop onto a joined worker thread; dry-run FakeHost now enforces the floor, ACKs in 20 ms and delivers every 0xBD as a mid-send 409"
+  },
+  "runtime007_restore": "HF3_DASHBOARD_SERVICE_RESTORED / HF3_DASHBOARD_CONNECTED_RESTORED, RC=0",
+  "verdict": {
+    "transport": "UNKNOWN (terminal pacing refusal; no retry)",
+    "acceptance": "FAIL - 0 cycles",
+    "replay": "FORBIDDEN"
+  }
+}

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+import threading
 import time
 from typing import Callable, Protocol
 
@@ -226,7 +227,8 @@ class PageCarousel:
     rate_mode = RATE_STREAMING
 
     def __init__(self, pages: list,
-                 low_rate_interval_ms: int = activity_session.MCP_CLIENT_FRAME_INTERVAL_MS) -> None:
+                 low_rate_interval_ms: int = activity_session.MCP_CLIENT_FRAME_INTERVAL_MS,
+                 background_thread: bool = False) -> None:
         if not pages or len({page.name for page in pages}) != len(pages):
             raise ValueError("carousel needs uniquely named pages")
         self.pages = list(pages)
@@ -237,6 +239,11 @@ class PageCarousel:
         self._rendered = None       # (page, rgb, now_ms) of the latest render
         self._held = None           # last ACKed frame of the current page and when
         self._held_ms = 0
+        # Hidden-page collection (dashboard: ~150 ms of ssh/file reads every ~2 s, measured) would
+        # stall the visible high-rate page if run inline. With background_thread it runs on one
+        # worker; navigation joins it before the page is shown, so no page is touched by two threads.
+        self.background_thread = background_thread
+        self._worker: threading.Thread | None = None
 
     @property
     def page(self):
@@ -246,9 +253,16 @@ class PageCarousel:
         self.page.on_enter()
 
     def on_exit(self) -> None:
+        self._join_worker()
         self.page.on_exit()
 
+    def _join_worker(self) -> None:
+        if self._worker is not None:
+            self._worker.join()
+            self._worker = None
+
     def handle_navigation(self, direction: int, _event: dict) -> None:
+        self._join_worker()
         old = self.page
         old.on_exit()
         self.index = (self.index + direction) % len(self.pages)
@@ -262,9 +276,15 @@ class PageCarousel:
         return self.page.handle_input(event)
 
     def background_tick(self, now_ms: int) -> None:
-        for page in self.pages:
-            if page is not self.page and hasattr(page, "background_tick"):
+        hidden = [p for p in self.pages if p is not self.page and hasattr(p, "background_tick")]
+        if not self.background_thread:
+            for page in hidden:
                 page.background_tick(now_ms)
+            return
+        if hidden and (self._worker is None or not self._worker.is_alive()):
+            self._worker = threading.Thread(
+                target=lambda: [page.background_tick(now_ms) for page in hidden], daemon=True)
+            self._worker.start()
 
     def render(self, now_ms: int) -> bytes:
         page = self.page

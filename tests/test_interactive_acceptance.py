@@ -96,7 +96,7 @@ def manifest(tmp: Path | None = None, *, max_sessions=28, max_frames=500, lifeti
              streaming_child=120):
     path = (tmp or Path(".")) / "HF3.json"
     return AcceptanceManifest(
-        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-004",
+        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-005",
         lifetime_seconds=lifetime, max_child_sessions=max_sessions,
         max_frames=max_frames,
         max_tx_bytes=max_frames * frame_stream.worst_case_frame_tx_bytes(),
@@ -125,7 +125,7 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         m = manifest()
         high = child_manifest(m, 7, RATE_STREAMING, 500, m.max_tx_bytes, 90)
         low = child_manifest(m, 8, RATE_ACTIVITY, 500, m.max_tx_bytes, 90)
-        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-004-S007")
+        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-005-S007")
         self.assertEqual(high.max_frames, 120)
         self.assertEqual(high.raw["stream"]["session_profile"], RATE_STREAMING)
         self.assertEqual(low.max_frames, 20)
@@ -194,6 +194,61 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         # Negative control for the HF3-001 finding: 90 s / 28 children / 500 frames is too small.
         r = self._paced(manifest())
         self.assertFalse(r["cycle_target_met"])
+
+    def _slots_session(self, host, clock, raw=False):
+        from host.interactive_pages import InteractivePageDriver, InteractiveStreamRenderer
+        from host.interactive_stream import run_interactive_stream
+        m = child_manifest(manifest(streaming_child=60), 1, RATE_STREAMING, 60,
+                           60 * frame_stream.worst_case_frame_tx_bytes(), 5)
+        driver = InteractivePageDriver(SlotsPage(seed=3), BufferedButtonEvents(SequenceEvents([])),
+                                       monotonic=lambda: clock.ms / 1000)
+        stream = {"session_profile": RATE_STREAMING, "playback_interval_ms": 40}
+        if raw:  # the pre-HF3-005 shape: dispatch on ACK, no client floor
+            driver.enter()
+            return frame_stream.stream_session(m, None, stream, host, clock, clock.sleep,
+                                               renderer=InteractiveStreamRenderer(driver),
+                                               stop_requested=lambda: clock() >= 2000)
+        return run_interactive_stream(m, stream, host, clock, clock.sleep, driver,
+                                      stop_requested=lambda: clock() >= 2000)
+
+    def test_fast_acks_hit_the_host_floor_without_the_client_floor_and_not_with_it(self):
+        from scripts import interactive_hf3 as entry
+        clock = FakeClock()
+        raw = self._slots_session(entry.FakeHost(clock), clock, raw=True)
+        self.assertEqual((raw["terminal_reason"], raw["outcome"]), ("transport_fault", "unknown"))
+        self.assertIn("429", raw["detail"])  # HF3-004's exact failure
+        clock = FakeClock()
+        ok = self._slots_session(entry.FakeHost(clock), clock)
+        self.assertEqual(ok["outcome"], "stopped_clean", ok.get("detail"))
+        self.assertGreater(ok["frames_sent"], 20)
+
+    def test_mid_send_409_is_a_yield_only_when_the_host_confirms_it(self):
+        from scripts import interactive_hf3 as entry
+        clock = FakeClock()
+        confirmed = self._slots_session(entry.FakeHost(clock, invalidations=[1]), clock)
+        self.assertEqual((confirmed["terminal_reason"], confirmed["outcome"]),
+                         ("canvas_invalidated", "stopped_yielded_to_stock"))
+        class Unconfirmed(entry.FakeHost):
+            def poll_reports(self): return []  # Host record does not show the yield
+        clock = FakeClock()
+        unconfirmed = self._slots_session(Unconfirmed(clock, invalidations=[1]), clock)
+        self.assertEqual((unconfirmed["terminal_reason"], unconfirmed["outcome"]), ("transport_fault", "unknown"))
+
+    def test_background_collection_runs_off_thread_and_is_joined_before_the_page_returns(self):
+        import threading, time as _t
+        class SlowDashboard(DryDashboard):
+            def background_tick(self, _now):
+                self.tick_thread = threading.current_thread()
+                _t.sleep(0.05); self.background += 1
+        dash, slots = SlowDashboard(), SlotsPage(seed=2)
+        c = PageCarousel([dash, slots], background_thread=True)
+        c.on_enter(); c.handle_navigation(1, {})         # slots visible, dashboard hidden
+        started = _t.monotonic(); c.background_tick(0)
+        self.assertLess(_t.monotonic() - started, 0.03)  # the visible page is not stalled
+        c.handle_navigation(-1, {})                      # back to dashboard: worker joined first
+        self.assertEqual(dash.background, 1)
+        self.assertIsNot(dash.tick_thread, threading.main_thread())
+        self.assertIsNone(c._worker)
 
     def test_carousel_holds_low_rate_page_to_its_cadence_inside_streaming_session(self):
         class Changing(DryDashboard):

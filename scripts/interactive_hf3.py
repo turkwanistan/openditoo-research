@@ -30,7 +30,7 @@ from host.interactive_pages import BufferedButtonEvents, PageCarousel, RATE_ACTI
 from host.pagination import Broker, ButtonEvents
 from host.slots_page import SlotsPage
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-004.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-005.json"
 LOCAL = ROOT / ".openditoo-local/hf3"
 
 
@@ -104,19 +104,29 @@ class DryDashboard:
 
 
 class FakeHost:
+    """Enforces the Host's profile floor (HTTP 429 is terminal), ACKs simple streaming frames in
+    20 ms (HF3-004 saw 21 ms), and delivers every 0xBD as a mid-send 409 SESSION_CANVAS_INVALIDATED
+    with the Host's record confirming the yield -- the worst case the live Host produces."""
     def __init__(self, clock, invalidations=None):
         self.clock = clock; self.profile = RATE_ACTIVITY
         self.invalidations = [] if invalidations is None else invalidations
+        self.last_start = None; self.yielded = False
     def open(self, child):
         self.profile = (child.raw.get("stream") or {}).get("session_profile", RATE_ACTIVITY)
         return {"sessionId": child.experiment_id, "sessionProfile": self.profile}
     def send_frame(self, _rgb, expected):
-        self.clock.sleep(55 if self.profile != RATE_ACTIVITY else 40)
+        import io, urllib.error
+        floor = 40 if self.profile != RATE_ACTIVITY else 150
+        if self.last_start is not None and self.clock() - self.last_start < floor:
+            raise urllib.error.HTTPError("fake", 429, "pacing", {}, io.BytesIO(b'{"errorCode":"SESSION_PACING_VIOLATION"}'))
+        self.last_start = self.clock()
+        if self.invalidations:  # BTN-7: Play-direction lever pull -> RFCOMM 0xBD, here mid-send
+            self.invalidations.pop(); self.yielded = True
+            raise urllib.error.HTTPError("fake", 409, "yield", {}, io.BytesIO(b'{"errorCode":"SESSION_CANVAS_INVALIDATED"}'))
+        self.clock.sleep(20 if self.profile != RATE_ACTIVITY else 40)
         return {"ok": True, "imagePacketSha256": expected, "ackPayloadHex": "0x00"}
     def poll_reports(self):
-        # BTN-7: a Play-direction lever pull also sends RFCOMM 0xBD -> exact known canvas yield.
-        if self.invalidations:
-            self.invalidations.pop()
+        if self.yielded:
             return [{"kind": "session_ended", "reason": "canvas_invalidated",
                      "outcome": "stopped_yielded_to_stock"}]
         return []
@@ -268,6 +278,7 @@ def live_run() -> dict:
     dashboard = DashboardPage(config, state,
                               renderer=LightningActivityRenderer(config, state, state_path=state_path))
     slots = SlotsPage()
+    carousel = PageCarousel([dashboard, slots], background_thread=True)
     stop = {"value": False}
     def requested(): return stop["value"]
     def stop_signal(_signum, _frame): stop["value"] = True
@@ -279,7 +290,7 @@ def live_run() -> dict:
         # No transport has opened yet. This is the irreversible outer authority boundary.
         claim = hf3.claim_outer(m, main_root / ".openditoo-local/session-claims")
         result = hf3.run_acceptance(
-            m, [PageCarousel([dashboard, slots])], mailbox, lambda: _HostSessionTransport(token),
+            m, [carousel], mailbox, lambda: _HostSessionTransport(token),
             lambda: int((time.monotonic() - started_ms) * 1000),
             lambda ms: time.sleep(ms / 1000.0), stop_requested=requested)
         hf3.finish_outer_claim(claim, result)
@@ -298,6 +309,7 @@ def live_run() -> dict:
         return {"ok": result["outcome"] != "unknown", "device_io": True,
                 "claim_file": str(claim.path), "result_file": str(out), **result}
     finally:
+        carousel._join_worker()  # never exit mid-collection (it persists activity state)
         broker.stop()
         for sig, handler in old_handlers.items(): signal.signal(sig, handler)
 

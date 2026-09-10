@@ -6,8 +6,73 @@ stream loop to stop cleanly when Left/Right requests a page/profile transition.
 """
 from __future__ import annotations
 
+import json
+import urllib.error
+
 from host import frame_stream
 from host.interactive_pages import InteractivePageDriver, InteractiveStreamRenderer
+
+# HF3-004 (exact unit): a simple Slots frame ACKed in 21 ms, so dispatching on the ACK put the next
+# frame inside the Host's 40 ms floor -> terminal HTTP 429. W8/W10 proved a 50 ms client dispatch
+# floor over the 40 ms Host floor; the interactive path now uses the same margin.
+CLIENT_MIN_DISPATCH_MS = 50
+
+
+class HostConfirmedYield(Exception):
+    """A send hit the Host's SESSION_CANVAS_INVALIDATED and the Host's own record confirms it."""
+
+
+class InteractiveTransport:
+    """Client dispatch floor + the webcam Studio's Host-confirmed stock-yield rule.
+
+    A Play-direction lever pull (0xBD) usually lands while a frame is in flight at ACK-clock rates,
+    so the Host answers the send with 409 SESSION_CANVAS_INVALIDATED. Exactly as the accepted W10
+    Studio does, that is the known canvas yield only if the Host then reports the session ended
+    canvas_invalidated / stopped_yielded_to_stock; anything else stays an ambiguous fault.
+    """
+
+    def __init__(self, inner, clock, sleep, min_dispatch_ms: int = CLIENT_MIN_DISPATCH_MS) -> None:
+        self.inner, self.clock, self.sleep, self.min_dispatch_ms = inner, clock, sleep, min_dispatch_ms
+        self.last_dispatch_ms = None
+        self.confirmed_yield = False
+
+    def open(self, manifest):
+        return self.inner.open(manifest)
+
+    def poll_reports(self):
+        return self.inner.poll_reports()
+
+    def close(self, reason):
+        return self.inner.close(reason)
+
+    def send_frame(self, rgb: bytes, expected_packet_sha256: str) -> dict:
+        if self.last_dispatch_ms is not None:
+            wait = self.last_dispatch_ms + self.min_dispatch_ms - self.clock()
+            if wait > 0:
+                self.sleep(wait)
+        self.last_dispatch_ms = self.clock()
+        try:
+            return self.inner.send_frame(rgb, expected_packet_sha256)
+        except urllib.error.HTTPError as exc:
+            if exc.code == 409 and _error_code(exc) == "SESSION_CANVAS_INVALIDATED" and any(
+                    r.get("kind") == "session_ended" and r.get("reason") == "canvas_invalidated"
+                    and r.get("outcome") == "stopped_yielded_to_stock" for r in self._reports()):
+                self.confirmed_yield = True
+                raise HostConfirmedYield("SESSION_CANVAS_INVALIDATED;host_confirmed") from exc
+            raise
+
+    def _reports(self) -> list[dict]:
+        try:
+            return self.inner.poll_reports()
+        except Exception:
+            return []  # cannot confirm -> stays unknown
+
+
+def _error_code(exc: urllib.error.HTTPError) -> str | None:
+    try:
+        return json.loads(exc.read(4096) or b"{}").get("errorCode")
+    except (ValueError, OSError):
+        return None
 
 
 def run_interactive_stream(manifest, stream: dict, transport, clock, sleep,
@@ -41,11 +106,12 @@ def run_interactive_stream(manifest, stream: dict, transport, clock, sleep,
     def should_stop() -> bool:
         return driver.transition_requested() or bool(stop_requested and stop_requested())
 
+    paced = InteractiveTransport(transport, clock, sleep)
     result = frame_stream.stream_session(
         manifest,
         None,
         stream,
-        transport,
+        paced,
         clock,
         sleep,
         claim=claim,
@@ -53,6 +119,10 @@ def run_interactive_stream(manifest, stream: dict, transport, clock, sleep,
         stop_requested=should_stop,
         stop_reason="page_transition",
     )
+    if paced.confirmed_yield and result.get("terminal_reason") == "transport_fault":
+        # The exact known canvas yield, confirmed by the Host's own session record.
+        result.update(terminal_reason="canvas_invalidated", outcome="stopped_yielded_to_stock",
+                      detail="host-confirmed yield during send: " + str(result.get("detail")))
     if result.get("terminal_reason") == "page_transition" and driver.navigation is None:
         result["terminal_reason"] = "operator_stop"
         result["detail"] = "external stop requested"

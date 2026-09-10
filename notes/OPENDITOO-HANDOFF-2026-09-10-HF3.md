@@ -66,4 +66,15 @@ The webcam shortcut is also affected (5/19 is mostly webcam launches), so this f
   - It is also the first on-device evidence for the first-frame fix. The Host ledger's open record still shows the profile spacing (0); the first-frame 10 ms exception lives in `SendFrame`.
   - It needs the exact grant `Grant OPENDITOO-INTERACTIVE-HF3-004`. The run procedure is unchanged: operator-assist, then `grant`, `check`, and `run_interactive_hf3.sh`.
 
+## HF3-004 — consumed/unknown (429 pacing); HF3-005 prepared, grant-ready, UNAUTHORIZED
+
+**HF3-004** (20:48Z) opened one streaming session on the Runtime 007 Host, and the **first frame ACKed**. That is the first-frame fix's first on-device evidence (1/1). On the owner's Right, a Slots frame ACKed in **21 ms**. The ACK-clocked loop then dispatched inside the Host's 40 ms floor, which produced a terminal HTTP 429. No retry; Runtime 007 was restored `connected`. Evidence: `captures/OPENDITOO-INTERACTIVE-HF3-004-LIVE-2026-09-10.json`.
+
+**HF3-005** (`experiments/DAY1-INTERACTIVE-HF3-005.json`, `c8057d04…`):
+- `InteractiveTransport` adds a **50 ms client dispatch floor** (the W8/W10 margin).
+- It also adopts the **W10 Studio's Host-confirmed stock-yield** rule, because a `0xBD` mid-send returns 409 `SESSION_CANVAS_INVALIDATED`.
+- Hidden-page MCP collection (~150 ms measured) runs on a joined worker thread, so the reels don't hitch every 2 s.
+- The dry-run FakeHost now enforces the floor, ACKs in 20 ms, and delivers every `0xBD` as a mid-send 409. Paced dry-run: 10 cycles, 21 sessions, 1053 frames. 43/43 successor tests. Legacy: only the 3 inherent Runtime 007 template/`frame_stream` hash errors.
+- It needs `Grant OPENDITOO-INTERACTIVE-HF3-005`.
+
 WSL trap: this worktree's `.git` link pointed at the WSL_MCP mount (`/run/wsl-mcp/workspace`). `git worktree repair` from the main checkout fixes it.
