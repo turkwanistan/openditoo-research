@@ -31,6 +31,10 @@
 <div id="readout">press F11 for full screen &mdash; counter 0</div>
 <script>
   const GRID = 4, COUNTER_BITS = 12, COUNTER_MODULUS = 1 << COUNTER_BITS;
+  // Reflected Gray code, matching host/motion_truth.py to_gray(). Consecutive counters differ
+  // in exactly one cell, so a rolling-shutter capture that straddles a repaint can only read
+  // the old value or the new one -- never an arbitrary carry-mangled number in between.
+  const toGray = (value) => value ^ (value >> 1);
   // (row, col) -> fixed value. Reading TL, TR, BL, BR: white, black, white, black.
   const SYNC = { "0,0": true, "0,3": false, "3,0": true, "3,3": false };
   const DATA = [];
@@ -55,14 +59,15 @@
   let counter = 0;
   function draw() {
     const value = counter % COUNTER_MODULUS;
+    const gray = toGray(value);
     for (const [key, lit] of Object.entries(SYNC)) {
       const [row, col] = key.split(",").map(Number);
       paint(row, col, lit);
     }
     DATA.forEach(([row, col], index) => {
-      paint(row, col, ((value >> (COUNTER_BITS - 1 - index)) & 1) === 1);
+      paint(row, col, ((gray >> (COUNTER_BITS - 1 - index)) & 1) === 1);
     });
-    readout.textContent = `counter ${value}  bits ${value.toString(2).padStart(COUNTER_BITS, "0")}`;
+    readout.textContent = `counter ${value}  gray ${gray.toString(2).padStart(COUNTER_BITS, "0")}`;
     counter++;
     requestAnimationFrame(draw);
   }

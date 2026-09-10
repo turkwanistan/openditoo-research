@@ -4011,6 +4011,29 @@ class W9AMotionTruthStimulusTests(unittest.TestCase):
         for frame in (bytes(768), bytes([255]) * 768, bytes(range(256)) * 3):
             self.assertIsNone(motion_truth.decode(frame))
 
+    def test_gray_coding_bounds_a_straddled_read_to_one_count(self) -> None:
+        from host import motion_truth
+        # A measured phone still decoded 1255 while the screen readout said 1252, because a
+        # rolling shutter exposed the grid's rows across a repaint. Under plain binary a carry
+        # flips several cells at once, so a straddle can land anywhere; under Gray code exactly
+        # one cell changes per step, so it can only resolve to the old or the new value.
+        for counter in range(motion_truth.COUNTER_MODULUS - 1):
+            before = motion_truth.cell_bits(counter)
+            after = motion_truth.cell_bits(counter + 1)
+            self.assertEqual(sum(1 for cell in before if before[cell] != after[cell]), 1, counter)
+        self.assertEqual(motion_truth.from_gray(motion_truth.to_gray(4095)), 4095)
+        # Every straddle of one step decodes to one of its two endpoints, never past them.
+        for counter in (0, 7, 1252, 2047, 4094):
+            before, after = motion_truth.cell_bits(counter), motion_truth.cell_bits(counter + 1)
+            changed = next(cell for cell in before if before[cell] != after[cell])
+            for torn in (before, after):
+                mixed = dict(torn)
+                mixed[changed] = after[changed] if torn is before else before[changed]
+                gray = 0
+                for position in motion_truth.DATA_CELLS:
+                    gray = gray << 1 | int(mixed[position])
+                self.assertIn(motion_truth.from_gray(gray), (counter, counter + 1))
+
     def test_grid_divides_the_panel_and_the_roi_without_partial_cells(self) -> None:
         from host import motion_truth
         self.assertEqual(motion_truth.SIZE, 16)
@@ -4024,6 +4047,7 @@ class W9AMotionTruthStimulusTests(unittest.TestCase):
         from host import motion_truth
         html = self.STIMULUS.read_text(encoding="utf-8")
         self.assertIn(f"const GRID = {motion_truth.GRID}, COUNTER_BITS = {motion_truth.COUNTER_BITS}", html)
+        self.assertIn("const toGray = (value) => value ^ (value >> 1);", html)
         for (row, col), lit in motion_truth.SYNC_CELLS.items():
             self.assertIn(f'"{row},{col}": {str(lit).lower()}', html)
         # The stimulus displays; it must never acquire authority or touch the device.

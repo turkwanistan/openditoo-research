@@ -14,7 +14,7 @@ Layout, in SOURCE orientation:
 
     S . . S      S = sync marker, . = counter bit
     . . . .      corners are fixed (white, black, white, black reading TL, TR, BL, BR)
-    . . . .      the remaining 12 cells are a 12-bit counter, MSB first, row-major
+    . . . .      the remaining 12 cells are a 12-bit GRAY-CODED counter, MSB first, row-major
     S . . S
 
 The corner pattern is deliberately asymmetric under a horizontal flip, so a decode that
@@ -45,11 +45,36 @@ DATA_CELLS = tuple((row, col) for row in range(GRID) for col in range(GRID)
 assert len(DATA_CELLS) == COUNTER_BITS, len(DATA_CELLS)
 
 
+def to_gray(value: int) -> int:
+    """Plain binary -> reflected Gray code, so consecutive counters differ in ONE cell.
+
+    This exists because of a measured failure, not theory. A phone still of the stimulus
+    decoded as 1255 while the screen's own readout said 1252, with the disagreement confined
+    to the two cells holding the lowest bits: a rolling-shutter capture exposes the top and
+    bottom of the grid at slightly different times, so a frame can straddle a counter change.
+
+    Under plain binary a straddle is unbounded, because a carry flips many cells at once
+    (1255 -> 1256 flips four). Under Gray code exactly one cell changes per step, so a
+    straddled read can only resolve to the old value or the new one -- an error of at most
+    one count. That converts an arbitrary wrong latency into a bounded one.
+    """
+    return value ^ (value >> 1)
+
+
+def from_gray(gray: int) -> int:
+    value = gray
+    shift = 1
+    while shift < COUNTER_BITS:
+        value ^= value >> shift
+        shift <<= 1
+    return value
+
+
 def cell_bits(counter: int) -> dict[tuple[int, int], bool]:
     """The full 4x4 cell map for one counter value, in source orientation."""
     if counter < 0:
         raise ValueError("counter must not be negative")
-    value = counter % COUNTER_MODULUS
+    value = to_gray(counter % COUNTER_MODULUS)
     cells = dict(SYNC_CELLS)
     for index, position in enumerate(DATA_CELLS):
         cells[position] = bool(value >> (COUNTER_BITS - 1 - index) & 1)
@@ -105,10 +130,10 @@ def decode(frame: bytes, *, mirrored: bool = True, threshold: float = 128.0) -> 
            for position in list(SYNC_CELLS) + list(DATA_CELLS)}
     if any(lit[position] != expected for position, expected in SYNC_CELLS.items()):
         return None
-    value = 0
+    gray = 0
     for position in DATA_CELLS:
-        value = value << 1 | int(lit[position])
-    return value
+        gray = gray << 1 | int(lit[position])
+    return from_gray(gray)
 
 
 def round_trip(counter: int, preset=None, side: int = 480) -> int | None:
