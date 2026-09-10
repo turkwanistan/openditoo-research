@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "policy_id": "OPENDITOO-WEBCAM-PRODUCT-002",
+  "product_id": "OPENDITOO-WEBCAM-ON-DEMAND-V1",
+  "description": "On-demand live webcam for the owner's exact Ditoo Plus. The owner launches it; the MCP dashboard (Runtime 003) is suspended for exactly as long as the Studio window is open and restored when it closes. 002: one connection per launch (no session rollover).",
+  "status": "template_unauthorized",
+  "target": {
+    "exact_unit_id": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012"
+  },
+  "envelope": {
+    "session_profile": "streaming_ack_clock",
+    "host_floor_ms": 40,
+    "slot_interval_ms": 50,
+    "session_lifetime_seconds": 1800,
+    "max_frames": 36001,
+    "max_application_packets": 108003,
+    "max_tx_bytes": 37945054,
+    "ack_timeout_ms_per_frame": 5000,
+    "handover_settle_seconds": 8,
+    "max_sessions_per_launch": 1,
+    "max_launch_seconds": 1800
+  },
+  "behavior": {
+    "automatic_retry": false,
+    "automatic_reconnect": false,
+    "stock_screen_reclaim": false,
+    "raw_send_enabled": false,
+    "target_override_enabled": false,
+    "start_at_logon": false,
+    "continue_only_after": [
+      "budget_exhausted",
+      "lifetime_expired"
+    ],
+    "restore_dashboard_on_exit": true,
+    "session_ids": "OPENDITOO-WEBCAM-LIVE-<run nonce 8 hex>-<seq 3 digits>, fresh per session, durable one-use claim taken only against the Studio's per-session nonce; the Host ledger independently consumes each id",
+    "stop": "Stop button, window close or Ctrl+C end the launch; camera fault, stall, Host refusal/fault, ACK timeout, any unknown outcome, policy revocation or hash drift end it with no retry; one session of at most 30 min per launch",
+    "scheduler": "W10 absolute-deadline scheduler, max mode: 50 ms slots, 50 ms client floor over the 40 ms Host streaming floor, missed slots skipped, duplicate/unchanged frames not sent, heartbeat on a quiet scene"
+  },
+  "evidence": {
+    "W10-001": "transport PASS + owner visual PASS (500 frames, 16.458 fps ACKed transport)",
+    "W10-002": "operator Stop + live zoom/pan PASS (290 frames)",
+    "not_yet_exercised": "a streaming session longer than 500 frames on the Runtime 004 Host; the first 002 launch is its evidence",
+    "WEBCAM-PRODUCT-001 run 8f36a6d3": "3 clean rollovers then session 4 IMAGE_RX_RECV_TIMEOUT 1.04 s after a close; launch stopped fail-closed, dashboard restored. Motivates one connection per launch."
+  },
+  "build": {
+    "producer_code_sha256": {},
+    "host_dll_sha256": null
+  },
+  "adapter": {
+    "windows_executable": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio\\OpenDitoo.Webcam.Studio.exe",
+    "routes": [
+      "/v1/status",
+      "/v1/session/open",
+      "/v1/session/frame",
+      "/v1/session/heartbeat",
+      "/v1/session/close"
+    ],
+    "deployment_state": "PASS preparation at bbcbaa36aca7507fba00ca708717cc1a38f6c21f: Studio built, staged to C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio, selftest + transform/encoder parity passed from the staged copy, Host identity checked read-only. No claim, session or device I/O."
+  },
+  "install": {
+    "local_policy": ".openditoo-local/webcam-product-policy.json (mode 0600, git-ignored)",
+    "launcher": "scripts/webcam_on_demand.sh (desktop shortcut runs it through wsl.exe)",
+    "revocation": "python3 host/webcam_studio.py policy-revoke moves the local policy to .openditoo-local/revoked/ marked revoked"
+  },
+  "authority": {
+    "policy_id": "OPENDITOO-WEBCAM-PRODUCT-002",
+    "webcam_product_authorized": false,
+    "revoked": false,
+    "granted_by": null,
+    "grant_text": null,
+    "grant_scope": null,
+    "grant_string": "Grant OPENDITOO-WEBCAM-PRODUCT-002",
+    "grant_scope_requested": "Standing on-demand webcam authority until revoked: whenever the owner launches the webcam, suspend the MCP dashboard, then stream the live N980P webcam through the W10 Studio to exact Ditoo 11:75:58:CE:DE:C7 v42012 via the existing typed Host 127.0.0.1:8796 (Runtime 004 build, streaming_ack_clock profile, 40 ms Host floor, 50 ms client floor) as ONE session per launch of at most 30 min and 36001 frames / 108003 packets / 37945054 application bytes, one connection and one frame in flight, under a fresh one-use id; stop on window close, Stop, any fault or unknown outcome with no retry/reconnect/reclaim/pipelining; restore the dashboard on exit. Does not start by itself, does not widen the dashboard runtime policy, grants no raw send, target selection, firmware or persistence, and does not revive any W7-W10 experiment grant or WEBCAM-PRODUCT-001.",
+    "supersedes": "OPENDITOO-WEBCAM-PRODUCT-001"
+  }
+}

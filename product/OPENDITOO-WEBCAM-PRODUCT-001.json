@@ -3,7 +3,7 @@
   "policy_id": "OPENDITOO-WEBCAM-PRODUCT-001",
   "product_id": "OPENDITOO-WEBCAM-ON-DEMAND-V1",
   "description": "On-demand live webcam for the owner's exact Ditoo Plus. The owner launches it; the MCP dashboard (Runtime 003) is suspended for exactly as long as the Studio window is open and restored when it closes.",
-  "status": "template_unauthorized_grant_ready",
+  "status": "superseded_by_OPENDITOO-WEBCAM-PRODUCT-002",
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
     "installed_firmware": "v42012"

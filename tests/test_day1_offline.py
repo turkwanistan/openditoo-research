@@ -4324,14 +4324,14 @@ print(json.dumps({"kind": "done"}), flush=True)
         self.assertFalse(doc["authority"]["webcam_product_authorized"])
         self.assertIsNone(doc["authority"]["grant_text"])
         self.assertFalse(doc["behavior"]["start_at_logon"])
-        self.assertIn("does not widen Runtime 003", doc["authority"]["grant_scope_requested"])
+        self.assertIn("does not widen the dashboard runtime policy", doc["authority"]["grant_scope_requested"])
         with self.assertRaises(ValueError):
             webcam_studio.load_policy(webcam_studio.POLICY_TEMPLATE, authority=True, verify=False)
         with self.assertRaisesRegex(ValueError, "EXACT_NAMED_GRANT_REQUIRED"):
             webcam_studio.grant_policy("yolo send it", "anyone")
 
     def test_sessions_roll_over_only_after_a_clean_budget_end(self) -> None:
-        summary, claims = self._run("budget_exhausted,budget_exhausted,operator_stop")
+        summary, claims = self._run("budget_exhausted,budget_exhausted,operator_stop", max_sessions=60)
         self.assertEqual(summary["outcome"], "stopped_clean")
         ids = [s["experimentId"] for s in summary["sessions"]]
         self.assertEqual(len(ids), 3)
@@ -4346,8 +4346,14 @@ print(json.dumps({"kind": "done"}), flush=True)
         self.assertEqual(len(claims), 2)
         self.assertEqual(summary["final"]["kind"], "done")
 
+    def test_policy_002_default_is_one_connection_per_launch(self) -> None:
+        summary, claims = self._run("budget_exhausted,budget_exhausted")
+        self.assertEqual(len(summary["sessions"]), 1)
+        self.assertEqual(len(claims), 1)
+        self.assertEqual(summary["final"]["kind"], "done")
+
     def test_studio_dying_mid_session_leaves_that_claim_unknown(self) -> None:
-        summary, claims = self._run("budget_exhausted,die")
+        summary, claims = self._run("budget_exhausted,die", max_sessions=60)
         self.assertEqual(summary["outcome"], "unknown")
         self.assertEqual(sorted(c["outcome"] for c in claims.values()), ["stopped_clean", "unknown"])
 
@@ -4358,3 +4364,37 @@ print(json.dumps({"kind": "done"}), flush=True)
         run = shell.index("python3 host/webcam_studio.py policy-run")
         self.assertTrue(check < stop < shell.index("sleep 8") < run)
         self.assertIn("trap 'rc=$?; restore_product", shell)
+
+
+class Runtime004StreamingCeilingTests(unittest.TestCase):
+    """Runtime 004: Host gives streaming its own ceiling; the dashboard is untouched."""
+
+    def test_004_differs_from_003_only_in_host_binding(self) -> None:
+        old = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-003.json").read_text(encoding="utf-8"))
+        new = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-004.json").read_text(encoding="utf-8"))
+        for key in ("behavior", "session", "target", "install", "product_id", "runtime_revision", "schema_version"):
+            self.assertEqual(old[key], new[key], key)
+        self.assertEqual(old["build"]["code_sha256"], new["build"]["code_sha256"])
+        self.assertFalse(new["authority"]["persistent_runtime_authorized"])
+        self.assertIsNone(new["authority"]["grant_text"])
+        self.assertEqual(new["authority"]["supersedes"], "OPENDITOO-PRODUCT-RUNTIME-003")
+        self.assertIn("Grants no streaming authority", new["authority"]["grant_scope_requested"])
+
+    def test_host_keeps_activity_limits_and_bounds_streaming(self) -> None:
+        host = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/ActivitySessionHost.cs").read_text(encoding="utf-8")
+        self.assertIn("internal const int MaxLifetimeSeconds = 900;", host)
+        self.assertIn("internal const int MaxFrames = 500;", host)
+        self.assertIn("internal const int StreamingMaxLifetimeSeconds = 1800;", host)
+        self.assertIn("StreamingMaxFrames = StreamingMaxLifetimeSeconds * 1000 / StreamingMinFrameIntervalMs;", host)
+        self.assertIn("lifetimeSeconds > MaxLifetimeFor(requestedProfile)", host)
+        self.assertIn("frameBudget > MaxFramesFor(requestedProfile)", host)
+        self.assertIn("if (acks.Count > AckWindow) acks.RemoveAt(0);", host)
+        self.assertEqual(activity_session.MAX_SESSION_FRAMES, 500)
+
+    def test_webcam_policy_002_fits_under_the_host_streaming_ceiling(self) -> None:
+        from host import webcam_studio
+        envelope = webcam_studio.ENVELOPE
+        self.assertEqual(envelope["max_sessions_per_launch"], 1)
+        self.assertLessEqual(envelope["session_lifetime_seconds"], 1800)
+        self.assertLessEqual(envelope["max_frames"], 1800 * 1000 // 40)
+        self.assertEqual(envelope["max_frames"], envelope["session_lifetime_seconds"] * 1000 // envelope["slot_interval_ms"] + 1)

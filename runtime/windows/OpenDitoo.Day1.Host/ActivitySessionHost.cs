@@ -71,6 +71,22 @@ static class ActivitySessionHost
 
     internal const int MaxLifetimeSeconds = 900;
     internal const int MaxFrames = 500;
+    // W10C: a live webcam launch must be ONE connection, because a quick close -> reopen sometimes
+    // leaves the Ditoo silent (IMAGE_RX_RECV_TIMEOUT: W9B-006 and webcam run 8f36a6d3 session 4).
+    // So the streaming profile gets its own, still Host-owned, ceiling: 30 minutes, and a frame
+    // ceiling that is exactly what that lifetime admits at the 40 ms floor. The activity profile
+    // (the dashboard) keeps 900 s / 500 frames unchanged.
+    internal const int StreamingMaxLifetimeSeconds = 1800;
+    internal const int StreamingMaxFrames = StreamingMaxLifetimeSeconds * 1000 / StreamingMinFrameIntervalMs;
+    // The ordered ACK list is evidence, but a 45,000-entry array in every heartbeat/status and
+    // ledger line is not. Keep the most recent entries; an activity session (<=500) keeps all of them.
+    internal const int AckWindow = 500;
+
+    internal static int MaxLifetimeFor(string? requested) =>
+        Normalize(requested) == ProfileStreamingAckClock ? StreamingMaxLifetimeSeconds : MaxLifetimeSeconds;
+
+    internal static int MaxFramesFor(string? requested) =>
+        Normalize(requested) == ProfileStreamingAckClock ? StreamingMaxFrames : MaxFrames;
     internal const int WatchdogIntervalMs = 250;
     // If the worker disappears entirely we end the session rather than hold the link
     // open. Liveness is proved by /v1/session/heartbeat, NOT by sending a frame: a
@@ -153,11 +169,11 @@ static class ActivitySessionHost
             if (IsActive) throw new SessionRejectedException("SESSION_ALREADY_ACTIVE", 409);
             if (string.IsNullOrWhiteSpace(experimentId) || experimentId.Length > 128)
                 throw new SessionRejectedException("SESSION_EXPERIMENT_ID_INVALID", 400);
-            if (lifetimeSeconds <= 0 || lifetimeSeconds > MaxLifetimeSeconds)
+            if (lifetimeSeconds <= 0 || lifetimeSeconds > MaxLifetimeFor(requestedProfile))
                 throw new SessionRejectedException("SESSION_LIFETIME_INVALID", 400);
             if (minIntervalMs < FloorFor(requestedProfile))
                 throw new SessionRejectedException("SESSION_PACING_BELOW_ACCEPTED_CEILING", 400);
-            if (frameBudget <= 0 || frameBudget > MaxFrames)
+            if (frameBudget <= 0 || frameBudget > MaxFramesFor(requestedProfile))
                 throw new SessionRejectedException("SESSION_FRAME_BUDGET_INVALID", 400);
             if (txByteBudget <= 0)
                 throw new SessionRejectedException("SESSION_TX_BUDGET_INVALID", 400);
@@ -270,6 +286,7 @@ static class ActivitySessionHost
             displayState = "ours_last_acked";
             var hex = $"0x{ack.Payload[0]:X2}";
             acks.Add(hex);
+            if (acks.Count > AckWindow) acks.RemoveAt(0);
             // The Host's own send-to-ACK figure. A client can only measure HTTP round trip,
             // which folds in transport it does not own; S2 had to infer the difference.
             var hostElapsedMs = (int)(Environment.TickCount64 - lastFrameStartedTicks);

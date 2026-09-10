@@ -147,13 +147,16 @@ def run(path: Path) -> dict:
 # one-use id claimed against the Studio's nonce. The next session starts only after a clean budget
 # or lifetime end; anything else ends the launch with no retry. Runtime 003 is not widened.
 
-POLICY_ID = "OPENDITOO-WEBCAM-PRODUCT-001"
-POLICY_TEMPLATE = ROOT / "product/OPENDITOO-WEBCAM-PRODUCT-001.json"
+POLICY_ID = "OPENDITOO-WEBCAM-PRODUCT-002"
+POLICY_TEMPLATE = ROOT / "product/OPENDITOO-WEBCAM-PRODUCT-002.json"
 LOCAL_POLICY = ROOT / ".openditoo-local/webcam-product-policy.json"
+# 002: one connection per launch. 001 rolled 60 s / 500-frame sessions over and the fourth reopen
+# hit IMAGE_RX_RECV_TIMEOUT (run 8f36a6d3); the Runtime 004 Host gives streaming its own 1800 s /
+# 45000-frame ceiling, so a launch no longer reopens at all.
 ENVELOPE = {"session_profile": "streaming_ack_clock", "host_floor_ms": 40, "slot_interval_ms": 50,
-            "session_lifetime_seconds": 60, "max_frames": 500, "max_application_packets": 1500,
-            "max_tx_bytes": 527000, "ack_timeout_ms_per_frame": 5000, "handover_settle_seconds": 8,
-            "max_sessions_per_launch": 60, "max_launch_seconds": 1800}
+            "session_lifetime_seconds": 1800, "max_frames": 36001, "max_application_packets": 108003,
+            "max_tx_bytes": 36001 * 1054, "ack_timeout_ms_per_frame": 5000, "handover_settle_seconds": 8,
+            "max_sessions_per_launch": 1, "max_launch_seconds": 1800}
 CONTINUE_ONLY_AFTER = ["budget_exhausted", "lifetime_expired"]
 
 

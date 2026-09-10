@@ -21,7 +21,7 @@ PRODUCT = ATTEMPT == "product"
 if not PRODUCT and not re.fullmatch(r"[0-9]{3}", ATTEMPT):
     raise SystemExit("W10_PREP_ATTEMPT_INVALID")
 MANIFEST = webcam_studio.POLICY_TEMPLATE if PRODUCT else ROOT / f"experiments/DAY1-WEBCAM-W10-{ATTEMPT}.json"
-EVIDENCE = ROOT / ("captures/OPENDITOO-WEBCAM-PRODUCT-001-PREPARATION-2026-09-10.json" if PRODUCT
+EVIDENCE = ROOT / ("captures/OPENDITOO-WEBCAM-PRODUCT-002-PREPARATION-2026-09-10.json" if PRODUCT
                    else f"captures/OPENDITOO-WEBCAM-W10-{ATTEMPT}-PREPARATION-2026-09-10.json")
 # The product installs where the Day1 Host does; a trial stages under C:\temp.
 STAGE = r"C:\Users\Wanstation\AppData\Local\OpenDitoo\WebcamStudio" if PRODUCT else r"C:\temp\openditoo-webcam-studio-w10"

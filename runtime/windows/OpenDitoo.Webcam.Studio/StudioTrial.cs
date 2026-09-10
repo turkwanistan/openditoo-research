@@ -81,7 +81,10 @@ internal static class StudioTrial
                 "OpenDitoo/Day1Host/OpenDitoo.Day1.Host.dll")) == expectedHost, "HOST_HASH_DRIFT");
     }
 
-    internal const string PolicyId = "OPENDITOO-WEBCAM-PRODUCT-001";
+    internal const string PolicyId = "OPENDITOO-WEBCAM-PRODUCT-002";
+    // One 30-minute connection per launch (Runtime 004 Host streaming ceiling): lifetime / 50 ms slots + 1.
+    internal const int PolicySeconds = 1800;
+    internal const int PolicyFrames = PolicySeconds * 1000 / 50 + 1;
     internal static readonly Regex SessionId = new("^OPENDITOO-WEBCAM-LIVE-[0-9a-f]{8}-[0-9]{3}$");
 
     /// <summary>
@@ -103,13 +106,14 @@ internal static class StudioTrial
         var e = doc["envelope"]!;
         int Get(string key) => e[key]!.GetValue<int>();
         Trial.Require(e["session_profile"]!.GetValue<string>() == Trial.Profile && Get("host_floor_ms") == Trial.HostFloor &&
-            Get("slot_interval_ms") == StudioModes.IntervalMs["max"] && Get("session_lifetime_seconds") == 60 &&
-            Get("max_frames") == 500 && Get("max_application_packets") == 1500 &&
-            Get("max_tx_bytes") == 500 * Trial.WorstCaseFrameTxBytes && Get("ack_timeout_ms_per_frame") == Trial.AckTimeoutMs,
+            Get("slot_interval_ms") == StudioModes.IntervalMs["max"] && Get("session_lifetime_seconds") == PolicySeconds &&
+            Get("max_frames") == PolicyFrames && Get("max_application_packets") == PolicyFrames * 3 &&
+            Get("max_tx_bytes") == PolicyFrames * Trial.WorstCaseFrameTxBytes && Get("ack_timeout_ms_per_frame") == Trial.AckTimeoutMs &&
+            Get("max_sessions_per_launch") == 1,
             "WEBCAM_PRODUCT_ENVELOPE_MISMATCH");
         foreach (var flag in new[] { "automatic_retry", "automatic_reconnect", "stock_screen_reclaim" })
             Trial.Require(!doc["behavior"]![flag]!.GetValue<bool>(), "RETRY_OR_RECLAIM_FORBIDDEN");
         VerifyBuild(root, doc["build"]!["producer_code_sha256"]!.AsObject(), doc["build"]!["host_dll_sha256"]!.GetValue<string>());
-        return (60, 500, 500 * Trial.WorstCaseFrameTxBytes, StudioModes.IntervalMs["max"]);
+        return (PolicySeconds, PolicyFrames, PolicyFrames * Trial.WorstCaseFrameTxBytes, StudioModes.IntervalMs["max"]);
     }
 }
