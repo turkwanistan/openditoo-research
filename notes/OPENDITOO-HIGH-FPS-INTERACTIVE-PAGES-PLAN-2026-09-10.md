@@ -2,6 +2,8 @@
 
 **Status:** adopted owner priority; implementation may proceed offline/autonomously. Live Runtime 006 remains the accepted rollback baseline until a successor is separately reviewed and granted.
 
+**Location:** implementation and the HF-3 manifest currently live on `feat/high-fps-interactive-pages`; `main` carries this steering note only so fresh sessions can route into the isolated worktree without invalidating Runtime 006.
+
 ## Implementation checkpoint — 2026-09-10
 
 Implementation is isolated on branch/worktree `feat/high-fps-interactive-pages`; core implementation checkpoint `65723e6`; live `main` remains the Runtime 006 rollback baseline and its hash-bound runtime files have not been changed. **No successor device transmission has occurred.**

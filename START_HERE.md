@@ -2,6 +2,8 @@
 
 OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit evidence and preserved artifacts outrank family resemblance, plans, and chat history.
 
+**Successor implementation location:** high-FPS interactive-page work is intentionally isolated on branch `feat/high-fps-interactive-pages` (current checkpoint `b2fd0e9`; core code `65723e6`). Do not merge its hash-bound runtime changes into live `main` before HF-3 physical acceptance; use the existing worktree under `.openditoo-local/worktrees/high-fps-interactive-pages` for successor work.
+
 ## Current session route — 2026-09-10
 
 **Current handoff (2026-09-10): physical button pagination is LIVE as Runtime 006.** Read `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md` first, then `notes/OPENDITOO-HIGH-FPS-INTERACTIVE-PAGES-PLAN-2026-09-10.md`. Ditoo Left/Right page a wrap-around list and a short lever pull runs the page's own action; Runtime 006 is the accepted rollback baseline for the next work. The owner has explicitly reframed BTN-9: do **not** optimize the spiral as an end in itself. The active objective is a **general high-FPS interactive page runtime** on the existing `streaming_ack_clock` profile, with a small three-reel slots game as the first meaningful acceptance app. In parallel, prototype a richer MCP activity animation in which a lightning bolt descends into the active icon before the existing blue/cyan flare. Research/plan notes (`…BUTTON-AVRCP-RESEARCH…`, `…PAGINATION-PLAN…`) are history for BTN-0..6.
