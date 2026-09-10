@@ -70,8 +70,11 @@ foreach ($property in $doc.stream.live_source.producer_code_sha256.PSObject.Prop
     $property.Value = (Get-FileHash -Algorithm SHA256 $sourcePath).Hash.ToLowerInvariant()
 }
 
-$gitHead = (& wsl.exe -d $Distro -- bash -lc 'cd "$1" && git rev-parse HEAD' _ $WslRepositoryPath).Trim()
+$gitHeadLines = @(& wsl.exe -d $Distro -- git -C $WslRepositoryPath rev-parse HEAD)
 if ($LASTEXITCODE -ne 0) { throw 'W7_RERUN_GIT_HEAD_LOOKUP_FAILED' }
+$gitHead = ($gitHeadLines | Select-Object -Last 1)
+Require (-not [string]::IsNullOrWhiteSpace($gitHead)) 'W7_RERUN_GIT_HEAD_EMPTY'
+$gitHead = $gitHead.Trim()
 $evidence = [ordered]@{
     schema_version = 1
     experiment_id = 'OPENDITOO-WEBCAM-N980P-002'
@@ -91,7 +94,8 @@ $evidence = [ordered]@{
     operation = [ordered]@{ claim_created = $false; host_session_io = $false; device_io = $false }
     prior_attempt = [ordered]@{ experiment_id = 'OPENDITOO-WEBCAM-N980P-001'; outcome = 'not_opened'; frames = 0; tx_bytes = 0; replay_forbidden = $true }
 }
-$evidence | ConvertTo-Json -Depth 20 | Set-Content -Path $evidencePath -Encoding UTF8
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($evidencePath, ($evidence | ConvertTo-Json -Depth 20), $utf8NoBom)
 $evidenceSha = (Get-FileHash -Algorithm SHA256 $evidencePath).Hash.ToLowerInvariant()
 
 $doc.status = 'grant_ready_awaiting_named_grant'
@@ -112,12 +116,14 @@ $doc | Add-Member -Force -NotePropertyName w7_rerun_preparation -NotePropertyVal
     host_session_io = $false
     device_io = $false
 })
-$doc | ConvertTo-Json -Depth 30 | Set-Content -Path $manifestPath -Encoding UTF8
+[System.IO.File]::WriteAllText($manifestPath, ($doc | ConvertTo-Json -Depth 30), $utf8NoBom)
 $manifestSha = (Get-FileHash -Algorithm SHA256 $manifestPath).Hash.ToLowerInvariant()
 
 # Re-enter WSL only for read-only/offline validation of the just-frozen manifest.
-& wsl.exe -d $Distro -- bash -lc 'cd "$1" && python3 scripts/verify_day1_offline.py && python3 scripts/check_webcam_trial.py' _ $WslRepositoryPath
-if ($LASTEXITCODE -ne 0) { throw 'W7_RERUN_WSL_OFFLINE_VALIDATION_FAILED' }
+& wsl.exe -d $Distro -- python3 ($WslRepositoryPath + '/scripts/verify_day1_offline.py')
+if ($LASTEXITCODE -ne 0) { throw 'W7_RERUN_WSL_OFFLINE_VALIDATION_FAILED_VERIFY' }
+& wsl.exe -d $Distro -- python3 ($WslRepositoryPath + '/scripts/check_webcam_trial.py')
+if ($LASTEXITCODE -ne 0) { throw 'W7_RERUN_WSL_OFFLINE_VALIDATION_FAILED_CHECK' }
 
 Write-Output ("W7_RERUN_PREP_PASS experiment_id=OPENDITOO-WEBCAM-N980P-002 manifest_sha256={0} evidence_sha256={1} claim_created=false host_session_io=false device_io=false" -f $manifestSha, $evidenceSha)
 Write-Output 'W7_RERUN_NEXT_GRANT=Grant OPENDITOO-WEBCAM-N980P-002'

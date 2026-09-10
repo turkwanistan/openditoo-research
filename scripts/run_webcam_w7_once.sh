@@ -4,9 +4,9 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO"
 
-MANIFEST="experiments/DAY1-WEBCAM-N980P-001.json"
-RESULT_FILE="captures/OPENDITOO-WEBCAM-W7-LIVE-RESULT-2026-09-09.json"
-RAW_FILE="captures/OPENDITOO-WEBCAM-W7-LIVE-RAW-2026-09-09.log"
+MANIFEST="experiments/DAY1-WEBCAM-N980P-002.json"
+RESULT_FILE="captures/OPENDITOO-WEBCAM-W7-RERUN-002-LIVE-RESULT-2026-09-09.json"
+RAW_FILE="captures/OPENDITOO-WEBCAM-W7-RERUN-002-LIVE-RAW-2026-09-09.log"
 SERVICE="openditoo-product.service"
 PRODUCT_WAS_ACTIVE=false
 PRODUCT_RESTORED=false
@@ -37,18 +37,18 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-echo "W7_BEGIN experiment_id=OPENDITOO-WEBCAM-N980P-001 lifetime_seconds=10 max_frames=112 max_packets=336 max_tx_bytes=118048"
+echo "W7_BEGIN experiment_id=OPENDITOO-WEBCAM-N980P-002 lifetime_seconds=10 max_frames=112 max_packets=336 max_tx_bytes=118048"
 python3 scripts/verify_day1_offline.py
 python3 scripts/check_webcam_trial.py
 python3 - <<'PY'
 from pathlib import Path
 from host import frame_stream
-p=Path('experiments/DAY1-WEBCAM-N980P-001.json')
+p=Path('experiments/DAY1-WEBCAM-N980P-002.json')
 blockers=frame_stream.authority_blockers(p)
 if blockers:
     raise SystemExit('W7_AUTHORITY_BLOCKED ' + ','.join(blockers))
 m,_,s=frame_stream.load_stream_manifest(p, require_authority=True)
-assert m.experiment_id == 'OPENDITOO-WEBCAM-N980P-001'
+assert m.experiment_id == 'OPENDITOO-WEBCAM-N980P-002'
 assert (m.lifetime_seconds,m.min_frame_interval_ms,m.max_frames,m.max_application_packets,m.max_tx_bytes)==(10,40,112,336,118048)
 assert s['source_kind']=='live' and s['session_profile']=='streaming_ack_clock' and s['playback_interval_ms']==90
 print('W7_AUTHORITY_AND_ENVELOPE_PASS')
@@ -119,7 +119,7 @@ python3 - "$RESULT_FILE" <<'PY'
 import json,sys
 p=sys.argv[1]
 d=json.load(open(p,encoding='utf-8'))
-if d.get('experiment_id') != 'OPENDITOO-WEBCAM-N980P-001':
+if d.get('experiment_id') != 'OPENDITOO-WEBCAM-N980P-002':
     raise SystemExit('W7_RESULT_ID_MISMATCH')
 if d.get('claim_created') is not True:
     raise SystemExit('W7_CLAIM_NOT_CREATED')

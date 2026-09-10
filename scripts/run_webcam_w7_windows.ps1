@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-Write-Output 'W7_WINDOWS_LAUNCH_BEGIN experiment_id=OPENDITOO-WEBCAM-N980P-001'
+Write-Output 'W7_WINDOWS_LAUNCH_BEGIN experiment_id=OPENDITOO-WEBCAM-N980P-002'
 
 if ($WslRepositoryPath -notmatch '^/[A-Za-z0-9._/-]+$') { throw 'W7_WSL_REPOSITORY_PATH_INVALID' }
 if ($Distro -notmatch '^[A-Za-z0-9._-]+$') { throw 'W7_WSL_DISTRO_INVALID' }

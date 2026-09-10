@@ -762,3 +762,14 @@ bounds and no retry/reconnect/reclaim. It is initially unauthorized and not gran
 plus transform/encoder selftests, run the real-Host read-only status-contract selftest, and freeze
 the exact new hashes. Only after that passes may the project request the distinct grant
 `Grant OPENDITOO-WEBCAM-N980P-002`.
+
+
+## 19. W7 rerun 002 preparation PASS — metadata recovered after wrapper-only failure
+
+The operator reran `scripts/prepare_webcam_w7_rerun_windows.ps1` after the compile fix. The corrected Windows runner built with **0 warnings / 0 errors**; adapter selftest, **15/15** transform parity, and **6/6** encoder parity all passed. Most importantly, the staged runner's `host-status-selftest` succeeded against the real Day1 Host and reported `status_has_ok_field=false`, exact target `11:75:58:CE:DE:C7`, `device_io=false`, and `host_session_io=false`. This directly validates the attempt-001 contract correction.
+
+The wrapper then failed only while trying to recover Git HEAD through `bash -lc` positional-parameter quoting. That happened **after** every required build/selftest/real-Host check and before any claim/session/device operation. The exact corrected build remained present under the repo; all frozen producer files matched except the newly rebuilt runner DLL, whose exact SHA-256 was recovered as `64b4582b068900785574c76b2510f6c406cb518d3196f51f0a8241818001792f` and frozen into rerun 002. Structured recovery evidence is `captures/OPENDITOO-WEBCAM-W7-RERUN-PREPARATION-2026-09-09.json`.
+
+The prep wrapper is also corrected for future use: direct `wsl.exe ... git -C` and direct absolute-path Python invocations replace nested Bash quoting, and UTF-8 JSON writes are explicitly BOM-free for Windows PowerShell 5.1. These bookkeeping fixes do not alter producer/runtime behavior.
+
+`OPENDITOO-WEBCAM-N980P-002` is now **grant-ready but unauthorized**, with no claim and no Host/device I/O. Its distinct future grant is `Grant OPENDITOO-WEBCAM-N980P-002`. The guarded W7 launcher is rebound to 002 and uses distinct rerun result paths so consumed attempt-001 evidence cannot be overwritten.

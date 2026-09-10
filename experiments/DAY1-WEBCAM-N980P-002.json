@@ -3,16 +3,13 @@
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-N980P-002",
   "milestone": "W7 first physical webcam acceptance trial \u2014 rerun after status-contract fix",
-  "status": "review_only_status_fix_verification_pending",
+  "status": "grant_ready_awaiting_named_grant",
   "objective": "Fresh replacement for consumed attempt 001. Same 10-second exact-unit webcam envelope. Only client status parsing changed: successful GET /v1/status no longer requires the POST-only ok field. No new transport, target, timing, retry, reconnect, reclaim, camera, transform, or encoder authority is introduced.",
   "readiness": {
     "execution_ready": false,
-    "grant_ready": false,
-    "blockers": [
-      "WINDOWS_STATUS_CONTRACT_FIX_NOT_VERIFIED",
-      "WINDOWS_RUNNER_REBUILD_NOT_FROZEN"
-    ],
-    "required_followup": "Run scripts/prepare_webcam_w7_rerun_windows.ps1. It rebuilds/stages the corrected runner, reruns adapter/transform/encoder selftests, exercises the corrected C# parser against the real read-only /v1/status endpoint with device_io=false, and freezes the exact new runner hashes. Then review and request fresh exact grant `Grant OPENDITOO-WEBCAM-N980P-002`."
+    "grant_ready": true,
+    "blockers": [],
+    "required_followup": "Obtain the fresh exact grant `Grant OPENDITOO-WEBCAM-N980P-002`. Only after that grant: stop Runtime 003, verify Host idle, allow the camera-ready nonce claim handshake, and execute the single bounded 10-second W7 rerun. Never replay attempt 001."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -34,8 +31,8 @@
     },
     "host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
     "installed_dll_sha256_verified": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
-    "source_checkpoint": "post-a4871c1 status-contract correction; Windows rebuild/freeze pending",
-    "identity_note": "Attempt 001 exposed a client/Host status schema mismatch before Host open. The correction is limited to accepting the established HTTP-200 status identity document without requiring a POST-style ok field, plus clearer HTTP refusal codes and a read-only real-Host status selftest. Windows rebuild/final hash freeze pending."
+    "source_checkpoint": "9972307 + corrected Windows runner build verified by operator; metadata recovery only afterward",
+    "identity_note": "Corrected runner built with zero warnings/errors; adapter/transform/encoder selftests passed; staged C# client then passed against the real read-only Day1 Host /v1/status contract with status_has_ok_field=false. The later wrapper failure was bookkeeping-only and occurred after these checks. Runtime 003 was not stopped and no Host session/device I/O occurred."
   },
   "session": {
     "lifetime_seconds": 10,
@@ -69,7 +66,7 @@
         "cli/webcam.py": "1dbed50b2533c76bb72ad2c4313365c8756a316d4fd06029b0299bc7583f528f",
         "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
         "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.deps.json": "8848608ffa3024a9cb91318ec0df04be5e8872e3b8ced952ea17e681e64774f8",
-        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.dll": "6c9674c427b09b2468ec9fb9645a428d035bc7219a9b048b469d9774234aaffb",
+        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.dll": "64b4582b068900785574c76b2510f6c406cb518d3196f51f0a8241818001792f",
         "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.exe": "c11b7c1e12a333a88546c9ae4bd1d1e68912d6bddc3cb4095afa7bd23108fc69",
         "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.runtimeconfig.json": "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2",
         "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/WinRT.Runtime.dll": "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
@@ -162,7 +159,7 @@
       "/v1/session/close"
     ],
     "claim_handshake": "Runner must produce one fresh valid 16x16 frame and emit camera_ready + nonce before WSL creates the durable one-use claim; only execute:<nonce> may cross the claim boundary.",
-    "deployment_state": "status-contract correction source present; corrected Windows runner rebuild/staging and live read-only status selftest pending"
+    "deployment_state": "PASS rerun preparation: corrected Windows runner rebuilt/staged; adapter/parity tests and real read-only Host status-contract selftest passed; no claim/session/device I/O."
   },
   "w6_verification": {
     "status": "pass",
@@ -174,6 +171,16 @@
     "camera_frames_captured": 8647,
     "camera_frames_replaced": 5376,
     "transform_p95_ms": 1.4379999935626984,
+    "claim_created": false,
+    "host_session_io": false,
+    "device_io": false
+  },
+  "w7_rerun_preparation": {
+    "status": "pass",
+    "evidence_file": "captures/OPENDITOO-WEBCAM-W7-RERUN-PREPARATION-2026-09-09.json",
+    "evidence_sha256": "17592e8ecc97013f54353bb10008513b99efeb5e9707f104e1cf9dcbfa898ad5",
+    "real_host_status_selftest": true,
+    "status_has_ok_field": false,
     "claim_created": false,
     "host_session_io": false,
     "device_io": false

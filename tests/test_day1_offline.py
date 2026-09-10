@@ -3658,6 +3658,10 @@ class W6WebcamReviewTests(unittest.TestCase):
             self.assertNotIn(forbidden, script)
         self.assertIn("W7_RERUN_PREP_REFUSES_PREAUTHORIZED_MANIFEST", script)
         self.assertIn("W7_RERUN_PREP_REFUSES_CONSUMED_MANIFEST", script)
+        self.assertIn("wsl.exe -d $Distro -- git -C $WslRepositoryPath rev-parse HEAD", script)
+        self.assertNotIn("bash -lc", script)
+        self.assertIn("System.Text.UTF8Encoding($false)", script)
+        self.assertNotIn("Set-Content -Path $manifestPath -Encoding UTF8", script)
 
     def test_w7_guarded_launcher_preserves_one_controller_and_restore_boundaries(self) -> None:
         shell = (ROOT / "scripts/run_webcam_w7_once.sh").read_text(encoding="utf-8")
@@ -3671,4 +3675,8 @@ class W6WebcamReviewTests(unittest.TestCase):
         self.assertIn("W7_HOST_IDLE_PASS", shell)
         self.assertIn("claim_created", shell)
         self.assertIn("W7_LIVE_PASS outcome=stopped_clean claim_created=true", shell)
+        self.assertIn('MANIFEST="experiments/DAY1-WEBCAM-N980P-002.json"', shell)
+        self.assertIn("OPENDITOO-WEBCAM-N980P-002", windows)
+        self.assertIn("W7-RERUN-002-LIVE-RESULT", shell)
+        self.assertNotIn("W7-LIVE-RESULT-2026-09-09.json", shell)
         self.assertIn("bash scripts/run_webcam_w7_once.sh", windows)

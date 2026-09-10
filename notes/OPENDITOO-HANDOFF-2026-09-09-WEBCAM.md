@@ -116,7 +116,7 @@ refuses an unknown name. **The streaming profile has never been exercised live.*
 | W4 Host streaming profile | done, built, **deployed** |
 | W5 dry run + fault injection | **done** — healthy path + terminal fault boundaries verified offline |
 | W6 freeze trial manifest | **PASS / grant-ready** — exact W6-passing Windows build frozen; adapter/parity tests, nonce negative control, and 300.12 s real-camera soak passed |
-| W7 first physical trial | **attempt 001 consumed pre-open; rerun 002 in preparation** — 001 sent 0 frames/bytes; status-contract client bug fixed in source; corrected Windows build + real read-only Host status selftest still required before 002 can become grant-ready |
+| W7 first physical trial | **attempt 001 consumed pre-open; rerun 002 grant-ready** — 001 sent 0 frames/bytes; corrected 002 runner built cleanly, adapter/parity tests passed, and staged C# status parser passed against the real read-only Host; no 002 claim/session/device I/O yet |
 | W8 near-ceiling ACK-clock trial | after W7 acceptance; one bounded identity, no new rate ladder |
 | W9 optical latency | after W8 if useful; camera and Ditoo filmed together, separate from ACK latency |
 | W10 product polish/authority | only after experimental acceptance; decide whether webcam gets separate standing product authority |
@@ -135,9 +135,9 @@ device receives:
 ## 6. Next objective, in order
 
 1. **Preserve attempt 001 as consumed.** It ended `not_opened`, 0 frames / 0 bytes, after the camera-ready nonce claim because `TypedSession.Request()` wrongly required `ok=true` on the live Host's successful `/v1/status` response. There is no Host ledger entry for 001, so `ActivitySessionHost.Open()` was never reached. Never replay 001.
-2. **Prepare fresh rerun 002 without authority:** `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/prepare_webcam_w7_rerun_windows.ps1`. This rebuilds/stages the corrected runner, reruns adapter + transform + encoder selftests, then exercises the same C# status parser against the real read-only Host `/v1/status` endpoint. It does not stop Runtime 003, create a claim, open a Host session, or touch the Ditoo. It then freezes the exact new producer/build hashes.
-3. Only after that command and the WSL offline checker pass, request the fresh exact grant `Grant OPENDITOO-WEBCAM-N980P-002`. The prior 001 grant is consumed and cannot authorize 002.
-4. After the 002 grant, run one guarded 10-second physical rerun with no retry/reconnect/reclaim; then proceed to W8 only if transport and owner-visible output are accepted.
+2. **Fresh rerun 002 preparation is PASS without transmission.** The corrected Windows build completed with 0 warnings/errors; adapter + transform + encoder selftests passed; the staged C# client passed against the real read-only Host `/v1/status` contract with `status_has_ok_field=false`. The later wrapper failure was bookkeeping-only; exact post-build artifact hashes were recovered and frozen, with no claim/session/device I/O.
+3. Request the fresh exact grant `Grant OPENDITOO-WEBCAM-N980P-002`. The prior 001 grant is consumed and cannot authorize 002.
+4. After the 002 grant, execute only `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_webcam_w7_windows.ps1`, now bound to 002 with distinct result files, for one guarded 10-second physical rerun with no retry/reconnect/reclaim; then proceed to W8 only if transport and owner-visible output are accepted.
 
 ## 7. Working style that earned its keep
 

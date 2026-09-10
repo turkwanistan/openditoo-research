@@ -1,0 +1,42 @@
+{
+  "bookkeeping_recovery": {
+    "effect": "none on runner build, Host status selftest, claim/session/device state, or frozen producer code",
+    "rerun_required": false,
+    "wrapper_failure_after_all_required_checks": "WSL git HEAD lookup used bash positional-parameter plumbing that did not survive wsl.exe invocation"
+  },
+  "build": {
+    "errors": 0,
+    "release": "pass",
+    "runner_dll_sha256": "64b4582b068900785574c76b2510f6c406cb518d3196f51f0a8241818001792f",
+    "runner_exe_sha256": "c11b7c1e12a333a88546c9ae4bd1d1e68912d6bddc3cb4095afa7bd23108fc69",
+    "stage": "C:\\temp\\openditoo-webcam-runner",
+    "warnings": 0
+  },
+  "checks": {
+    "adapter_selftest": "pass",
+    "encoder_selftest_cases": 6,
+    "exact_target": "11:75:58:CE:DE:C7",
+    "real_host_status_has_ok_field": false,
+    "real_host_status_selftest": "pass",
+    "transform_selftest_cases": 15
+  },
+  "correction": "GET /v1/status is accepted by HTTP success plus exact identity validation and does not require the POST command-result ok field; POST routes still require ok=true.",
+  "evidence_source": "operator Windows PowerShell output plus exact post-build artifacts present in repository worktree",
+  "experiment_id": "OPENDITOO-WEBCAM-N980P-002",
+  "milestone": "W7 rerun preparation after attempt-001 status-contract failure",
+  "operation": {
+    "claim_created": false,
+    "device_io": false,
+    "host_session_io": false
+  },
+  "prepared_from_git_head": "99723072cd8223d04fb80d3fcb4bcf094cb2415f",
+  "prior_attempt": {
+    "experiment_id": "OPENDITOO-WEBCAM-N980P-001",
+    "frames": 0,
+    "outcome": "not_opened",
+    "replay_forbidden": true,
+    "tx_bytes": 0
+  },
+  "schema_version": 1,
+  "status": "pass"
+}
