@@ -64,3 +64,15 @@ directly: a task-started Host is hosted in a **visible Windows Terminal window t
 switches the existing task and restarts it; no binary change, so no policy hash moves). Applying it
 needs an **elevated** PowerShell (the task was registered with admin rights; `Set-ScheduledTask` →
 Access denied from the normal session). Until applied: do not close that terminal window.
+
+**Headless applied (owner ran it elevated, 11:04 local):** task action is now `conhost.exe --headless …`,
+Host PID under conhost, **0 Host windows**, dashboard `connected`. Console-close outages cannot recur.
+
+**Launch `525d0122` (15:04:30Z) — no ACK on the first frame, second young-link case.** The headless
+restart made the dashboard reconnect at 15:04:12; the owner's launch stopped that 6 s-old, 1-frame
+connection at 15:04:18 and the webcam open at 15:04:30 (after the 8 s settle) got
+`IMAGE_RX_RECV_TIMEOUT; NO_RETRY`, 0 frames; launch ended fail-closed, dashboard restored. Same shape as
+W9B-006 (1-frame, seconds-old predecessor). Every clean launch followed a dashboard link up for minutes.
+Mitigation (launcher only, not policy-bound): wait until the dashboard's current connection is ≥ 30 s
+old before suspending it. Confidence in the young-link mechanism: moderate — two matching cases, still
+not demonstrated; the webcam-product-001 session-4 reopen failure had a 30 s-old predecessor instead.

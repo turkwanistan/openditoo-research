@@ -4372,6 +4372,8 @@ print(json.dumps({"kind": "done"}), flush=True)
         run = shell.index("python3 host/webcam_studio.py policy-run")
         self.assertTrue(check < stop < shell.index("sleep 8") < run)
         self.assertIn("trap 'rc=$?; restore_product", shell)
+        # A seconds-old dashboard link is never torn down (W9B-006, run 525d0122).
+        self.assertTrue(check < shell.index("current_session_opened_at") < shell.index('-lt 30 ]]') < stop)
 
 
 class Runtime004StreamingCeilingTests(unittest.TestCase):

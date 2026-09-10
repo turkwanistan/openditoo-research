@@ -15,6 +15,18 @@ restore_product(){
 }
 trap 'rc=$?; restore_product || true; exit "$rc"' EXIT INT TERM
 python3 host/webcam_studio.py policy-check >/dev/null || { python3 host/webcam_studio.py policy-check; echo "WEBCAM_POLICY_NOT_USABLE: nothing was touched" >&2; exit 2; }
+# Never tear down a Ditoo link that has only just opened: twice (W9B-006, run 525d0122) a webcam open that
+# followed a seconds-old dashboard connection got no ACK at all (IMAGE_RX_RECV_TIMEOUT). Every clean
+# launch followed a dashboard link that had been up for minutes. ponytail: fixed 30 s, tune if it recurs.
+age="$(python3 cli/openditoo.py product-status 2>/dev/null | python3 -c '
+import json, sys, datetime
+r = json.load(sys.stdin)["runtime"]; opened = r.get("current_session_opened_at")
+if r.get("status") != "connected" or not opened: print(0); raise SystemExit
+t = datetime.datetime.fromisoformat(opened.replace("Z", "+00:00"))
+print(int((datetime.datetime.now(datetime.timezone.utc) - t).total_seconds()))' 2>/dev/null || echo 0)"
+if [[ "$age" =~ ^[0-9]+$ && "$age" -lt 30 ]]; then
+ echo "Dashboard connection is only ${age}s old; waiting $((30 - age))s for it to settle..."; sleep $((30 - age))
+fi
 echo "OpenDitoo webcam: suspending the MCP dashboard..."
 state="$(systemctl --user is-active "$SERVICE" 2>/dev/null || true)"; [[ "$state" == active ]] && PRODUCT_WAS_ACTIVE=true
 systemctl --user stop "$SERVICE"
