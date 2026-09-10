@@ -4206,28 +4206,36 @@ class W10WebcamStudioTests(unittest.TestCase):
     MANIFEST = ROOT / "experiments/DAY1-WEBCAM-W10-001.json"
     STUDIO = ROOT / "runtime/windows/OpenDitoo.Webcam.Studio"
 
-    def test_w10_001_authority_lifecycle(self) -> None:
-        data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+    def test_w10_authority_lifecycle(self) -> None:
+        for path in sorted(ROOT.glob("experiments/DAY1-WEBCAM-W10-*.json")):
+            with self.subTest(manifest=path.name):
+                self._check_lifecycle(path)
+
+    def _check_lifecycle(self, path: Path) -> None:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        experiment_id = data["experiment_id"]
         authority = data["authority"]
+        self.assertEqual(path.name, "DAY1-WEBCAM-W10-%s.json" % experiment_id[-3:])
+        self.assertIn("Confers no standing webcam authority", authority["grant_scope_requested"])
         if authority["authorization_consumed"]:
             # Run once; never replayable. The claim on disk is what makes that true.
             self.assertFalse(authority["transmission_authorized"])
             self.assertEqual(data["readiness"]["blockers"], ["AUTHORITY_ALREADY_CONSUMED"])
-            claim = activity_session.SessionClaim("OPENDITOO-WEBCAM-W10-001").read()
-            self.assertEqual(claim["state"], "finished")
+            self.assertEqual(activity_session.SessionClaim(experiment_id).read()["state"], "finished")
             self.assertTrue(data["w10_attempt"]["host_ledger"]["agrees_with_client"])
             return
         if authority["transmission_authorized"]:
             # Granted but not yet run: only the exact named grant, attributed and expiring.
-            self.assertEqual(authority["grant_text"], "Grant OPENDITOO-WEBCAM-W10-001")
+            self.assertEqual(authority["grant_text"], "Grant " + experiment_id)
             self.assertTrue(authority["granted_by"] and authority["expires_at"])
         else:
             self.assertIsNone(authority["grant_text"])
-        self.assertEqual(authority["grant_string_after_readiness"], "Grant OPENDITOO-WEBCAM-W10-001")
-        self.assertIn("Confers no standing webcam authority", authority["grant_scope_requested"])
-        self.assertTrue(data["readiness"]["grant_ready"])
-        self.assertFalse(activity_session.SessionClaim("OPENDITOO-WEBCAM-W10-001").path.exists())
-        manifest, _, stream = frame_stream.load_stream_manifest(self.MANIFEST, require_authority=False)
+        self.assertEqual(authority["grant_string_after_readiness"], "Grant " + experiment_id)
+        self.assertFalse(activity_session.SessionClaim(experiment_id).path.exists())
+        if not data["readiness"]["grant_ready"]:
+            self.assertEqual(data["readiness"]["blockers"], ["WINDOWS_PREPARATION_NOT_RUN"])
+            return
+        manifest, _, stream = frame_stream.load_stream_manifest(path, require_authority=False)
         self.assertEqual((manifest.lifetime_seconds, manifest.min_frame_interval_ms, manifest.max_frames,
                           manifest.max_application_packets, manifest.max_tx_bytes), (60, 40, 500, 1500, 527000))
         self.assertEqual((stream["session_profile"], stream["playback_interval_ms"]), ("streaming_ack_clock", 50))

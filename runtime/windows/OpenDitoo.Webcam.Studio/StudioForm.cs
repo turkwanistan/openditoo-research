@@ -121,6 +121,8 @@ internal sealed class StudioForm : Form
             stopButton.Visible = true;
             stopButton.Click += (_, _) => sessionStop.Cancel();
             FormClosing += (_, _) => sessionStop.Cancel(); // closing the window is a stop, never an abandon
+            // W10-001: the operator never saw the live window in time. Bring it to the front.
+            Shown += (_, _) => { TopMost = true; Activate(); TopMost = false; };
         }
         sessionLabel.Text = sessionStop is null ? "PREVIEW ONLY — nothing is sent to the Ditoo" : "Waiting for the session to open";
         source.Draw = DrawSource;

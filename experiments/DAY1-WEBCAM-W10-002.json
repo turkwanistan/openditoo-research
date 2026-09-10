@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
   "kind": "frame_stream",
-  "experiment_id": "OPENDITOO-WEBCAM-W10-001",
-  "milestone": "W10B first live webcam Studio session",
-  "status": "completed_pass_authority_consumed",
-  "objective": "One bounded live session driven from the W10 Studio window: the operator frames the shot live (zoom/pan/mirror/rotate) while the exact 16x16 matrix streams, and ends it with the Stop button. Proves the product path end to end: absolute-deadline scheduler, unchanged/duplicate suppression with heartbeat, and a clean operator stop. Not a rate measurement and not a panel-refresh claim.",
+  "experiment_id": "OPENDITOO-WEBCAM-W10-002",
+  "milestone": "W10B retest: operator Stop button and live framing on the Ditoo",
+  "status": "draft_awaiting_preparation",
+  "objective": "Same envelope as consumed W10-001 (transport PASS, owner visual PASS). Purpose is only the two paths 001 did not exercise: operator changes zoom/pan in the Studio window during the session and sees it on the Ditoo, then ends the session with Stop.",
   "readiness": {
     "execution_ready": false,
     "grant_ready": false,
     "blockers": [
-      "AUTHORITY_ALREADY_CONSUMED"
+      "WINDOWS_PREPARATION_NOT_RUN"
     ],
-    "required_followup": "W10-001 is consumed and PASS (transport + owner visual). Never replay it. Stop button and live framing are retested under fresh W10-002."
+    "required_followup": "Run python3 scripts/prepare_webcam_w10.py 002. Then the fresh exact grant `Grant OPENDITOO-WEBCAM-W10-002`, then only bash scripts/run_webcam_w10_002_once.sh, once."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -31,8 +31,7 @@
       "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
       "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36"
     },
-    "host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
-    "source_checkpoint": "f647ca4bd6e36ea3c7e087164370efecdcd22b9a + Studio build staged at C:\\temp\\openditoo-webcam-studio-w10"
+    "host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb"
   },
   "session": {
     "lifetime_seconds": 60,
@@ -53,29 +52,7 @@
     "source_description": "NexiGo VID_0C45 PID_2690 live camera framed by the operator in the W10 Studio window; WinRT Realtime freshest-frame slots; srgb_area transform with operator-adjustable zoom/pan/mirror/rotation and the deterministic 255-colour guard.",
     "live_source": {
       "producer_description": "W10 Studio (runtime/windows/OpenDitoo.Webcam.Studio): StudioCamera + StudioSender + StudioForm, linking the 007-frozen transform, encoder, slot and typed-session files read-only. SourceId assigned once at acquisition as in W9A.",
-      "producer_code_sha256": {
-        "runtime/windows/OpenDitoo.Webcam.Studio/Program.cs": "21e69ce7e7f04d94dddd85a472244ae31c179880a4eb441e222eeced3f0735b5",
-        "runtime/windows/OpenDitoo.Webcam.Studio/StudioCamera.cs": "73efe75264da487b4a88dbf63665a61d25f769e75db8d3c5511a0920460540ea",
-        "runtime/windows/OpenDitoo.Webcam.Studio/StudioForm.cs": "c7c8ad630a934e1b0574ec978769cb0062e50ae068920df674729bab7bdd3830",
-        "runtime/windows/OpenDitoo.Webcam.Studio/StudioSender.cs": "83bc030e34d8be415f121d5a5dbd25a34d71c98bde6e9348119cfca09db7590f",
-        "runtime/windows/OpenDitoo.Webcam.Studio/StudioTests.cs": "79f5f1370b444f124b5794f1376fda0eddb1e1b1eef9aa2035033a4a2253db83",
-        "runtime/windows/OpenDitoo.Webcam.Studio/StudioTrial.cs": "6e97e7bbcdeb79726bfe01a5340f9b1eac653d0fd1e124f91f7e1e7fc121a883",
-        "runtime/windows/OpenDitoo.Webcam.Studio/OpenDitoo.Webcam.Studio.csproj": "5eaf67ab28455e7e03264dfbe730aa45fb0233009dc4947b41cfabba497d2abc",
-        "runtime/windows/OpenDitoo.Webcam.Probe/WebcamFrames.cs": "ed144646c459fea0337f5b920f8d17e6b8bc50caf93c100a65470f0c699eafad",
-        "runtime/windows/OpenDitoo.Webcam.Probe/LatestFrameSlot.cs": "b6021ed54c9a18fc40f101e0c50378b4fd8d16356c73878ce58fce21cc9198d0",
-        "runtime/windows/OpenDitoo.Webcam.Probe/FrameTransform.cs": "2d703b7dd7630dff071813c728862b33a0c5e68f245ee277ce0c7f9c8c85d623",
-        "runtime/windows/OpenDitoo.Webcam.Probe/DitooEncoder.cs": "a543919336212deed5fc7de354b932cadc68829eb848aee8043e1303cd0bfbb8",
-        "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs": "14addbc5b9c2f0da85cad090a4d2c672911b302ca36bb915fc9e03a1be1eb520",
-        "runtime/windows/OpenDitoo.Webcam.Runner/TypedSession.cs": "5ba7b540822eef6f438355f6b034ef315dd191a8809f37535199fac1ff102243",
-        "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs": "cdb64d7c521217376cf38989aca1d5640aee4cd9d3494ee2a287b4ea5d5f5fa4",
-        "host/webcam_studio.py": "156bd9b6df17e9c7a5fc369d93eb4beddd54ccbb66895c531c8fc9c00e68701a",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.deps.json": "58642f8242fc0f3f89d7f37a8c512fa8907f25801c3984a34e5d685be0241960",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.dll": "571ea1f24e52817d4076c10330f23d290981ddea2ee0a8c6de54a34f8fa8899f",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.exe": "e073e319321eac3818c7fc93621dbb787d8edaad154b0444f3c39fecd9cb907b",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.runtimeconfig.json": "05e2c41d6487512bdd7b09d280bb0c247e31ef20e2be58779bf742a9ac7bcd92",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/WinRT.Runtime.dll": "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
-      },
+      "producer_code_sha256": {},
       "camera": {
         "device_description": "NexiGo HD Webcam",
         "usb_vid": "0C45",
@@ -158,7 +135,7 @@
   "acceptance": {
     "transport": "One clean session: terminal stopped_clean with operator_stop, lifetime_expired or budget_exhausted; zero retries/reconnects/reclaims/pacing refusals/encoder-hash mismatches; Host ledger totals equal client totals.",
     "scheduler": "duplicateSelections and sourceIdentity duplicate/out-of-order selections all zero; skippedSlots and unchangedFrames reported, never transmitted.",
-    "operator": "Owner confirms on the Ditoo: framing changes made in the Studio window during the session appear on the panel, and Stop ends the session with the last frame left static.",
+    "operator": "Owner changes framing during the session and sees it on the Ditoo (framingAtEnd != framingAtStart), then presses Stop: terminalReason operator_stop, outcome stopped_clean, Host ledger agrees.",
     "separation": "ackedTransportFps is ACKed transport only. Panel refresh and visible unique-frame cadence remain UNMEASURED (W9B deferred); no claim about them may be drawn from this session."
   },
   "persistence_analysis": {
@@ -167,14 +144,14 @@
     "product_policy_effect": "none; Runtime 003 is not webcam authority and does not widen; standing webcam authority is a separate owner decision"
   },
   "authority": {
-    "experiment_id": "OPENDITOO-WEBCAM-W10-001",
+    "experiment_id": "OPENDITOO-WEBCAM-W10-002",
     "transmission_authorized": false,
-    "authorization_consumed": true,
-    "granted_by": "operator, in-session, 2026-09-10",
-    "grant_text": "Grant OPENDITOO-WEBCAM-W10-001",
-    "expires_at": "2026-09-10T14:00:51Z",
-    "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-W10-001",
-    "grant_scope_requested": "ONE live W10 Studio session, at most 60 s, to exact Ditoo 11:75:58:CE:DE:C7 v42012 via the existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile: 40 ms Host floor, 50 ms client floor, absolute 50 ms slots with missed slots skipped, at most 500 frames / 1500 packets / 527000 application bytes, one connection, one frame in flight, heartbeat on a quiet scene; operator-adjustable framing; no retry/reconnect/reclaim/pipelining; suspend and restore Runtime 003 separately. Confers no standing webcam authority. Grants for N980P-001..007 are separate and confer nothing."
+    "authorization_consumed": false,
+    "granted_by": null,
+    "grant_text": null,
+    "expires_at": null,
+    "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-W10-002",
+    "grant_scope_requested": "ONE live W10 Studio session, at most 60 s, to exact Ditoo 11:75:58:CE:DE:C7 v42012 via the existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile: 40 ms Host floor, 50 ms client floor, absolute 50 ms slots with missed slots skipped, at most 500 frames / 1500 packets / 527000 application bytes, one connection, one frame in flight, heartbeat on a quiet scene; operator-adjustable framing; no retry/reconnect/reclaim/pipelining; suspend and restore Runtime 003 separately. Confers no standing webcam authority. Grants for N980P-001..007 and W10-001 are consumed or separate and confer nothing."
   },
   "adapter": {
     "kind": "windows_webcam_studio_to_typed_session",
@@ -188,63 +165,6 @@
       "/v1/session/close"
     ],
     "claim_handshake": "Studio must produce one fresh valid 16x16 frame and show its window before emitting camera_ready + nonce; WSL creates the durable one-use claim only then, and only execute:<nonce> crosses the claim boundary.",
-    "deployment_state": "PASS preparation at f647ca4bd6e36ea3c7e087164370efecdcd22b9a: Studio built, staged to C:\\temp\\openditoo-webcam-studio-w10, selftest + transform/encoder parity passed from the staged copy, Host identity checked read-only. No claim, session or device I/O."
-  },
-  "w10_attempt": {
-    "executed_at_utc": "2026-09-10T12:02:57Z",
-    "claim": "finished/stopped_clean",
-    "client": {
-      "frames": 500,
-      "packets": 1500,
-      "bytes": 501200,
-      "terminalReason": "budget_exhausted",
-      "outcome": "stopped_clean",
-      "elapsedMs": 30380.1,
-      "ackedTransportFps": 16.458,
-      "skippedSlots": 107,
-      "unchangedFrames": 0,
-      "duplicateSelections": 0,
-      "heartbeats": 0,
-      "ackMs_p50_p95": [
-        35.66,
-        68.48
-      ],
-      "sourceAgeAtSendMs_p50_p95": [
-        44.92,
-        67.47
-      ],
-      "dispatchIntervalMs_p50_p95": [
-        60.62,
-        68.54
-      ],
-      "sourceIdentity": {
-        "duplicates": 0,
-        "outOfOrder": 0,
-        "skippedBetweenSelections": 106,
-        "first": 30,
-        "last": 635
-      },
-      "framingChangedDuringSession": false
-    },
-    "host_ledger": {
-      "framesSent": 500,
-      "packetsSent": 1500,
-      "txBytesSent": 501200,
-      "reason": "budget_exhausted",
-      "outcome": "stopped_clean",
-      "displayState": "ours_last_acked",
-      "agrees_with_client": true
-    },
-    "retry": false,
-    "reconnect": false,
-    "reclaim": false,
-    "runtime_003_restored": "connected, last_error null, run_nonce 78fa2a4d",
-    "not_exercised": "Stop button (session ended on the frame budget) and live framing change (framingAtStart == framingAtEnd).",
-    "separation": "16.458 fps is ACKed transport. Panel refresh and visible cadence remain UNMEASURED.",
-    "owner_visual": {
-      "result": "PASS",
-      "quote": "yes it worked clearly, looked great, not much latency, high FPS, very impressive",
-      "not_tested": "operator did not get a chance to try the sliders or Stop"
-    }
+    "deployment_state": "not yet prepared"
   }
 }

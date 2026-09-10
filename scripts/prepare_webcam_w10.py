@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Prepare OPENDITOO-WEBCAM-W10-001 to grant-ready. Zero device I/O, no claim, no Host session.
+"""Prepare OPENDITOO-WEBCAM-W10-<NNN> (default 001) to grant-ready. Zero device I/O, no claim, no Host session.
 
 Builds and stages the Studio under C:\\temp (WinRT capture fails from the WSL share), runs its
 selftest and both parity fixtures from the staged copy, checks the Host identity read-only, then
 freezes every producer hash into the manifest. The only Host contact is GET /v1/status.
 """
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -15,8 +16,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from host import activity_session, frame_stream, webcam_studio, webcam_trial
 
 ROOT = frame_stream.ROOT
-MANIFEST = ROOT / "experiments/DAY1-WEBCAM-W10-001.json"
-EVIDENCE = ROOT / "captures/OPENDITOO-WEBCAM-W10-001-PREPARATION-2026-09-10.json"
+ATTEMPT = sys.argv[1] if len(sys.argv) > 1 else "001"
+if not re.fullmatch(r"[0-9]{3}", ATTEMPT):
+    raise SystemExit("W10_PREP_ATTEMPT_INVALID")
+MANIFEST = ROOT / f"experiments/DAY1-WEBCAM-W10-{ATTEMPT}.json"
+EVIDENCE = ROOT / f"captures/OPENDITOO-WEBCAM-W10-{ATTEMPT}-PREPARATION-2026-09-10.json"
 STAGE = r"C:\temp\openditoo-webcam-studio-w10"
 INSTALLED_HOST = Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/Day1Host/OpenDitoo.Day1.Host.dll")
 
