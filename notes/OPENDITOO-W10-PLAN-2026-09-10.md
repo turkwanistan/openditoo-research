@@ -149,3 +149,7 @@ policy shape: `product/OPENDITOO-WEBCAM-PRODUCT-001.json` (committed, unauthoriz
   brief freeze at each ~30 s boundary while the next session opens. The first granted launch is its evidence.
 - Changing Studio sources invalidates the policy by hash: `python3 scripts/prepare_webcam_w10.py product`
   re-freezes the template; a granted local policy must then be revoked and re-granted.
+
+**Granted 2026-09-10:** owner gave `Grant OPENDITOO-WEBCAM-PRODUCT-001`; local policy materialized
+(mode 0600, `policy-check` PASS, template in git unchanged/unauthorized). Launch logs land in
+`.openditoo-local/webcam-product-log/`. First device launch (rollover evidence) pending.

@@ -11,8 +11,9 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
    16.285 fps as what the panel does. Post-v1 >18.46 fps research stays closed by default, since its gate
    was W9B. **Current objective: W10 productization** — read `notes/OPENDITOO-W10-PLAN-2026-09-10.md` next:
    W10A (Studio app) and W10B (live W10-001 + W10-002) are **closed PASS**; W10-001/002 are consumed. W10C
-   on-demand webcam (desktop shortcut → Studio → dashboard restored on close) is **built and prepared, UNAUTHORIZED**
-   pending `Grant OPENDITOO-WEBCAM-PRODUCT-001`; see the W10 note. The W9 handoff lists the remaining lower-priority items.
+   on-demand webcam (desktop shortcut → Studio → dashboard restored on close) is **GRANTED** (`Grant OPENDITOO-WEBCAM-PRODUCT-001`, owner, 2026-09-10) through the local mode-0600
+   `.openditoo-local/webcam-product-policy.json` only; the committed template stays unauthorized. Standing until
+   `python3 host/webcam_studio.py policy-revoke`. Device rollover not yet observed; see the W10 note. The W9 handoff lists the remaining lower-priority items.
    Then `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` for the earlier webcam handoff. Then
    `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md`. The external N980P webcam
    plan is adopted as the route, with recorded amendments. Runtime 003 is deployed;
@@ -69,8 +70,10 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 Activations 001–009, R1–R5, S1 and S2 are consumed. No experimental one-shot transmission is live. Runtime 003 authority remains active only in the git-ignored mode-0600 `.openditoo-local/product-runtime-policy.json`; product status reports no authority blockers.
 
-All committed product templates remain unauthorized. Runtime 003 covers the MCP dashboard only;
-webcam transmission requires its own reviewed manifest and fresh named grant.
+All committed product templates remain unauthorized. Runtime 003 covers the MCP dashboard only.
+Webcam transmission is covered only by the separately granted local W10C policy
+(`OPENDITOO-WEBCAM-PRODUCT-001`, owner-launched, bounded sessions, no retry) or by a fresh reviewed
+manifest and named grant; neither widens Runtime 003.
 The historical Runtime 002 cutover used `Grant OPENDITOO-PRODUCT-RUNTIME-002`; that revision
 is superseded, and its grant must not be reused for the webcam.
 
