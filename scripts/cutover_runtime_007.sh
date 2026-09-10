@@ -108,7 +108,7 @@ raise SystemExit("STUDIO_BUILD_HASH_DRIFT %s" % bad if bad else 0)' || rollback_
 echo R007_STUDIO_BUILT
 # The full offline gate runs HERE, in main (it needs main's local claim/evidence state), against the
 # merged source and the deployed Host, before the dashboard restarts. Any failure rolls back.
-python3 scripts/verify_day1_offline.py >/dev/null || rollback_now OFFLINE_GATE
+python3 scripts/verify_day1_offline.py > "$RB/offline-gate.log" 2>&1 || { tail -20 "$RB/offline-gate.log" >&2; rollback_now OFFLINE_GATE; }
 echo R007_MAIN_OFFLINE_PASS
 
 python3 - "$1" <<'PY' || rollback_now LOCAL_POLICY

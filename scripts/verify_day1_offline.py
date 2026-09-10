@@ -321,7 +321,8 @@ def verify_stream_boundary() -> None:
                    "StreamingMinFrameIntervalMs = 40;", "StreamingSendSpacingMs = 0;",
                    'SESSION_PROFILE_UNKNOWN',
                    "if (string.IsNullOrWhiteSpace(requested)) return ProfileActivity;",
-                   "SendFrameGroup(packets, null, framesSent, SpacingFor(profile))"):
+                   # first frame of a session at the proven 10 ms spacing, later frames at the profile's
+                   "framesSent == 0 ? ActivitySendSpacingMs : SpacingFor(profile));"):
         if needed not in host_cs:
             fail(f"Host session profile boundary missing: {needed}")
     program_cs = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
