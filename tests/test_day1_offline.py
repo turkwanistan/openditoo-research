@@ -4603,3 +4603,40 @@ class AvrcpKeyEvidenceTests(unittest.TestCase):
         seen = {(frame.at.isoformat().replace("+00:00", "Z"), frame.hex) for frame in frames if frame.direction == "rx"}
         for report in historical["unsolicited_reports"]:
             self.assertIn((report["at_utc"], report["wire_hex"]), seen)
+
+
+# --------------------------------------------------------------------------
+# BTN-1 — OpenDitoo.ButtonProbe is receive-only
+# --------------------------------------------------------------------------
+
+BUTTON_PROBE = ROOT / "runtime/windows/OpenDitoo.ButtonProbe"
+
+
+class ButtonProbeBoundaryTests(unittest.TestCase):
+    def _source(self) -> str:
+        return "\n".join(path.read_text(encoding="utf-8") for path in sorted(BUTTON_PROBE.glob("*.cs")))
+
+    def test_probe_has_no_device_host_or_send_capability(self) -> None:
+        src = self._source()
+        project = (BUTTON_PROBE / "OpenDitoo.ButtonProbe.csproj").read_text(encoding="utf-8")
+        for forbidden in ("Rfcomm", "RFCOMM", "StreamSocket", "System.Net", "HttpClient", "Socket(", "8796", "8779",
+                          "token", "Token", "11:75:58", "117558", "BluetoothDevice", "Windows.Devices.Bluetooth",
+                          "/v1/", "SendInput", "keybd_event", "Firmware", "firmware", "MassBoot", "ProjectReference",
+                          "Compile Include"):
+            self.assertNotIn(forbidden, src + project, msg=forbidden)
+
+    def test_primary_seam_is_smtc_for_its_own_window_and_sources_are_not_merged(self) -> None:
+        src = self._source()
+        self.assertIn("SystemMediaTransportControlsInterop.GetForWindow(window.Handle)", src)
+        for enabled in ("IsPlayEnabled", "IsPauseEnabled", "IsNextEnabled", "IsPreviousEnabled"):
+            self.assertIn(enabled, src)
+        for source in ('"smtc"', '"wm_appcommand"', '"rawinput_keyboard"', '"rawinput_consumer"'):
+            self.assertIn(source, src)
+        self.assertIn('"Previous" => "nav_left"', src)
+        self.assertIn('"Next" => "nav_right"', src)
+        self.assertIn('"Play" or "Pause" => "lever_candidate"', src)
+
+    def test_keyboard_sink_records_only_media_keys(self) -> None:
+        src = self._source()
+        self.assertIn("if (!Normalize.IsMediaVk(key.VKey)) return;", src)
+        self.assertIn("vk is VkNext or VkPrev or VkStop or VkPlayPause", src)
