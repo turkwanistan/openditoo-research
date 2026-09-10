@@ -13,10 +13,10 @@ try
 {
     if (args.Length == 2 && args[0] == "host-status-selftest")
     {
-        var root = Path.GetFullPath(args[1]);
-        var token = File.ReadAllText(Path.Combine(root, ".openditoo-local/host.token")).Trim();
-        Trial.Require(token.Length >= 32, "HOST_TOKEN_INVALID");
-        using var session = TypedSession.Live(token);
+        var statusRoot = Path.GetFullPath(args[1]);
+        var statusToken = File.ReadAllText(Path.Combine(statusRoot, ".openditoo-local/host.token")).Trim();
+        Trial.Require(statusToken.Length >= 32, "HOST_TOKEN_INVALID");
+        using var session = TypedSession.Live(statusToken);
         var status = await session.GetStatus();
         Trial.Require(status["service"]?.GetValue<string>() == "OpenDitoo Day1 Host" &&
             status["hostRuntime"]?.GetValue<string>() == ".NET" &&

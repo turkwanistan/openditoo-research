@@ -3644,6 +3644,8 @@ class W6WebcamReviewTests(unittest.TestCase):
         runner = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/Program.cs").read_text(encoding="utf-8")
         self.assertIn('args[0] == "host-status-selftest"', runner)
         self.assertIn('status_has_ok_field = status.ContainsKey("ok")', runner)
+        self.assertIn('var statusRoot = Path.GetFullPath(args[1]);', runner)
+        self.assertIn('var statusToken = File.ReadAllText(Path.Combine(statusRoot, ".openditoo-local/host.token"))', runner)
 
     def test_w7_rerun_prep_cannot_transmit_or_grant_itself(self) -> None:
         script = (ROOT / "scripts/prepare_webcam_w7_rerun_windows.ps1").read_text(encoding="utf-8")
