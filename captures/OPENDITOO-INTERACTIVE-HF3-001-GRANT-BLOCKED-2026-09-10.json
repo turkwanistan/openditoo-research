@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
+  "event": "exact_named_grant_received_but_not_materialized",
+  "recorded_at_utc": "2026-09-10T19:10:47.991065Z",
+  "grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-001",
+  "manifest_sha256": "7ad8ef4d3eba00e8c4170757868be55e29b046e72b2dd448661bad0ca4184a23",
+  "grant_attempt": {
+    "result": "fail_closed_before_authority_mutation",
+    "error_code": "BUILD_BUTTON_PROBE_HASH_MISMATCH",
+    "reason": "WSL_MCP bubblewrap has no /mnt/c, so the frozen installed ButtonProbe bytes cannot be directly rehashed/launched from this session."
+  },
+  "capability_observation": {
+    "windows_mount_visible": false,
+    "windows_launcher_visible": false,
+    "host_reachable_with_network_enabled_sandbox": true,
+    "host_service": "OpenDitoo Day1 Host",
+    "host_target": "11:75:58:CE:DE:C7",
+    "runtime006_live_policy_probe_digests_match_hf3_digest_values": true
+  },
+  "authority_state_after_attempt": {
+    "manifest_transmission_authorized": false,
+    "manifest_authorization_consumed": false,
+    "outer_claim_exists": false,
+    "device_io": false,
+    "host_session_io": false
+  },
+  "next_capable_session": {
+    "worktree": ".openditoo-local/worktrees/high-fps-interactive-pages",
+    "verify": "python3 scripts/interactive_hf3.py check",
+    "materialize_grant": "python3 scripts/interactive_hf3.py grant 'Grant OPENDITOO-INTERACTIVE-HF3-001'",
+    "execute": "bash scripts/run_interactive_hf3.sh",
+    "warning": "Do not use --sandbox-skip-probe for grant/run. It is diagnostic only."
+  }
+}

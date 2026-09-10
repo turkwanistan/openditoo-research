@@ -24,6 +24,12 @@ HF-3 preparation artifact: `experiments/DAY1-INTERACTIVE-HF3-001.json`; latest o
 
 **Current blocker / next boundary:** WSL_MCP's bubblewrap environment cannot see the installed Windows ButtonProbe under `/mnt/c`, so it cannot honestly re-verify the staged `.exe/.dll` against Runtime 006 and therefore cannot declare HF-3 grant-ready. From a normal local WSL session with Windows interop, re-run `python3 scripts/prepare_interactive_hf3.py` and `python3 scripts/interactive_hf3.py check`; they must directly verify the installed ButtonProbe bytes. Only then may the exact named grant `Grant OPENDITOO-INTERACTIVE-HF3-001` be recorded and `scripts/run_interactive_hf3.sh` invoked. General/wildcard development approval is not that named one-use grant.
 
+## Grant/execution checkpoint — 2026-09-10
+
+The owner issued the exact named grant `Grant OPENDITOO-INTERACTIVE-HF3-001` after the frozen HF-3 manifest (`7ad8ef4d…`) was presented. WSL_MCP then attempted the real grant command. It failed closed **before any authority mutation or outer claim** because this bubblewrap session has no `/mnt/c` and therefore cannot directly re-hash or launch the installed ButtonProbe. Network-enabled WSL_MCP can reach the exact authenticated Host at `127.0.0.1:8796`; Runtime 006 is live and its policy names the same ButtonProbe digest values as HF-3, but the HF-3 verifier intentionally still requires direct installed-byte verification before materializing authority. No device/session I/O occurred and HF-3 remains unconsumed. Evidence: `captures/OPENDITOO-INTERACTIVE-HF3-001-GRANT-BLOCKED-2026-09-10.json`.
+
+**Next capable local WSL session:** in this feature worktree run `python3 scripts/interactive_hf3.py check`, then materialize the already-issued exact grant with `python3 scripts/interactive_hf3.py grant 'Grant OPENDITOO-INTERACTIVE-HF3-001'`, then `bash scripts/run_interactive_hf3.sh`. Do not use `--sandbox-skip-probe` for grant/run. If direct installed-byte verification fails there, stop; do not weaken or bypass the verifier.
+
 ## 1. Goal
 
 Turn the physical-button pagination proof into a reusable interactive application platform rather than optimizing one spiral asset.
