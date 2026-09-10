@@ -3703,28 +3703,28 @@ class W8WebcamNearCeilingReviewTests(unittest.TestCase):
     MANIFEST = ROOT / "experiments/DAY1-WEBCAM-N980P-003.json"
     W7 = ROOT / "experiments/DAY1-WEBCAM-N980P-002.json"
 
-    def test_w8_envelope_is_one_bounded_40ms_characterization(self) -> None:
-        manifest, frames, stream = frame_stream.load_stream_manifest(self.MANIFEST, require_authority=False)
-        self.assertIsNone(frames)
-        self.assertEqual(manifest.experiment_id, "OPENDITOO-WEBCAM-N980P-003")
-        self.assertEqual((manifest.lifetime_seconds, manifest.min_frame_interval_ms), (10, 40))
-        self.assertEqual((stream["source_kind"], stream["session_profile"], stream["playback_interval_ms"]),
-                         ("live", "streaming_ack_clock", 40))
-        self.assertEqual(manifest.max_frames, 251)
-        self.assertEqual(manifest.max_application_packets, 753)
-        self.assertEqual(manifest.max_tx_bytes, 251 * frame_stream.worst_case_frame_tx_bytes())
-        self.assertEqual(manifest.raw["authority"]["grant_string_after_readiness"],
-                         "Grant OPENDITOO-WEBCAM-N980P-003")
-        self.assertFalse(manifest.raw["authority"]["authorization_consumed"])
-        blockers = frame_stream.authority_blockers(self.MANIFEST)
-        if manifest.raw["authority"]["transmission_authorized"]:
-            self.assertEqual(blockers, [])
-            self.assertEqual(manifest.raw["authority"]["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-003")
-        else:
-            self.assertIn("TRANSMISSION_AUTHORITY_MISSING", blockers)
-        self.assertIn("No rate ladder", manifest.raw["authority"]["grant_scope_requested"])
+    def test_w8_003_is_consumed_unknown_and_not_replayable(self) -> None:
+        data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+        attempt = data["w8_attempt"]
+        self.assertEqual(data["status"], "consumed_unknown_pacing_violation")
+        self.assertTrue(data["authority"]["authorization_consumed"])
+        self.assertFalse(data["readiness"]["grant_ready"])
+        self.assertEqual(data["readiness"]["blockers"], ["AUTHORITY_ALREADY_CONSUMED"])
+        self.assertEqual((attempt["frames"], attempt["packets"], attempt["tx_bytes"]), (2, 6, 2102))
+        self.assertEqual((attempt["outcome"], attempt["terminal_reason"]),
+                         ("unknown", "SESSION_PACING_VIOLATION"))
+        self.assertEqual(attempt["host_ledger_terminal_outcome"], "stopped_clean")
+        self.assertFalse(attempt["retry"] or attempt["reconnect"] or attempt["reclaim"])
+        self.assertTrue(attempt["product_runtime_restored"])
+        for pk, sk in (("result_file", "result_sha256"), ("raw_file", "raw_sha256"),
+                       ("failure_file", "failure_sha256")):
+            evidence = ROOT / attempt[pk]
+            self.assertTrue(evidence.is_file())
+            self.assertEqual(activity_session.sha256_file(evidence), attempt[sk])
+        claim = activity_session.SessionClaim("OPENDITOO-WEBCAM-N980P-003").read()
+        self.assertEqual((claim["state"], claim["outcome"]), ("finished", "unknown"))
 
-    def test_w8_starts_from_accepted_consumed_w7_without_reusing_authority(self) -> None:
+    def test_w8_003_preserves_w7_baseline_but_uses_distinct_consumed_authority(self) -> None:
         w7 = json.loads(self.W7.read_text(encoding="utf-8"))
         w8 = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
         self.assertEqual(w7["status"], "completed_pass_authority_consumed")
@@ -3733,11 +3733,8 @@ class W8WebcamNearCeilingReviewTests(unittest.TestCase):
         self.assertEqual(w8["w7_baseline"]["experiment_id"], "OPENDITOO-WEBCAM-N980P-002")
         self.assertTrue(w8["w7_baseline"]["authority_consumed"])
         self.assertNotEqual(w7["authority"]["grant_text"], w8["authority"]["grant_text"])
-        if w8["authority"]["transmission_authorized"]:
-            self.assertEqual(w8["authority"]["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-003")
-            self.assertFalse(w8["authority"]["authorization_consumed"])
-        else:
-            self.assertIsNone(w8["authority"]["grant_text"])
+        self.assertEqual(w8["authority"]["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-003")
+        self.assertTrue(w8["authority"]["authorization_consumed"])
 
     def test_w8_runner_paces_from_manifest_and_measures_the_new_metrics(self) -> None:
         trial = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs").read_text(encoding="utf-8")
@@ -3746,8 +3743,9 @@ class W8WebcamNearCeilingReviewTests(unittest.TestCase):
         program = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/Program.cs").read_text(encoding="utf-8")
         slot = (ROOT / "runtime/windows/OpenDitoo.Webcam.Probe/LatestFrameSlot.cs").read_text(encoding="utf-8")
         self.assertIn("int ClientIntervalMs = 90", trial)
-        self.assertIn("W8ClientInterval = 40", trial)
-        self.assertIn("clientInterval == W7ClientInterval || clientInterval == W8ClientInterval", trial)
+        self.assertIn("W8FailedClientInterval = 40", trial)
+        self.assertIn("W8SafeClientInterval = 50", trial)
+        self.assertIn("clientInterval == W7ClientInterval || clientInterval == W8FailedClientInterval", trial)
         self.assertIn("trial.ClientIntervalMs -", typed)
         self.assertIn("sourceAgeAtSendMsByQuarter", typed)
         self.assertIn("framesByQuarter", typed)
@@ -3756,8 +3754,9 @@ class W8WebcamNearCeilingReviewTests(unittest.TestCase):
         self.assertIn("hostFrameMs", typed)
         self.assertIn("httpOverheadMs", typed)
         self.assertIn("duplicateSourceFrames", typed)
-        self.assertIn("ADAPTER_W8_ACK_FLOOR_", offline)
-        self.assertIn("fast_ack", offline)
+        self.assertIn("ADAPTER_W8_40MS_ARRIVAL_JITTER_REPRO_", offline)
+        self.assertIn("ADAPTER_W8_50MS_ARRIVAL_JITTER_", offline)
+        self.assertIn("arrival_jitter", offline)
         self.assertIn('finished["replacementPercent"]', program)
         self.assertIn('finished["rawQueueDepthMax"]', program)
         self.assertIn('finished["readyQueueDepthMax"]', program)
@@ -3791,3 +3790,75 @@ class W8WebcamNearCeilingReviewTests(unittest.TestCase):
         self.assertIn("OPENDITOO-WEBCAM-N980P-003", windows)
         self.assertIn("run_webcam_w8_once.sh", windows)
         self.assertNotIn("OPENDITOO-WEBCAM-N980P-002", shell)
+
+
+class W8WebcamArrivalMarginRerunTests(unittest.TestCase):
+    MANIFEST = ROOT / "experiments/DAY1-WEBCAM-N980P-004.json"
+    PREVIOUS = ROOT / "experiments/DAY1-WEBCAM-N980P-003.json"
+
+    def test_w8_004_is_bounded_50ms_candidate_with_10ms_host_margin(self) -> None:
+        manifest, frames, stream = frame_stream.load_stream_manifest(self.MANIFEST, require_authority=False)
+        self.assertIsNone(frames)
+        self.assertEqual(manifest.experiment_id, "OPENDITOO-WEBCAM-N980P-004")
+        self.assertEqual((manifest.lifetime_seconds, manifest.min_frame_interval_ms), (10, 40))
+        self.assertEqual((stream["source_kind"], stream["session_profile"], stream["playback_interval_ms"]),
+                         ("live", "streaming_ack_clock", 50))
+        self.assertEqual((manifest.max_frames, manifest.max_application_packets, manifest.max_tx_bytes),
+                         (201, 603, 201 * frame_stream.worst_case_frame_tx_bytes()))
+        self.assertIn("10 ms", manifest.raw["session"]["shape"])
+        self.assertFalse(manifest.raw["authority"]["authorization_consumed"])
+        self.assertEqual(manifest.raw["authority"]["grant_string_after_readiness"],
+                         "Grant OPENDITOO-WEBCAM-N980P-004")
+
+    def test_w8_004_requires_fresh_authority_and_preserves_003_failure(self) -> None:
+        previous = json.loads(self.PREVIOUS.read_text(encoding="utf-8"))
+        current = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+        self.assertEqual(previous["status"], "consumed_unknown_pacing_violation")
+        self.assertTrue(previous["authority"]["authorization_consumed"])
+        self.assertTrue(current["w8_failed_baseline"]["same_identity_retry_forbidden"])
+        self.assertEqual(current["w8_failed_baseline"]["terminal_reason"], "SESSION_PACING_VIOLATION")
+        self.assertNotEqual(previous["authority"]["grant_text"], current["authority"]["grant_text"])
+        blockers = frame_stream.authority_blockers(self.MANIFEST)
+        if current["authority"]["transmission_authorized"]:
+            self.assertEqual(blockers, [])
+            self.assertEqual(current["authority"]["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-004")
+        else:
+            self.assertIn("TRANSMISSION_AUTHORITY_MISSING", blockers)
+
+    def test_arrival_jitter_regression_requires_40ms_repro_and_50ms_pass(self) -> None:
+        offline = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs").read_text(encoding="utf-8")
+        trial = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs").read_text(encoding="utf-8")
+        self.assertIn('fault == "arrival_jitter"', offline)
+        self.assertIn("arrivalSkewMs", offline)
+        self.assertIn("ADAPTER_W8_40MS_ARRIVAL_JITTER_REPRO_", offline)
+        self.assertIn("ADAPTER_W8_50MS_ARRIVAL_JITTER_", offline)
+        self.assertIn("W8FailedClientInterval = 40", trial)
+        self.assertIn("W8SafeClientInterval = 50", trial)
+
+    def test_w8_004_prep_is_no_device_and_cannot_grant_itself(self) -> None:
+        script = (ROOT / "scripts/prepare_webcam_w8_rerun_windows.ps1").read_text(encoding="utf-8")
+        for required in ("ADAPTER_W8_40MS_ARRIVAL_JITTER_REPRO_PASS",
+                         "ADAPTER_W8_50MS_ARRIVAL_JITTER_PASS", "$runner host-status-selftest",
+                         "W8_RERUN_PREP_PASS", "claim_created=false", "host_session_io=false",
+                         "device_io=false", "System.Text.UTF8Encoding($false)"):
+            self.assertIn(required, script)
+        for forbidden in ("cli/webcam.py run", "systemctl --user stop",
+                          "transmission_authorized = $true", "SessionClaim", "execute:", "bash -lc"):
+            self.assertNotIn(forbidden, script)
+        self.assertIn("W8_004_PREP_REFUSES_PREAUTHORIZED_MANIFEST", script)
+        self.assertIn("W8_004_PREP_REFUSES_CONSUMED_MANIFEST", script)
+
+    def test_w8_004_launcher_is_one_use_and_restores_connected_product(self) -> None:
+        shell = (ROOT / "scripts/run_webcam_w8_rerun_once.sh").read_text(encoding="utf-8")
+        windows = (ROOT / "scripts/run_webcam_w8_rerun_windows.ps1").read_text(encoding="utf-8")
+        self.assertIn('MANIFEST="experiments/DAY1-WEBCAM-N980P-004.json"', shell)
+        self.assertIn("client_floor_ms=50 host_floor_ms=40 margin_ms=10", shell)
+        self.assertIn("max_frames=201 max_packets=603 max_tx_bytes=211854", shell)
+        self.assertIn("python3 scripts/check_webcam_w8_rerun.py", shell)
+        self.assertIn('systemctl --user stop "$SERVICE"', shell)
+        self.assertIn('python3 cli/webcam.py run --manifest "$MANIFEST"', shell)
+        self.assertIn("W8R_RESTORE_PRODUCT_CONNECTED_PASS", shell)
+        self.assertIn("W8R_DUPLICATE_SOURCE_FRAME", shell)
+        self.assertIn("W8R_QUEUE_DEPTH_BROKEN", shell)
+        self.assertIn("OPENDITOO-WEBCAM-N980P-004", windows)
+        self.assertNotIn("OPENDITOO-WEBCAM-N980P-003", shell)

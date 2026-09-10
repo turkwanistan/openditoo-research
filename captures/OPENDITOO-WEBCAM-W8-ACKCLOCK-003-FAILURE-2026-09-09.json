@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-WEBCAM-N980P-003",
+  "milestone": "W8 near-ceiling webcam characterization attempt 003",
+  "status": "consumed_unknown_pacing_violation",
+  "machine_result": {
+    "outcome": "unknown",
+    "terminal_reason": "SESSION_PACING_VIOLATION",
+    "frames": 2,
+    "packets": 6,
+    "tx_bytes": 2102,
+    "elapsed_ms": 297.4472000002861,
+    "client_interval_ms": 40,
+    "dispatch_interval_ms": {
+      "count": 2,
+      "max": 45.93180000036955,
+      "mean": 43.002000000327826,
+      "p50": 45.93180000036955,
+      "p95": 45.93180000036955,
+      "percentileWindow": 2
+    },
+    "ack_ms": {
+      "count": 2,
+      "max": 38.33269999921322,
+      "mean": 36.545049998909235,
+      "p50": 38.33269999921322,
+      "p95": 38.33269999921322,
+      "percentileWindow": 2
+    },
+    "host_frame_ms": {
+      "count": 2,
+      "max": 31,
+      "mean": 31,
+      "p50": 31,
+      "p95": 31,
+      "percentileWindow": 2
+    },
+    "http_overhead_ms": {
+      "count": 2,
+      "max": 7.332699999213219,
+      "mean": 5.545049998909235,
+      "p50": 7.332699999213219,
+      "p95": 7.332699999213219,
+      "percentileWindow": 2
+    },
+    "source_age_at_send_ms": {
+      "count": 3,
+      "max": 52.11280000209808,
+      "mean": 43.114566668868065,
+      "p50": 44.729400001466274,
+      "p95": 52.11280000209808,
+      "percentileWindow": 3
+    },
+    "duplicate_source_frames": 0,
+    "raw_queue_depth_max": 1,
+    "ready_queue_depth_max": 1,
+    "retry": false,
+    "reconnect": false,
+    "reclaim": false
+  },
+  "host_ledger": {
+    "open": {
+      "lifetime_seconds": 10,
+      "min_interval_ms": 40,
+      "frame_budget": 251,
+      "tx_byte_budget": 264554,
+      "session_profile": "streaming_ack_clock",
+      "send_spacing_ms": 0
+    },
+    "terminal": {
+      "reason": "SESSION_PACING_VIOLATION",
+      "outcome": "stopped_clean",
+      "frames_sent": 2,
+      "packets_sent": 6,
+      "tx_bytes_sent": 2102,
+      "display_state": "ours_last_acked"
+    }
+  },
+  "diagnosis": {
+    "finding": "The client enforced 40 ms between client-side dispatch starts, but the Host enforces 40 ms between Host-side frame starts. Variable localhost serialization/request latency can make Host arrival/start spacing smaller than client dispatch spacing.",
+    "decisive_observation": "The failed third attempt occurred despite client dispatch intervals just above 40 ms; the two accepted POSTs had about 5.5 ms mean HTTP-over-Host timing. Equal client/Host floors therefore provide no arrival-jitter margin.",
+    "correction": "Use a fresh identity with a 50 ms client dispatch-start floor against the unchanged 40 ms Host backstop, leaving 10 ms arrival-jitter margin while preserving a 20 fps theoretical client ceiling.",
+    "same_identity_retry_forbidden": true
+  },
+  "cleanup": {
+    "product_runtime_restored": true,
+    "post_restore_status": "connected"
+  },
+  "result_file": "captures/OPENDITOO-WEBCAM-W8-ACKCLOCK-003-LIVE-RESULT-2026-09-09.json",
+  "result_sha256": "7efd0f7835d7834ec86129a22841b2ca14a031f2f2efb863d8989a76f181f7a3",
+  "raw_file": "captures/OPENDITOO-WEBCAM-W8-ACKCLOCK-003-LIVE-RAW-2026-09-09.log",
+  "raw_sha256": "7efd0f7835d7834ec86129a22841b2ca14a031f2f2efb863d8989a76f181f7a3",
+  "device_io": true,
+  "claim_created": true,
+  "host_session_opened": true
+}

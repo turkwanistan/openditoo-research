@@ -10,7 +10,8 @@ internal sealed record Trial(string Id, int Seconds, int MaxFrames, int MaxBytes
     internal const string Profile = "streaming_ack_clock";
     internal const int HostFloor = 40;
     internal const int W7ClientInterval = 90;
-    internal const int W8ClientInterval = 40;
+    internal const int W8FailedClientInterval = 40;
+    internal const int W8SafeClientInterval = 50;
     internal const int WorstCaseFrameTxBytes = 1054;
     internal static string Hash(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
     internal static void Require(bool condition, string reason)
@@ -38,8 +39,8 @@ internal sealed record Trial(string Id, int Seconds, int MaxFrames, int MaxBytes
         var settings = doc["session"]!;
         var budgets = doc["budgets"]!;
         var clientInterval = stream["playback_interval_ms"]!.GetValue<int>();
-        Require(clientInterval == W7ClientInterval || clientInterval == W8ClientInterval,
-            "CLIENT_INTERVAL_NOT_REVIEWED");
+        Require(clientInterval == W7ClientInterval || clientInterval == W8FailedClientInterval ||
+            clientInterval == W8SafeClientInterval, "CLIENT_INTERVAL_NOT_REVIEWED");
         var expectedFrames = Math.Min(10_000 / clientInterval + 1, 500);
         var expectedPackets = expectedFrames * 3;
         var expectedBytes = expectedFrames * WorstCaseFrameTxBytes;

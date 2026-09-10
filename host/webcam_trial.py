@@ -70,7 +70,7 @@ def review(path: Path, *, authority: bool = False):
     if not re.fullmatch(r"OPENDITOO-WEBCAM-N980P-[0-9]{3}", manifest.experiment_id):
         raise ValueError("WEBCAM_EXPERIMENT_ID_INVALID")
     playback_ms = stream["playback_interval_ms"]
-    if playback_ms not in (40, 90):
+    if playback_ms not in (40, 50, 90):
         raise ValueError("WEBCAM_CLIENT_INTERVAL_NOT_REVIEWED")
     expected_frames = min(10_000 // playback_ms + 1, activity_session.MAX_SESSION_FRAMES)
     expected_packets = expected_frames * activity_session.PACKETS_PER_FRAME

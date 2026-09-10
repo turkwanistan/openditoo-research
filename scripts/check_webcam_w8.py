@@ -1,100 +1,25 @@
 #!/usr/bin/env python3
-"""Read-only W8 review. Never opens a camera, Host session, claim, or device link."""
+"""Historical read-only review of consumed W8 attempt 003."""
 import json
 from pathlib import Path
 import sys
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 from host import activity_session, frame_stream
-
-ACTIVE = ROOT / "experiments/DAY1-WEBCAM-N980P-003.json"
-W7 = ROOT / "experiments/DAY1-WEBCAM-N980P-002.json"
-
-
-def main() -> int:
+M=ROOT/'experiments/DAY1-WEBCAM-N980P-003.json'
+def main():
     try:
-        manifest, _, stream = frame_stream.load_stream_manifest(ACTIVE, require_authority=False)
-        doc = manifest.raw
-        if manifest.experiment_id != "OPENDITOO-WEBCAM-N980P-003":
-            raise ValueError("W8_EXPERIMENT_ID_DRIFT")
-        if (manifest.lifetime_seconds, manifest.min_frame_interval_ms, manifest.max_frames,
-                manifest.max_application_packets, manifest.max_tx_bytes) != (10, 40, 251, 753, 264554):
-            raise ValueError("W8_BUDGET_ENVELOPE_DRIFT")
-        if (stream.get("source_kind"), stream.get("session_profile"), stream.get("playback_interval_ms")) != (
-                "live", "streaming_ack_clock", 40):
-            raise ValueError("W8_PACING_ENVELOPE_DRIFT")
-        if any(doc["session"].get(flag) for flag in
-               ("automatic_retry", "automatic_reconnect", "stock_screen_reclaim", "replay_after_interruption")):
-            raise ValueError("W8_RETRY_OR_RECLAIM_ENABLED")
-
-        w7 = json.loads(W7.read_text(encoding="utf-8"))
-        if (w7.get("status") != "completed_pass_authority_consumed"
-                or w7.get("w7_attempt", {}).get("owner_visible_acceptance") != "pass"
-                or w7.get("authority", {}).get("authorization_consumed") is not True):
-            raise ValueError("W7_BASELINE_NOT_ACCEPTED")
-
-        hashes = stream["live_source"]["producer_code_sha256"]
-        for relative, expected in hashes.items():
-            candidate = ROOT / relative
-            if not candidate.is_file() or activity_session.sha256_file(candidate) != expected:
-                raise ValueError(f"W8_PRODUCER_HASH_DRIFT:{relative}")
-        if activity_session.sha256_file(activity_session.HOST_BUILD_DLL) != manifest.host_build_sha256:
-            raise ValueError("W8_HOST_BUILD_HASH_DRIFT")
-
-        readiness = doc.get("readiness", {})
-        completed = doc.get("status") == "completed_pass_authority_consumed"
-        pending = {"WINDOWS_W8_RUNNER_BUILD_NOT_FROZEN", "WINDOWS_W8_OFFLINE_SELFTEST_NOT_VERIFIED"}
-        if completed:
-            if readiness.get("grant_ready") or readiness.get("blockers") != ["AUTHORITY_ALREADY_CONSUMED"]:
-                raise ValueError("W8_COMPLETED_STATE_INVALID")
-        elif readiness.get("grant_ready"):
-            if readiness.get("blockers") != []:
-                raise ValueError("W8_GRANT_READY_WITH_BLOCKERS")
-            prep = doc.get("w8_preparation")
-            evidence = ROOT / (prep or {}).get("evidence_file", "")
-            if (not isinstance(prep, dict) or prep.get("status") != "pass"
-                    or prep.get("device_io") is not False or prep.get("host_session_io") is not False
-                    or prep.get("claim_created") is not False or not evidence.is_file()
-                    or activity_session.sha256_file(evidence) != prep.get("evidence_sha256")):
-                raise ValueError("W8_PREPARATION_EVIDENCE_MISSING_OR_DRIFTED")
-        elif set(readiness.get("blockers", [])) != pending:
-            raise ValueError("W8_PREPARATION_BLOCKERS_DRIFT")
-
-        blockers = list(readiness.get("blockers", []))
-        for blocker in frame_stream.authority_blockers(ACTIVE):
-            if blocker not in blockers:
-                blockers.append(blocker)
-        claim = activity_session.SessionClaim(manifest.experiment_id).read()
-        if claim is not None and "AUTHORITY_ALREADY_CONSUMED" not in blockers:
-            blockers.append("AUTHORITY_ALREADY_CONSUMED")
-        if not completed:
-            blockers.append("LIVE_PREFLIGHT_NOT_PERFORMED")
-
-        print(json.dumps({
-            "ok": True,
-            "manifest_valid": True,
-            "experiment_id": manifest.experiment_id,
-            "grant_ready": bool(readiness.get("grant_ready")),
-            "execution_ready": False,
-            "claim_created": claim is not None,
-            "device_io": completed,
-            "blockers": blockers,
-            "session_profile": stream["session_profile"],
-            "client_interval_ms": stream["playback_interval_ms"],
-            "host_floor_ms": manifest.min_frame_interval_ms,
-            "lifetime_seconds": manifest.lifetime_seconds,
-            "max_frames": manifest.max_frames,
-            "max_application_packets": manifest.max_application_packets,
-            "max_tx_bytes": manifest.max_tx_bytes,
-            "future_grant_string": doc["authority"]["grant_string_after_readiness"],
-            "manifest_sha256": activity_session.sha256_file(ACTIVE),
-        }, sort_keys=True))
-        return 0
-    except (OSError, ValueError, frame_stream.SessionError) as exc:
-        print(json.dumps({"ok": False, "device_io": False, "execution_ready": False, "error": str(exc)}))
-        return 2
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+        d=json.loads(M.read_text(encoding='utf-8')); a=d['w8_attempt']; auth=d['authority']; r=d['readiness']
+        if d.get('status')!='consumed_unknown_pacing_violation': raise ValueError('W8_003_STATUS_DRIFT')
+        if auth.get('authorization_consumed') is not True: raise ValueError('W8_003_AUTHORITY_NOT_CONSUMED')
+        if r.get('grant_ready') or r.get('blockers')!=['AUTHORITY_ALREADY_CONSUMED']: raise ValueError('W8_003_READINESS_DRIFT')
+        if (a.get('outcome'),a.get('terminal_reason'),a.get('frames'),a.get('packets'),a.get('tx_bytes')) != ('unknown','SESSION_PACING_VIOLATION',2,6,2102): raise ValueError('W8_003_RESULT_DRIFT')
+        for pk,sk in [('result_file','result_sha256'),('raw_file','raw_sha256'),('failure_file','failure_sha256')]:
+            p=ROOT/a[pk]
+            if not p.is_file() or activity_session.sha256_file(p)!=a[sk]: raise ValueError('W8_003_EVIDENCE_DRIFT:'+pk)
+        claim=activity_session.SessionClaim('OPENDITOO-WEBCAM-N980P-003').read()
+        if not claim or claim.get('state')!='finished' or claim.get('outcome')!='unknown': raise ValueError('W8_003_CLAIM_DRIFT')
+        print(json.dumps({'ok':True,'historical':True,'experiment_id':'OPENDITOO-WEBCAM-N980P-003','status':d['status'],'claim_created':True,'device_io':True,'outcome':'unknown','terminal_reason':'SESSION_PACING_VIOLATION','frames':2,'packets':6,'tx_bytes':2102,'blockers':frame_stream.authority_blockers(M)},sort_keys=True)); return 0
+    except (OSError,ValueError,KeyError) as e:
+        print(json.dumps({'ok':False,'historical':True,'device_io':False,'error':str(e)})); return 2
+if __name__=='__main__': raise SystemExit(main())

@@ -39,15 +39,21 @@ internal static class OfflineTests
                 case "/v1/session/frame":
                     Attempts++;
                     Trial.Require(body["sessionId"]!.GetValue<string>() == "offline", "WRONG_SESSION");
-                    Trial.Require(WebcamFrames.NowMs - LastStart >= Trial.HostFloor, "PACING_VIOLATION");
-                    LastStart = WebcamFrames.NowMs;
+                    // Reproduce the real W8 failure mode: client dispatch timestamps are not Host
+                    // frame-start timestamps. On every second request, model 8 ms less outbound
+                    // request latency than the previous request. A client exactly at the 40 ms
+                    // Host floor can therefore arrive too early even though its own clock says 40+.
+                    var arrivalSkewMs = fault == "arrival_jitter" && Attempts % 2 == 0 ? 8 : 0;
+                    var hostArrivalMs = WebcamFrames.NowMs - arrivalSkewMs;
+                    Trial.Require(hostArrivalMs - LastStart >= Trial.HostFloor, "PACING_VIOLATION");
+                    LastStart = hostArrivalMs;
                     var pixels = Convert.FromHexString(body["pixelsRgb888Hex"]!.GetValue<string>());
                     var encoded = DitooEncoder.EncodeRgb888(pixels);
                     var sha = DitooEncoder.Sha256Hex(encoded.Packet);
                     Trial.Require(body["expectedImagePacketSha256"]!.GetValue<string>() == sha, "ENCODER_HASH_DRIFT");
                     if (fault == "frame" && Attempts == 2) throw new IOException("SIMULATED_LOST_FRAME_RESPONSE");
-                    var simulatedHostMs = fault == "fast_ack" ? 5 : 54;
-                    await Task.Delay(fault == "fast_ack" ? 5 : 65, token);
+                    var simulatedHostMs = fault is "fast_ack" or "arrival_jitter" ? 5 : 54;
+                    await Task.Delay(fault is "fast_ack" or "arrival_jitter" ? 5 : 65, token);
                     Frames++; Bytes += encoded.Packet.Length + 15;
                     response = new { ok = true, imagePacketSha256 = fault == "hash" ? "wrong" : sha,
                         frame = Frames, packetCount = 3, packetsSentTotal = Frames * 3, txBytesSentTotal = Bytes,
@@ -108,20 +114,35 @@ internal static class OfflineTests
             if (!passed) failures++;
             Console.WriteLine($"ADAPTER_CASE_{(passed ? "PASS" : "FAIL")} name={fault} opens={handler.Opens} attempts={handler.Attempts} closes={handler.Closes} outcome={result["outcome"]}");
         }
-        // W8 control: ACK returns far faster than the permanent 40 ms Host backstop. The
-        // manifest-driven client floor must still keep dispatch starts legal without a 90 ms timer.
-        var w8Handler = new FakeHandler("fast_ack");
-        using (var w8Session = new TypedSession(new HttpClient(w8Handler)))
+        // W8-003 regression: a 40 ms client floor is unsafe when outbound request-arrival
+        // latency varies. This negative control must reproduce the pacing refusal.
+        var w8UnsafeHandler = new FakeHandler("arrival_jitter");
+        using (var w8UnsafeSession = new TypedSession(new HttpClient(w8UnsafeHandler)))
         {
-            var w8 = JsonSerializer.SerializeToNode(await Sender.Run(
-                new("OFFLINE-W8", 1, 26, 26 * Trial.WorstCaseFrameTxBytes, Trial.W8ClientInterval),
-                new GeneratedFrames(w8Handler, "fast_ack"), w8Session, CancellationToken.None))!;
-            var w8Pass = w8["outcome"]!.GetValue<string>() == "stopped_clean" &&
-                w8["clientIntervalMs"]!.GetValue<int>() == 40 &&
-                w8["frames"]!.GetValue<int>() >= 20 &&
-                w8["duplicateSourceFrames"]!.GetValue<int>() == 0;
-            if (!w8Pass) failures++;
-            Console.WriteLine($"ADAPTER_W8_ACK_FLOOR_{(w8Pass ? "PASS" : "FAIL")} frames={w8["frames"]} client_interval_ms={w8["clientIntervalMs"]} outcome={w8["outcome"]}");
+            var unsafeResult = JsonSerializer.SerializeToNode(await Sender.Run(
+                new("OFFLINE-W8-UNSAFE", 1, 26, 26 * Trial.WorstCaseFrameTxBytes, Trial.W8FailedClientInterval),
+                new GeneratedFrames(w8UnsafeHandler, "arrival_jitter"), w8UnsafeSession, CancellationToken.None))!;
+            var reproduced = unsafeResult["outcome"]!.GetValue<string>() == "unknown" &&
+                unsafeResult["terminalReason"]!.GetValue<string>() == "PACING_VIOLATION" &&
+                unsafeResult["frames"]!.GetValue<int>() >= 1;
+            if (!reproduced) failures++;
+            Console.WriteLine($"ADAPTER_W8_40MS_ARRIVAL_JITTER_REPRO_{(reproduced ? "PASS" : "FAIL")} frames={unsafeResult["frames"]} outcome={unsafeResult["outcome"]} reason={unsafeResult["terminalReason"]}");
+        }
+
+        // W8-004 correction: preserve the same ACK gate and 40 ms Host backstop, but keep a
+        // 10 ms client-side arrival-jitter margin. The same fake skew must now remain clean.
+        var w8SafeHandler = new FakeHandler("arrival_jitter");
+        using (var w8SafeSession = new TypedSession(new HttpClient(w8SafeHandler)))
+        {
+            var safeResult = JsonSerializer.SerializeToNode(await Sender.Run(
+                new("OFFLINE-W8-SAFE", 1, 21, 21 * Trial.WorstCaseFrameTxBytes, Trial.W8SafeClientInterval),
+                new GeneratedFrames(w8SafeHandler, "arrival_jitter"), w8SafeSession, CancellationToken.None))!;
+            var safe = safeResult["outcome"]!.GetValue<string>() == "stopped_clean" &&
+                safeResult["clientIntervalMs"]!.GetValue<int>() == 50 &&
+                safeResult["frames"]!.GetValue<int>() >= 16 &&
+                safeResult["duplicateSourceFrames"]!.GetValue<int>() == 0;
+            if (!safe) failures++;
+            Console.WriteLine($"ADAPTER_W8_50MS_ARRIVAL_JITTER_{(safe ? "PASS" : "FAIL")} frames={safeResult["frames"]} client_interval_ms={safeResult["clientIntervalMs"]} outcome={safeResult["outcome"]}");
         }
         Console.WriteLine($"ADAPTER_SELFTEST_{(failures == 0 ? "PASS" : "FAIL")} failures={failures} device_io=false camera_io=false");
         return failures == 0 ? 0 : 2;
