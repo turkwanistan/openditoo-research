@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "kind": "interactive_page_acceptance",
-  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-006",
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-007",
   "milestone": "HF-3 one-use high-FPS interactive page / repeated profile-open acceptance",
-  "status": "completed_unknown_authority_consumed",
+  "status": "prepared_unauthorized",
   "predecessors": [
     {
       "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
@@ -29,6 +29,11 @@
       "experiment_id": "OPENDITOO-INTERACTIVE-HF3-005",
       "state": "consumed/unknown at 34 s after 1 full cycle, 3 clean 0xBD reclaims and 4/4 first frames: a reclaimed session got HTTP 429 despite >=50 ms client gaps (Host-side arrival jitter)",
       "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-005-LIVE-2026-09-10.json"
+    },
+    {
+      "experiment_id": "OPENDITOO-INTERACTIVE-HF3-006",
+      "state": "consumed/unknown at 73 s after 5 full cycles, 15 clean reclaims, 16/16 first frames and owner visual 'looked great': a watchdog-detected lever yield surfaced as 409 SESSION_NOT_ACTIVE, not yet accepted as a confirmed yield",
+      "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-006-LIVE-2026-09-10.json"
     }
   ],
   "client_changes": "host/interactive_stream.InteractiveTransport: 50 ms client dispatch floor over the 40 ms Host floor (W8/W10-proven margin) PLUS a Host-anchored >=45 ms gap after the Host's own previous frame start (webcam policy 005 rule), and the W10 Studio's Host-confirmed stock-yield rule for a 409 SESSION_CANVAS_INVALIDATED on a send (0xBD mid-frame).",
@@ -62,12 +67,12 @@
     "known_canvas_reclaim": "Only exact canvas_invalidated with stopped_clean or stopped_yielded_to_stock may open a fresh child while the page remains selected; any other non-clean child outcome terminates the outer experiment."
   },
   "build": {
-    "source_checkpoint": "693eb13a335740961826bc10a17c1203eed33492",
+    "source_checkpoint": "12e62f22c5af2b7ff3dde367b6d6916e0de14464",
     "code_sha256": {
-      "interactive_acceptance_sha256": "757cdfaf85c67197515aa4a320ed964e12c02f95f808e3faa7138fc265cd4bd7",
+      "interactive_acceptance_sha256": "c86352bc456aa88140dfcd209008b37f0499a2cc0a2a5053bfbee386a0b2fb81",
       "interactive_pages_sha256": "5172a307a5d68d9573f9463430d9217d3866e9e615afe98e56f6aee7e22731e0",
       "interactive_runtime_sha256": "f92c6f47ff328ceb3cee4501d72105e52baa7a605e8b92323c832ab3fc8b93c6",
-      "interactive_stream_sha256": "6ec94ca70f8d7d682ff548da22dbdf152a1e4334e5b2bfa4fc3520ae8e32154c",
+      "interactive_stream_sha256": "acc9e908e0d7aa99efcc70cbd2cd108a6045ae66035ce54819db23abebb07394",
       "interactive_activity_sha256": "96a8a75742a17ae04b00a9334b5a0ebc8e0b3ebf0b76d8983a9ee48220028df6",
       "dashboard_page_sha256": "16bf19fd963b9c91548deb6aeed038e0514ee0a219bf6290b04ef0b042da20f4",
       "slots_page_sha256": "0f6116af8b56ad74295c1637f88dd6a857b80a3855e1f61dfef3558f48dc158b",
@@ -81,7 +86,7 @@
       "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
       "pagination_input_sha256": "b2e31de5399dd8bf8bf83a37ff4f20d0b9201de1a82fd5c6d7736326d775db91",
       "cli_transport_sha256": "07ebf960fb2208ddf8afe34dedc52d5275645584e41bae20fa8a6a063d821119",
-      "hf3_entry_sha256": "32adf1f39e4432c75d6babd9c8edb602555175be64f31e8d62bf8037a48b029d",
+      "hf3_entry_sha256": "2b7f2c1d3c4efac68a55c42cc4e0a575b7440509160f53b88580f0ef5e624c87",
       "hf3_coordinator_sha256": "c5b847d79d5c4ceaded1132823ed3e0e708ce23b8952acb58028802d8e0a6215"
     },
     "host_dll_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
@@ -93,8 +98,8 @@
     "button_probe_verified_now": true
   },
   "acceptance": {
-    "lifetime_seconds": 150,
-    "max_child_sessions": 32,
+    "lifetime_seconds": 180,
+    "max_child_sessions": 48,
     "max_total_frames": 1500,
     "max_total_tx_bytes": 1581000,
     "activity_child_max_frames": 20,
@@ -128,9 +133,9 @@
   "stop_policy": {
     "stop_immediately_on": [
       "any Host open/send/refusal/ACK timeout not reported as the exact known canvas-invalidated outcome",
-      "outer 150 second lifetime",
+      "outer 180 second lifetime",
       "outer 1500 ACKed-frame / derived byte budget",
-      "32 attempted Host child sessions",
+      "48 attempted Host child sessions",
       "operator Ctrl+C"
     ],
     "on_ambiguous_outcome_resend": false,
@@ -143,14 +148,13 @@
     "forbidden": "firmware/update/gallery persistence, raw send, target selection, command enumeration, pipelining"
   },
   "authority": {
-    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-006",
-    "required_grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-006",
+    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-007",
+    "required_grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-007",
     "transmission_authorized": false,
-    "authorization_consumed": true,
-    "granted_by": "operator, in-session",
-    "grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-006",
-    "expires_at": "2026-09-10T21:31:31.021974Z",
-    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 32 child session attempts (one planned session; the rest only device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
-    "consumed_at": "2026-09-10T21:03:02.797766Z"
+    "authorization_consumed": false,
+    "granted_by": null,
+    "grant_text": null,
+    "expires_at": null,
+    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 180 s, 48 child session attempts (one planned session; the rest only Host-confirmed device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately."
   }
 }

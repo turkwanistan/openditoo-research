@@ -96,7 +96,7 @@ def manifest(tmp: Path | None = None, *, max_sessions=28, max_frames=500, lifeti
              streaming_child=120):
     path = (tmp or Path(".")) / "HF3.json"
     return AcceptanceManifest(
-        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-006",
+        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-007",
         lifetime_seconds=lifetime, max_child_sessions=max_sessions,
         max_frames=max_frames,
         max_tx_bytes=max_frames * frame_stream.worst_case_frame_tx_bytes(),
@@ -125,7 +125,7 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         m = manifest()
         high = child_manifest(m, 7, RATE_STREAMING, 500, m.max_tx_bytes, 90)
         low = child_manifest(m, 8, RATE_ACTIVITY, 500, m.max_tx_bytes, 90)
-        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-006-S007")
+        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-007-S007")
         self.assertEqual(high.max_frames, 120)
         self.assertEqual(high.raw["stream"]["session_profile"], RATE_STREAMING)
         self.assertEqual(low.max_frames, 20)
@@ -239,6 +239,13 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         confirmed = self._slots_session(entry.FakeHost(clock, invalidations=[1]), clock)
         self.assertEqual((confirmed["terminal_reason"], confirmed["outcome"]),
                          ("canvas_invalidated", "stopped_yielded_to_stock"))
+        class WatchdogFirst(entry.FakeHost):  # HF3-006 S016: 409 SESSION_NOT_ACTIVE, Host record = yield
+            yields = 1
+        clock = FakeClock()
+        watchdog = self._slots_session(WatchdogFirst(clock, invalidations=[1]), clock)
+        self.assertEqual((watchdog["terminal_reason"], watchdog["outcome"]),
+                         ("canvas_invalidated", "stopped_yielded_to_stock"))
+        self.assertIn("SESSION_NOT_ACTIVE;host_confirmed", watchdog["detail"])
         class Unconfirmed(entry.FakeHost):
             def poll_reports(self): return []  # Host record does not show the yield
         clock = FakeClock()

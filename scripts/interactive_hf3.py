@@ -30,7 +30,7 @@ from host.interactive_pages import BufferedButtonEvents, PageCarousel, RATE_ACTI
 from host.pagination import Broker, ButtonEvents
 from host.slots_page import SlotsPage
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-006.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-007.json"
 LOCAL = ROOT / ".openditoo-local/hf3"
 
 
@@ -124,8 +124,10 @@ class FakeHost:
             raise urllib.error.HTTPError("fake", 429, "pacing", {}, io.BytesIO(b'{"errorCode":"SESSION_PACING_VIOLATION"}'))
         self.last_start = self.clock()
         if self.invalidations:  # BTN-7: Play-direction lever pull -> RFCOMM 0xBD, here mid-send
-            self.invalidations.pop(); self.yielded = True
-            raise urllib.error.HTTPError("fake", 409, "yield", {}, io.BytesIO(b'{"errorCode":"SESSION_CANVAS_INVALIDATED"}'))
+            self.invalidations.pop(); self.yielded = True; self.yields = getattr(self, "yields", 0) + 1
+            # alternate the two live races: seen inside the send, or by the Host watchdog just before it
+            body = b'{"errorCode":"SESSION_NOT_ACTIVE"}' if self.yields % 2 == 0 else b'{"errorCode":"SESSION_CANVAS_INVALIDATED"}'
+            raise urllib.error.HTTPError("fake", 409, "yield", {}, io.BytesIO(body))
         ack_ms = 20 if self.profile != RATE_ACTIVITY else 40
         self.clock.sleep(ack_ms)
         return {"ok": True, "imagePacketSha256": expected, "ackPayloadHex": "0x00",

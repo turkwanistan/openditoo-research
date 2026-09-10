@@ -22,6 +22,7 @@ CLIENT_MIN_DISPATCH_MS = 50
 # frame, estimated as (ACK receipt - hostFrameElapsedMs). Response transit only makes that estimate
 # LATER than the true start, so the Host always sees >= 45 ms.
 HOST_ANCHORED_GAP_MS = 45
+YIELD_ERROR_CODES = ("SESSION_CANVAS_INVALIDATED", "SESSION_NOT_ACTIVE")
 
 
 class HostConfirmedYield(Exception):
@@ -68,11 +69,15 @@ class InteractiveTransport:
                 self.host_start_estimate_ms = self.clock() - elapsed
             return ack
         except urllib.error.HTTPError as exc:
-            if exc.code == 409 and _error_code(exc) == "SESSION_CANVAS_INVALIDATED" and any(
+            code = _error_code(exc)  # the body can be read once
+            # SESSION_CANVAS_INVALIDATED: the Host saw 0xBD/0x09 inside this send. SESSION_NOT_ACTIVE:
+            # its 250 ms watchdog saw it between frames and ended the session first (HF3-006 S016).
+            # Either is the known yield ONLY if the Host's own record says so.
+            if exc.code == 409 and code in YIELD_ERROR_CODES and any(
                     r.get("kind") == "session_ended" and r.get("reason") == "canvas_invalidated"
                     and r.get("outcome") == "stopped_yielded_to_stock" for r in self._reports()):
                 self.confirmed_yield = True
-                raise HostConfirmedYield("SESSION_CANVAS_INVALIDATED;host_confirmed") from exc
+                raise HostConfirmedYield(f"{code};host_confirmed") from exc
             raise
 
     def _reports(self) -> list[dict]:

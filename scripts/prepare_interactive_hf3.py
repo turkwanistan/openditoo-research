@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze OPENDITOO-INTERACTIVE-HF3-006 to an unauthorized, reviewable manifest.
+"""Freeze OPENDITOO-INTERACTIVE-HF3-007 to an unauthorized, reviewable manifest.
 
 Zero device I/O, zero Host-session I/O and no claim. In environments where /mnt/c is not
 visible (notably WSL_MCP's sandbox), the accepted Runtime 006 ButtonProbe hashes are inherited
@@ -19,8 +19,8 @@ if str(ROOT) not in sys.path:
 
 from host import activity_session, frame_stream, interactive_acceptance as hf3
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-006.json"
-EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-006-PREPARATION-2026-09-10.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-007.json"
+EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-007-PREPARATION-2026-09-10.json"
 R006 = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json"
 
 
@@ -88,6 +88,9 @@ def main() -> int:
             {"experiment_id": "OPENDITOO-INTERACTIVE-HF3-005",
              "state": "consumed/unknown at 34 s after 1 full cycle, 3 clean 0xBD reclaims and 4/4 first frames: a reclaimed session got HTTP 429 despite >=50 ms client gaps (Host-side arrival jitter)",
              "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-005-LIVE-2026-09-10.json"},
+            {"experiment_id": "OPENDITOO-INTERACTIVE-HF3-006",
+             "state": "consumed/unknown at 73 s after 5 full cycles, 15 clean reclaims, 16/16 first frames and owner visual 'looked great': a watchdog-detected lever yield surfaced as 409 SESSION_NOT_ACTIVE, not yet accepted as a confirmed yield",
+             "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-006-LIVE-2026-09-10.json"},
         ],
         "client_changes": "host/interactive_stream.InteractiveTransport: 50 ms client dispatch floor over the 40 ms Host floor (W8/W10-proven margin) PLUS a Host-anchored >=45 ms gap after the Host's own previous frame start (webcam policy 005 rule), and the W10 Studio's Host-confirmed stock-yield rule for a 409 SESSION_CANVAS_INVALIDATED on a send (0xBD mid-frame).",
         "host_change": "Runtime 007 Host 3faf520f...: every session's first frame uses the proven 10 ms packet spacing (later frames 0 ms). Note: the Host ledger's open record still reports the profile spacing (sendSpacingMs 0); the first-frame exception is in ActivitySessionHost.SendFrame. HF3-004 is also the first on-device evidence for that fix.",
@@ -126,8 +129,8 @@ def main() -> int:
             "button_probe_verified_now": probe_verified_now,
         },
         "acceptance": {
-            "lifetime_seconds": 150,
-            "max_child_sessions": 32,
+            "lifetime_seconds": 180,
+            "max_child_sessions": 48,
             "max_total_frames": max_frames,
             "max_total_tx_bytes": max_tx,
             "activity_child_max_frames": 20,
@@ -155,9 +158,9 @@ def main() -> int:
         "stop_policy": {
             "stop_immediately_on": [
                 "any Host open/send/refusal/ACK timeout not reported as the exact known canvas-invalidated outcome",
-                "outer 150 second lifetime",
+                "outer 180 second lifetime",
                 "outer 1500 ACKed-frame / derived byte budget",
-                "32 attempted Host child sessions",
+                "48 attempted Host child sessions",
                 "operator Ctrl+C",
             ],
             "on_ambiguous_outcome_resend": False,
@@ -177,7 +180,7 @@ def main() -> int:
             "granted_by": None,
             "grant_text": None,
             "expires_at": None,
-            "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 32 child session attempts (one planned session; the rest only device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
+            "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 180 s, 48 child session attempts (one planned session; the rest only Host-confirmed device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
         },
     }
 

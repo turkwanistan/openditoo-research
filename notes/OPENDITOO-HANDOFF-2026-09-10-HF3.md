@@ -89,4 +89,20 @@ It then failed: the reclaimed S004 got HTTP 429 at frame 11 even though the clie
 
 **HF3-006** (`c8057d04…` superseded; now `359b2a12…`) adds webcam policy 005's **Host-anchored gap**: wait ≥ 45 ms after the Host's own previous frame start, estimated as ACK receipt − `hostFrameElapsedMs`, which is never earlier than the true start. The FakeHost now models 12/0 ms arrival jitter. Negative controls reproduce both the HF3-004 and HF3-005 429s, and only the anchored path passes. Paced dry-run: 10 cycles / 21 sessions / 982 frames. 43/43 successor tests. It needs `Grant OPENDITOO-INTERACTIVE-HF3-006`.
 
+## HF3-006 — 5 cycles, owner "looked great"; HF3-007 prepared, grant-ready, UNAUTHORIZED
+
+**HF3-006** (21:01Z, 73 s):
+- **5 complete cycles**; 35 inputs all applied in order.
+- **15/15 device-ended reclaims** (13 `0xBD` + 2 arrow `0x09`); 16/16 first frames ACKed (21/21 on the new Host across HF3-004..006).
+- Sustained sessions ran at 14–18 fps. Input → first later ACK: p50 58 ms / p95 210 ms.
+- Owner: "looked great I did a bunch of loops no notable issues".
+
+It ended when the Host watchdog caught a lever `0xBD` between frames: the next send got 409 `SESSION_NOT_ACTIVE`, which the rule didn't yet accept, even though the Host ledger recorded the known yield. Evidence: `captures/OPENDITOO-INTERACTIVE-HF3-006-LIVE-2026-09-10.json`.
+
+**HF3-007** (`4f46ff9e…`):
+- Accepts `SESSION_NOT_ACTIVE` as the known yield only on the Host's own `canvas_invalidated/stopped_yielded_to_stock` record.
+- The FakeHost alternates both yield races.
+- The envelope is re-sized from the observed pace (~13 s and ~2.9 sessions per cycle): 180 s / 48 sessions / 1500 frames.
+- It needs `Grant OPENDITOO-INTERACTIVE-HF3-007`.
+
 WSL trap: this worktree's `.git` link pointed at the WSL_MCP mount (`/run/wsl-mcp/workspace`). `git worktree repair` from the main checkout fixes it.
