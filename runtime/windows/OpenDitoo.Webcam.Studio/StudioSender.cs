@@ -69,6 +69,7 @@ internal static class StudioSender
         try
         {
             if (source.Fault is not null) throw new IOException(source.Fault);
+            stop.ThrowIfCancellationRequested(); // stopped before open: never open just to close
             await session.Open(trial);
             var lastContact = WebcamFrames.NowMs;
             var lastFresh = lastContact;
@@ -117,12 +118,17 @@ internal static class StudioSender
                 await session.Frame(frame); // one request in flight, never resend
                 lastPixels = frame.Pixels;
                 lastContact = WebcamFrames.NowMs;
-                progress?.Invoke($"sent {session.Frames}/{trial.MaxFrames}  skipped slots {clock.SkippedSlots}  " +
-                    $"unchanged {unchangedFrames}  ACKed transport {session.Frames / ((lastContact - started) / 1000):F1} fps");
+                // Display only: a closing window must never turn a clean session into `unknown`.
+                try
+                {
+                    progress?.Invoke($"sent {session.Frames}/{trial.MaxFrames}  skipped slots {clock.SkippedSlots}  " +
+                        $"unchanged {unchangedFrames}  ACKed transport {session.Frames / ((lastContact - started) / 1000):F1} fps");
+                }
+                catch { /* telemetry never decides an outcome */ }
             }
         }
         catch (OperationCanceledException) when (stop.IsCancellationRequested)
-        { reason = "operator_stop"; }
+        { reason = "operator_stop"; if (!session.OpenAttempted) outcome = "not_opened"; }
         catch (Exception ex)
         { reason = ex.Message; outcome = session.OpenAttempted ? "unknown" : "not_opened"; }
         finally

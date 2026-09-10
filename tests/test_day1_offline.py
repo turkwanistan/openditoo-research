@@ -4198,3 +4198,67 @@ class W9BFirstOpticalAttemptTests(unittest.TestCase):
         self.assertTrue(evidence["diagnosis"]["confidence"].startswith("LOW on root cause"))
         self.assertIn("NOT a demonstrated one", evidence["diagnosis"]["confidence"])
         self.assertIn("NONE", evidence["optical_evidence"])
+
+
+class W10WebcamStudioTests(unittest.TestCase):
+    """W10: Studio product path. W10-001 prepared, grant-ready and unauthorized."""
+
+    MANIFEST = ROOT / "experiments/DAY1-WEBCAM-W10-001.json"
+    STUDIO = ROOT / "runtime/windows/OpenDitoo.Webcam.Studio"
+
+    def test_w10_001_is_grant_ready_unauthorized_and_unclaimed(self) -> None:
+        data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+        authority = data["authority"]
+        self.assertFalse(authority["transmission_authorized"])
+        self.assertFalse(authority["authorization_consumed"])
+        self.assertIsNone(authority["grant_text"])
+        self.assertEqual(authority["grant_string_after_readiness"], "Grant OPENDITOO-WEBCAM-W10-001")
+        self.assertIn("Confers no standing webcam authority", authority["grant_scope_requested"])
+        self.assertTrue(data["readiness"]["grant_ready"])
+        self.assertFalse(activity_session.SessionClaim("OPENDITOO-WEBCAM-W10-001").path.exists())
+        manifest, _, stream = frame_stream.load_stream_manifest(self.MANIFEST, require_authority=False)
+        self.assertEqual((manifest.lifetime_seconds, manifest.min_frame_interval_ms, manifest.max_frames,
+                          manifest.max_application_packets, manifest.max_tx_bytes), (60, 40, 500, 1500, 527000))
+        self.assertEqual((stream["session_profile"], stream["playback_interval_ms"]), ("streaming_ack_clock", 50))
+        self.assertEqual(data["session"]["handover_settle_seconds"], 8)
+        self.assertIn("/v1/session/heartbeat", data["adapter"]["routes"])
+        self.assertIn("UNMEASURED", data["acceptance"]["separation"])
+
+    def test_studio_leaves_every_007_frozen_source_untouched(self) -> None:
+        # W9B-007 is parked grant-ready; revival must cost one grant, not a re-preparation.
+        data = json.loads((ROOT / "experiments/DAY1-WEBCAM-N980P-007.json").read_text(encoding="utf-8"))
+        for relative, expected in data["stream"]["live_source"]["producer_code_sha256"].items():
+            if "/bin/" in relative:
+                continue  # build outputs are gitignored; the 007 checker verifies them when present
+            self.assertEqual(activity_session.sha256_file(ROOT / relative), expected, relative)
+        project = (self.STUDIO / "OpenDitoo.Webcam.Studio.csproj").read_text(encoding="utf-8")
+        self.assertIn('Link="Frozen/TypedSession.cs"', project)
+
+    def test_preview_and_dryrun_cannot_reach_the_host(self) -> None:
+        for name in ("StudioForm.cs", "StudioCamera.cs"):
+            source = (self.STUDIO / name).read_text(encoding="utf-8")
+            for forbidden in ("host.token", "HttpClient", "8796"):
+                self.assertNotIn(forbidden, source, f"{name} must stay Host-free")
+        program = (self.STUDIO / "Program.cs").read_text(encoding="utf-8")
+        live = program.index("static async Task<int> Live(")
+        dry = program.index("static async Task<int> DryRun(")
+        self.assertEqual(program.count("host.token"), 1)
+        self.assertTrue(live < program.index("host.token") < dry)
+        self.assertIn("OfflineTests.FakeHandler", program[dry:])
+
+    def test_sender_never_retries_and_never_calls_telemetry_fps_panel_fps(self) -> None:
+        source = (self.STUDIO / "StudioSender.cs").read_text(encoding="utf-8")
+        self.assertIn("ackedTransportFps", source)
+        self.assertNotIn("effectiveFps", source)
+        self.assertIn("retry = false, reconnect = false, reclaim = false", source)
+        self.assertIn('throw new InvalidOperationException("SEND_BEFORE_DEADLINE")', source)
+
+    def test_run_script_hands_over_controllers_in_order(self) -> None:
+        shell = (ROOT / "scripts/run_webcam_w10_once.sh").read_text(encoding="utf-8")
+        stop = shell.index('systemctl --user stop "$SERVICE"')
+        settle = shell.index("sleep 8")
+        live = shell.index('python3 host/webcam_studio.py run --manifest "$MANIFEST"')
+        restore = shell.index("restore_product\nconnected=false")
+        self.assertTrue(stop < settle < live < restore)
+        self.assertNotIn("cli/webcam.py", shell)
+        self.assertIn("experiments/DAY1-WEBCAM-W10-001.json", shell)

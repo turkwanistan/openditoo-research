@@ -120,7 +120,10 @@ W9B is off the list. In rough value order, here is everything genuinely open:
 
 ### 1. W10 webcam productization — the main objective
 
-Not started. Turns the proven primitive into something usable: camera/mode display, ROI/zoom,
+**Superseded status:** W10A is done offline and W10-001 is grant-ready — see
+`notes/OPENDITOO-W10-PLAN-2026-09-10.md`. The original scope below is kept as written.
+
+Originally not started. Turns the proven primitive into something usable: camera/mode display, ROI/zoom,
 source and exact 16×16 matrix preview, robust stop/disconnect behaviour, and a concise operator
 workflow.
 

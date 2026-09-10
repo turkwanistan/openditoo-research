@@ -51,7 +51,60 @@ Repository state outranks this note. W9B stays deferred; nothing here depends on
 1. `scripts/webcam_studio_windows.ps1` (stages to `C:\temp`, opens the preview window; camera
    only, the Ditoo is untouched).
 2. Frame the shot with the sliders; the right pane is the exact matrix the Ditoo would get.
-3. Save framing (writes `.openditoo-local/webcam-framing.json`).
+3. Save framing (writes `%LOCALAPPDATA%\OpenDitoo\webcam-framing.json`).
 4. Live: only with a granted manifest; the same window streams, Stop / window close / Ctrl+C
    ends the session cleanly, camera unplug ends it cleanly, a Host fault ends it `unknown` with
    no retry.
+
+## Status — 2026-09-10 (end of session)
+
+**W10A: done offline.** `runtime/windows/OpenDitoo.Webcam.Studio` builds clean; `selftest` is 17/17
+PASS (5 clock + 12 sender cases against the frozen in-memory Host), repeated 3x. Real-camera checks,
+all with zero Host/Ditoo I/O:
+
+- `preview`: camera name/mode/measured delivered fps (20–21 fps in room light, exposure-limited as
+  in route §11), ROI box, exact matrix + packet SHA, saved framing reloads (zoom 0.5 → 240x240 at
+  (320,72)), Pan X is screen-true under mirror, clean exit.
+- `dryrun 30`: real camera + real window + W10 sender into the in-memory Host; the window was
+  closed mid-session → `operator_stop` / `stopped_clean`, 79 frames, 0 duplicate / 0 out-of-order.
+- Two defects found and fixed on the way: source age sampled before the take (false
+  `camera_stale`), and a `MediaCapture` created on the STA UI thread (`RPC_E_WRONG_THREAD` on exit;
+  the camera now lives in the MTA only).
+
+**W10B: `OPENDITOO-WEBCAM-W10-001` prepared, grant-ready, unauthorized.** `scripts/prepare_webcam_w10.py`
+built and staged to `C:\temp\openditoo-webcam-studio-w10`, ran selftest + transform (15) + encoder
+(6) parity from the staged copy, checked Host identity read-only, froze all producer hashes.
+Evidence: `captures/OPENDITOO-WEBCAM-W10-001-PREPARATION-2026-09-10.json`. Negative controls: both
+`host/webcam_studio.py run` (`TRANSMISSION_AUTHORITY_MISSING`) and the staged Studio `live`
+(`NAMED_GRANT_REQUIRED`) refuse before any claim or camera; no W10 claim exists. The 007 freeze is
+intact (checker `grant_ready`, and a test now pins every 007 source hash). Offline suite 283 PASS.
+
+Envelope: `max` mode (50 ms slots, 50 ms client floor, 40 ms Host floor), lifetime 60 s, 500 frames /
+1500 packets / 527,000 bytes (Host cap), 8 s handover settle, heartbeat declared, framing
+operator-adjustable (pixels only). A busy scene ends on budget at roughly 30 s; both terminals are clean.
+
+Not yet exercised anywhere: the stdin claim handshake inside the Studio (a copy of the proven
+Runner pattern), a physical camera unplug, and anything on the Ditoo.
+
+### Operator workflow
+
+```powershell
+# Windows PowerShell — frame the shot; the Ditoo is untouched
+powershell -ExecutionPolicy Bypass -File \\wsl.localhost\Ubuntu\home\wan\Projects\openditoo-research\scripts\webcam_studio_windows.ps1
+# optional: same window streaming into the in-memory Host
+... webcam_studio_windows.ps1 -Mode dryrun
+```
+
+Press **Save framing** (writes `%LOCALAPPDATA%\OpenDitoo\webcam-framing.json`; a live session starts
+from it). Live, only after `Grant OPENDITOO-WEBCAM-W10-001`, from WSL: `bash scripts/run_webcam_w10_once.sh`
+(stops Runtime 003, waits for an idle Host + 8 s, runs once, restores and verifies the dashboard). The
+Studio window opens; adjust framing live; **Stop** or closing the window ends the session cleanly.
+
+Changing any Studio source or the linked files after preparation invalidates W10-001 by hash — re-run
+`python3 scripts/prepare_webcam_w10.py` (it refuses an authorized or claimed manifest).
+
+### Open decision (owner): W10C standing webcam authority
+
+A continuous webcam longer than one session (500 frames ≈ 30 s busy at the W8 rate) needs fresh
+session ids issued automatically, i.e. a Runtime-003-shaped *webcam* policy with its own review and
+grant. Runtime 003 must not widen to cover it. Not built; nothing here assumes it.

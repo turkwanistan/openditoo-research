@@ -65,6 +65,7 @@ internal sealed class StudioForm : Form
     private readonly CancellationTokenSource? sessionStop;
 
     internal StudioCamera? Camera => camera;
+    internal Framing CurrentFraming => framing;
 
     internal StudioForm(StudioCamera? camera, string title, CancellationTokenSource? sessionStop = null)
     {
@@ -131,7 +132,8 @@ internal sealed class StudioForm : Form
 
     internal void SetSessionStatus(string text)
     {
-        if (IsHandleCreated) BeginInvoke(() => sessionLabel.Text = text);
+        try { if (IsHandleCreated) BeginInvoke(() => sessionLabel.Text = text); }
+        catch (InvalidOperationException) { /* the window is closing */ }
     }
 
     private int ScreenSign => framing.Mirror ? -1 : 1;

@@ -10,7 +10,7 @@ namespace OpenDitoo.Webcam.Studio;
 internal static class StudioTests
 {
     /// <summary>Adds the heartbeat route in front of the frozen fake, which refuses unknown routes.</summary>
-    private sealed class HeartbeatHandler(OfflineTests.FakeHandler inner, bool endSession = false) : DelegatingHandler(inner)
+    internal sealed class HeartbeatHandler(OfflineTests.FakeHandler inner, bool endSession = false) : DelegatingHandler(inner)
     {
         internal int Heartbeats;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
@@ -152,6 +152,14 @@ internal static class StudioTests
             var (stopped, stopHost, _) = await Session("none", new ScriptedSource("moving"), 100, 5, stop: stop.Token);
             Check("SENDER_OPERATOR_STOP", Str(stopped, "terminalReason") == "operator_stop" &&
                 Str(stopped, "outcome") == "stopped_clean" && stopHost.Closes == 1);
+        }
+
+        // Stopped before the session opened (window closed during the handshake): never opened.
+        using (var early = new CancellationTokenSource())
+        {
+            early.Cancel();
+            var (pre, preHost, _) = await Session("none", new ScriptedSource("moving"), 100, 5, stop: early.Token);
+            Check("SENDER_STOP_BEFORE_OPEN", Str(pre, "outcome") == "not_opened" && preHost.Opens == 0 && preHost.Closes == 0);
         }
 
         // Host loses a frame response: outcome unknown, close attempted once, no retry.
