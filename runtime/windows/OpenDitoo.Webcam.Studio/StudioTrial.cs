@@ -81,7 +81,7 @@ internal static class StudioTrial
                 "OpenDitoo/Day1Host/OpenDitoo.Day1.Host.dll")) == expectedHost, "HOST_HASH_DRIFT");
     }
 
-    internal const string PolicyId = "OPENDITOO-WEBCAM-PRODUCT-005";
+    internal const string PolicyId = "OPENDITOO-WEBCAM-PRODUCT-006";
     // One 30-minute connection per launch (Runtime 004 Host streaming ceiling): lifetime / 50 ms slots + 1.
     internal const int PolicySeconds = 1800;
     internal const int PolicyFrames = PolicySeconds * 1000 / 50 + 1;

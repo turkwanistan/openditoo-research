@@ -6,6 +6,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## Current session route — 2026-09-10
 
+**Host re-bind (Runtime 007 + webcam 006):** the first-frame-spacing Host fix (streaming first-frame `IMAGE_RX_RECV_TIMEOUT` 5/19 vs activity 0/199). Status, grants and the cutover/rollback are in `notes/OPENDITOO-HOST-FIRST-FRAME-REBIND-2026-09-10.md`; `product-status` / the local policy id says which runtime is live.
+
 **Current handoff (2026-09-10): physical button pagination is LIVE as Runtime 006.** Read `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md` first, then `notes/OPENDITOO-HIGH-FPS-INTERACTIVE-PAGES-PLAN-2026-09-10.md`. Ditoo Left/Right page a wrap-around list and a short lever pull runs the page's own action; Runtime 006 is the accepted rollback baseline for the next work. The owner has explicitly reframed BTN-9: do **not** optimize the spiral as an end in itself. The active objective is a **general high-FPS interactive page runtime** on the existing `streaming_ack_clock` profile, with a small three-reel slots game as the first meaningful acceptance app. In parallel, prototype a richer MCP activity animation in which a lightning bolt descends into the active icon before the existing blue/cyan flare. Research/plan notes (`…BUTTON-AVRCP-RESEARCH…`, `…PAGINATION-PLAN…`) are history for BTN-0..6.
 
 0. **Prior accepted product baseline:** after the current button handoff/plan, use `notes/OPENDITOO-HANDOFF-2026-09-10-W10.md` selectively — W10 is CLOSED: on-demand webcam (desktop shortcut,
@@ -72,7 +74,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | Runtime 003 | superseded 2026-09-10 by Runtime 004 (Host re-bind only); no longer hash-valid |
 | Runtime 004 | superseded 2026-09-10 by Runtime 005 (pacing clock); no longer hash-valid |
 | Runtime 005 | superseded 2026-09-10 17:44Z by Runtime 006; saved as rollback in `.openditoo-local/rollback-runtime-005/` (`scripts/cutover_runtime_006.sh --rollback`) |
-| Runtime 006 | **active** (granted 2026-09-10 17:44Z): Runtime 005 envelope + button pagination, runtime_revision 3, same Host `f7bd60d4…` |
+| Runtime 007 | Runtime 006 re-bound to the first-frame-spacing Host `3faf520f…` (+ webcam 006); cutover `scripts/cutover_runtime_007.sh`, rollback `--rollback`. See the re-bind note |
+| Runtime 006 | **active until the 007 cutover** (granted 2026-09-10 17:44Z): Runtime 005 envelope + button pagination, runtime_revision 3, same Host `f7bd60d4…` |
 | P3 product evidence | closed for v1; normal MCP use accepted; forced healthy-Lab outage waived |
 | P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
 | BTN-0 AVRCP evidence reproduction | **PASS** (`BTN0_AVRCP_REPRODUCTION=PASS`): `host/avctp.py` + direction-scoped L2CAP channels in `host/btsnoop.py` + `capture-avrcp-parse` reproduce 0x4C/0x4B/0x4C/0x44 (all press+release, all ACCEPTED) from the raw M7 bytes; derived `captures/OPENDITOO-M7-AVRCP-KEY-SWEEP-2026-09-09.json`. New: the first Left coincided with an unsolicited RFCOMM 0x09 report (-2.7 ms), so arrows are not assumed session-neutral |
