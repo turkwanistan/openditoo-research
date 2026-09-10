@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from host import interactive_acceptance as hf3  # noqa: E402
-from scripts.interactive_hf3 import main_worktree  # noqa: E402
+from scripts.interactive_hf3 import MANIFEST, main_worktree  # noqa: E402
 
 PREFIX = hf3.EXPERIMENT_ID + "-S"
 EVENTS = ROOT / ".openditoo-local/hf3/button-events.ndjson"
@@ -68,7 +68,7 @@ def rows(path: Path) -> list[dict]:
 
 
 def main() -> int:
-    m = hf3.load_manifest(ROOT / "experiments/DAY1-INTERACTIVE-HF3-002.json", verify_hashes=False,
+    m = hf3.load_manifest(MANIFEST, verify_hashes=False,
                           verify_button_probe=False, require_authority=False)
     ledger = main_worktree() / ".openditoo-local/session-ledger.jsonl"
     soft_end_s = m.lifetime_seconds - 22
@@ -94,7 +94,7 @@ def main() -> int:
                                               or m.max_child_sessions - opens < 5 or elapsed >= soft_end_s):
                 popup("FINAL - hands off, watch the Dashboard for lightning")
                 log(event="final_dashboard", lefts=lefts, hf3_opens=opens, elapsed_s=round(elapsed, 1))
-                time.sleep(2.5)  # dashboard child opens and draws its base frame
+                time.sleep(2.5)  # dashboard page draws its base frame
                 log(event="mcp_event", response=mcp_event()[:200])
                 time.sleep(8.0)  # collector poll (2 s) + 10-stage ACK-gated pulse (~2 s) + margin
                 pid = runner_pid()

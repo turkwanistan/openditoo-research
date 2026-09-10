@@ -1,15 +1,22 @@
 {
   "schema_version": 1,
   "kind": "interactive_page_acceptance",
-  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-002",
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-003",
   "milestone": "HF-3 one-use high-FPS interactive page / repeated profile-open acceptance",
-  "status": "completed_unknown_authority_consumed",
-  "predecessor": {
-    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
-    "state": "consumed; transport clean (2 activity children, 13 frames) but 0 cycles: no operator GO cue",
-    "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-001-LIVE-2026-09-10.json",
-    "changes": "GO/FINAL popups via operator-assist; envelope re-sized for human pace plus the BTN-7 every-other-pull 0xBD reclaim (paced dry-run proves 10 cycles fit)"
-  },
+  "status": "prepared_unauthorized",
+  "predecessors": [
+    {
+      "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
+      "state": "consumed; transport clean (2 activity children, 13 frames) but 0 cycles: no operator GO cue",
+      "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-001-LIVE-2026-09-10.json"
+    },
+    {
+      "experiment_id": "OPENDITOO-INTERACTIVE-HF3-002",
+      "state": "consumed/unknown; first Right closed a 4.3 s-old activity child and the streaming child opened 29 ms later got IMAGE_RX_RECV_TIMEOUT; NO_RETRY on its first frame",
+      "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-002-LIVE-2026-09-10.json"
+    }
+  ],
+  "design_change": "Single streaming_ack_clock Host session per run: PageCarousel owns Dashboard (held to its ~200 ms low-rate cadence) and Slots; Left/Right change pixels only and never close the session. Remaining session boundaries are device-ended 0xBD/0x09 canvas yields (BTN-7: reopen clean in 46-69 ms) and none planned for rollover (child lifetime/frames = outer envelope).",
   "objective": "Prove the generic Dashboard <-> streaming_ack_clock page boundary with the three-reel slots app, including one-reel-per-lever behavior and ten complete high-rate profile cycles without retry after ambiguity.",
   "readiness": {
     "offline_ready": true,
@@ -29,7 +36,6 @@
     "host_origin": "http://127.0.0.1:8796",
     "one_controller": true,
     "allowed_session_profiles": [
-      "activity",
       "streaming_ack_clock"
     ],
     "one_frame_in_flight": true,
@@ -39,10 +45,10 @@
     "known_canvas_reclaim": "Only exact canvas_invalidated with stopped_clean or stopped_yielded_to_stock may open a fresh child while the page remains selected; any other non-clean child outcome terminates the outer experiment."
   },
   "build": {
-    "source_checkpoint": "96beaffa9cd76890a8d7e594644ab6c13196a84c",
+    "source_checkpoint": "7398acdf81bde85f4c2791b81cab57f00379e48e",
     "code_sha256": {
-      "interactive_acceptance_sha256": "a061bd1214499d0d3b607549cadb4c871a398ea90cdd27243a8e1d325f0cf1b2",
-      "interactive_pages_sha256": "7cf9e04f4c0fffcede49d03d0e7d9e73a1e51e75b2fc30d5a3373a45f21d8cdf",
+      "interactive_acceptance_sha256": "7a6e7ed581411597cd361779b6b469f4aa6255ae1cdebeb136557f0f645e7811",
+      "interactive_pages_sha256": "ea7840af6fa4a222542e8ad9ddec221d6dfb7604d272e438c4fcca922284b3a4",
       "interactive_runtime_sha256": "f92c6f47ff328ceb3cee4501d72105e52baa7a605e8b92323c832ab3fc8b93c6",
       "interactive_stream_sha256": "79886686439d1a602fb7af7ff61d09e6977a1c9c46b9df557d49903d98c5b2c2",
       "interactive_activity_sha256": "96a8a75742a17ae04b00a9334b5a0ebc8e0b3ebf0b76d8983a9ee48220028df6",
@@ -58,7 +64,7 @@
       "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
       "pagination_input_sha256": "fd4a2437667b5d955736995a55dcbad11fe73686c2be8e61746b5bfd7bc288ca",
       "cli_transport_sha256": "07ebf960fb2208ddf8afe34dedc52d5275645584e41bae20fa8a6a063d821119",
-      "hf3_entry_sha256": "d266a5d17d4534728c78e3fb5ac16247456089059eef29599665c4f22049e628",
+      "hf3_entry_sha256": "8dfd3576060c788dc9396fe8e3e9cce412cbc8adb995aac14d61458892650633",
       "hf3_coordinator_sha256": "0bb4a4bab10ea17452bc0c0216f1a7804e16128f4a67faebf55d206b162a74b4"
     },
     "host_dll_sha256": "f7bd60d4a56de4f4740bd84f7c645e201ddfd7ce29bf6c0f1e7512b1b67cd34e",
@@ -71,21 +77,21 @@
   },
   "acceptance": {
     "lifetime_seconds": 150,
-    "max_child_sessions": 48,
+    "max_child_sessions": 32,
     "max_total_frames": 1500,
     "max_total_tx_bytes": 1581000,
     "activity_child_max_frames": 20,
-    "streaming_child_max_frames": 400,
+    "streaming_child_max_frames": 1500,
     "target_profile_cycles": 10,
     "pages": [
       {
         "name": "dashboard",
-        "session_profile": "activity",
+        "page_rate": "low (<=5 fps change-only, inside the streaming session)",
         "renderer": "accepted MCP dashboard + successor lightning pulse"
       },
       {
         "name": "slots",
-        "session_profile": "streaming_ack_clock",
+        "page_rate": "streaming_ack_clock",
         "renderer": "procedural three-reel slots; ACK-advanced motion"
       }
     ],
@@ -93,10 +99,10 @@
     "manual_choreography": [
       "Start from a healthy Runtime 006 dashboard; coordinator suspends it and verifies Host idle.",
       "scripts/hf3_operator_assist.py (no Ditoo/Host I/O) shows a topmost Windows GO popup when the first HF-3 child opens; no audio cue, because the Ditoo is also a Windows audio endpoint.",
-      "HF-3 opens its own dashboard child; Right selects slots.",
+      "HF-3 opens ONE streaming session showing the Dashboard; Right selects Slots in the same session.",
       "Confirm three reels spin; three short lever pulls stop reel 1, then 2, then 3.",
       "One more short lever starts a new round.",
-      "Use Left/Right to complete ten Dashboard <-> Slots high-rate profile cycles total.",
+      "Use Left/Right to complete ten Dashboard <-> Slots page cycles total (pixel-only paging).",
       "On the final Dashboard the operator-assist shows a FINAL popup, makes one genuine read-only WSL_MCP run_command call, waits for the lightning, then SIGINTs the runner (operator_stop).",
       "Coordinator restores Runtime 006 and verifies connected."
     ],
@@ -107,7 +113,7 @@
       "any Host open/send/refusal/ACK timeout not reported as the exact known canvas-invalidated outcome",
       "outer 150 second lifetime",
       "outer 1500 ACKed-frame / derived byte budget",
-      "48 attempted Host child sessions",
+      "32 attempted Host child sessions",
       "operator Ctrl+C"
     ],
     "on_ambiguous_outcome_resend": false,
@@ -120,14 +126,13 @@
     "forbidden": "firmware/update/gallery persistence, raw send, target selection, command enumeration, pipelining"
   },
   "authority": {
-    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-002",
-    "required_grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-002",
+    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-003",
+    "required_grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-003",
     "transmission_authorized": false,
-    "authorization_consumed": true,
-    "granted_by": "operator, in-session",
-    "grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-002",
-    "expires_at": "2026-09-10T20:17:15.970895Z",
-    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 48 child session attempts, 1500 ACKed frames and derived byte ceiling; only activity + streaming_ack_clock profiles; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
-    "consumed_at": "2026-09-10T19:47:44.451016Z"
+    "authorization_consumed": false,
+    "granted_by": null,
+    "grant_text": null,
+    "expires_at": null,
+    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 32 child session attempts (one planned session; the rest only device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately."
   }
 }

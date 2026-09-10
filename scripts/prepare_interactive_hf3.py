@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze OPENDITOO-INTERACTIVE-HF3-002 to an unauthorized, reviewable manifest.
+"""Freeze OPENDITOO-INTERACTIVE-HF3-003 to an unauthorized, reviewable manifest.
 
 Zero device I/O, zero Host-session I/O and no claim. In environments where /mnt/c is not
 visible (notably WSL_MCP's sandbox), the accepted Runtime 006 ButtonProbe hashes are inherited
@@ -19,8 +19,8 @@ if str(ROOT) not in sys.path:
 
 from host import activity_session, frame_stream, interactive_acceptance as hf3
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-002.json"
-EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-002-PREPARATION-2026-09-10.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-003.json"
+EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-003-PREPARATION-2026-09-10.json"
 R006 = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json"
 
 
@@ -72,12 +72,15 @@ def main() -> int:
         "experiment_id": hf3.EXPERIMENT_ID,
         "milestone": "HF-3 one-use high-FPS interactive page / repeated profile-open acceptance",
         "status": "prepared_unauthorized" if probe_verified_now else "offline_prepared_probe_reverification_required",
-        "predecessor": {
-            "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
-            "state": "consumed; transport clean (2 activity children, 13 frames) but 0 cycles: no operator GO cue",
-            "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-001-LIVE-2026-09-10.json",
-            "changes": "GO/FINAL popups via operator-assist; envelope re-sized for human pace plus the BTN-7 every-other-pull 0xBD reclaim (paced dry-run proves 10 cycles fit)",
-        },
+        "predecessors": [
+            {"experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
+             "state": "consumed; transport clean (2 activity children, 13 frames) but 0 cycles: no operator GO cue",
+             "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-001-LIVE-2026-09-10.json"},
+            {"experiment_id": "OPENDITOO-INTERACTIVE-HF3-002",
+             "state": "consumed/unknown; first Right closed a 4.3 s-old activity child and the streaming child opened 29 ms later got IMAGE_RX_RECV_TIMEOUT; NO_RETRY on its first frame",
+             "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-002-LIVE-2026-09-10.json"},
+        ],
+        "design_change": "Single streaming_ack_clock Host session per run: PageCarousel owns Dashboard (held to its ~200 ms low-rate cadence) and Slots; Left/Right change pixels only and never close the session. Remaining session boundaries are device-ended 0xBD/0x09 canvas yields (BTN-7: reopen clean in 46-69 ms) and none planned for rollover (child lifetime/frames = outer envelope).",
         "objective": "Prove the generic Dashboard <-> streaming_ack_clock page boundary with the three-reel slots app, including one-reel-per-lever behavior and ten complete high-rate profile cycles without retry after ambiguity.",
         "readiness": {
             "offline_ready": True,
@@ -96,7 +99,7 @@ def main() -> int:
             "measured_endpoint": "Windows Classic RFCOMM channel 1",
             "host_origin": "http://127.0.0.1:8796",
             "one_controller": True,
-            "allowed_session_profiles": [hf3.RATE_ACTIVITY, hf3.RATE_STREAMING],
+            "allowed_session_profiles": [hf3.RATE_STREAMING],
             "one_frame_in_flight": True,
             "pipelining": False,
             "raw_send_enabled": False,
@@ -113,26 +116,26 @@ def main() -> int:
         },
         "acceptance": {
             "lifetime_seconds": 150,
-            "max_child_sessions": 48,
+            "max_child_sessions": 32,
             "max_total_frames": max_frames,
             "max_total_tx_bytes": max_tx,
             "activity_child_max_frames": 20,
-            "streaming_child_max_frames": 400,
+            "streaming_child_max_frames": 1500,
             "target_profile_cycles": 10,
             "pages": [
-                {"name": "dashboard", "session_profile": hf3.RATE_ACTIVITY,
+                {"name": "dashboard", "page_rate": "low (<=5 fps change-only, inside the streaming session)",
                  "renderer": "accepted MCP dashboard + successor lightning pulse"},
-                {"name": "slots", "session_profile": hf3.RATE_STREAMING,
+                {"name": "slots", "page_rate": "streaming_ack_clock",
                  "renderer": "procedural three-reel slots; ACK-advanced motion"},
             ],
             "long_lever_holds_mapped": False,
             "manual_choreography": [
                 "Start from a healthy Runtime 006 dashboard; coordinator suspends it and verifies Host idle.",
                 "scripts/hf3_operator_assist.py (no Ditoo/Host I/O) shows a topmost Windows GO popup when the first HF-3 child opens; no audio cue, because the Ditoo is also a Windows audio endpoint.",
-                "HF-3 opens its own dashboard child; Right selects slots.",
+                "HF-3 opens ONE streaming session showing the Dashboard; Right selects Slots in the same session.",
                 "Confirm three reels spin; three short lever pulls stop reel 1, then 2, then 3.",
                 "One more short lever starts a new round.",
-                "Use Left/Right to complete ten Dashboard <-> Slots high-rate profile cycles total.",
+                "Use Left/Right to complete ten Dashboard <-> Slots page cycles total (pixel-only paging).",
                 "On the final Dashboard the operator-assist shows a FINAL popup, makes one genuine read-only WSL_MCP run_command call, waits for the lightning, then SIGINTs the runner (operator_stop).",
                 "Coordinator restores Runtime 006 and verifies connected.",
             ],
@@ -143,7 +146,7 @@ def main() -> int:
                 "any Host open/send/refusal/ACK timeout not reported as the exact known canvas-invalidated outcome",
                 "outer 150 second lifetime",
                 "outer 1500 ACKed-frame / derived byte budget",
-                "48 attempted Host child sessions",
+                "32 attempted Host child sessions",
                 "operator Ctrl+C",
             ],
             "on_ambiguous_outcome_resend": False,
@@ -163,7 +166,7 @@ def main() -> int:
             "granted_by": None,
             "grant_text": None,
             "expires_at": None,
-            "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 48 child session attempts, 1500 ACKed frames and derived byte ceiling; only activity + streaming_ack_clock profiles; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
+            "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 150 s, 32 child session attempts (one planned session; the rest only device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
         },
     }
 

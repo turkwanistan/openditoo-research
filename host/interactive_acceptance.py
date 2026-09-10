@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Callable
 
 from host import activity_session, frame_stream
-from host.interactive_activity import run_interactive_activity
 from host.interactive_pages import BufferedButtonEvents, RATE_ACTIVITY, RATE_STREAMING
 from host.interactive_runtime import ProfilePageOrchestrator
 from host.interactive_stream import run_interactive_stream
@@ -25,7 +24,7 @@ from host.interactive_stream import run_interactive_stream
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = 1
 KIND = "interactive_page_acceptance"
-EXPERIMENT_ID = "OPENDITOO-INTERACTIVE-HF3-002"
+EXPERIMENT_ID = "OPENDITOO-INTERACTIVE-HF3-003"
 REQUIRED_GRANT_TEXT = f"Grant {EXPERIMENT_ID}"
 HOST_BUILD = activity_session.HOST_BUILD_DLL
 BUTTON_PROBE_EXE = Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.exe")
@@ -149,7 +148,7 @@ def load_manifest(path: Path, *, verify_hashes: bool = True,
     _require(transport.get("raw_send_enabled") is False, "MANIFEST_RAW_SEND_ENABLED")
     _require(transport.get("pipelining") is False, "MANIFEST_PIPELINING_ENABLED")
     _require(transport.get("retry_after_ambiguous") is False, "MANIFEST_RETRY_ENABLED")
-    _require(transport.get("allowed_session_profiles") == [RATE_ACTIVITY, RATE_STREAMING],
+    _require(transport.get("allowed_session_profiles") == [RATE_STREAMING],
              "MANIFEST_PROFILE_SET_MISMATCH")
 
     acceptance = raw.get("acceptance") or {}
@@ -218,7 +217,11 @@ def child_manifest(manifest: AcceptanceManifest, sequence: int, rate_mode: str,
              "CHILD_BUDGET_EXHAUSTED")
     per_child = (manifest.streaming_child_max_frames if rate_mode == RATE_STREAMING
                  else manifest.activity_child_max_frames)
-    max_frames = min(remaining_frames, per_child, activity_session.MAX_SESSION_FRAMES)
+    # Streaming children are bounded by the frozen outer envelope, not the activity 500-frame
+    # cap: a mid-run budget rollover is a Host-initiated close -> reopen (webcam-product-001).
+    # The Host's own streaming ceiling is 1800 s / 45000 frames.
+    max_frames = min(remaining_frames, per_child) if rate_mode == RATE_STREAMING else \
+        min(remaining_frames, per_child, activity_session.MAX_SESSION_FRAMES)
     max_tx = min(remaining_tx_bytes, max_frames * frame_stream.worst_case_frame_tx_bytes())
     if rate_mode == RATE_STREAMING:
         floor = frame_stream.STREAMING_HOST_FLOOR_MS
@@ -232,7 +235,8 @@ def child_manifest(manifest: AcceptanceManifest, sequence: int, rate_mode: str,
         source = "HF-3 MCP dashboard low-rate child session"
     return activity_session.SessionManifest(
         experiment_id=manifest.child_experiment_id(sequence),
-        lifetime_seconds=min(remaining_lifetime_seconds, 60),
+        lifetime_seconds=(remaining_lifetime_seconds if rate_mode == RATE_STREAMING
+                          else min(remaining_lifetime_seconds, 60)),
         min_frame_interval_ms=floor,
         pulse_freshness_seconds=30,
         poll_interval_ms=poll,
@@ -360,9 +364,13 @@ def run_acceptance(manifest: AcceptanceManifest, pages: list, events: BufferedBu
     This function creates no grant/claim itself so offline dry-runs are side-effect free. The live
     coordinator must consume the outer SessionClaim *before* calling here.
     """
-    _require([(page.name, page.rate_mode) for page in pages] == [
-        ("dashboard", RATE_ACTIVITY), ("slots", RATE_STREAMING)],
-        "ACCEPTANCE_PAGE_SET_MISMATCH")
+    # HF3-003: one PageCarousel (streaming) owning Dashboard + Slots; navigation never closes
+    # the Host session (HF3-002 IMAGE_RX_RECV_TIMEOUT on a Host close -> reopen).
+    _require(len(pages) == 1 and (pages[0].name, pages[0].rate_mode) == ("carousel", RATE_STREAMING)
+             and [(p.name, p.rate_mode) for p in pages[0].pages] == [
+                 ("dashboard", RATE_ACTIVITY), ("slots", RATE_STREAMING)],
+             "ACCEPTANCE_PAGE_SET_MISMATCH")
+    carousel = pages[0]
     budget = budget or OuterBudget(manifest)
     started_ms = clock()
     child_results: list[dict] = []
@@ -390,16 +398,12 @@ def run_acceptance(manifest: AcceptanceManifest, pages: list, events: BufferedBu
             child = child_manifest(manifest, sequence, rate_mode, budget.remaining_frames,
                                    budget.remaining_tx_bytes, life)
             transport = BudgetedTransport(transport_factory(), budget, lambda: clock() / 1000.0)
-            if rate_mode == RATE_STREAMING:
-                result = run_interactive_stream(
-                    child,
-                    {"session_profile": RATE_STREAMING,
-                     "playback_interval_ms": frame_stream.STREAMING_MIN_PLAYBACK_INTERVAL_MS},
-                    transport, clock, sleep, driver, stop_requested=stop_requested,
-                    background_tick=getattr(pages[0], "background_tick", None))
-            else:
-                result = run_interactive_activity(
-                    child, transport, clock, sleep, driver, stop_requested=stop_requested)
+            result = run_interactive_stream(
+                child,
+                {"session_profile": RATE_STREAMING,
+                 "playback_interval_ms": frame_stream.STREAMING_MIN_PLAYBACK_INTERVAL_MS},
+                transport, clock, sleep, driver, stop_requested=stop_requested,
+                background_tick=carousel.background_tick)
             result = {**result, "child_experiment_id": child.experiment_id,
                       "session_profile": rate_mode}
             child_results.append(result)
@@ -408,33 +412,25 @@ def run_acceptance(manifest: AcceptanceManifest, pages: list, events: BufferedBu
 
     orchestrator = ProfilePageOrchestrator(
         pages, events,
-        {RATE_ACTIVITY: runner_for(RATE_ACTIVITY), RATE_STREAMING: runner_for(RATE_STREAMING)},
+        {RATE_STREAMING: runner_for(RATE_STREAMING)},
         monotonic=lambda: clock() / 1000.0,
     )
     state = orchestrator.run(max_sessions=manifest.max_child_sessions + 1,
                              stop_requested=stop_requested)
-    completed_cycles = state["profile_transitions"] // 2
+    completed_cycles = carousel.profile_transitions // 2
 
     # Correlate each accepted physical input to the first later ACK across child-session
     # boundaries. Dedupe cumulative page snapshots by (epoch, seq). This measures the useful
     # interaction path without pretending transport ACK is panel-visible latency.
     accepted_inputs: dict[tuple[object, object], dict] = {}
-    for child_result in child_results:
-        input_state = child_result.get("input_state") or {}
-        nav = input_state.get("navigation")
-        if nav and nav.get("seq") is not None:
-            accepted_inputs[(nav.get("epoch"), nav.get("seq"))] = {
-                "epoch": nav.get("epoch"), "seq": nav.get("seq"), "type": nav.get("type"),
-                "observed_at_monotonic": nav.get("observed_at_monotonic"),
-            }
-        for action in input_state.get("recent_actions") or []:
-            if action.get("seq") is None:
-                continue
-            accepted_inputs[(action.get("epoch"), action.get("seq"))] = {
-                "epoch": action.get("epoch"), "seq": action.get("seq"), "type": action.get("type"),
-                "result": action.get("result"),
-                "observed_at_monotonic": action.get("applied_at_monotonic"),
-            }
+    for action in orchestrator.drivers[0].actions:  # every nav + lever, bounded at 200
+        if action.get("seq") is None:
+            continue
+        accepted_inputs[(action.get("epoch"), action.get("seq"))] = {
+            "epoch": action.get("epoch"), "seq": action.get("seq"), "type": action.get("type"),
+            "result": action.get("result"),
+            "observed_at_monotonic": action.get("applied_at_monotonic"),
+        }
     input_ack_latency = []
     for item in sorted(accepted_inputs.values(), key=lambda value: (str(value.get("epoch")), value.get("seq") or 0)):
         observed = item.get("observed_at_monotonic")

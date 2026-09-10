@@ -2,7 +2,7 @@
 
 OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit evidence and preserved artifacts outrank family resemblance, plans, and chat history.
 
-**Successor implementation location:** high-FPS interactive-page work is intentionally isolated on branch `feat/high-fps-interactive-pages` (HF3-001 consumed; HF3-002 prepared; see the HF-3 handoff). Do not merge its hash-bound runtime changes into live `main` before HF-3 physical acceptance; use the existing worktree under `.openditoo-local/worktrees/high-fps-interactive-pages` for successor work.
+**Successor implementation location:** high-FPS interactive-page work is intentionally isolated on branch `feat/high-fps-interactive-pages` (HF3-001/002 consumed; HF3-003 prepared; see the HF-3 handoff). Do not merge its hash-bound runtime changes into live `main` before HF-3 physical acceptance; use the existing worktree under `.openditoo-local/worktrees/high-fps-interactive-pages` for successor work.
 
 ## Current session route — 2026-09-10
 
@@ -87,7 +87,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | HF-1 high-FPS page primitive | **offline PASS** on `feat/high-fps-interactive-pages` (`65723e6`): generic `activity` / `streaming_ack_clock` page contract, buffered physical inputs, ACK-driven state, change-only output, 50 ms idle poll |
 | GAME-1 slots | **offline PASS**: procedural 3-reel 16x16 game; successive short lever pulls stop L/M/R, fourth starts a new round; 1000 deterministic rounds |
 | HF-2 profile orchestrator | **offline PASS**: one-controller activity <-> streaming transitions, 100 transition stress + 1000 mixed inputs; known canvas yield reclaims same page, ambiguity never retries |
-| HF-3 one-use interactive acceptance | **HF3-001 consumed** (19:34Z): transport clean (13 frames, ledger exact, Runtime 006 restored `connected`) but **0/10 cycles**, because the owner had no start cue; replay forbidden. **HF3-002 prepared, grant-ready, UNAUTHORIZED**: GO/FINAL popups (`scripts/hf3_operator_assist.py`), envelope 150 s / 48 children / 1500 frames, paced dry-run with `0xBD` reclaims PASS, 39/39 tests. Needs exact grant `Grant OPENDITOO-INTERACTIVE-HF3-002`. See `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` |
+| HF-3 one-use interactive acceptance | **001 consumed**: 0 cycles, no start cue. **002 consumed/unknown**: `IMAGE_RX_RECV_TIMEOUT` when the first Right closed a young activity session and reopened as streaming; a Host-initiated close → reopen is the failure signature. **HF3-003 prepared, grant-ready, UNAUTHORIZED**: one streaming session per run with in-session `PageCarousel` paging, 40/40 tests, paced dry-run PASS. Needs `Grant OPENDITOO-INTERACTIVE-HF3-003`. See `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` |
 
 ### Authority state
 
@@ -234,4 +234,4 @@ do not change the shared runner. Details:
 ### MCP Dashboard v1 closed — Runtime 002 accepted
 
 `OPENDITOO-PRODUCT-RUNTIME-002` is now the active local standing product revision. Live cutover is PASS: `runtime_revision=2`, `status=connected`, first frame ACK recorded, session-open/ACK timestamps present, and `last_error=null`. P2/P3/P4 are complete; stop product-hardening work here. Windows reboot/login autostart observation is deferred and non-blocking. **Next objective: streaming and other OpenDitoo capabilities.**
-**HF-3 handoff:** read `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` first. HF3-001 is consumed (0 cycles, no start cue). HF3-002 is prepared and needs its own exact grant.
+**HF-3 handoff:** read `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` first. HF3-001 and HF3-002 are consumed. HF3-003 (single-session carousel) is prepared and needs its own exact grant.

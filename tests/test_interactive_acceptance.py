@@ -8,7 +8,7 @@ from host import activity_session, frame_stream
 from host.interactive_acceptance import (
     AcceptanceManifest, OuterBudget, child_manifest, run_acceptance,
 )
-from host.interactive_pages import BufferedButtonEvents, RATE_ACTIVITY, RATE_STREAMING
+from host.interactive_pages import BufferedButtonEvents, PageCarousel, RATE_ACTIVITY, RATE_STREAMING
 from host.slots_page import SlotsPage
 
 
@@ -153,16 +153,17 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
             return host
         dashboard = DryDashboard()
         result = run_acceptance(
-            manifest(), [dashboard, SlotsPage(seed=20260910)], mailbox,
+            manifest(), [PageCarousel([dashboard, SlotsPage(seed=20260910)])], mailbox,
             factory, clock, clock.sleep,
             stop_requested=lambda: source.done and mailbox.pending_count == 0,
         )
         self.assertEqual(result["outcome"], "stopped_clean")
         self.assertTrue(result["cycle_target_met"])
         self.assertEqual(result["completed_profile_cycles"], 10)
-        self.assertEqual(result["orchestrator"]["profile_transitions"], 20)
-        self.assertEqual(result["budget"]["child_attempts"], 21)
-        self.assertEqual(result["budget"]["child_opens"], 21)
+        self.assertEqual(result["orchestrator"]["page_state"]["profile_transitions"], 20)
+        # HF3-002 lesson: 20 page transitions, ONE Host session -- navigation never closes it.
+        self.assertEqual(result["budget"]["child_attempts"], 1)
+        self.assertEqual(len(created), 1)
         # 6 physical events/cycle (right, 3 stops, new-round lever, left), each represented once.
         latency = result["input_to_first_later_ack"]
         self.assertEqual(len(latency), 60)
@@ -176,22 +177,42 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         schedule, last_left = entry.paced_schedule(m.target_profile_cycles)
         source = entry.PacedEvents(schedule, clock, invalidations)
         return run_acceptance(
-            m, [DryDashboard(), SlotsPage(seed=7)], BufferedButtonEvents(source),
+            m, [PageCarousel([DryDashboard(), SlotsPage(seed=7)])], BufferedButtonEvents(source),
             lambda: entry.FakeHost(clock, invalidations), clock, clock.sleep,
             stop_requested=lambda: clock() >= last_left + 12000)
 
-    def test_hf3_002_envelope_fits_ten_human_paced_cycles_with_lever_reclaims(self):
-        r = self._paced(manifest(max_sessions=48, max_frames=1500, lifetime=150, streaming_child=400))
+    def test_hf3_003_envelope_fits_ten_human_paced_cycles_with_lever_reclaims(self):
+        r = self._paced(manifest(max_sessions=32, max_frames=1500, lifetime=150, streaming_child=1500))
         self.assertEqual((r["outcome"], r["terminal_reason"]), ("stopped_clean", "operator_stop"))
         self.assertTrue(r["cycle_target_met"])
         self.assertEqual(r["orchestrator"]["session_reclaims"], 20)
-        self.assertLessEqual(r["budget"]["child_attempts"], 48 - 5)
+        # Only device-ended 0xBD yields start a new session: 1 + 20 reclaims.
+        self.assertEqual(r["budget"]["child_attempts"], 21)
         self.assertTrue(all(i["first_later_ack_ms"] is not None for i in r["input_to_first_later_ack"]))
 
     def test_hf3_001_envelope_could_not_fit_ten_human_paced_cycles(self):
         # Negative control for the HF3-001 finding: 90 s / 28 children / 500 frames is too small.
         r = self._paced(manifest())
         self.assertFalse(r["cycle_target_met"])
+
+    def test_carousel_holds_low_rate_page_to_its_cadence_inside_streaming_session(self):
+        class Changing(DryDashboard):
+            n = 0
+            def render(self, _now):
+                self.n += 1
+                return bytes([self.n % 256, 0, 0]) * 256
+        clock, dash = FakeClock(), Changing()
+        sent_at = []
+        class Host(FakeHost):
+            def send_frame(self, rgb, sha):
+                sent_at.append(clock.ms)
+                return super().send_frame(rgb, sha)
+        run_acceptance(manifest(streaming_child=500), [PageCarousel([dash, SlotsPage(seed=1)])],
+                       BufferedButtonEvents(SequenceEvents([])), lambda: Host(clock),
+                       clock, clock.sleep, stop_requested=lambda: clock() >= 3000)
+        gaps = [b - a for a, b in zip(sent_at, sent_at[1:])]
+        self.assertGreater(len(sent_at), 5)
+        self.assertTrue(all(g >= 200 for g in gaps), gaps)
 
     def test_known_canvas_yield_reopens_same_slots_page_without_reset(self):
         clock = FakeClock()

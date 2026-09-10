@@ -26,11 +26,11 @@ from host import activity_session, mcp_activity
 from host.activity_lightning_renderer import LightningActivityRenderer
 from host.dashboard_page import DashboardPage
 from host import interactive_acceptance as hf3
-from host.interactive_pages import BufferedButtonEvents, RATE_ACTIVITY
+from host.interactive_pages import BufferedButtonEvents, PageCarousel, RATE_ACTIVITY
 from host.pagination import Broker, ButtonEvents
 from host.slots_page import SlotsPage
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-002.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-003.json"
 LOCAL = ROOT / ".openditoo-local/hf3"
 
 
@@ -196,7 +196,7 @@ def dry_run(paced: bool = False) -> dict:
         stop = lambda: source.done and mailbox.pending_count == 0
     mailbox = BufferedButtonEvents(source)
     result = hf3.run_acceptance(
-        m, [DryDashboard(), SlotsPage(seed=20260910)], mailbox,
+        m, [PageCarousel([DryDashboard(), SlotsPage(seed=20260910)])], mailbox,
         lambda: FakeHost(clock, invalidations), clock, clock.sleep, stop_requested=stop)
     if result["outcome"] != "stopped_clean" or not result["cycle_target_met"]:
         raise RuntimeError("HF3_DRY_RUN_FAILED")
@@ -279,7 +279,7 @@ def live_run() -> dict:
         # No transport has opened yet. This is the irreversible outer authority boundary.
         claim = hf3.claim_outer(m, main_root / ".openditoo-local/session-claims")
         result = hf3.run_acceptance(
-            m, [dashboard, slots], mailbox, lambda: _HostSessionTransport(token),
+            m, [PageCarousel([dashboard, slots])], mailbox, lambda: _HostSessionTransport(token),
             lambda: int((time.monotonic() - started_ms) * 1000),
             lambda ms: time.sleep(ms / 1000.0), stop_requested=requested)
         hf3.finish_outer_claim(claim, result)

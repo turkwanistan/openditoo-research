@@ -16,7 +16,7 @@ from dataclasses import dataclass
 import time
 from typing import Callable, Protocol
 
-from host import frame_stream
+from host import activity_session, frame_stream
 
 RATE_ACTIVITY = frame_stream.SESSION_PROFILE_ACTIVITY
 RATE_STREAMING = frame_stream.SESSION_PROFILE_STREAMING
@@ -116,21 +116,29 @@ class InteractivePageDriver:
             kind = event.get("type")
             if kind in NAVIGATION_TYPES:
                 self.inputs_consumed += 1
+                handler = getattr(self.page, "handle_navigation", None)
+                if handler is not None:
+                    # In-session paging (PageCarousel): pixels change, the Host session stays.
+                    handler(NAVIGATION_TYPES[kind], event)
+                    self._record(event, kind, "navigate")
+                    continue
                 self.navigation = NavigationRequest(
                     NAVIGATION_TYPES[kind], dict(event), self.monotonic())
                 return  # later accepted events remain buffered for the next page
             self.inputs_consumed += 1
             if kind == LEVER_TYPE:
-                result = self.page.handle_input(event)
-                self.actions.append({
-                    "seq": event.get("seq"),
-                    "epoch": event.get("epoch"),
-                    "type": kind,
-                    "raw_button": event.get("raw_button"),
-                    "result": result,
-                    "applied_at_monotonic": self.monotonic(),
-                })
-                del self.actions[:-50]
+                self._record(event, kind, self.page.handle_input(event))
+
+    def _record(self, event: dict, kind: str, result) -> None:
+        self.actions.append({
+            "seq": event.get("seq"),
+            "epoch": event.get("epoch"),
+            "type": kind,
+            "raw_button": event.get("raw_button"),
+            "result": result,
+            "applied_at_monotonic": self.monotonic(),
+        })
+        del self.actions[:-200]
 
     def transition_requested(self) -> bool:
         self.pump_inputs()
@@ -201,3 +209,80 @@ class InteractiveStreamRenderer:
     def frame_sent(self) -> None:
         self.driver.frame_sent()
         self.last_index += 1
+
+
+class PageCarousel:
+    """Every page inside ONE streaming_ack_clock Host session; Left/Right only change pixels.
+
+    HF3-002 (exact unit): closing a 4 s-old activity session and opening a streaming one 29 ms
+    later got IMAGE_RX_RECV_TIMEOUT on the first frame -- the same Host-initiated close ->
+    reopen signature as W9B-006, the W10 15:04 launch and webcam-product-001, and the reason
+    the Host's streaming ceiling exists (W10C: one connection). Device-ended 0xBD sessions
+    reopen cleanly (BTN-7), so the only session boundaries left are those and aged rollovers.
+    Low-rate pages keep their accepted ~200 ms cadence by repeating their last sent frame,
+    which the stream loop's change-only scheduler holds instead of sending.
+    """
+    name = "carousel"
+    rate_mode = RATE_STREAMING
+
+    def __init__(self, pages: list,
+                 low_rate_interval_ms: int = activity_session.MCP_CLIENT_FRAME_INTERVAL_MS) -> None:
+        if not pages or len({page.name for page in pages}) != len(pages):
+            raise ValueError("carousel needs uniquely named pages")
+        self.pages = list(pages)
+        self.index = 0
+        self.low_rate_interval_ms = low_rate_interval_ms
+        self.page_transitions = 0
+        self.profile_transitions = 0
+        self._rendered = None       # (page, rgb, now_ms) of the latest render
+        self._held = None           # last ACKed frame of the current page and when
+        self._held_ms = 0
+
+    @property
+    def page(self):
+        return self.pages[self.index]
+
+    def on_enter(self) -> None:
+        self.page.on_enter()
+
+    def on_exit(self) -> None:
+        self.page.on_exit()
+
+    def handle_navigation(self, direction: int, _event: dict) -> None:
+        old = self.page
+        old.on_exit()
+        self.index = (self.index + direction) % len(self.pages)
+        if self.page is not old:
+            self.page_transitions += 1
+            self.profile_transitions += old.rate_mode != self.page.rate_mode
+        self.page.on_enter()
+        self._held = None  # the new page draws on the very next opportunity
+
+    def handle_input(self, event: dict):
+        return self.page.handle_input(event)
+
+    def background_tick(self, now_ms: int) -> None:
+        for page in self.pages:
+            if page is not self.page and hasattr(page, "background_tick"):
+                page.background_tick(now_ms)
+
+    def render(self, now_ms: int) -> bytes:
+        page = self.page
+        if (page.rate_mode == RATE_ACTIVITY and self._held is not None
+                and now_ms - self._held_ms < self.low_rate_interval_ms):
+            return self._held
+        rgb = page.render(now_ms)
+        self._rendered = (page, rgb, now_ms)
+        return rgb
+
+    def frame_sent(self) -> None:
+        page, rgb, now_ms = self._rendered
+        page.frame_sent()
+        if page is self.page:
+            self._held, self._held_ms = rgb, now_ms
+
+    def telemetry(self) -> dict:
+        return {"page": self.page.name, "page_rate_mode": self.page.rate_mode,
+                "page_transitions": self.page_transitions,
+                "profile_transitions": self.profile_transitions,
+                "pages": {page.name: page.telemetry() for page in self.pages}}
