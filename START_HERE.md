@@ -4,7 +4,9 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## Current session route — 2026-09-10
 
-0. **Read `notes/OPENDITOO-HANDOFF-2026-09-10-W9.md` first** — the current handoff. W8 is closed PASS and
+0. **Read `notes/OPENDITOO-HANDOFF-2026-09-10-W10.md` first** — W10 is CLOSED: on-demand webcam (desktop shortcut,
+   policy `OPENDITOO-WEBCAM-PRODUCT-004`) and dashboard Runtime 005 are live. The W9 handoff below is history.
+   Previous: `notes/OPENDITOO-HANDOFF-2026-09-10-W9.md`. W8 is closed PASS and
    W9A is done offline. **W9B is DEFERRED by owner decision (2026-09-10)** — do not re-propose, re-prepare
    or execute it; 007 stays prepared, grant-ready and unauthorized so revival costs one grant. Panel refresh
    and visible unique-frame cadence are therefore **UNMEASURED and stay that way** — never describe
@@ -14,8 +16,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
    on-demand webcam (desktop shortcut → Studio → dashboard restored on close) moved to **one connection per launch**: 001 (granted, then revoked) hit IMAGE_RX_RECV_TIMEOUT on its 4th
    session reopen. **Runtime 004 is live** (Host `4a735bab…` with a separate 1800 s / 45000-frame streaming ceiling;
    dashboard numbers unchanged; granted 2026-09-10; rollback in `.openditoo-local/rollback-runtime-003/`).
-   `OPENDITOO-WEBCAM-PRODUCT-003` (live Look/Colours pickers, Host-confirmed stock yield) is **GRANTED** (owner,
-   2026-09-10) through the local mode-0600 policy only; 001/002 revoked. Desktop shortcut `OpenDitoo Webcam` is live. Revoke: `python3 host/webcam_studio.py policy-revoke`. See the W10 note. The W9 handoff lists the remaining lower-priority items.
+   `OPENDITOO-WEBCAM-PRODUCT-004` (003 + Runtime 005 Host; live Look/Colours, Host-confirmed stock yield) is **GRANTED** (owner,
+   2026-09-10) through the local mode-0600 policy only; 001–003 revoked. Desktop shortcut `OpenDitoo Webcam` is live. Revoke: `python3 host/webcam_studio.py policy-revoke`. See the W10 note. The W9 handoff lists the remaining lower-priority items.
    Then `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` for the earlier webcam handoff. Then
    `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md`. The external N980P webcam
    plan is adopted as the route, with recorded amendments. Runtime 003 is deployed;
@@ -65,7 +67,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | P1 Runtime 001 | historical accepted evidence; superseded and deliberately no longer hash-valid |
 | P2 Runtime 002 | telemetry accepted; superseded by Runtime 003 and deliberately no longer hash-valid |
 | Runtime 003 | superseded 2026-09-10 by Runtime 004 (Host re-bind only); no longer hash-valid |
-| Runtime 004 | **active** local product policy; Host `4a735bab…`; connected, no errors, runtime_revision remains 2 |
+| Runtime 004 | superseded 2026-09-10 by Runtime 005 (pacing clock); no longer hash-valid |
+| Runtime 005 | **active** local product policy; Host `f7bd60d4…` (high-resolution pacing clock); connected, runtime_revision remains 2 |
 | P3 product evidence | closed for v1; normal MCP use accepted; forced healthy-Lab outage waived |
 | P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
 

@@ -274,3 +274,9 @@ i.e. whenever the true gap is under ~46.9 ms. The effective Host floor is theref
 "10 ms" client margin (50 ms dispatch gap) is really ~3 ms of arrival-jitter tolerance. Short runs
 never hit it; one stall in 3,631 frames did. Same family as W8-003 (margin) and W8-004 (coarse Host
 clock), now with the combination identified.
+
+### Runtime 005 cutover — 2026-09-10 — PASS
+
+`Grant OPENDITOO-PRODUCT-RUNTIME-005` + `Grant OPENDITOO-WEBCAM-PRODUCT-004`: rollback saved (`rollback-runtime-004/`),
+`refresh -Apply` → `PASS_TYPED_IMAGE`, OpenTivoo preserved, Host `f7bd60d4…` installed = repo, dashboard re-bound and
+`connected`, webcam 003 revoked, 004 granted and `policy-check` PASS against the deployed Host. W10 closed; see the W10 handoff.
