@@ -172,7 +172,8 @@ See above. Gated on W9B, which is deferred.
 `OPENDITOO-WEBCAM-N980P-007` is prepared and **grant-ready but unauthorized**. Preparation
 passed with `claim_created=false`, `host_session_io=false`, `device_io=false`; no 007 claim
 exists and the Host ledger has no 007 entry. Manifest
-`2ef724294b779b7d516cee98d037af5cd2fcefee5b7115586c05e2219a3eab22`.
+`a4f8f246717fbedcb1b3508b0583487d2b12fc0a75352a7946175388ad658fb4` (the deferral commit re-serialized
+it and added the `deferral` block; the earlier `2ef72429…` is the pre-deferral bytes, same envelope).
 
 Transport, pacing, budgets, camera, transform, Host and W9A instrumentation are **unchanged**
 from 006, because none of them failed. The only change is operational: an 8 s handover settle

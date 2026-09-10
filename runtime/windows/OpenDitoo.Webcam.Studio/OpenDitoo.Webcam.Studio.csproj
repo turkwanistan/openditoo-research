@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+  <!-- Linked read-only. Every file below is hash-frozen by the parked W9B-007 manifest, so W10
+       adds files and never edits these. -->
+  <ItemGroup>
+    <Compile Include="../OpenDitoo.Webcam.Probe/FrameTransform.cs" Link="Frozen/FrameTransform.cs" />
+    <Compile Include="../OpenDitoo.Webcam.Probe/DitooEncoder.cs" Link="Frozen/DitooEncoder.cs" />
+    <Compile Include="../OpenDitoo.Webcam.Probe/LatestFrameSlot.cs" Link="Frozen/LatestFrameSlot.cs" />
+    <Compile Include="../OpenDitoo.Webcam.Probe/WebcamFrames.cs" Link="Frozen/WebcamFrames.cs" />
+    <Compile Include="../OpenDitoo.Webcam.Runner/Trial.cs" Link="Frozen/Trial.cs" />
+    <Compile Include="../OpenDitoo.Webcam.Runner/TypedSession.cs" Link="Frozen/TypedSession.cs" />
+    <Compile Include="../OpenDitoo.Webcam.Runner/OfflineTests.cs" Link="Frozen/OfflineTests.cs" />
+  </ItemGroup>
+</Project>
