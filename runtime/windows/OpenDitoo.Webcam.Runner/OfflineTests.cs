@@ -52,8 +52,9 @@ internal static class OfflineTests
                     var sha = DitooEncoder.Sha256Hex(encoded.Packet);
                     Trial.Require(body["expectedImagePacketSha256"]!.GetValue<string>() == sha, "ENCODER_HASH_DRIFT");
                     if (fault == "frame" && Attempts == 2) throw new IOException("SIMULATED_LOST_FRAME_RESPONSE");
-                    var simulatedHostMs = fault is "fast_ack" or "arrival_jitter" ? 5 : 54;
-                    await Task.Delay(fault is "fast_ack" or "arrival_jitter" ? 5 : 65, token);
+                    var simulatedHostMs = fault == "coarse_clock" ? 25 :
+                        (fault is "fast_ack" or "arrival_jitter" ? 5 : 54);
+                    await Task.Delay(fault is "fast_ack" or "arrival_jitter" or "coarse_clock" ? 5 : 65, token);
                     Frames++; Bytes += encoded.Packet.Length + 15;
                     response = new { ok = true, imagePacketSha256 = fault == "hash" ? "wrong" : sha,
                         frame = Frames, packetCount = 3, packetsSentTotal = Frames * 3, txBytesSentTotal = Bytes,
@@ -114,6 +115,23 @@ internal static class OfflineTests
             if (!passed) failures++;
             Console.WriteLine($"ADAPTER_CASE_{(passed ? "PASS" : "FAIL")} name={fault} opens={handler.Opens} attempts={handler.Attempts} closes={handler.Closes} outcome={result["outcome"]}");
         }
+        // W8-004 telemetry regression: Host uses Environment.TickCount64 and the client uses
+        // Stopwatch. A valid Host elapsed value may numerically exceed the client-observed HTTP
+        // duration because the clocks have different resolution/quantization. This must not abort
+        // an otherwise fully validated frame response.
+        var coarseClockHandler = new FakeHandler("coarse_clock");
+        using (var coarseClockSession = new TypedSession(new HttpClient(coarseClockHandler)))
+        {
+            var clockResult = JsonSerializer.SerializeToNode(await Sender.Run(
+                new("OFFLINE-W8-CLOCK", 1, 12, 12 * Trial.WorstCaseFrameTxBytes, Trial.W7ClientInterval),
+                new GeneratedFrames(coarseClockHandler, "coarse_clock"), coarseClockSession, CancellationToken.None))!;
+            var clockSafe = clockResult["outcome"]!.GetValue<string>() == "stopped_clean" &&
+                clockResult["frames"]!.GetValue<int>() >= 5 &&
+                clockResult["clientMinusHostElapsedMs"]!["count"]!.GetValue<int>() >= 5;
+            if (!clockSafe) failures++;
+            Console.WriteLine($"ADAPTER_HOST_ELAPSED_CROSS_CLOCK_{(clockSafe ? "PASS" : "FAIL")} frames={clockResult["frames"]} outcome={clockResult["outcome"]}");
+        }
+
         // W8-003 regression: a 40 ms client floor is unsafe when outbound request-arrival
         // latency varies. This negative control must reproduce the pacing refusal.
         var w8UnsafeHandler = new FakeHandler("arrival_jitter");

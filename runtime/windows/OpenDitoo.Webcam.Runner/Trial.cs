@@ -13,6 +13,7 @@ internal sealed record Trial(string Id, int Seconds, int MaxFrames, int MaxBytes
     internal const int W8FailedClientInterval = 40;
     internal const int W8SafeClientInterval = 50;
     internal const int WorstCaseFrameTxBytes = 1054;
+    internal const int AckTimeoutMs = 5000;
     internal static string Hash(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
     internal static void Require(bool condition, string reason)
     { if (!condition) throw new InvalidOperationException(reason); }
@@ -53,7 +54,7 @@ internal sealed record Trial(string Id, int Seconds, int MaxFrames, int MaxBytes
             budgets["max_tx_bytes"]!.GetValue<int>() == expectedBytes &&
             budgets["max_application_packets"]!.GetValue<int>() == expectedPackets &&
             budgets["connection_attempts"]!.GetValue<int>() == 1 &&
-            budgets["ack_timeout_ms_per_frame"]!.GetValue<int>() == 5000, "TRIAL_ENVELOPE_MISMATCH");
+            budgets["ack_timeout_ms_per_frame"]!.GetValue<int>() == AckTimeoutMs, "TRIAL_ENVELOPE_MISMATCH");
         foreach (var flag in new[] { "automatic_retry", "automatic_reconnect", "stock_screen_reclaim", "replay_after_interruption" })
             Require(!settings[flag]!.GetValue<bool>(), "RETRY_OR_RECLAIM_FORBIDDEN");
         var producer = stream["live_source"]!;

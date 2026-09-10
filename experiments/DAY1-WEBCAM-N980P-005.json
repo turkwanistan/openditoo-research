@@ -1,17 +1,18 @@
 {
   "schema_version": 1,
   "kind": "frame_stream",
-  "experiment_id": "OPENDITOO-WEBCAM-N980P-004",
-  "milestone": "W8 near-ceiling webcam freshness characterization \u2014 arrival-jitter-margin rerun",
-  "status": "consumed_unknown_client_telemetry_validation",
-  "objective": "Fresh W8 replacement for consumed attempt 003. Keep the proven camera/transform/typed Host and 40 ms Host backstop, but use a 50 ms ACK-gated client dispatch-start floor so variable localhost request latency cannot shrink Host frame-start spacing below 40 ms. Characterize sustainable FPS/freshness once; no rate ladder, pipelining, retry, reconnect or reclaim.",
+  "experiment_id": "OPENDITOO-WEBCAM-N980P-005",
+  "milestone": "W8 near-ceiling webcam freshness characterization \u2014 cross-clock telemetry correction",
+  "status": "review_pending_windows_build",
+  "objective": "Fresh replacement for consumed attempt 004. Preserve the proven 50 ms client / 40 ms Host pacing margin and all camera/transform/session validation. Remove only the invalid fatal cross-clock ordering assumption for hostFrameElapsedMs; keep it bounded to the reviewed 5000 ms ACK budget and record signed client-minus-Host elapsed residual as telemetry. One 10-second characterization only; no rate ladder, pipelining, retry, reconnect or reclaim.",
   "readiness": {
     "execution_ready": false,
     "grant_ready": false,
     "blockers": [
-      "AUTHORITY_ALREADY_CONSUMED"
+      "WINDOWS_W8_005_RUNNER_BUILD_NOT_FROZEN",
+      "WINDOWS_W8_005_OFFLINE_SELFTEST_NOT_VERIFIED"
     ],
-    "required_followup": "Do not replay attempt 004. Preserve its evidence. Use fresh identity OPENDITOO-WEBCAM-N980P-005 only after its Windows prep and a new exact grant."
+    "required_followup": "Run scripts/prepare_webcam_w8_telemetry_rerun_windows.ps1. It must rebuild/stage the corrected runner, pass the cross-clock telemetry regression plus 40/50 ms pacing controls, parity tests and real-Host read-only status test, and perform no claim/session/device I/O."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -33,8 +34,8 @@
     },
     "host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
     "installed_dll_sha256_verified": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
-    "source_checkpoint": "d4d99d95187189b004599064ce26fe7e087315a5 + Windows W8-004 runner rebuild/freeze",
-    "identity_note": "W8-004 runner rebuilt/staged. Unsafe 40 ms arrival-jitter control reproduced the 003 failure; corrected 50 ms control passed the same skew. Parity and real read-only Host status checks passed; Host/Runtime 003 unchanged; no claim/session/device I/O."
+    "source_checkpoint": "3a790e3 + W8-005 cross-clock telemetry correction; Windows rebuild not yet frozen",
+    "identity_note": "Host remains unchanged. Client keeps the 50 ms pacing margin and changes only hostFrameElapsedMs validation from an invalid cross-clock ordering test to a 0..5000 ms telemetry bound; exact rebuilt runner must be frozen by Windows prep."
   },
   "session": {
     "lifetime_seconds": 10,
@@ -53,7 +54,7 @@
     "loop": false,
     "source_description": "NexiGo VID_0C45 PID_2690 live camera; WinRT Realtime freshest-frame slots; fixed srgb_area transform and deterministic 255-colour guard",
     "live_source": {
-      "producer_description": "W8-004 Windows-native camera/transform/encoder + typed-session adapter. Same proven W7/W8 transport; 50 ms client floor is the only pacing correction after 003 demonstrated that equal 40 ms client/Host floors are unsafe under variable request-arrival latency. Source hashes frozen for review; Windows rebuilt binary must be frozen by prep.",
+      "producer_description": "W8-005 Windows camera/transform/encoder + typed-session adapter. Same proven 50 ms pacing path as 004. Only telemetry validation changes: hostFrameElapsedMs is bounded by the 5000 ms ACK budget but not ordered against a separate-process Stopwatch reading; signed client-minus-Host residual is recorded for observation.",
       "producer_code_sha256": {
         "runtime/windows/OpenDitoo.Webcam.Probe/DitooEncoder.cs": "a543919336212deed5fc7de354b932cadc68829eb848aee8043e1303cd0bfbb8",
         "runtime/windows/OpenDitoo.Webcam.Probe/FrameTransform.cs": "2d703b7dd7630dff071813c728862b33a0c5e68f245ee277ce0c7f9c8c85d623",
@@ -61,9 +62,9 @@
         "runtime/windows/OpenDitoo.Webcam.Probe/WebcamFrames.cs": "2a0cf08850d83a8ba8661c1a29273b59f469d3e3a8b651002a7c5025551da7f3",
         "runtime/windows/OpenDitoo.Webcam.Runner/OpenDitoo.Webcam.Runner.csproj": "4c6c90f3eafbd51188130d1e80e1234dc8e3f105da983dd404fb7a20e0747489",
         "runtime/windows/OpenDitoo.Webcam.Runner/Program.cs": "0b3187b468c9f42024c72efc680a2fad2b189efa45d9104861883afa0fbfe469",
-        "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs": "8db8c1a56a0981cf7e172169d6a83fd5939d580b11a96ef5fb8bdfa862fb1d70",
-        "runtime/windows/OpenDitoo.Webcam.Runner/TypedSession.cs": "c221ac67f7eead38f7bbe64ccd3cae6ff5e4fe35aea88f6b4e1711bc505880d7",
-        "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs": "e8ebd5e419f259dce87504a924261097fd02d367133d996a383c85158a398ab2",
+        "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs": "14addbc5b9c2f0da85cad090a4d2c672911b302ca36bb915fc9e03a1be1eb520",
+        "runtime/windows/OpenDitoo.Webcam.Runner/TypedSession.cs": "1280bb0442f5428b8b855f89aeb7a8876871e70a785c3208d745f85406a41cd7",
+        "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs": "2269db8c37d63e9c450b6092ff64aa0d0f07150af11e48ef4bef07e211151baf",
         "host/webcam_trial.py": "75b2cbe47980f85a0b08f0a97bfd5fcd81e11b534948ec2d10380639d1f3846e",
         "cli/webcam.py": "1dbed50b2533c76bb72ad2c4313365c8756a316d4fd06029b0299bc7583f528f",
         "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
@@ -143,14 +144,14 @@
     "product_policy_effect": "none; Runtime 003 is not webcam authority"
   },
   "authority": {
-    "experiment_id": "OPENDITOO-WEBCAM-N980P-004",
+    "experiment_id": "OPENDITOO-WEBCAM-N980P-005",
     "transmission_authorized": false,
-    "authorization_consumed": true,
-    "granted_by": "operator, in-session, 2026-09-09",
-    "grant_text": "Grant OPENDITOO-WEBCAM-N980P-004",
-    "expires_at": "2026-09-10T03:45:00Z",
-    "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-N980P-004",
-    "grant_scope_requested": "ONE 10-second W8 replacement live-camera characterization to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile; unchanged 40 ms Host floor plus 50 ms client dispatch-start floor (10 ms request-arrival jitter margin), at most 201 frames / 603 packets / 211854 application bytes; one connection and one frame in flight, zero packet spacing, no retry/reconnect/reclaim/pipelining; suspend and restore Runtime 003 separately. No rate ladder; attempts 001-003 grants may not be reused."
+    "authorization_consumed": false,
+    "granted_by": null,
+    "grant_text": null,
+    "expires_at": null,
+    "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-N980P-005",
+    "grant_scope_requested": "ONE 10-second W8 replacement live-camera characterization to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile; unchanged 40 ms Host floor plus proven 50 ms client dispatch-start floor, at most 201 frames / 603 packets / 211854 application bytes; hostFrameElapsedMs accepted only as bounded 0..5000 ms telemetry across an independent clock domain; one connection and one frame in flight, zero packet spacing, no retry/reconnect/reclaim/pipelining; suspend and restore Runtime 003 separately. No rate ladder; attempts 001-004 grants may not be reused."
   },
   "adapter": {
     "kind": "windows_native_camera_to_typed_session",
@@ -163,7 +164,7 @@
       "/v1/session/close"
     ],
     "claim_handshake": "Runner must produce one fresh valid 16x16 frame and emit camera_ready + nonce before WSL creates the durable one-use claim; only execute:<nonce> may cross the claim boundary.",
-    "deployment_state": "PASS W8-004 preparation: rebuilt/staged/frozen with 50 ms arrival-jitter margin; no claim/session/device I/O."
+    "deployment_state": "PENDING W8-005 Windows rebuild/freeze and cross-clock telemetry regression verification; no claim/session/device I/O authorized."
   },
   "w6_verification": {
     "status": "pass",
@@ -192,41 +193,18 @@
     "authority_consumed": true
   },
   "w8_failed_baseline": {
-    "experiment_id": "OPENDITOO-WEBCAM-N980P-003",
-    "status": "consumed_unknown_pacing_violation",
-    "frames": 2,
-    "packets": 6,
-    "tx_bytes": 2102,
-    "client_interval_ms": 40,
-    "terminal_reason": "SESSION_PACING_VIOLATION",
-    "outcome": "unknown",
-    "host_ledger_terminal_outcome": "stopped_clean",
-    "diagnosis": "Client dispatch spacing is not Host frame-start spacing; equal 40 ms floors provide no variable request-arrival latency margin.",
-    "authority_consumed": true,
-    "same_identity_retry_forbidden": true
-  },
-  "w8_rerun_preparation": {
-    "status": "pass",
-    "evidence_file": "captures/OPENDITOO-WEBCAM-W8-RERUN-004-PREPARATION-2026-09-09.json",
-    "evidence_sha256": "25a2f0adc8e4f9fbdf612d184cf91c58350e61c381141d6e70b185209af9ebb5",
-    "unsafe_40ms_arrival_jitter_reproduced": true,
-    "safe_50ms_arrival_jitter_pass": true,
-    "real_host_status_selftest": true,
-    "claim_created": false,
-    "host_session_io": false,
-    "device_io": false
-  },
-  "w8_attempt": {
-    "outcome": "unknown",
-    "terminal_reason": "HOST_FRAME_ELAPSED_INVALID",
+    "experiment_id": "OPENDITOO-WEBCAM-N980P-004",
+    "status": "consumed_unknown_client_telemetry_validation",
     "client_counted_frames": 8,
     "host_ledger_frames": 9,
     "host_ledger_packets": 27,
     "host_ledger_tx_bytes": 9420,
-    "failure_evidence_file": "captures/OPENDITOO-WEBCAM-W8-RERUN-004-FAILURE-2026-09-09.json",
-    "failure_evidence_sha256": "09084e4e629d7d00d7e2875620792a1dad2444e53dc54a8294a75025ba05e075",
-    "diagnosis": "Invalid fatal comparison between Host Environment.TickCount64 elapsed telemetry and client Stopwatch HTTP elapsed time; ninth Host-ACKed frame was rejected only by client telemetry validation.",
+    "client_interval_ms": 50,
+    "terminal_reason": "HOST_FRAME_ELAPSED_INVALID",
+    "outcome": "unknown",
     "pacing_violation_observed": false,
+    "diagnosis": "Host ACKed frame 9; client rejected it only because of invalid cross-clock telemetry comparison.",
+    "authority_consumed": true,
     "same_identity_retry_forbidden": true
   }
 }

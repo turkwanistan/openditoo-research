@@ -17,7 +17,7 @@ internal sealed class TypedSession(HttpClient client) : IDisposable
     private bool closed;
     internal readonly Samples AckMs = new();
     internal readonly Samples HostFrameMs = new();
-    internal readonly Samples HttpOverheadMs = new();
+    internal readonly Samples ClientMinusHostElapsedMs = new();
 
     internal static TypedSession Live(string token)
     {
@@ -92,13 +92,16 @@ internal sealed class TypedSession(HttpClient client) : IDisposable
         var totalMs = WebcamFrames.NowMs - started;
         var hostFrameMs = result["hostFrameElapsedMs"]?.GetValue<int>()
             ?? throw new IOException("HOST_FRAME_ELAPSED_MISSING");
-        if (hostFrameMs < 0 || hostFrameMs > totalMs + 10)
+        // Host uses Environment.TickCount64 while this process uses Stopwatch. Their readings
+        // are independent clock domains/resolutions, so hostFrameMs is not required to be <=
+        // this process's HTTP round-trip duration. Treat it as bounded telemetry only.
+        if (hostFrameMs < 0 || hostFrameMs > Trial.AckTimeoutMs)
             throw new IOException("HOST_FRAME_ELAPSED_INVALID");
         Frames++;
         Bytes += packet.Length + 15;
         AckMs.Add(totalMs);
         HostFrameMs.Add(hostFrameMs);
-        HttpOverheadMs.Add(Math.Max(0, totalMs - hostFrameMs));
+        ClientMinusHostElapsedMs.Add(totalMs - hostFrameMs);
     }
 
     internal async Task Close(string reason)
@@ -187,7 +190,7 @@ internal static class Sender
             sourceAgeAtAckMs = ackAges.Snapshot(),
             dispatchIntervalMs = dispatchIntervals.Snapshot(), duplicateSourceFrames,
             ackMs = session.AckMs.Snapshot(), hostFrameMs = session.HostFrameMs.Snapshot(),
-            httpOverheadMs = session.HttpOverheadMs.Snapshot(),
+            clientMinusHostElapsedMs = session.ClientMinusHostElapsedMs.Snapshot(),
             retry = false, reconnect = false, reclaim = false };
     }
 }

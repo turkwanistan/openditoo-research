@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-WEBCAM-N980P-004",
+  "milestone": "W8 50 ms arrival-margin attempt",
+  "status": "consumed_unknown_client_telemetry_validation",
+  "result": {
+    "client_outcome": "unknown",
+    "terminal_reason": "HOST_FRAME_ELAPSED_INVALID",
+    "client_counted_frames": 8,
+    "client_counted_packets": 24,
+    "client_counted_tx_bytes": 8372,
+    "host_ledger_frames": 9,
+    "host_ledger_packets": 27,
+    "host_ledger_tx_bytes": 9420,
+    "elapsed_ms": 714.56780000031,
+    "client_interval_ms": 50,
+    "source_age_send_p95_ms": 51.27019999921322,
+    "duplicate_source_frames": 0,
+    "raw_queue_depth_max": 1,
+    "ready_queue_depth_max": 1,
+    "retry": false,
+    "reconnect": false,
+    "reclaim": false
+  },
+  "diagnosis": {
+    "host_transport_state": "The Host ledger records 9 ACKed frames and a clean terminal close after the client requested close.",
+    "client_failure": "The ninth successful frame response was rejected by client telemetry validation before client frame counters advanced.",
+    "root_cause": "hostFrameElapsedMs uses Environment.TickCount64 in the Host while client HTTP timing uses Stopwatch in a separate process. The fatal hostFrameElapsedMs <= clientRoundTrip+10ms comparison crossed independent clock domains/resolutions and was invalid.",
+    "pacing_assessment": "No SESSION_PACING_VIOLATION occurred in attempt 004; the 50 ms client / 40 ms Host margin survived until the unrelated telemetry abort.",
+    "correction": "Keep all response hash/frame/packet/byte identity checks. Treat hostFrameElapsedMs as bounded telemetry only (0..5000 ms reviewed ACK budget), and record signed client-minus-Host elapsed residual without using it as a fatal cross-clock ordering invariant."
+  },
+  "authority": {
+    "authorization_consumed": true,
+    "same_identity_retry_forbidden": true
+  },
+  "artifacts": {
+    "result_file": "captures/OPENDITOO-WEBCAM-W8-RERUN-004-LIVE-RESULT-2026-09-09.json",
+    "result_sha256": "59881de369b848a53a0dce524c24c0527efebfecc7cde3adfe50451bc0dd97c6",
+    "raw_file": "captures/OPENDITOO-WEBCAM-W8-RERUN-004-LIVE-RAW-2026-09-09.log",
+    "raw_sha256": "59881de369b848a53a0dce524c24c0527efebfecc7cde3adfe50451bc0dd97c6"
+  },
+  "device_io": true
+}
