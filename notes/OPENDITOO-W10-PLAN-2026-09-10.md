@@ -111,3 +111,19 @@ no longer changes per git commit (verified: `571ea1f2…` before and after commi
 A continuous webcam longer than one session (500 frames ≈ 30 s busy at the W8 rate) needs fresh
 session ids issued automatically, i.e. a Runtime-003-shaped *webcam* policy with its own review and
 grant. Runtime 003 must not widen to cover it. Not built; nothing here assumes it.
+
+## W10B closed PASS — 2026-09-10
+
+| Attempt | Result | Terminal | Frames / packets / bytes | ACKed transport | Owner |
+| --- | --- | --- | --- | --- | --- |
+| W10-001 | PASS, consumed | `budget_exhausted` / `stopped_clean`, 30.38 s | 500 / 1500 / 501,200 | 16.458 fps, ACK p50/p95 35.7/68.5 ms | "worked clearly, looked great, not much latency, high FPS"; Stop and sliders not tried |
+| W10-002 | PASS, consumed | `operator_stop` / `stopped_clean`, 17.53 s | 290 / 870 / 296,864 | 16.546 fps, ACK p50/p95 40.2/68.9 ms | "zoom pan and stop all worked as expected" (framing 1 → 0.34, pan 0.4/−0.05) |
+
+Both: Host ledger identical to the client, 0 duplicate / 0 out-of-order selections, no
+retry/reconnect/reclaim, 8 s handover settle then clean open, Runtime 003 restored `connected`.
+The first W10-001 launch stopped at the offline gate (my readiness test still expected an
+unauthorized manifest) before any claim or I/O; it did not spend the identity. W10-002 added only
+"live window comes to the front". Transport FPS is not panel FPS; visible cadence stays unmeasured.
+
+**Every further live webcam run still needs a fresh manifest + exact grant** (`prepare_webcam_w10.py NNN`,
+then a `run_webcam_w10_NNN_once.sh`), until the owner decides W10C.

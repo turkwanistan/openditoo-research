@@ -3,7 +3,7 @@
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-W10-002",
   "milestone": "W10B retest: operator Stop button and live framing on the Ditoo",
-  "status": "completed_transport_pass_operator_observation_pending",
+  "status": "completed_pass_authority_consumed",
   "objective": "Same envelope as consumed W10-001 (transport PASS, owner visual PASS). Purpose is only the two paths 001 did not exercise: operator changes zoom/pan in the Studio window during the session and sees it on the Ditoo, then ends the session with Stop.",
   "readiness": {
     "execution_ready": false,
@@ -11,7 +11,7 @@
     "blockers": [
       "AUTHORITY_ALREADY_CONSUMED"
     ],
-    "required_followup": "W10-002 is consumed. Never replay it. Record the owner observation of live framing on the Ditoo."
+    "required_followup": "W10-002 is consumed and PASS (transport + owner observation). Never replay it. W10B is closed."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -246,6 +246,10 @@
     "reconnect": false,
     "reclaim": false,
     "runtime_003_restored": "connected, last_error null, run_nonce fe666b93",
-    "separation": "16.546 fps is ACKed transport. Panel refresh and visible cadence remain UNMEASURED."
+    "separation": "16.546 fps is ACKed transport. Panel refresh and visible cadence remain UNMEASURED.",
+    "owner_visual": {
+      "result": "PASS",
+      "quote": "yeah the zoom pan and stop all worked as expected"
+    }
   }
 }
