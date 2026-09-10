@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "milestone": "W9B operator framing verification",
+  "status": "pass",
+  "date": "2026-09-10",
+  "experiment_id": null,
+  "operation": {
+    "device_io": false,
+    "ditoo_touched": false,
+    "claim_created": false,
+    "host_session_io": false,
+    "note": "Camera-only probe snapshot plus offline decode. No Host, no claim, no Ditoo."
+  },
+  "camera": {
+    "usb_vid": "0C45",
+    "usb_pid": "2690",
+    "subtype": "NV12",
+    "width": 640,
+    "height": 480,
+    "requested_fps": 60
+  },
+  "method": "Six/eight webcam stills captured with the probe snapshot mode, pushed through the real host/frame_transform.py production transform, then decoded with host/motion_truth.py.",
+  "frames": [
+    {
+      "file": "still-001.png",
+      "decoded_counter": 1874,
+      "sync_ok": true,
+      "cell_luma_min": 14.4,
+      "cell_luma_max": 219.7
+    },
+    {
+      "file": "still-002.png",
+      "decoded_counter": 1962,
+      "sync_ok": true,
+      "cell_luma_min": 14.7,
+      "cell_luma_max": 220.9
+    },
+    {
+      "file": "still-003.png",
+      "decoded_counter": 2003,
+      "sync_ok": true,
+      "cell_luma_min": 13.0,
+      "cell_luma_max": 231.3
+    },
+    {
+      "file": "still-004.png",
+      "decoded_counter": null,
+      "sync_ok": false,
+      "cell_luma_min": 13.0,
+      "cell_luma_max": 213.3
+    },
+    {
+      "file": "still-005.png",
+      "decoded_counter": 2132,
+      "sync_ok": true,
+      "cell_luma_min": 14.8,
+      "cell_luma_max": 231.5
+    },
+    {
+      "file": "still-006.png",
+      "decoded_counter": 2186,
+      "sync_ok": true,
+      "cell_luma_min": 15.9,
+      "cell_luma_max": 231.6
+    },
+    {
+      "file": "still-007.png",
+      "decoded_counter": 2245,
+      "sync_ok": true,
+      "cell_luma_min": 14.7,
+      "cell_luma_max": 206.5
+    }
+  ],
+  "decoded_sequence": [
+    1874,
+    1962,
+    2003,
+    2132,
+    2186,
+    2245
+  ],
+  "monotonic": true,
+  "undecodable": 1,
+  "findings": {
+    "framing": "PASS. The stimulus fills the webcam ROI and every accepted frame decoded with correct sync corners.",
+    "rolling_shutter_tearing": "Confirmed on BOTH the operator phone and the webcam. A pre-Gray webcam still read 60 counts backwards (3579 -> 3519 -> 3579); the operator phone still decoded 1255 against a screen readout of 1252. After Gray coding, two independent thresholding methods disagreed on one frame by exactly 1 count, which is the designed bound.",
+    "illumination_gradient": "Sync corner (3,0) read 98 luma in one frame versus 152-226 elsewhere, while blacks stayed tight at 13-16. That frame was REJECTED, not misdecoded.",
+    "threshold_decision": "Fixed 128 threshold retained. An adaptive k-means threshold was evaluated and agreed with it on every frame except one torn frame where the two differed by exactly 1 count, so adaptivity buys nothing and adds a misdecode path. The four sync cells sit at the panel corners, which are the most vignetted positions, so they fail before interior data cells dim: rejection is the failure mode, not silent bit flips.",
+    "rejection_rate": "1 of 7 frames. Safe and well within budget: 240 fps footage of a 10 s trial yields ~2400 frames against a 30-transition bar."
+  },
+  "not_evidence_of": "Framing and decode only. No transport, no latency, and no physical panel behaviour is established here."
+}
