@@ -1,20 +1,15 @@
 
-## 2026-09-10 current product/input update — AVRCP pagination route ACTIVE
+## 2026-09-10 current product/input update — physical button pagination LIVE (Runtime 006)
 
-W10 webcam productization is closed. The accepted everyday baseline is MCP Dashboard Runtime 005 plus separately granted on-demand webcam policy `OPENDITOO-WEBCAM-PRODUCT-004`; current routing and authority details live in `START_HERE.md` and the current handoff.
-A concurrent 2026-09-10 fix (`24d0b70`) root-caused recurring Host outages to the visible task-started terminal being closable and prepared a `conhost.exe --headless` task switch. Applying that task change requires elevated PowerShell and is not assumed complete; preserve it independently of the button route.
+The everyday product is now **Runtime 006** (`OPENDITOO-PRODUCT-RUNTIME-006`, granted by the owner 2026-09-10 17:44Z): the Runtime 005 MCP dashboard, byte-identical Host/session/pacing/reclaim envelope, plus physical-button pagination. Ditoo Left/Right page through a wrap-around list (`dashboard`, `spiral`); a short lever pull runs the current page's action (spiral: pause/resume). Input is AVRCP -> Windows SMTC -> the receive-only `OpenDitoo.ButtonProbe` (child of `openditoo-product.service`, `--status mirror`) -> read-only NDJSON cursor in `host/pagination.py`. Runtime 005 is the rollback (`scripts/cutover_runtime_006.sh --rollback`). The on-demand webcam policy `OPENDITOO-WEBCAM-PRODUCT-005` is unchanged. The Host headless task (`24d0b70`) is applied.
 
-The owner-selected next objective is physical button navigation. Re-analysis of the already-preserved exact-unit M7 Android HCI capture supersedes the old whole-device conclusion that left/right/lever were Bluetooth-silent: the proprietary RFCOMM parser missed a separate AVCTP/AVRCP channel on PSM `0x0017`. Exact-unit controlled-sequence evidence is now classified as Left=`0x4C` Previous, Right=`0x4B` Next, repeated Left=`0x4C`, and Lever=`0x44` Play plus near-simultaneous proprietary RFCOMM `0xBD`. M remains bounded negative evidence only in the measured context. Historical M7 capture artifacts remain immutable; BTN-0 must reproduce this as a new derived artifact with repository code.
+BTN-0..8a evidence chain: M7 HCI re-analysis reproduced by repository code (Left `0x4C`, Right `0x4B`, Lever `0x44` + RFCOMM `0xBD`); Windows receive proof (one SMTC event per arrow press); one-use physical pagination acceptance; lever characterization (short pull = one Play/Pause in mirror mode, play-direction pulls also send `0xBD` -> invisible 46-69 ms reclaim; long holds unreliable and can enter a Ditoo "recording" mode); YouTube media-key contention PASS. Some first arrow presses after a quiet period also send RFCOMM `0x09` -> invisible reclaim; page state lives outside Host sessions so both are harmless.
 
-Current implementation route:
-
-`preserved HCI AVRCP reproduction -> receive-only Windows ButtonProbe -> exact Windows physical receive proof -> typed ButtonBroker -> side-by-side page router -> Dashboard -> Right -> animation -> Left -> live Dashboard`
-
-The initial receiver must not modify the Runtime 005 Host, open a second RFCOMM controller, weaken the current canvas-invalidation fence, or pursue firmware/MassBoot/teardown. First physical pagination uses arrows only. Lever product semantics wait until the interaction between AVRCP and its simultaneous RFCOMM `0xBD` report is physically characterized under the Windows product context.
+Next objective (owner-selected, not started): a high-FPS page on the Host's existing `streaming_ack_clock` profile (Python `frame_stream.stream_session` first), proven by a one-use trial that pages in/out ~10 times before any standing revision.
 
 Authoritative current files:
 
-- `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md`
+- `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md` (current handoff; read its "Next session" section first)
 - `notes/OPENDITOO-BUTTON-AVRCP-RESEARCH-2026-09-10.md`
 - `notes/OPENDITOO-BUTTON-AVRCP-PAGINATION-PLAN-2026-09-10.md`
 - prior accepted baseline: `notes/OPENDITOO-HANDOFF-2026-09-10-W10.md`
