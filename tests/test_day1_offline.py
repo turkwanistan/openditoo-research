@@ -3517,7 +3517,8 @@ class W5DryRunTests(unittest.TestCase):
 
 
 class W6WebcamReviewTests(unittest.TestCase):
-    MANIFEST = ROOT / "experiments/DAY1-WEBCAM-N980P-001.json"
+    MANIFEST = ROOT / "experiments/DAY1-WEBCAM-N980P-002.json"
+    CONSUMED_ATTEMPT = ROOT / "experiments/DAY1-WEBCAM-N980P-001.json"
 
     def test_review_envelope_is_valid_bounded_and_grant_ready(self) -> None:
         manifest, frames, stream = frame_stream.load_stream_manifest(
@@ -3533,9 +3534,15 @@ class W6WebcamReviewTests(unittest.TestCase):
         self.assertEqual(manifest.max_frames, 10_000 // 90 + 1)
         self.assertEqual(manifest.max_application_packets, 336)
         self.assertEqual(manifest.max_tx_bytes, 112 * frame_stream.worst_case_frame_tx_bytes())
-        self.assertFalse(manifest.raw["readiness"]["execution_ready"])
-        self.assertTrue(manifest.raw["readiness"]["grant_ready"])
-        self.assertEqual(manifest.raw["readiness"]["blockers"], [])
+        readiness = manifest.raw["readiness"]
+        self.assertFalse(readiness["execution_ready"])
+        if readiness["grant_ready"]:
+            self.assertEqual(readiness["blockers"], [])
+        else:
+            self.assertEqual(set(readiness["blockers"]), {
+                "WINDOWS_STATUS_CONTRACT_FIX_NOT_VERIFIED",
+                "WINDOWS_RUNNER_REBUILD_NOT_FROZEN",
+            })
         verification = manifest.raw["w6_verification"]
         self.assertEqual(verification["status"], "pass")
         self.assertTrue(verification["windows_offline_pass"])
@@ -3596,17 +3603,59 @@ class W6WebcamReviewTests(unittest.TestCase):
         project = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/OpenDitoo.Webcam.Runner.csproj").read_text(encoding="utf-8")
         self.assertIn("<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>", project)
 
-    def test_w7_exact_named_grant_is_live_but_still_one_use(self) -> None:
-        manifest, _, _ = frame_stream.load_stream_manifest(self.MANIFEST)
-        self.assertEqual(manifest.experiment_id, "OPENDITOO-WEBCAM-N980P-001")
-        self.assertEqual(frame_stream.authority_blockers(self.MANIFEST), [])
-        self.assertEqual(manifest.raw["authority"]["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-001")
+    def test_active_webcam_authority_is_exact_named_and_always_one_use(self) -> None:
+        manifest, _, _ = frame_stream.load_stream_manifest(self.MANIFEST, require_authority=False)
+        self.assertEqual(manifest.experiment_id, "OPENDITOO-WEBCAM-N980P-002")
+        authority = manifest.raw["authority"]
+        blockers = frame_stream.authority_blockers(self.MANIFEST)
+        if authority["transmission_authorized"]:
+            self.assertEqual(blockers, [])
+            self.assertEqual(authority["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-002")
+        else:
+            self.assertIn("TRANSMISSION_AUTHORITY_MISSING", blockers)
+            self.assertEqual(authority["grant_string_after_readiness"], "Grant OPENDITOO-WEBCAM-N980P-002")
         data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
         data["authority"]["authorization_consumed"] = True
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "consumed.json"
             path.write_text(json.dumps(data), encoding="utf-8")
             self.assertIn("AUTHORITY_ALREADY_CONSUMED", frame_stream.authority_blockers(path))
+
+    def test_consumed_attempt_001_is_preserved_and_never_rearmed(self) -> None:
+        data = json.loads(self.CONSUMED_ATTEMPT.read_text(encoding="utf-8"))
+        self.assertEqual(data["status"], "consumed_not_opened_status_contract_bug")
+        self.assertTrue(data["authority"]["authorization_consumed"])
+        self.assertEqual(data["w7_attempt"]["frames"], 0)
+        self.assertEqual(data["w7_attempt"]["tx_bytes"], 0)
+        self.assertFalse(data["w7_attempt"]["device_io"])
+        self.assertFalse(data["w7_attempt"]["host_session_opened"])
+        self.assertEqual(data["w7_attempt"]["terminal_reason"], "HOST_REQUEST_REFUSED")
+
+    def test_status_contract_matches_the_real_host_and_fake(self) -> None:
+        typed = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/TypedSession.cs").read_text(encoding="utf-8")
+        fake = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs").read_text(encoding="utf-8")
+        program = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/Program.cs").read_text(encoding="utf-8")
+        status_route = program[program.index('app.MapGet("/v1/status"'):program.index('app.MapPost("/v1/image/show"')]
+        fake_status = fake[fake.index('case "/v1/status"'):fake.index('case "/v1/session/open"')]
+        self.assertNotIn("ok = true", status_route)
+        self.assertNotIn("ok = true", fake_status)
+        self.assertIn('GetStatus() => Request("/v1/status", requireOk: false)', typed)
+        self.assertIn("HOST_REQUEST_REFUSED_HTTP_", typed)
+        runner = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/Program.cs").read_text(encoding="utf-8")
+        self.assertIn('args[0] == "host-status-selftest"', runner)
+        self.assertIn('status_has_ok_field = status.ContainsKey("ok")', runner)
+
+    def test_w7_rerun_prep_cannot_transmit_or_grant_itself(self) -> None:
+        script = (ROOT / "scripts/prepare_webcam_w7_rerun_windows.ps1").read_text(encoding="utf-8")
+        for required in ("$runner selftest", "$runner transform-selftest", "$runner encoder-selftest",
+                         "$runner host-status-selftest", "W7_RERUN_PREP_PASS",
+                         "claim_created=false", "host_session_io=false", "device_io=false"):
+            self.assertIn(required, script)
+        for forbidden in ("cli/webcam.py run", "systemctl --user stop",
+                          "transmission_authorized = $true", "SessionClaim", "execute:"):
+            self.assertNotIn(forbidden, script)
+        self.assertIn("W7_RERUN_PREP_REFUSES_PREAUTHORIZED_MANIFEST", script)
+        self.assertIn("W7_RERUN_PREP_REFUSES_CONSUMED_MANIFEST", script)
 
     def test_w7_guarded_launcher_preserves_one_controller_and_restore_boundaries(self) -> None:
         shell = (ROOT / "scripts/run_webcam_w7_once.sh").read_text(encoding="utf-8")

@@ -4,7 +4,7 @@ The live repository is authoritative over this note. Re-verify rather than inher
 
 This recovery started from committed baseline `da77b6f`; the interrupted W6 adapter work was
 recovered from the local Codex session and preserved as the next coherent checkpoint.
-`python3 scripts/verify_day1_offline.py` passes **239 tests** with `device_io=false`. The source
+`python3 scripts/verify_day1_offline.py` passes **243 tests** with `device_io=false`. The source
 session recorded a successful Windows Release build of `OpenDitoo.Webcam.Runner` with zero
 warnings/errors. This WSL_MCP sandbox does **not** expose `powershell.exe`, `/mnt/c`, Windows
 `dotnet`, or `/dev/video*`; direct PE launch also fails under its isolated `/proc`, so it cannot
@@ -116,7 +116,7 @@ refuses an unknown name. **The streaming profile has never been exercised live.*
 | W4 Host streaming profile | done, built, **deployed** |
 | W5 dry run + fault injection | **done** — healthy path + terminal fault boundaries verified offline |
 | W6 freeze trial manifest | **PASS / grant-ready** — exact W6-passing Windows build frozen; adapter/parity tests, nonce negative control, and 300.12 s real-camera soak passed |
-| W7 first physical trial | **authorized / next** — exact named grant recorded; no claim/transmission yet |
+| W7 first physical trial | **attempt 001 consumed pre-open; rerun 002 in preparation** — 001 sent 0 frames/bytes; status-contract client bug fixed in source; corrected Windows build + real read-only Host status selftest still required before 002 can become grant-ready |
 | W8 near-ceiling ACK-clock trial | after W7 acceptance; one bounded identity, no new rate ladder |
 | W9 optical latency | after W8 if useful; camera and Ditoo filmed together, separate from ACK latency |
 | W10 product polish/authority | only after experimental acceptance; decide whether webcam gets separate standing product authority |
@@ -134,10 +134,10 @@ device receives:
 
 ## 6. Next objective, in order
 
-1. **W7 exact named grant is recorded:** `Grant OPENDITOO-WEBCAM-N980P-001`; authority is one-use and currently unconsumed.
-2. Execute the guarded Windows entry point: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_webcam_w7_windows.ps1`. It stops Runtime 003, waits for Host idle, invokes the fixed `cli/webcam.py run --manifest experiments/DAY1-WEBCAM-N980P-001.json` path, captures evidence, and restores Runtime 003 in cleanup. The runner itself produces a fresh camera frame before claim consumption.
-3. Capture/ingest the 10-second result. No retry/reconnect/reclaim.
-4. After W7 visual/transport acceptance: W8 one near-ceiling ACK-clock characterization, W9 optional optical latency, W10 product polish/separate webcam-authority decision. W2 seven-scene owner ranking remains optional.
+1. **Preserve attempt 001 as consumed.** It ended `not_opened`, 0 frames / 0 bytes, after the camera-ready nonce claim because `TypedSession.Request()` wrongly required `ok=true` on the live Host's successful `/v1/status` response. There is no Host ledger entry for 001, so `ActivitySessionHost.Open()` was never reached. Never replay 001.
+2. **Prepare fresh rerun 002 without authority:** `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/prepare_webcam_w7_rerun_windows.ps1`. This rebuilds/stages the corrected runner, reruns adapter + transform + encoder selftests, then exercises the same C# status parser against the real read-only Host `/v1/status` endpoint. It does not stop Runtime 003, create a claim, open a Host session, or touch the Ditoo. It then freezes the exact new producer/build hashes.
+3. Only after that command and the WSL offline checker pass, request the fresh exact grant `Grant OPENDITOO-WEBCAM-N980P-002`. The prior 001 grant is consumed and cannot authorize 002.
+4. After the 002 grant, run one guarded 10-second physical rerun with no retry/reconnect/reclaim; then proceed to W8 only if transport and owner-visible output are accepted.
 
 ## 7. Working style that earned its keep
 

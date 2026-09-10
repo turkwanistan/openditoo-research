@@ -25,7 +25,7 @@ internal sealed class TypedSession(HttpClient client) : IDisposable
         return new(client);
     }
 
-    private async Task<JsonObject> Request(string path, object? body = null)
+    private async Task<JsonObject> Request(string path, object? body = null, bool requireOk = true)
     {
         using var response = body is null ? await client.GetAsync(Origin + path)
             : await client.PostAsJsonAsync(Origin + path, body);
@@ -33,14 +33,23 @@ internal sealed class TypedSession(HttpClient client) : IDisposable
         await response.Content.LoadIntoBufferAsync(1024 * 1024);
         var result = JsonNode.Parse(await response.Content.ReadAsStringAsync()) as JsonObject
             ?? throw new IOException("HOST_RESPONSE_INVALID");
-        if (!response.IsSuccessStatusCode || result["ok"]?.GetValue<bool>() != true)
-            throw new IOException(result["errorCode"]?.GetValue<string>() ?? "HOST_REQUEST_REFUSED");
+        if (!response.IsSuccessStatusCode || (requireOk && result["ok"]?.GetValue<bool>() != true))
+        {
+            var code = result["errorCode"]?.GetValue<string>()
+                ?? $"HOST_REQUEST_REFUSED_HTTP_{(int)response.StatusCode}";
+            throw new IOException(code);
+        }
         return result;
     }
 
+    internal Task<JsonObject> GetStatus() => Request("/v1/status", requireOk: false);
+
     internal async Task Open(Trial trial)
     {
-        var status = await Request("/v1/status");
+        // The established Day1 Host status contract is a successful identity document and
+        // intentionally does not include the command-result `ok` field used by POST routes.
+        // Success is the HTTP status plus the exact identity/controller checks below.
+        var status = await GetStatus();
         if (status["target"]?.GetValue<string>() != Trial.Target ||
             status["bind"]?.GetValue<string>() != "127.0.0.1" ||
             status["port"]?.GetValue<int>() != 8796 ||

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only W6 review: never opens a camera, contacts a Host, or claims an experiment."""
+"""Read-only review of the active webcam candidate; no Host/camera/device I/O or claims."""
 import json
 from pathlib import Path
 import sys
@@ -8,26 +8,40 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from host import activity_session, frame_stream
 
+ACTIVE = ROOT / "experiments/DAY1-WEBCAM-N980P-002.json"
+
 
 def main() -> int:
-    path = ROOT / "experiments/DAY1-WEBCAM-N980P-001.json"
+    path = ACTIVE
     try:
         manifest, _, stream = frame_stream.load_stream_manifest(path, require_authority=False)
         doc = manifest.raw
+        if manifest.experiment_id != "OPENDITOO-WEBCAM-N980P-002":
+            raise ValueError("active webcam experiment id drift")
         if (manifest.lifetime_seconds, manifest.min_frame_interval_ms, manifest.max_frames,
                 manifest.max_application_packets, manifest.max_tx_bytes) != (10, 40, 112, 336, 118048):
-            raise ValueError("webcam W6 budget envelope drift")
+            raise ValueError("webcam budget envelope drift")
         if (stream.get("source_kind"), stream.get("session_profile"), stream.get("playback_interval_ms")) != (
                 "live", "streaming_ack_clock", 90):
-            raise ValueError("webcam W6 pacing/source envelope drift")
+            raise ValueError("webcam pacing/source envelope drift")
         adapter = doc.get("adapter", {})
         expected_routes = ["/v1/status", "/v1/session/open", "/v1/session/frame", "/v1/session/close"]
         if adapter.get("typed_origin") != "http://127.0.0.1:8796" or adapter.get("routes") != expected_routes:
             raise ValueError("webcam typed adapter envelope drift")
-        if doc["readiness"].get("execution_ready") or not doc["readiness"].get("grant_ready"):
-            raise ValueError("W6 freeze must be grant-ready but not execution-ready before authority/live preflight")
-        if doc["readiness"].get("blockers") != []:
-            raise ValueError("W6 engineering blockers must be empty after Windows offline verification")
+
+        readiness = doc.get("readiness", {})
+        if readiness.get("execution_ready"):
+            raise ValueError("review manifest never claims live preflight execution-ready")
+        pending = {
+            "WINDOWS_STATUS_CONTRACT_FIX_NOT_VERIFIED",
+            "WINDOWS_RUNNER_REBUILD_NOT_FROZEN",
+        }
+        if readiness.get("grant_ready"):
+            if readiness.get("blockers") != []:
+                raise ValueError("grant-ready webcam candidate must have no engineering blockers")
+        elif set(readiness.get("blockers", [])) != pending:
+            raise ValueError("webcam rerun preparation blockers drift")
+
         verification = doc.get("w6_verification", {})
         evidence = ROOT / verification.get("evidence_file", "")
         if (verification.get("status") != "pass" or verification.get("windows_offline_pass") is not True
@@ -35,6 +49,18 @@ def main() -> int:
                 or not evidence.is_file()
                 or activity_session.sha256_file(evidence) != verification.get("evidence_sha256")):
             raise ValueError("W6 Windows verification evidence missing or drifted")
+
+        rerun = doc.get("w7_rerun_preparation")
+        if readiness.get("grant_ready"):
+            if not isinstance(rerun, dict) or rerun.get("status") != "pass":
+                raise ValueError("W7 rerun preparation evidence missing")
+            rerun_evidence = ROOT / rerun.get("evidence_file", "")
+            if (not rerun_evidence.is_file()
+                    or activity_session.sha256_file(rerun_evidence) != rerun.get("evidence_sha256")
+                    or rerun.get("device_io") is not False
+                    or rerun.get("host_session_io") is not False):
+                raise ValueError("W7 rerun preparation evidence drift")
+
         hashes = stream["live_source"]["producer_code_sha256"]
         for relative, expected in hashes.items():
             candidate = ROOT / relative
@@ -42,15 +68,15 @@ def main() -> int:
                 raise ValueError(f"producer artifact missing or changed: {relative}")
         if activity_session.sha256_file(activity_session.HOST_BUILD_DLL) != manifest.host_build_sha256:
             raise ValueError("repository Host build changed")
-        blockers = list(manifest.raw["readiness"]["blockers"])
+
+        blockers = list(readiness.get("blockers", []))
         blockers.extend(frame_stream.authority_blockers(path))
         if activity_session.SessionClaim(manifest.experiment_id).read() is not None:
             blockers.append("AUTHORITY_ALREADY_CONSUMED")
-        # This checker cannot prove an installed binary or physical controller ownership.
         blockers.append("LIVE_PREFLIGHT_NOT_PERFORMED")
         print(json.dumps({
             "ok": True, "manifest_valid": True, "device_io": False, "claim_created": False,
-            "execution_ready": False, "grant_ready": bool(doc["readiness"]["grant_ready"]),
+            "execution_ready": False, "grant_ready": bool(readiness.get("grant_ready")),
             "experiment_id": manifest.experiment_id, "blockers": blockers,
             "manifest_sha256": activity_session.sha256_file(path),
             "source_kind": stream["source_kind"], "session_profile": stream["session_profile"],

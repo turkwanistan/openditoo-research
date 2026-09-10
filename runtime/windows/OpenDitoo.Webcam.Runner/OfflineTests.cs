@@ -22,7 +22,9 @@ internal static class OfflineTests
             switch (request.RequestUri.AbsolutePath)
             {
                 case "/v1/status":
-                    response = new { ok = true, target = Trial.Target, bind = "127.0.0.1", port = 8796,
+                    // Match the real Host contract: /v1/status is a successful identity document
+                    // but does not carry the POST command-result `ok` field.
+                    response = new { target = Trial.Target, bind = "127.0.0.1", port = 8796,
                         activitySession = new { active = fault == "busy" }, diagnostics = new { operationInProgress = false } };
                     break;
                 case "/v1/session/open":

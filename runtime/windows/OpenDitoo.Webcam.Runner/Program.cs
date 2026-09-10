@@ -11,6 +11,23 @@ if (args.Length == 2 && args[0] == "encoder-selftest") return DitooEncoder.SelfT
 
 try
 {
+    if (args.Length == 2 && args[0] == "host-status-selftest")
+    {
+        var root = Path.GetFullPath(args[1]);
+        var token = File.ReadAllText(Path.Combine(root, ".openditoo-local/host.token")).Trim();
+        Trial.Require(token.Length >= 32, "HOST_TOKEN_INVALID");
+        using var session = TypedSession.Live(token);
+        var status = await session.GetStatus();
+        Trial.Require(status["service"]?.GetValue<string>() == "OpenDitoo Day1 Host" &&
+            status["hostRuntime"]?.GetValue<string>() == ".NET" &&
+            status["bind"]?.GetValue<string>() == "127.0.0.1" &&
+            status["port"]?.GetValue<int>() == 8796 &&
+            status["target"]?.GetValue<string>() == Trial.Target &&
+            status["rawSendEnabled"]?.GetValue<bool>() == false, "HOST_STATUS_IDENTITY_MISMATCH");
+        Emit(new { kind = "host_status_selftest_pass", target = Trial.Target,
+            status_has_ok_field = status.ContainsKey("ok"), device_io = false, host_session_io = false });
+        return 0;
+    }
     if (args.Length == 1 && args[0] == "soak")
     {
         await using var camera = await WebcamFrames.Open();

@@ -688,7 +688,7 @@ Windows verification entry point. It:
 5. reports `device_io=false`, `host_session_io=false`, `claim_created=false`.
 
 A unit test scans this verifier and forbids `StandardInput.Write`, `cli/webcam.py` and
-`SessionClaim`, preserving the negative-control boundary. Current offline suite: **239 tests PASS**.
+`SessionClaim`, preserving the negative-control boundary. Current offline suite: **243 tests PASS**.
 
 The remaining limitation is environmental, not inferred away: WSL_MCP's bubblewrap sandbox hides
 `/mnt/c`, exposes no `powershell.exe`/Windows `dotnet`, breaks WSL PE interop because its `/proc`
@@ -722,3 +722,43 @@ because transmission authority has not been granted and the live ownership prefl
 client dispatch cadence, at most 112 frames / 336 application packets / 118,048 application bytes,
 one connection, one frame in flight, no retry/reconnect/reclaim. It must not start until the operator
 provides the exact fresh named grant: `Grant OPENDITOO-WEBCAM-N980P-001`.
+
+
+## 18. W7 attempt 001 consumed before Host open; status-contract correction — 2026-09-09
+
+The operator granted and executed `OPENDITOO-WEBCAM-N980P-001` through the guarded W7 launcher.
+The launcher passed the full offline gate, stopped Runtime 003 cleanly, and observed the Host idle.
+The camera-ready handshake then created the durable one-use WSL claim. The trial terminated after
+**27.6534 ms** with `outcome=not_opened`, `terminalReason=HOST_REQUEST_REFUSED`, **0 frames**, **0
+packets**, and **0 bytes**. Cleanup restored Runtime 003, which reconnected under a fresh product
+session. Attempt 001 is therefore consumed and must never be replayed.
+
+The decisive diagnostic is that `.openditoo-local/session-ledger.jsonl` contains **no entry** for
+`OPENDITOO-WEBCAM-N980P-001`. `TypedSession.Open()` sets `OpenAttempted=true` only after its initial
+GET `/v1/status`, so `not_opened` plus no Host ledger entry proves the request never reached
+`ActivitySessionHost.Open()` or Bluetooth connect.
+
+Root cause: the established Day1 Host `/v1/status` route returns HTTP 200 with an identity/status
+object but intentionally has **no `ok` property**. `TypedSession.Request()` incorrectly required
+`result.ok == true` for every endpoint, while the offline `FakeHandler` incorrectly added
+`ok=true` to its fake status response. That made all adapter selftests pass while the real Host
+status document was rejected as `HOST_REQUEST_REFUSED`.
+
+The correction is deliberately client-only so Runtime 003 / the deployed Host remain unchanged:
+
+- GET `/v1/status` now accepts HTTP success without a POST-style `ok` field, then relies on the
+  existing exact target/bind/port/controller checks;
+- POST routes still require `ok=true`;
+- generic HTTP refusals now retain the status code as `HOST_REQUEST_REFUSED_HTTP_<code>`;
+- the fake status response now matches the real Host by omitting `ok`;
+- runner mode `host-status-selftest <repository>` exercises the corrected C# parser against the
+  **real Host status endpoint only**, validates exact Host identity/target, and reports
+  `device_io=false host_session_io=false`.
+
+Fresh identity `OPENDITOO-WEBCAM-N980P-002` is the only allowed W7 rerun candidate. It carries the
+same 10-second / 40 ms Host floor / 90 ms client cadence / 112-frame / 336-packet / 118,048-byte
+bounds and no retry/reconnect/reclaim. It is initially unauthorized and not grant-ready. Run
+`scripts/prepare_webcam_w7_rerun_windows.ps1` first: rebuild/stage the corrected runner, run adapter
+plus transform/encoder selftests, run the real-Host read-only status-contract selftest, and freeze
+the exact new hashes. Only after that passes may the project request the distinct grant
+`Grant OPENDITOO-WEBCAM-N980P-002`.

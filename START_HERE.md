@@ -72,7 +72,7 @@ runner rebuilt/staged successfully, adapter/transform/encoder tests passed, the 
 negative control passed with no claim/Host session, and the real-camera allocation soak passed for
 300.1216 s with only 9,416 bytes growth after warmup. Exact evidence is
 `captures/OPENDITOO-WEBCAM-W6-WINDOWS-OFFLINE-RESULT-2026-09-09.json`. The coordinator refuses a
-non-idle Host before one-use claim consumption. **W7 is now explicitly authorized by the exact named grant `Grant OPENDITOO-WEBCAM-N980P-001`.** The one-use claim has not been consumed. Execute only through `scripts/run_webcam_w7_windows.ps1`, which stops/restores Runtime 003 around the fixed 10-second trial.
+non-idle Host before one-use claim consumption. **W7 attempt 001 is consumed and must never be replayed.** It created the WSL claim but opened no Host session and sent 0 frames / 0 bytes because the Windows client incorrectly required an `ok=true` field on the established HTTP-200 `/v1/status` document. Runtime 003 was restored cleanly. The active candidate is now `OPENDITOO-WEBCAM-N980P-002`, currently unauthorized and blocked only on rebuilding/freezing the corrected runner and proving its C# status parser against the real read-only Host status endpoint. Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/prepare_webcam_w7_rerun_windows.ps1`; do not request the 002 grant until that preparation passes.
 
 Use `PRODUCT.md` for normal operation. The reliable startup design boundary remains current-user Windows logon / StartWhenAvailable; a real Windows reboot/login observation is intentionally deferred and is not to be invented as accepted evidence.
 

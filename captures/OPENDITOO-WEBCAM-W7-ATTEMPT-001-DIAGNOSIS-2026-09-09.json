@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-WEBCAM-N980P-001",
+  "milestone": "W7 attempt 001 diagnosis",
+  "status": "consumed_not_opened",
+  "claim_created": true,
+  "host_session_opened": false,
+  "device_io": false,
+  "frames": 0,
+  "packets": 0,
+  "tx_bytes": 0,
+  "terminal_reason": "HOST_REQUEST_REFUSED",
+  "host_ledger_entry_present": false,
+  "root_cause": "Windows TypedSession.Request treated GET /v1/status like POST command responses and required ok=true. The established Host status route intentionally has no ok property; the offline FakeHandler incorrectly supplied it.",
+  "correction": "Accept successful /v1/status by HTTP success plus exact identity/controller validation; retain ok=true requirement for POST routes. Fake status contract now omits ok. Add real-Host read-only C# host-status-selftest before any new grant.",
+  "retry_policy": "Do not replay 001. Prepare fresh OPENDITOO-WEBCAM-N980P-002."
+}
