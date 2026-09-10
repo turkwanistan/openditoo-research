@@ -2,9 +2,14 @@
 
 OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit evidence and preserved artifacts outrank family resemblance, plans, and chat history.
 
-## Current session route — 2026-09-09
+## Current session route — 2026-09-10
 
-0. **Read `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` first** — the current handoff. Then
+0. **Read `notes/OPENDITOO-HANDOFF-2026-09-10-W9.md` first** — the current handoff. W8 is closed PASS,
+   W9A is done offline, and W9B is **parked**: its tooling and operator framing are verified, attempt 006
+   is consumed/unknown with no optical evidence, and 007 is prepared, grant-ready and unauthorized. That
+   note also argues W9B is optional and recommends W10 productization next. Panel refresh and visible
+   unique-frame cadence remain **UNMEASURED** — do not describe 16.285 fps as what the panel does.
+   Then `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` for the earlier webcam handoff. Then
    `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md`. The external N980P webcam
    plan is adopted as the route, with recorded amendments. Runtime 003 is deployed;
    W5 fault injection is verified (route §13). The interrupted W6 adapter implementation has
@@ -45,7 +50,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | W8 near-ceiling webcam rate | **PASS / consumed**: 005 completed its full 10 s lifetime — 163 frames / 489 packets / 170,737 bytes, **16.285 fps** (quarters 15.6/16.4/16.4/16.8), source age at send p95 51.86 ms, ACK p50 42.31 / p95 69.58 ms, 0 duplicate source frames, `lifetime_expired` / `stopped_clean`, Host ledger in exact agreement, no retry/reconnect/reclaim, Runtime 003 restored `connected`. owner visual PASS. **W8 closed PASS.** 003 and 004 remain consumed failures; all three are replay-forbidden |
 | W9A source identity + motion truth | **implemented offline**: `SourceId` assigned once at acquisition, propagated unchanged through raw slot → transform → ready slot → sender selection; bounded `sourceIdentity` telemetry; offline control `ADAPTER_W9A_SOURCE_IDENTITY_PASS`; `host/motion_truth.py` + `tools/w9a_motion_truth_stimulus.html` decode all 4096 counters through the real production transform. Transport untouched. See route §27 |
 | W9B optical unique-frame/latency trial | **attempt 006 consumed/unknown — no optical evidence yet**. Offline tooling verified end to end and operator framing verified (monotonic Gray decode through the real transform), but the live trial failed with `transport_fault` / `IMAGE_RX_RECV_TIMEOUT; NO_RETRY`, Host ledger 0/0/0, `displayState=unknown_nothing_sent`, nothing displayed and no usable footage. Not a code/hash/authority/pacing/camera fault: W9A identity populated correctly. Runtime 003 restored and verified `connected`. Root cause held at LOW confidence. See route §29 |
-| W10 webcam productization | after experimental acceptance; fixed-rate modes use monotonic absolute deadlines/no catch-up; separate standing-authority decision |
+| W10 webcam productization | **recommended next**; does not depend on W9B. Fixed-rate modes use monotonic absolute deadlines, skip missed logical slots with no catch-up burst, never treat a duplicate/no-new-frame selection as a transmitted interval. Standing webcam authority is a separate explicit decision |
 | Post-v1 >ACK-ceiling research | **deferred/conditional**; only if W9 shows visible benefit. Do not infer Tivoo's 30/54 fps results apply to Ditoo or reopen R1-R5 |
 | S2 stream-rate measurement | `OPENDITOO-S2-STREAM-RATE-001` consumed. Measured dispatch→ACK: median 66 ms, p95 93 ms at 1039 bytes. Dispatching at the 150 ms Host floor is FATAL (HTTP 429 on frame 10) — client must add 50 ms margin, so ~5 fps is today's safe cadence. Higher rates need a Host pacing change + Runtime 003. See `notes/OPENDITOO-STREAM-PRODUCER-CONTRACT-2026-09-09.md` |
 | S1 general frame streaming | **accepted**; `OPENDITOO-S1-STREAM-001` consumed, transport PASS (42 frames / 126 packets / 2982 bytes, clean close) and operator visual PASS |
@@ -65,7 +70,7 @@ webcam transmission requires its own reviewed manifest and fresh named grant.
 The historical Runtime 002 cutover used `Grant OPENDITOO-PRODUCT-RUNTIME-002`; that revision
 is superseded, and its grant must not be reused for the webcam.
 
-### Current objective — W9B combined unique-frame + optical latency
+### Current objective — W10 productization (W9B parked, optional)
 
 The MCP dashboard is already the owner's working everyday baseline. Do not reopen durability, firmware, MassBoot, ACK decoding, command enumeration, or speculative UI work as release blockers.
 

@@ -1,0 +1,37 @@
+{
+    "schema_version":  1,
+    "experiment_id":  "OPENDITOO-WEBCAM-N980P-007",
+    "milestone":  "W9B-007 optical/identity trial preparation",
+    "status":  "pass",
+    "prepared_from_git_head":  "a560e3edd5799ed62e7b7995c99ef7d7a6aec188",
+    "pacing":  {
+                   "session_profile":  "streaming_ack_clock",
+                   "host_floor_ms":  40,
+                   "client_dispatch_floor_ms":  50,
+                   "arrival_jitter_margin_ms":  10,
+                   "rule":  "prior ACK required; client dispatch start \u003e=50 ms after previous client dispatch; Host backstop remains 40 ms"
+               },
+    "budgets":  {
+                    "lifetime_seconds":  10,
+                    "max_frames":  201,
+                    "max_application_packets":  603,
+                    "max_tx_bytes":  211854
+                },
+    "checks":  {
+                   "adapter_selftest":  "pass",
+                   "unsafe_40ms_arrival_jitter_reproduced":  "pass",
+                   "safe_50ms_arrival_jitter":  "pass",
+                   "cross_clock_host_elapsed_telemetry":  "pass",
+                   "source_identity_control":  "pass",
+                   "transform_selftest_cases":  15,
+                   "encoder_selftest_cases":  6,
+                   "real_host_status_selftest":  "pass",
+                   "operator_framing_verified":  "pass",
+                   "exact_target":  "11:75:58:CE:DE:C7"
+               },
+    "operation":  {
+                      "claim_created":  false,
+                      "host_session_io":  false,
+                      "device_io":  false
+                  }
+}
