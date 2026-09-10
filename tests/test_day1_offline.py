@@ -3838,9 +3838,38 @@ class W8WebcamCrossClockTelemetryRerunTests(unittest.TestCase):
                          ("live", "streaming_ack_clock", 50))
         self.assertEqual((manifest.max_frames, manifest.max_application_packets, manifest.max_tx_bytes),
                          (201, 603, 201 * frame_stream.worst_case_frame_tx_bytes()))
-        self.assertFalse(manifest.raw["authority"]["authorization_consumed"])
         self.assertEqual(manifest.raw["authority"]["grant_string_after_readiness"],
                          "Grant OPENDITOO-WEBCAM-N980P-005")
+
+    def test_w8_005_accepted_result_is_consumed_pass_agreeing_with_host_ledger(self) -> None:
+        data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+        result = data["w8_telemetry_rerun_result"]
+        self.assertEqual(data["status"], "completed_pass_authority_consumed")
+        self.assertTrue(data["authority"]["authorization_consumed"])
+        self.assertFalse(data["authority"]["transmission_authorized"])
+        self.assertFalse(data["readiness"]["grant_ready"])
+        self.assertEqual(data["readiness"]["blockers"], ["AUTHORITY_ALREADY_CONSUMED"])
+        self.assertEqual((result["status"], result["outcome"], result["terminal_reason"]),
+                         ("pass", "stopped_clean", "lifetime_expired"))
+        self.assertEqual((result["frames"], result["packets"], result["tx_bytes"]), (163, 489, 170737))
+        ledger = result["host_ledger"]
+        self.assertEqual((ledger["frames_sent"], ledger["packets_sent"], ledger["tx_bytes_sent"]),
+                         (163, 489, 170737))
+        for forbidden in ("retry", "reconnect", "reclaim"):
+            self.assertFalse(result[forbidden])
+        self.assertEqual(result["pacing_violations"], 0)
+        self.assertEqual(result["duplicate_source_frames"], 0)
+        self.assertEqual((result["raw_queue_depth_max"], result["ready_queue_depth_max"]), (1, 1))
+        self.assertLessEqual(result["frames"], data["budgets"]["max_frames"])
+        self.assertLessEqual(result["tx_bytes"], data["budgets"]["max_tx_bytes"])
+        self.assertTrue(result["runtime_003_restored"]["verified"])
+        self.assertIn("not physical panel FPS", result["transport_fps_caveat"])
+        for evidence_key, sha_key in (("result_file", "result_sha256"), ("raw_file", "raw_sha256")):
+            path = ROOT / result[evidence_key]
+            self.assertTrue(path.is_file())
+            self.assertEqual(activity_session.sha256_file(path), result[sha_key])
+        claim = activity_session.SessionClaim("OPENDITOO-WEBCAM-N980P-005").read()
+        self.assertEqual((claim["state"], claim["outcome"]), ("finished", "stopped_clean"))
 
     def test_w8_005_preserves_004_consumed_failure_and_requires_fresh_authority(self) -> None:
         previous = json.loads(self.PREVIOUS.read_text(encoding="utf-8"))

@@ -881,3 +881,64 @@ Note on file shape: the PowerShell writer emits CRLF, so `git diff --check` flag
 returns as trailing whitespace on this checkpoint. That matches the committed 004
 preparation checkpoint (`d76b266`) and must not be normalized here — rewriting the bytes
 would invalidate the recorded `evidence_sha256` and `manifest_sha256`.
+
+## 26. W8-005 live characterization PASS — W8 transport result closed — 2026-09-09
+
+`OPENDITOO-WEBCAM-N980P-005` executed exactly once after the exact named grant
+`Grant OPENDITOO-WEBCAM-N980P-005` and is now **consumed and PASS**. This is the first W8
+attempt to complete its full lifetime.
+
+**Terminal state.** `outcome=stopped_clean`, `terminalReason=lifetime_expired`, over
+10,009.43 ms. No retry, no reconnect, no reclaim, zero pacing violations, no
+encoder/hash mismatch, no ambiguity.
+
+**Transport totals — client and Host agree exactly.** Client counted 163 frames / 489
+packets / 170,737 bytes. The Host ledger independently records `framesSent=163`,
+`packetsSent=489`, `txBytesSent=170737`, `reason=lifetime_expired`,
+`outcome=stopped_clean`, `displayState=ours_last_acked`. The 004 client/Host divergence
+(8 vs 9) is gone: the telemetry correction was the whole defect. All totals sit well inside
+the 201 / 603 / 211,854 budgets.
+
+**Sustained rate.** 16.285 fps effective. Per-quarter fps was **15.6 / 16.4 / 16.4 / 16.8**
+(39 / 41 / 41 / 42 frames) — stable and slightly improving, with no decay. This clears the
+manifest's ≥15.5 fps acceptance target and sits sensibly below Ditoo's own measured R5
+ceiling of ~18.46 fps for this synchronous one-ACK-per-frame shape.
+
+**Timing.** ACK round-trip p50 42.31 ms / p95 69.58 ms / max 107.21 ms. Host frame elapsed
+p50 47 ms / p95 63 ms / max 109 ms. Dispatch intervals p50 60.47 ms / p95 69.72 ms / max
+107.49 ms — every interval above the 50 ms client floor, so the ACK clock, not the floor,
+paced this run. Transform cost stayed negligible: p50 0.995 ms, p95 3.66 ms, max 7.18 ms.
+
+**Freshness.** Source age at send p50 36.99 ms / p95 51.86 ms / max 57.78 ms, comfortably
+under the 80 ms p95 target. By quarter the p95 was 52.13 / 50.70 / 51.33 / 53.28 ms — flat,
+with no ageing trend. Source age at ACK was p50 80.87 ms / p95 107.22 ms.
+
+**Cross-clock residual.** `clientMinusHostElapsedMs` p50 1.14 ms, mean 1.02 ms, p95 11.57 ms,
+max 16.91 ms. It is recorded as a **signed observational residual only** and was never
+ordered as an invariant. Two honest limits: the retained percentiles do not expose the
+negative tail, so this run does not itself demonstrate the 004 coarse-clock case occurring
+live — the offline `ADAPTER_HOST_ELAPSED_CROSS_CLOCK_PASS` control is what covers it — and
+this residual must not be labelled literal HTTP overhead.
+
+**Camera and queues.** 333 captured, 333 processed, 168 replaced (50.45 % latest-frame-wins
+replacement), 164 taken, 0 raw replaced, **0 duplicate source frames**. Both capacity-one
+slots stayed at depth 1. Replacement here is scheduler freshness behavior, not loss.
+
+**One-controller rule held.** `W8T_PRODUCT_PRE_STATE=active` → `W8T_PRODUCT_STOP_PASS` →
+`W8T_HOST_IDLE_PASS` → one bounded run → `W8T_RESTORE_PRODUCT_SERVICE_ACTIVE` →
+`W8T_RESTORE_PRODUCT_CONNECTED_PASS`. Runtime 003 came back `status=connected`,
+`last_error=null`, fresh `run_nonce=8d6f0892`, session `...000001`, first frame ACKed.
+OpenTivoo and port 8779 were untouched.
+
+Evidence: `captures/OPENDITOO-WEBCAM-W8-TELEMETRY-005-LIVE-RESULT-2026-09-09.json` and
+`...-LIVE-RAW-2026-09-09.log`, both hash-pinned in the manifest's
+`w8_telemetry_rerun_result`. Claim nonce `2eda653e90b644a28d8ee9d6697d2c36`, state
+`finished` / `stopped_clean`.
+
+**Transport FPS is not physical panel FPS.** 16.285 fps is ACK-completed transport cadence.
+Visible unique-frame cadence and true scene-to-visible latency remain unmeasured and are
+exactly what W9A/W9B exist to establish. Do not reopen >18.46 fps protocol work on the
+strength of this result.
+
+Attempt 005 is consumed and must never be replayed. W8's transport result is closed;
+owner visual observation is recorded separately.

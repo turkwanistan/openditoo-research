@@ -3,13 +3,15 @@
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-N980P-005",
   "milestone": "W8 near-ceiling webcam freshness characterization — cross-clock telemetry correction",
-  "status": "authorized_awaiting_live_preflight",
+  "status": "completed_pass_authority_consumed",
   "objective": "Fresh replacement for consumed attempt 004. Preserve the proven 50 ms client / 40 ms Host pacing margin and all camera/transform/session validation. Remove only the invalid fatal cross-clock ordering assumption for hostFrameElapsedMs; keep it bounded to the reviewed 5000 ms ACK budget and record signed client-minus-Host elapsed residual as telemetry. One 10-second characterization only; no rate ladder, pipelining, retry, reconnect or reclaim.",
   "readiness": {
     "execution_ready": false,
-    "grant_ready": true,
-    "blockers": [],
-    "required_followup": "Execute only scripts/run_webcam_w8_telemetry_rerun_windows.ps1 once while this exact one-use grant remains live. Never replay 003 or 004 and never reuse any prior grant."
+    "grant_ready": false,
+    "blockers": [
+      "AUTHORITY_ALREADY_CONSUMED"
+    ],
+    "required_followup": "Attempt 005 is consumed and PASS. Never replay it. W8 is closed; W9A source identity + deterministic motion truth is next and must not retrofit into this frozen producer."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -142,8 +144,8 @@
   },
   "authority": {
     "experiment_id": "OPENDITOO-WEBCAM-N980P-005",
-    "transmission_authorized": true,
-    "authorization_consumed": false,
+    "transmission_authorized": false,
+    "authorization_consumed": true,
     "granted_by": "operator, in-session, 2026-09-09",
     "grant_text": "Grant OPENDITOO-WEBCAM-N980P-005",
     "expires_at": "2026-09-10T04:30:00Z",
@@ -215,5 +217,160 @@
     "claim_created": false,
     "host_session_io": false,
     "device_io": false
+  },
+  "w8_telemetry_rerun_result": {
+    "status": "pass",
+    "outcome": "stopped_clean",
+    "terminal_reason": "lifetime_expired",
+    "result_file": "captures/OPENDITOO-WEBCAM-W8-TELEMETRY-005-LIVE-RESULT-2026-09-09.json",
+    "result_sha256": "54ad125f742a5b3dbe9703a93d5d0cfe313462cb5eb95658d82da14dc076eacd",
+    "raw_file": "captures/OPENDITOO-WEBCAM-W8-TELEMETRY-005-LIVE-RAW-2026-09-09.log",
+    "raw_sha256": "54ad125f742a5b3dbe9703a93d5d0cfe313462cb5eb95658d82da14dc076eacd",
+    "claim_created": true,
+    "claim_nonce": "2eda653e90b644a28d8ee9d6697d2c36",
+    "device_io": true,
+    "frames": 163,
+    "packets": 489,
+    "tx_bytes": 170737,
+    "elapsed_ms": 10009.434199996293,
+    "effective_fps": 16.284636748005234,
+    "fps_by_quarter": [
+      15.6,
+      16.4,
+      16.4,
+      16.8
+    ],
+    "frames_by_quarter": [
+      39,
+      41,
+      41,
+      42
+    ],
+    "host_ledger": {
+      "frames_sent": 163,
+      "packets_sent": 489,
+      "tx_bytes_sent": 170737,
+      "reason": "lifetime_expired",
+      "outcome": "stopped_clean",
+      "display_state": "ours_last_acked",
+      "agreement_with_client": "exact on frames, packets and bytes"
+    },
+    "retry": false,
+    "reconnect": false,
+    "reclaim": false,
+    "pacing_violations": 0,
+    "duplicate_source_frames": 0,
+    "raw_queue_depth_max": 1,
+    "ready_queue_depth_max": 1,
+    "camera": {
+      "captured": 333,
+      "processed": 333,
+      "replaced": 168,
+      "taken": 164,
+      "raw_replaced": 0,
+      "replacement_percent": 50.450450450450454
+    },
+    "ack_ms": {
+      "count": 163,
+      "max": 107.20670000463724,
+      "mean": 44.54647177924042,
+      "p50": 42.30839999765158,
+      "p95": 69.58460000157356,
+      "percentileWindow": 163
+    },
+    "dispatch_interval_ms": {
+      "count": 162,
+      "max": 107.48610000312328,
+      "mean": 60.5634166666387,
+      "p50": 60.47460000216961,
+      "p95": 69.72149999439716,
+      "percentileWindow": 162
+    },
+    "host_frame_ms": {
+      "count": 163,
+      "max": 109,
+      "mean": 43.52760736196319,
+      "p50": 47,
+      "p95": 63,
+      "percentileWindow": 163
+    },
+    "source_age_at_send_ms": {
+      "count": 163,
+      "max": 57.78269999474287,
+      "mean": 36.92561042953305,
+      "p50": 36.98889999836683,
+      "p95": 51.85629999637604,
+      "percentileWindow": 163
+    },
+    "source_age_at_send_ms_by_quarter": [
+      {
+        "count": 39,
+        "max": 56.28279999643564,
+        "mean": 36.33756666649611,
+        "p50": 35.418099999427795,
+        "p95": 52.13159999996424,
+        "percentileWindow": 39
+      },
+      {
+        "count": 41,
+        "max": 52.28900000452995,
+        "mean": 36.80398292730494,
+        "p50": 36.98889999836683,
+        "p95": 50.69759999960661,
+        "percentileWindow": 41
+      },
+      {
+        "count": 41,
+        "max": 52.8332000002265,
+        "mean": 37.49170243921803,
+        "p50": 39.281300000846386,
+        "p95": 51.329099997878075,
+        "percentileWindow": 41
+      },
+      {
+        "count": 42,
+        "max": 57.78269999474287,
+        "mean": 37.03776904745471,
+        "p50": 36.26129999756813,
+        "p95": 53.275000005960464,
+        "percentileWindow": 42
+      }
+    ],
+    "source_age_at_ack_ms": {
+      "count": 163,
+      "max": 164.3293999955058,
+      "mean": 81.60798895733853,
+      "p50": 80.86950000375509,
+      "p95": 107.21800000220537,
+      "percentileWindow": 163
+    },
+    "transform_ms": {
+      "count": 333,
+      "max": 7.17679999768734,
+      "mean": 1.4233360360110845,
+      "p50": 0.995399996638298,
+      "p95": 3.660700000822544,
+      "percentileWindow": 333
+    },
+    "client_minus_host_elapsed_ms": {
+      "count": 163,
+      "max": 16.909600004553795,
+      "mean": 1.0188644172772308,
+      "p50": 1.1449000015854836,
+      "p95": 11.568400003015995,
+      "percentileWindow": 163
+    },
+    "cross_clock_note": "Signed observational residual only; never ordered as an invariant. Recorded percentiles expose no negative tail, so this run does not itself demonstrate the 004 coarse-clock case occurring live — the offline ADAPTER_HOST_ELAPSED_CROSS_CLOCK_PASS control covers it. Do not label this residual literal HTTP overhead.",
+    "rate_target_met": true,
+    "freshness_target_met": true,
+    "runtime_003_restored": {
+      "status": "connected",
+      "run_nonce": "8d6f0892",
+      "last_error": null,
+      "current_experiment_id": "OPENDITOO-PRODUCT-8d6f0892-000001",
+      "verified": true
+    },
+    "owner_visual_observation": "pending",
+    "transport_fps_caveat": "Transport FPS is not physical panel FPS. W9B is required to observe visible unique-frame cadence and true scene-to-visible latency."
   }
 }
