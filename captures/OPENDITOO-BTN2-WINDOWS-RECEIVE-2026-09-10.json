@@ -1,0 +1,298 @@
+{
+ "schema_version": 1,
+ "capture_id": "OPENDITOO-BTN2-WINDOWS-RECEIVE-2026-09-10",
+ "status": "exact_unit_windows_physical_receive_evidence",
+ "gates": {
+  "BTN2_ARROWS": "PASS",
+  "BTN2_LEVER": "PARTIAL"
+ },
+ "device_io": "none from ButtonProbe; the standing Runtime 005 dashboard ran unchanged under its own granted policy",
+ "method": {
+  "probe": "runtime/windows/OpenDitoo.ButtonProbe, commit fa9fd07, dll sha256 f758b922808874d84d531209b2d8f35556888fbdf0cb7f3c9fc117268fb75ae6, launched from WSL interop into the interactive session, --seconds 1800",
+  "telemetry": "read-only sampler: 'openditoo status' + 'openditoo product-status' every ~0.7 s; Host session ledger (.openditoo-local/session-ledger.jsonl) for exact terminal times/reasons",
+  "clock": "probe DateTime.UtcNow and Host ledger UTC are the same Windows machine clock",
+  "operator_script": "quiet baseline, then Left, Right, Left, Lever; quiet; repeat. Operator reported shortened pauses (trial B spacing ~0.7 s)",
+  "operator_observation": "nothing happened on the ditoo (no visible stock screen or page change during either trial)"
+ },
+ "probe_records": [
+  {
+   "epoch": "5cf731806c06",
+   "seq": 1,
+   "at_monotonic_ms": 26808801.836,
+   "at_utc": "2026-09-10T16:26:38.1490810Z",
+   "type": "probe_started",
+   "pid": 26976,
+   "seconds": 1800,
+   "smtc": {
+    "acquired": true,
+    "playback_status": "Playing"
+   },
+   "rawinput_registered": true,
+   "merging": "none; every source logged separately"
+  },
+  {
+   "epoch": "5cf731806c06",
+   "seq": 2,
+   "at_monotonic_ms": 27006334.486,
+   "at_utc": "2026-09-10T16:29:55.6815946Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "0300000000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_046D&PID_C539&MI_01&Col02#8&4af4f83&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "5cf731806c06",
+   "seq": 3,
+   "at_monotonic_ms": 27434537.994,
+   "at_utc": "2026-09-10T16:37:03.8851050Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "0300000000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_046D&PID_C539&MI_01&Col02#8&4af4f83&0&0001#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "5cf731806c06",
+   "seq": 4,
+   "at_monotonic_ms": 27643257.936,
+   "at_utc": "2026-09-10T16:40:32.6050449Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Previous",
+   "normalized_candidate": "nav_left"
+  },
+  {
+   "epoch": "5cf731806c06",
+   "seq": 5,
+   "at_monotonic_ms": 27649249.809,
+   "at_utc": "2026-09-10T16:40:38.5969157Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Next",
+   "normalized_candidate": "nav_right"
+  },
+  {
+   "epoch": "5cf731806c06",
+   "seq": 6,
+   "at_monotonic_ms": 27655323.966,
+   "at_utc": "2026-09-10T16:40:44.6710749Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Previous",
+   "normalized_candidate": "nav_left"
+  },
+  {
+   "epoch": "5cf731806c06",
+   "seq": 7,
+   "at_monotonic_ms": 27661223.502,
+   "at_utc": "2026-09-10T16:40:50.5706120Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Pause",
+   "normalized_candidate": "lever_candidate"
+  },
+  {
+   "epoch": "5cf731806c06",
+   "seq": 8,
+   "at_monotonic_ms": 27680117.872,
+   "at_utc": "2026-09-10T16:41:09.4649833Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Previous",
+   "normalized_candidate": "nav_left"
+  },
+  {
+   "epoch": "5cf731806c06",
+   "seq": 9,
+   "at_monotonic_ms": 27680907.336,
+   "at_utc": "2026-09-10T16:41:10.2544437Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Next",
+   "normalized_candidate": "nav_right"
+  },
+  {
+   "epoch": "5cf731806c06",
+   "seq": 10,
+   "at_monotonic_ms": 27681569.673,
+   "at_utc": "2026-09-10T16:41:10.9167834Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Previous",
+   "normalized_candidate": "nav_left"
+  }
+ ],
+ "host_ledger_window": [
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-10T16:35:18.4832242+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-b64cc0c8-000007",
+   "sessionId": "8f87150f04ee",
+   "detail": {
+    "reason": "lifetime_expired",
+    "outcome": "stopped_clean",
+    "detail": "",
+    "framesSent": 187,
+    "packetsSent": 561,
+    "txBytesSent": 36278,
+    "displayState": "ours_last_acked"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-10T16:35:18.5228719+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-b64cc0c8-000008",
+   "sessionId": "8bea1404a794",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 150,
+    "frameBudget": 500,
+    "txByteBudget": 101500,
+    "sessionProfile": "activity",
+    "sendSpacingMs": 10
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-10T16:40:32.5985820+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-b64cc0c8-000008",
+   "sessionId": "8bea1404a794",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0x09 tag=0x55 payloadBytes=1",
+    "framesSent": 27,
+    "packetsSent": 81,
+    "txBytesSent": 5238,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-10T16:40:33.6289681+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-b64cc0c8-000009",
+   "sessionId": "468610eb0b06",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 150,
+    "frameBudget": 500,
+    "txByteBudget": 101500,
+    "sessionProfile": "activity",
+    "sendSpacingMs": 10
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-10T16:41:12.1534262+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-b64cc0c8-000009",
+   "sessionId": "468610eb0b06",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 45,
+    "packetsSent": 135,
+    "txBytesSent": 8730,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-10T16:41:12.1834835+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-b64cc0c8-000010",
+   "sessionId": "fd3128a7b84e",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 150,
+    "frameBudget": 500,
+    "txByteBudget": 101500,
+    "sessionProfile": "activity",
+    "sendSpacingMs": 10
+   }
+  }
+ ],
+ "trials": {
+  "A": [
+   {
+    "press": "Left",
+    "smtc": "Previous",
+    "at_utc": "2026-09-10T16:40:32.6050449Z",
+    "host_effect": "session 8bea1404a794 terminal canvas_invalidated at 16:40:32.5985820Z (inner report 0x09, 6.5 ms BEFORE the SMTC callback); product saw HTTP 409 -> transport_fault -> reconnect, new session 468610eb0b06 open 16:40:33.629Z (~1.0 s)"
+   },
+   {
+    "press": "Right",
+    "smtc": "Next",
+    "at_utc": "2026-09-10T16:40:38.5969157Z",
+    "host_effect": "none"
+   },
+   {
+    "press": "Left",
+    "smtc": "Previous",
+    "at_utc": "2026-09-10T16:40:44.6710749Z",
+    "host_effect": "none"
+   },
+   {
+    "press": "Lever",
+    "smtc": "Pause",
+    "at_utc": "2026-09-10T16:40:50.5706120Z",
+    "host_effect": "none (no 0xBD seen by the Host)"
+   }
+  ],
+  "B": [
+   {
+    "press": "Left",
+    "smtc": "Previous",
+    "at_utc": "2026-09-10T16:41:09.4649833Z",
+    "host_effect": "none"
+   },
+   {
+    "press": "Right",
+    "smtc": "Next",
+    "at_utc": "2026-09-10T16:41:10.2544437Z",
+    "host_effect": "none"
+   },
+   {
+    "press": "Left",
+    "smtc": "Previous",
+    "at_utc": "2026-09-10T16:41:10.9167834Z",
+    "host_effect": "none"
+   },
+   {
+    "press": "Lever",
+    "smtc": null,
+    "at_utc": null,
+    "host_effect": "session 468610eb0b06 terminal canvas_invalidated at 16:41:12.1534262Z (inner report 0xBD, 4 payload bytes); product reclaim (reclaims=1), session fd3128a7b84e open 16:41:12.183Z (30 ms)"
+   }
+  ]
+ },
+ "findings": [
+  {
+   "id": "ARROWS-REACH-SMTC-ONE-EVENT-PER-PRESS",
+   "confidence": "MATCHED",
+   "statement": "6/6 arrow presses produced exactly one SMTC event each, correctly mapped (Left->Previous, Right->Next), in both trials, including at ~0.7 s spacing. No duplicate, no extra normalized event."
+  },
+  {
+   "id": "SMTC-IS-THE-ONLY-WINDOWS-PATH",
+   "confidence": "MATCHED",
+   "statement": "No WM_APPCOMMAND and no raw-input keyboard/consumer record accompanied any Ditoo press: Windows routes the Ditoo's AVRCP straight into SMTC, not as injected media keys. The two rawinput_consumer records (16:29:55, 16:37:03) came from an unrelated Logitech receiver (VID_046D PID_C539) outside the trials."
+  },
+  {
+   "id": "AN-ARROW-CAN-END-THE-DASHBOARD-SESSION",
+   "confidence": "MATCHED (2 of 2 exact-unit contexts: M7 and BTN-2)",
+   "statement": "The first Left of trial A was accompanied by an unsolicited RFCOMM 0x09 report that the Runtime 005 Host treated as canvas_invalidated, exactly like the first Left in M7 (0x09 2.7 ms before AVRCP). 1 of 6 arrow presses here; the other 5 were session-neutral. The dashboard recovered in ~1 s via reconnect and the operator saw no change.",
+   "consequence": "Pagination must survive a Host session ending on an arrow press: page state lives in the router, and a fresh session resumes the selected page. The canvas_invalidated fence is NOT weakened."
+  },
+  {
+   "id": "LEVER-IS-INCONSISTENT",
+   "confidence": "OBSERVED",
+   "statement": "Trial A lever: SMTC Pause, no 0xBD. Trial B lever: 0xBD (Host yield + reclaim), no SMTC event. Neither pull produced both; M7's single pull produced both.",
+   "consequence": "Lever stays out of pagination; BTN-7 characterization needed before any lever semantics."
+  },
+  {
+   "id": "ARROWS-DID-NOT-VISIBLY-CHANGE-THE-DITOO",
+   "confidence": "OPERATOR_OBSERVATION",
+   "statement": "No stock screen or visible change during either trial, including across the one 0x09 session end and the 0xBD reclaim."
+  }
+ ]
+}

@@ -74,8 +74,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
 | BTN-0 AVRCP evidence reproduction | **PASS** (`BTN0_AVRCP_REPRODUCTION=PASS`): `host/avctp.py` + direction-scoped L2CAP channels in `host/btsnoop.py` + `capture-avrcp-parse` reproduce 0x4C/0x4B/0x4C/0x44 (all press+release, all ACCEPTED) from the raw M7 bytes; derived `captures/OPENDITOO-M7-AVRCP-KEY-SWEEP-2026-09-09.json`. New: the first Left coincided with an unsolicited RFCOMM 0x09 report (-2.7 ms), so arrows are not assumed session-neutral |
 | BTN-1 Windows ButtonProbe | **PASS** (`BTN1_BUTTON_PROBE_OFFLINE=PASS`): `runtime/windows/OpenDitoo.ButtonProbe/` (hidden top-level HWND + SMTC primary; WM_APPCOMMAND, raw-input media-VK-only keyboard and HID consumer logged as separate sources, never merged). Built isolated to `%LOCALAPPDATA%\OpenDitoo\ButtonProbe` (dll `f758b922…`); selftest PASS; SMTC acquired; positive control (one injected media-Next) reached raw input + SMTC `Next`. Static test pins no transport/Host/credential/send code |
-| BTN-2 exact Windows physical receive proof | **current**: Left → Right → Left → Lever twice while Runtime 005 remains the display baseline |
-| BTN-3..5 pagination | gated on BTN-2: typed broker, offline two-page router, then physical Dashboard → Right → animation → Left → Dashboard acceptance |
+| BTN-2 exact Windows physical receive proof | **arrows PASS / lever PARTIAL** (`captures/OPENDITOO-BTN2-WINDOWS-RECEIVE-2026-09-10.json`): 6/6 arrow presses -> exactly one SMTC Previous/Next each, both trials; SMTC is the only Windows path (no WM_APPCOMMAND/raw input). 1 of 6 arrows (first Left, as in M7) came with RFCOMM 0x09 -> Runtime 005 canvas_invalidated -> ~1 s reconnect, invisible to the owner. Lever: trial A SMTC Pause only; trial B 0xBD only (Host yield + reclaim) |
+| BTN-3..5 pagination | **current** (arrows only): typed broker, offline two-page router, then physical Dashboard → Right → animation → Left → Dashboard acceptance |
 
 ### Authority state
 
