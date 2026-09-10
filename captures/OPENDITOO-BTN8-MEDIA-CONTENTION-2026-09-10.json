@@ -1,0 +1,312 @@
+{
+ "schema_version": 1,
+ "capture_id": "OPENDITOO-BTN8-MEDIA-CONTENTION-YOUTUBE-2026-09-10",
+ "status": "exact_unit_windows_receive_evidence",
+ "gate": {
+  "BTN8_YOUTUBE_CONTENTION": "PASS",
+  "BTN8_SPOTIFY_DESKTOP": "NOT_TESTED",
+  "BTN8_KEYBOARD_MEDIA_KEYS": "NOT_TESTED"
+ },
+ "method": "ButtonProbe --status mirror started first (17:28:51Z); owner then played YouTube in a browser through PC speakers and pressed Ditoo Right/Left (x3 pairs, including after pausing YouTube)",
+ "operator_observation": "i did eveyrhtging with youtube and nothing happened to youtube",
+ "findings": [
+  {
+   "id": "DITOO-ARROWS-GO-TO-OPENDITOO-NOT-YOUTUBE",
+   "confidence": "MATCHED",
+   "statement": "6/6 Ditoo arrow presses arrived as SMTC Next/Previous at the probe while YouTube was playing in the browser, and YouTube did not skip or seek."
+  },
+  {
+   "id": "FIRST-ARROW-0x09-RECURS",
+   "confidence": "MATCHED (3 contexts: M7, BTN-2, here)",
+   "statement": "The first Right (17:32:58.334) again coincided with RFCOMM 0x09 -> canvas_invalidated at 17:32:58.541 and reclaim. Not seen in BTN-5. Handled by page state outside the session."
+  },
+  {
+   "id": "KEYBOARD-VOLUME-KNOB-IS-SEPARATE",
+   "confidence": "MATCHED",
+   "statement": "The only keyboard traffic was consumer usages 0xE9/0xEA (volume up/down) from VID_3434 PID_0850; it never reached SMTC and cannot page the Ditoo."
+  }
+ ],
+ "untested": "Spotify desktop app and keyboard media Next/Prev/Play keys. Spot-check Spotify at the Runtime 006 smoke test.",
+ "probe_records": [
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 1,
+   "at_monotonic_ms": 30542014.103,
+   "at_utc": "2026-09-10T17:28:51.3613390Z",
+   "type": "probe_started",
+   "pid": 7316,
+   "seconds": 1500,
+   "smtc": {
+    "acquired": true,
+    "playback_status": "Playing",
+    "status_mode": "mirror"
+   },
+   "rawinput_registered": true,
+   "merging": "none; every source logged separately"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 2,
+   "at_monotonic_ms": 30747690.989,
+   "at_utc": "2026-09-10T17:32:17.0381034Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "04EA00",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 3,
+   "at_monotonic_ms": 30747692.528,
+   "at_utc": "2026-09-10T17:32:17.0396356Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "040000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 4,
+   "at_monotonic_ms": 30747710.104,
+   "at_utc": "2026-09-10T17:32:17.0572117Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "04EA00",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 5,
+   "at_monotonic_ms": 30747711.788,
+   "at_utc": "2026-09-10T17:32:17.0588951Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "040000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 6,
+   "at_monotonic_ms": 30747731.836,
+   "at_utc": "2026-09-10T17:32:17.0789431Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "04EA00",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 7,
+   "at_monotonic_ms": 30747733.812,
+   "at_utc": "2026-09-10T17:32:17.0809191Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "040000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 8,
+   "at_monotonic_ms": 30747760.804,
+   "at_utc": "2026-09-10T17:32:17.1079123Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "04EA00",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 9,
+   "at_monotonic_ms": 30747763.106,
+   "at_utc": "2026-09-10T17:32:17.1102120Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "040000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 10,
+   "at_monotonic_ms": 30748292.894,
+   "at_utc": "2026-09-10T17:32:17.6400013Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "04E900",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 11,
+   "at_monotonic_ms": 30748294.738,
+   "at_utc": "2026-09-10T17:32:17.6418457Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "040000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 12,
+   "at_monotonic_ms": 30748342.814,
+   "at_utc": "2026-09-10T17:32:17.6899209Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "04E900",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 13,
+   "at_monotonic_ms": 30748344.724,
+   "at_utc": "2026-09-10T17:32:17.6918307Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "040000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 14,
+   "at_monotonic_ms": 30748616.831,
+   "at_utc": "2026-09-10T17:32:17.9639383Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "04EA00",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 15,
+   "at_monotonic_ms": 30748619.582,
+   "at_utc": "2026-09-10T17:32:17.9666914Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "040000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 16,
+   "at_monotonic_ms": 30748657.828,
+   "at_utc": "2026-09-10T17:32:18.0049357Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "04EA00",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 17,
+   "at_monotonic_ms": 30748659.973,
+   "at_utc": "2026-09-10T17:32:18.0070813Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "040000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 18,
+   "at_monotonic_ms": 30748711.796,
+   "at_utc": "2026-09-10T17:32:18.0589035Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "04EA00",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 19,
+   "at_monotonic_ms": 30748713.791,
+   "at_utc": "2026-09-10T17:32:18.0608971Z",
+   "type": "event",
+   "source": "rawinput_consumer",
+   "raw_button": "040000",
+   "normalized_candidate": null,
+   "device": "\\\\?\\HID#VID_3434&PID_0850&MI_02&Col03#8&2714ebbf&0&0002#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 20,
+   "at_monotonic_ms": 30788987.676,
+   "at_utc": "2026-09-10T17:32:58.3347832Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Next",
+   "normalized_candidate": "nav_right",
+   "status_before": "Playing"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 21,
+   "at_monotonic_ms": 30793169.912,
+   "at_utc": "2026-09-10T17:33:02.5170191Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Previous",
+   "normalized_candidate": "nav_left",
+   "status_before": "Playing"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 22,
+   "at_monotonic_ms": 30808067.363,
+   "at_utc": "2026-09-10T17:33:17.4144699Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Next",
+   "normalized_candidate": "nav_right",
+   "status_before": "Playing"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 23,
+   "at_monotonic_ms": 30809079.947,
+   "at_utc": "2026-09-10T17:33:18.4270549Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Previous",
+   "normalized_candidate": "nav_left",
+   "status_before": "Playing"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 24,
+   "at_monotonic_ms": 30811298.18,
+   "at_utc": "2026-09-10T17:33:20.6452885Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Next",
+   "normalized_candidate": "nav_right",
+   "status_before": "Playing"
+  },
+  {
+   "epoch": "a00612ebd8ff",
+   "seq": 25,
+   "at_monotonic_ms": 30811798.577,
+   "at_utc": "2026-09-10T17:33:21.1456837Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Previous",
+   "normalized_candidate": "nav_left",
+   "status_before": "Playing"
+  }
+ ]
+}
