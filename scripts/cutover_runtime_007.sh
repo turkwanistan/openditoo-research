@@ -37,7 +37,7 @@ start_and_confirm(){
 # Copy a saved Host directory into the installed runtime with the Host task stopped (a running exe
 # cannot be overwritten), then require the typed identity again.
 install_host_dir(){
-  powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; Stop-ScheduledTask -TaskName 'OpenDitoo Day1 Host'; Start-Sleep -Milliseconds 800; Copy-Item -Path '$(wslpath -w "$1")\\*' -Destination (Join-Path \$env:LOCALAPPDATA 'OpenDitoo\\Day1Host') -Recurse -Force; Start-ScheduledTask -TaskName 'OpenDitoo Day1 Host'" | tr -d '\r'
+  powershell.exe -NoProfile -Command "\$ErrorActionPreference='Stop'; \$exe=Join-Path \$env:LOCALAPPDATA 'OpenDitoo\\Day1Host\\OpenDitoo.Day1.Host.exe'; Stop-ScheduledTask -TaskName 'OpenDitoo Day1 Host'; Get-Process OpenDitoo.Day1.Host -ErrorAction SilentlyContinue | Where-Object { \$_.Path -ieq \$exe } | ForEach-Object { Stop-Process -Id \$_.Id; if (-not \$_.WaitForExit(8000)) { throw 'OWNED_HOST_DID_NOT_EXIT' } }; Copy-Item -Path '$(wslpath -w "$1")\\*' -Destination (Join-Path \$env:LOCALAPPDATA 'OpenDitoo\\Day1Host') -Recurse -Force; Start-ScheduledTask -TaskName 'OpenDitoo Day1 Host'" | tr -d '\r'
   for _ in $(seq 1 40); do python3 -c 'from host import webcam_trial; webcam_trial._host_preclaim_status()' 2>/dev/null && return 0; sleep 0.25; done
   echo R007_HOST_IDENTITY_NOT_CONFIRMED >&2; return 1
 }
