@@ -3519,7 +3519,7 @@ class W5DryRunTests(unittest.TestCase):
 class W6WebcamReviewTests(unittest.TestCase):
     MANIFEST = ROOT / "experiments/DAY1-WEBCAM-N980P-001.json"
 
-    def test_review_envelope_is_valid_bounded_and_explicitly_blocked(self) -> None:
+    def test_review_envelope_is_valid_bounded_and_grant_ready(self) -> None:
         manifest, frames, stream = frame_stream.load_stream_manifest(
             self.MANIFEST, require_authority=False)
         self.assertIsNone(frames)
@@ -3534,13 +3534,20 @@ class W6WebcamReviewTests(unittest.TestCase):
         self.assertEqual(manifest.max_application_packets, 336)
         self.assertEqual(manifest.max_tx_bytes, 112 * frame_stream.worst_case_frame_tx_bytes())
         self.assertFalse(manifest.raw["readiness"]["execution_ready"])
-        self.assertFalse(manifest.raw["readiness"]["grant_ready"])
-        blockers = manifest.raw["readiness"]["blockers"]
-        self.assertNotIn("LIVE_CAMERA_HOST_ADAPTER_MISSING", blockers)
-        for blocker in ("WINDOWS_LOCAL_ADAPTER_STAGING_AND_SELFTEST_NOT_REVERIFIED",
-                        "CAMERA_READY_BEFORE_CLAIM_HANDSHAKE_NOT_REVERIFIED",
-                        "FIVE_MINUTE_ALLOCATION_SOAK_NOT_DEMONSTRATED"):
-            self.assertIn(blocker, blockers)
+        self.assertTrue(manifest.raw["readiness"]["grant_ready"])
+        self.assertEqual(manifest.raw["readiness"]["blockers"], [])
+        verification = manifest.raw["w6_verification"]
+        self.assertEqual(verification["status"], "pass")
+        self.assertTrue(verification["windows_offline_pass"])
+        self.assertFalse(verification["device_io"])
+        self.assertFalse(verification["claim_created"])
+        evidence = ROOT / verification["evidence_file"]
+        self.assertEqual(activity_session.sha256_file(evidence), verification["evidence_sha256"])
+        observed = json.loads(evidence.read_text(encoding="utf-8"))
+        self.assertEqual(observed["status"], "pass")
+        self.assertGreaterEqual(observed["soak"]["seconds"], 295)
+        self.assertLess(observed["soak"]["growth_after_warmup_bytes"], 8 * 1024 * 1024)
+        self.assertFalse(observed["operation"]["device_io"])
         adapter = manifest.raw["adapter"]
         self.assertEqual(adapter["typed_origin"], "http://127.0.0.1:8796")
         self.assertEqual(adapter["routes"], ["/v1/status", "/v1/session/open",

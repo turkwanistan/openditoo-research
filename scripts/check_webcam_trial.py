@@ -24,15 +24,17 @@ def main() -> int:
         expected_routes = ["/v1/status", "/v1/session/open", "/v1/session/frame", "/v1/session/close"]
         if adapter.get("typed_origin") != "http://127.0.0.1:8796" or adapter.get("routes") != expected_routes:
             raise ValueError("webcam typed adapter envelope drift")
-        if doc["readiness"].get("execution_ready") or doc["readiness"].get("grant_ready"):
-            raise ValueError("review envelope must remain unready until Windows verification completes")
-        required_pending = {
-            "WINDOWS_LOCAL_ADAPTER_STAGING_AND_SELFTEST_NOT_REVERIFIED",
-            "CAMERA_READY_BEFORE_CLAIM_HANDSHAKE_NOT_REVERIFIED",
-            "FIVE_MINUTE_ALLOCATION_SOAK_NOT_DEMONSTRATED",
-        }
-        if not required_pending.issubset(set(doc["readiness"].get("blockers", []))):
-            raise ValueError("webcam W6 readiness blockers drift")
+        if doc["readiness"].get("execution_ready") or not doc["readiness"].get("grant_ready"):
+            raise ValueError("W6 freeze must be grant-ready but not execution-ready before authority/live preflight")
+        if doc["readiness"].get("blockers") != []:
+            raise ValueError("W6 engineering blockers must be empty after Windows offline verification")
+        verification = doc.get("w6_verification", {})
+        evidence = ROOT / verification.get("evidence_file", "")
+        if (verification.get("status") != "pass" or verification.get("windows_offline_pass") is not True
+                or verification.get("device_io") is not False or verification.get("claim_created") is not False
+                or not evidence.is_file()
+                or activity_session.sha256_file(evidence) != verification.get("evidence_sha256")):
+            raise ValueError("W6 Windows verification evidence missing or drifted")
         hashes = stream["live_source"]["producer_code_sha256"]
         for relative, expected in hashes.items():
             candidate = ROOT / relative
@@ -48,7 +50,7 @@ def main() -> int:
         blockers.append("LIVE_PREFLIGHT_NOT_PERFORMED")
         print(json.dumps({
             "ok": True, "manifest_valid": True, "device_io": False, "claim_created": False,
-            "execution_ready": False, "grant_ready": False,
+            "execution_ready": False, "grant_ready": bool(doc["readiness"]["grant_ready"]),
             "experiment_id": manifest.experiment_id, "blockers": blockers,
             "manifest_sha256": activity_session.sha256_file(path),
             "source_kind": stream["source_kind"], "session_profile": stream["session_profile"],

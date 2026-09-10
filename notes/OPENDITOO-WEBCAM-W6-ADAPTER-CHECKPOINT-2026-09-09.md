@@ -52,3 +52,12 @@ W7 = first 10-second physical webcam acceptance. W8 = one near-ceiling ACK-clock
 W9 = optical scene-to-display latency if useful. W10 = product polish and a separate decision on
 standing webcam authority. W2's seven-scene owner ranking remains optional/owner-dependent and
 is not a W6 safety blocker.
+
+
+## Closure
+
+W6 closed PASS on 2026-09-09 from the operator's Windows PowerShell run of the one-command verifier.
+Evidence: `captures/OPENDITOO-WEBCAM-W6-WINDOWS-OFFLINE-RESULT-2026-09-09.json`. The manifest is now
+`grant_ready=true`, has no engineering blockers, and remains `execution_ready=false` /
+`transmission_authorized=false`. Next action is W7 only after the fresh exact named grant
+`Grant OPENDITOO-WEBCAM-N980P-001`.

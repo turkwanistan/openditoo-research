@@ -67,12 +67,13 @@ is superseded, and its grant must not be reused for the webcam.
 
 The MCP dashboard is already the owner's working everyday baseline. Do not reopen durability, firmware, MassBoot, ACK decoding, command enumeration, or speculative UI work as release blockers.
 
-P2/P3/P4 and Runtime 003 deployment are closed. Finish the recovered adapter's Windows-local
-verification, pre-claim handshake check, five-minute soak, and final hash freeze before calling
-W6 execution-ready. Preferred offline command from a Windows-capable local WSL session:
-`powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify_webcam_w6_windows.ps1`.
-The coordinator now refuses a non-idle Host **before** one-use claim consumption. Do not claim,
-stop the product, or transmit while preparing it.
+P2/P3/P4 and Runtime 003 deployment are closed. **W6 is now PASS and grant-ready**: the Windows
+runner rebuilt/staged successfully, adapter/transform/encoder tests passed, the camera-ready nonce
+negative control passed with no claim/Host session, and the real-camera allocation soak passed for
+300.1216 s with only 9,416 bytes growth after warmup. Exact evidence is
+`captures/OPENDITOO-WEBCAM-W6-WINDOWS-OFFLINE-RESULT-2026-09-09.json`. The coordinator refuses a
+non-idle Host before one-use claim consumption. **Next is W7, blocked only on the fresh exact named
+grant `Grant OPENDITOO-WEBCAM-N980P-001`; do not infer that grant from generic authorization.**
 
 Use `PRODUCT.md` for normal operation. The reliable startup design boundary remains current-user Windows logon / StartWhenAvailable; a real Windows reboot/login observation is intentionally deferred and is not to be invented as accepted evidence.
 

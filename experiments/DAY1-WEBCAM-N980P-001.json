@@ -2,18 +2,14 @@
   "schema_version": 1,
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-N980P-001",
-  "milestone": "W6 review envelope; adapter implemented, Windows verification pending",
-  "status": "review_only_adapter_verification_pending",
-  "objective": "One bounded first physical webcam trial; future pixels are not frozen. The live adapter source now exists and compiled successfully once in the interrupted local Windows-capable session, but this review artifact remains unarmed and not grant-ready until Windows-local staging/selftests and the five-minute allocation soak are completed.",
+  "milestone": "W6 verified review freeze; W7 awaiting fresh named grant",
+  "status": "grant_ready_awaiting_named_grant",
+  "objective": "One bounded first physical webcam trial. W6 Windows-native build/staging, adapter/parity selftests, camera-ready-before-claim negative control, and five-minute real-camera allocation soak all passed offline with no Ditoo I/O. The envelope is now frozen and grant-ready but remains unauthorized and non-executable until the fresh exact W7 named grant and live preflight.",
   "readiness": {
     "execution_ready": false,
-    "grant_ready": false,
-    "blockers": [
-      "WINDOWS_LOCAL_ADAPTER_STAGING_AND_SELFTEST_NOT_REVERIFIED",
-      "CAMERA_READY_BEFORE_CLAIM_HANDSHAKE_NOT_REVERIFIED",
-      "FIVE_MINUTE_ALLOCATION_SOAK_NOT_DEMONSTRATED"
-    ],
-    "required_followup": "From a Windows-capable local WSL session, rebuild and stage the frozen runner to C:\\temp\\openditoo-webcam-runner, run adapter selftests plus both parity fixtures, verify the camera-ready-before-claim handshake without opening a Ditoo session, and complete the five-minute camera/allocation soak. Then re-hash the executing artifacts and re-review this never-armed envelope before requesting a grant."
+    "grant_ready": true,
+    "blockers": [],
+    "required_followup": "Obtain the fresh exact grant `Grant OPENDITOO-WEBCAM-N980P-001`. Only after that grant: stop the MCP product supervisor, verify its Host session is idle, revalidate exact hashes/target/authority, allow the camera-ready nonce claim handshake, and run the single bounded 10-second W7 trial."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -35,8 +31,8 @@
     },
     "host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
     "installed_dll_sha256_verified": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
-    "source_checkpoint": "da77b6f + interrupted W6 adapter checkpoint",
-    "identity_note": "Runtime 003 Host identity was verified before the interrupted adapter work. The adapter itself compiled successfully with zero warnings/errors in the uploaded local Codex session; no Host build/deploy or Ditoo transmission was performed. Current WSL_MCP cannot expose the Windows bridge, so Windows-local verification remains explicit rather than inferred."
+    "source_checkpoint": "bb878f4; exact W6-passing Windows Release output frozen after operator verification",
+    "identity_note": "W6 Windows-local verification passed after commit bb878f4. The runner rebuilt/staged with zero warnings/errors; its just-built source/binary hashes are frozen in this manifest. IncludeSourceRevisionInInformationalVersion=false removes Git-HEAD churn from the runner DLL. Runtime 003 Host build remains separately frozen and unchanged."
   },
   "session": {
     "lifetime_seconds": 10,
@@ -55,7 +51,7 @@
     "loop": false,
     "source_description": "NexiGo VID_0C45 PID_2690 live camera; WinRT Realtime freshest-frame slots; fixed srgb_area transform and deterministic 255-colour guard",
     "live_source": {
-      "producer_description": "Windows-native camera/transform/encoder + typed-session adapter. Source and the repository build produced by the interrupted Windows-capable session are frozen here; Windows-local staging/selftest and soak remain blockers.",
+      "producer_description": "Windows-native camera/transform/encoder + typed-session adapter. The exact source and W6-passing Windows Release build are frozen below; Windows-local staging/selftests, nonce negative control and five-minute real-camera soak all passed.",
       "producer_code_sha256": {
         "runtime/windows/OpenDitoo.Webcam.Probe/DitooEncoder.cs": "a543919336212deed5fc7de354b932cadc68829eb848aee8043e1303cd0bfbb8",
         "runtime/windows/OpenDitoo.Webcam.Probe/FrameTransform.cs": "2d703b7dd7630dff071813c728862b33a0c5e68f245ee277ce0c7f9c8c85d623",
@@ -70,8 +66,8 @@
         "cli/webcam.py": "1dbed50b2533c76bb72ad2c4313365c8756a316d4fd06029b0299bc7583f528f",
         "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
         "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.deps.json": "8848608ffa3024a9cb91318ec0df04be5e8872e3b8ced952ea17e681e64774f8",
-        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.dll": "e9d0a5a8d24fe573d7256b8ecd49ef406eb2938e8e5241fde9e572c4c5acaddf",
-        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.exe": "8f830d6969545a7b32c069241c23bb1deb9b26f75a9a66c60804c2e4f80cfd30",
+        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.dll": "6c9674c427b09b2468ec9fb9645a428d035bc7219a9b048b469d9774234aaffb",
+        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.exe": "c11b7c1e12a333a88546c9ae4bd1d1e68912d6bddc3cb4095afa7bd23108fc69",
         "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.runtimeconfig.json": "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2",
         "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/WinRT.Runtime.dll": "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
       },
@@ -135,7 +131,7 @@
     "transport": "bounded clean close; zero retries, reconnects, pacing refusals or encoder-hash mismatches; queue depth at most one",
     "visual": "owner judges face/hand recognizability and orientation; W2 seven-scene ranking remains outstanding",
     "latency": "report measured source age and ACK timing separately; do not claim optical latency from an ACK",
-    "allocation": "five-minute soak remains a preflight blocker until measured from the Windows-local runner; the interrupted session only proved that the runner builds"
+    "allocation": "PASS W6 offline soak: 300.1216216000021 s; growth after warmup 9,416 bytes; 8,647 camera frames captured; transform p95 1.4379999935626984 ms. Real camera + in-memory typed Host only; device_io=false."
   },
   "persistence_analysis": {
     "expected_effect": "volatile display only",
@@ -150,7 +146,7 @@
     "grant_text": null,
     "expires_at": null,
     "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-N980P-001",
-    "grant_scope_requested": "ONE 10-second live-camera execution to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile, 40 ms Host floor plus 90 ms client dispatch cadence, at most 112 frames / 336 packets / 118048 application bytes; one connection and one frame in flight, no retry/reconnect/reclaim; suspend and restore the MCP controller separately. This scope is not currently grant-ready."
+    "grant_scope_requested": "ONE 10-second live-camera execution to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile, 40 ms Host floor plus 90 ms client dispatch cadence, at most 112 frames / 336 packets / 118048 application bytes; one connection and one frame in flight, no retry/reconnect/reclaim; suspend and restore the MCP controller separately. W6 is grant-ready, but this scope remains unauthorized until the exact named grant is recorded."
   },
   "adapter": {
     "kind": "windows_native_camera_to_typed_session",
@@ -163,6 +159,20 @@
       "/v1/session/close"
     ],
     "claim_handshake": "Runner must produce one fresh valid 16x16 frame and emit camera_ready + nonce before WSL creates the durable one-use claim; only execute:<nonce> may cross the claim boundary.",
-    "deployment_state": "source and repository build frozen below; Windows-local staging/selftest pending"
+    "deployment_state": "PASS W6: Windows-local runner rebuilt and staged at C:\\temp\\openditoo-webcam-runner; adapter/parity selftests, camera-ready negative control, and five-minute real-camera soak passed offline."
+  },
+  "w6_verification": {
+    "status": "pass",
+    "evidence_file": "captures/OPENDITOO-WEBCAM-W6-WINDOWS-OFFLINE-RESULT-2026-09-09.json",
+    "evidence_sha256": "38c510c0a2cc6f95b5a22f77090505b42ddedbcbce22d0774ad0c87cc1eded1f",
+    "windows_offline_pass": true,
+    "soak_seconds": 300.1216216000021,
+    "soak_growth_after_warmup_bytes": 9416,
+    "camera_frames_captured": 8647,
+    "camera_frames_replaced": 5376,
+    "transform_p95_ms": 1.4379999935626984,
+    "claim_created": false,
+    "host_session_io": false,
+    "device_io": false
   }
 }

@@ -115,8 +115,8 @@ refuses an unknown name. **The streaming profile has never been exercised live.*
 | W3 freshest-frame pipeline | done — 3/4 exit criteria, 4th gated on camera rate |
 | W4 Host streaming profile | done, built, **deployed** |
 | W5 dry run + fault injection | **done** — healthy path + terminal fault boundaries verified offline |
-| W6 freeze trial manifest | **in progress** — adapter source/build checkpoint exists; Windows-local staging/selftests, pre-claim handshake verification, and 5-minute soak remain |
-| W7 first physical trial | blocked on W6 final freeze + a fresh named grant |
+| W6 freeze trial manifest | **PASS / grant-ready** — exact W6-passing Windows build frozen; adapter/parity tests, nonce negative control, and 300.12 s real-camera soak passed |
+| W7 first physical trial | **next** — blocked only on a fresh exact named grant; no claim/transmission yet |
 | W8 near-ceiling ACK-clock trial | after W7 acceptance; one bounded identity, no new rate ladder |
 | W9 optical latency | after W8 if useful; camera and Ditoo filmed together, separate from ACK latency |
 | W10 product polish/authority | only after experimental acceptance; decide whether webcam gets separate standing product authority |
@@ -134,26 +134,10 @@ device receives:
 
 ## 6. Next objective, in order
 
-1. **Finish W6 offline verification from a Windows-capable local WSL session.** Run:
-
-   `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify_webcam_w6_windows.ps1`
-
-   It rebuilds/stages only the webcam runner, executes adapter + parity tests, proves the
-   camera-ready nonce negative control without a claim/Host session, and performs the five-minute
-   real-camera/in-memory-Host soak. These are the only remaining engineering blockers in the
-   review envelope. `host/webcam_trial.py` now also read-only checks exact Host identity and idle
-   controller ownership **before** consuming the one-use claim.
-2. **Freeze the final W6 hashes and re-run the review checker.** The corrected first-trial envelope
-   is a permanent **40 ms Host floor** plus a separate **90 ms client dispatch cadence**, 10 s,
-   at most **112 frames / 336 application packets / 118,048 application bytes**. The earlier
-   83 ms floor/cadence draft is superseded because it left no arrival-time margin.
-3. **Stop at the W7 boundary and present the exact grant string.** Do not create a claim, stop the
-   product controller for a trial, or transmit until the operator explicitly grants the final
-   reviewed `OPENDITOO-WEBCAM-N980P-001` identity.
-4. After W7 visual/transport acceptance: W8 one near-ceiling ACK-clock characterization, W9
-   optical latency if useful, then W10 operator-friendly product polish and a separate standing
-   webcam-authority decision. Optional owner-dependent W2 seven-scene blind ranking may happen
-   at any convenient point and is not a W6 safety blocker.
+1. **W7 authority boundary:** obtain the exact fresh grant `Grant OPENDITOO-WEBCAM-N980P-001`. Generic standing/full authorization is not substituted for the manifest-named grant.
+2. After that grant only: record authority/expiry, stop the MCP product supervisor, verify the Host has no active session/operation, and run the single fixed `cli/webcam.py run --manifest experiments/DAY1-WEBCAM-N980P-001.json` path. The runner itself produces a fresh camera frame before claim consumption.
+3. Capture the 10-second result and restore Runtime 003 separately after terminal ownership is known. No retry/reconnect/reclaim.
+4. After W7 visual/transport acceptance: W8 one near-ceiling ACK-clock characterization, W9 optional optical latency, W10 product polish/separate webcam-authority decision. W2 seven-scene owner ranking remains optional.
 
 ## 7. Working style that earned its keep
 

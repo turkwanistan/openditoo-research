@@ -695,3 +695,30 @@ The remaining limitation is environmental, not inferred away: WSL_MCP's bubblewr
 view is isolated, and exposes no `/dev/video*`. Therefore this session cannot execute the Windows
 camera verifier itself. **W6 remains not grant-ready until that script passes in a Windows-capable
 local WSL session and the final executing build hashes are re-frozen.**
+
+
+## 17. W6 Windows verification PASS and final grant-ready freeze — 2026-09-09
+
+The operator executed `scripts/verify_webcam_w6_windows.ps1` from Windows PowerShell against the
+post-`bb878f4` repository. The complete offline gate passed: Release build **0 warnings / 0 errors**;
+adapter selftest PASS; **15/15** transform parity cases; **6/6** encoder parity cases; and the
+`OPENDITOO-WEBCAM-N980P-998` camera-ready nonce negative control emitted a valid 32-hex nonce while
+creating **no claim**, opening **no Host session**, and performing **no Ditoo I/O**.
+
+The real NexiGo camera then completed the five-minute in-memory-Host soak: **300.1216216 s**,
+**8,647 captured frames**, **5,376 freshest-frame replacements**, post-warmup managed-memory growth
+**9,416 bytes**, transform mean **1.1741 ms**, p50 **0.9174 ms**, p95 **1.4380 ms**, max
+**8.1827 ms**. Final line: `W6_WINDOWS_OFFLINE_PASS ... claim_created=false host_session_io=false
+device_io=false`. Durable structured evidence is
+`captures/OPENDITOO-WEBCAM-W6-WINDOWS-OFFLINE-RESULT-2026-09-09.json`.
+
+The exact just-built producer/source hashes were re-frozen in
+`experiments/DAY1-WEBCAM-N980P-001.json`; the runner csproj disables source-revision injection into
+InformationalVersion so unrelated Git commits do not intentionally churn that binary identity. W6
+engineering blockers are now empty and `grant_ready=true`; `execution_ready=false` remains correct
+because transmission authority has not been granted and the live ownership preflight has not run.
+
+**W7 is the next boundary.** It is one fixed 10-second physical trial at 40 ms Host floor / 90 ms
+client dispatch cadence, at most 112 frames / 336 application packets / 118,048 application bytes,
+one connection, one frame in flight, no retry/reconnect/reclaim. It must not start until the operator
+provides the exact fresh named grant: `Grant OPENDITOO-WEBCAM-N980P-001`.

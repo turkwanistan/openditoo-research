@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-WEBCAM-N980P-001",
+  "milestone": "W6",
+  "status": "pass",
+  "recorded_at_local": "2026-09-09T21:28:00-04:00",
+  "evidence_source": "operator-pasted stdout from scripts/verify_webcam_w6_windows.ps1 executed in Windows PowerShell from the WSL repository path",
+  "operation": {
+    "script": "scripts/verify_webcam_w6_windows.ps1",
+    "stage": "C:\\temp\\openditoo-webcam-runner",
+    "device_io": false,
+    "host_session_io": false,
+    "claim_created": false
+  },
+  "build": {
+    "configuration": "Release",
+    "warnings": 0,
+    "errors": 0,
+    "elapsed_seconds": 0.94
+  },
+  "selftests": {
+    "adapter": {
+      "status": "pass",
+      "failures": 0,
+      "device_io": false,
+      "camera_io": false
+    },
+    "transform": {
+      "status": "pass",
+      "cases": 15,
+      "failures": 0,
+      "device_io": false
+    },
+    "encoder": {
+      "status": "pass",
+      "cases": 6,
+      "failures": 0,
+      "device_io": false
+    }
+  },
+  "camera_ready_negative_control": {
+    "status": "pass",
+    "synthetic_experiment_id": "OPENDITOO-WEBCAM-N980P-998",
+    "nonce_length": 32,
+    "claim_created": false,
+    "host_session_io": false,
+    "device_io": false
+  },
+  "soak": {
+    "status": "pass",
+    "seconds": 300.1216216000021,
+    "memory_bytes": [
+      624576,
+      2254808,
+      2265632,
+      2245464,
+      2264496,
+      2264224
+    ],
+    "growth_after_warmup_bytes": 9416,
+    "captured": 8647,
+    "replaced": 5376,
+    "transform_ms": {
+      "count": 8647,
+      "mean": 1.1740862958135805,
+      "max": 8.182700000703335,
+      "percentile_window": 2048,
+      "p50": 0.9174000024795532,
+      "p95": 1.4379999935626984
+    },
+    "device_io": false
+  },
+  "result_line": {
+    "status": "W6_WINDOWS_OFFLINE_PASS",
+    "soak_seconds": 300.1216216000021,
+    "growth_after_warmup_bytes": 9416,
+    "claim_created": false,
+    "host_session_io": false,
+    "device_io": false
+  },
+  "interpretation": [
+    "The Windows-native webcam runner rebuilt and staged successfully with zero warnings/errors.",
+    "Adapter, transform-parity, encoder-parity, and camera-ready-before-claim negative-control checks passed.",
+    "The real NexiGo camera completed the five-minute allocation soak through the transform/encoder/sender serialization path against an in-memory typed Host.",
+    "No Ditoo session, experiment claim, or device I/O occurred during W6 verification.",
+    "This closes the W6 engineering blockers only; W7 still requires the fresh exact named grant before any physical webcam transmission."
+  ],
+  "w7_authorized": false,
+  "required_grant": "Grant OPENDITOO-WEBCAM-N980P-001"
+}
