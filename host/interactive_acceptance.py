@@ -24,7 +24,7 @@ from host.interactive_stream import run_interactive_stream
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = 1
 KIND = "interactive_page_acceptance"
-EXPERIMENT_ID = "OPENDITOO-INTERACTIVE-HF3-007"
+EXPERIMENT_ID = "OPENDITOO-INTERACTIVE-HF3-008"
 REQUIRED_GRANT_TEXT = f"Grant {EXPERIMENT_ID}"
 HOST_BUILD = activity_session.HOST_BUILD_DLL
 BUTTON_PROBE_EXE = Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.exe")

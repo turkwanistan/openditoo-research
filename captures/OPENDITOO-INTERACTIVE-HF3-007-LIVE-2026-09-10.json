@@ -1,0 +1,102 @@
+{
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-007",
+  "grant": "Grant OPENDITOO-INTERACTIVE-HF3-007 (owner, in-session)",
+  "outer_claim": {
+    "claimed_at": "2026-09-10T21:07:46.870214Z",
+    "code_hashes": {
+      "activity_lightning_renderer_sha256": "74389183ca694d46822eefe41ac941783bbd0ac70a5067d410dc827fc7c3f436",
+      "activity_lightning_sha256": "e264db92df9416e2fa004e0101eccb37d0e9bb66b7f86d45c734e01fdebb4714",
+      "activity_render_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+      "activity_session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+      "activity_ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+      "cli_transport_sha256": "07ebf960fb2208ddf8afe34dedc52d5275645584e41bae20fa8a6a063d821119",
+      "dashboard_page_sha256": "16bf19fd963b9c91548deb6aeed038e0514ee0a219bf6290b04ef0b042da20f4",
+      "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+      "frame_stream_sha256": "880970a6d494197b78adfeac0309cb2d86ce447dd6bb826c7ae5b0c270af7fa6",
+      "hf3_coordinator_sha256": "c5b847d79d5c4ceaded1132823ed3e0e708ce23b8952acb58028802d8e0a6215",
+      "hf3_entry_sha256": "2b7f2c1d3c4efac68a55c42cc4e0a575b7440509160f53b88580f0ef5e624c87",
+      "interactive_acceptance_sha256": "c86352bc456aa88140dfcd209008b37f0499a2cc0a2a5053bfbee386a0b2fb81",
+      "interactive_activity_sha256": "96a8a75742a17ae04b00a9334b5a0ebc8e0b3ebf0b76d8983a9ee48220028df6",
+      "interactive_pages_sha256": "5172a307a5d68d9573f9463430d9217d3866e9e615afe98e56f6aee7e22731e0",
+      "interactive_runtime_sha256": "f92c6f47ff328ceb3cee4501d72105e52baa7a605e8b92323c832ab3fc8b93c6",
+      "interactive_stream_sha256": "acc9e908e0d7aa99efcc70cbd2cd108a6045ae66035ce54819db23abebb07394",
+      "mcp_activity_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+      "pagination_input_sha256": "b2e31de5399dd8bf8bf83a37ff4f20d0b9201de1a82fd5c6d7736326d775db91",
+      "slots_page_sha256": "0f6116af8b56ad74295c1637f88dd6a857b80a3855e1f61dfef3558f48dc158b"
+    },
+    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-007",
+    "host_build_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+    "manifest_file": "/home/wan/Projects/openditoo-research/.openditoo-local/worktrees/high-fps-interactive-pages/experiments/DAY1-INTERACTIVE-HF3-007.json",
+    "manifest_sha256": "c794e8553ea7ecac9c5f19cf2fc5ccc98e66660ca0fcdceeda7538c98f22037a",
+    "outcome": "stopped_clean",
+    "state": "finished",
+    "terminal_reason": "lifetime_expired"
+  },
+  "result": {
+    "terminal_reason": "lifetime_expired",
+    "outcome": "stopped_clean",
+    "elapsed_ms": 180060,
+    "completed_profile_cycles": 0
+  },
+  "budget": {
+    "child_attempts": 1,
+    "child_opens": 1,
+    "frames_acked": 3,
+    "tx_bytes_acked": 576
+  },
+  "host_ledger": [
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T21:07:46.9217278+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-007-S001",
+      "sessionId": "59e51539d490",
+      "detail": {
+        "lifetimeSeconds": 180,
+        "minIntervalMs": 40,
+        "frameBudget": 1500,
+        "txByteBudget": 1581000,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T21:10:46.9281567+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-007-S001",
+      "sessionId": "59e51539d490",
+      "detail": {
+        "reason": "lifetime_expired",
+        "outcome": "stopped_clean",
+        "detail": "",
+        "framesSent": 3,
+        "packetsSent": 9,
+        "txBytesSent": 576,
+        "displayState": "ours_last_acked"
+      }
+    }
+  ],
+  "probe_events": "probe_started only (SMTC acquired, mirror); 0 SMTC events in 180 s",
+  "operator_assist_log": [
+    {
+      "event": "runner_seen",
+      "pid": 1790567,
+      "at_utc": "2026-09-10T21:07:46.557296Z"
+    },
+    {
+      "event": "go_popup",
+      "hf3_opens": 1,
+      "at_utc": "2026-09-10T21:07:47.034984Z"
+    },
+    {
+      "event": "runner_exited_before_final",
+      "at_utc": "2026-09-10T21:10:47.034593Z"
+    }
+  ],
+  "owner_report": "Didn't press / missed GO; afterwards RIGHT paged correctly under Runtime 007",
+  "finding": "second id spent on operator start timing (after HF3-001). HF3-008 claims nothing until the first physical press; no press in 120 s -> no claim, grant unconsumed.",
+  "verdict": {
+    "transport": "CLEAN",
+    "acceptance": "NOT EXERCISED - 0 presses",
+    "replay": "FORBIDDEN"
+  }
+}

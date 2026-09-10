@@ -105,4 +105,8 @@ It ended when the Host watchdog caught a lever `0xBD` between frames: the next s
 - The envelope is re-sized from the observed pace (~13 s and ~2.9 sessions per cycle): 180 s / 48 sessions / 1500 frames.
 - It needs `Grant OPENDITOO-INTERACTIVE-HF3-007`.
 
+## HF3-007 — 0 presses (missed GO); HF3-008 starts on the owner's first press
+
+HF3-007 was transport-clean (1 session, 3 frames, `lifetime_expired`), but the owner missed the GO popup, so the probe saw 0 presses. SMTC was verified healthy afterwards. This is the second id spent on start timing. **HF3-008** therefore suspends the dashboard, starts the probe, shows a 60 s topmost READY popup and waits. The owner's **first press starts the run**: the press is buffered and applied, and only then is the outer claim taken (after a second Host idle check). No press within 120 s means it exits with **no claim**: the grant stays unconsumed and the dashboard is restored. Everything else is HF3-007's code and envelope (180 s / 48 / 1500). 44/44 tests. Needs `Grant OPENDITOO-INTERACTIVE-HF3-008`.
+
 WSL trap: this worktree's `.git` link pointed at the WSL_MCP mount (`/run/wsl-mcp/workspace`). `git worktree repair` from the main checkout fixes it.

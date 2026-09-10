@@ -37,10 +37,10 @@ def log(**kw):
     print(json.dumps(kw), flush=True)
 
 
-def popup(text: str) -> None:
-    # 64 = information icon, 4096 = system-modal (topmost); auto-dismiss after 6 s.
+def popup(text: str, seconds: int = 6) -> None:
+    # 64 = information icon, 4096 = system-modal (topmost); auto-dismiss after `seconds`.
     subprocess.Popen(["powershell.exe", "-NoProfile", "-Command",
-                      f"(New-Object -ComObject WScript.Shell).Popup('{text}', 6, 'OpenDitoo HF-3', 4160) | Out-Null"],
+                      f"(New-Object -ComObject WScript.Shell).Popup('{text}', {seconds}, 'OpenDitoo HF-3', 4160) | Out-Null"],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
@@ -76,16 +76,20 @@ def main() -> int:
         time.sleep(0.1)
     log(event="runner_seen", pid=runner_pid())
     go = None
+    ready_shown = False
     while True:
         if runner_pid() is None:
             log(event="runner_exited_before_final")
             return 0
         opens = sum(1 for r in rows(ledger)
                     if r.get("kind") == "open" and str(r.get("experimentId", "")).startswith(PREFIX))
-        if go is None and opens:
+        if not ready_shown and any(r.get("type") == "probe_started" for r in rows(EVENTS)):
+            ready_shown = True
+            popup("READY - press RIGHT on the Ditoo to start (nothing is used until you do)", 60)
+            log(event="ready_popup")
+        if go is None and opens:  # the owner's first press started the run
             go = time.monotonic()
-            popup("GO - press RIGHT on the Ditoo now")
-            log(event="go_popup", hf3_opens=opens)
+            log(event="run_started", hf3_opens=opens)
         if go is not None:
             nav = [r for r in rows(EVENTS) if r.get("source") == "smtc" and r.get("raw_button") in ("Next", "Previous")]
             lefts = sum(1 for r in nav if r["raw_button"] == "Previous")

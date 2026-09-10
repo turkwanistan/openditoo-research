@@ -96,7 +96,7 @@ def manifest(tmp: Path | None = None, *, max_sessions=28, max_frames=500, lifeti
              streaming_child=120):
     path = (tmp or Path(".")) / "HF3.json"
     return AcceptanceManifest(
-        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-007",
+        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-008",
         lifetime_seconds=lifetime, max_child_sessions=max_sessions,
         max_frames=max_frames,
         max_tx_bytes=max_frames * frame_stream.worst_case_frame_tx_bytes(),
@@ -125,7 +125,7 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         m = manifest()
         high = child_manifest(m, 7, RATE_STREAMING, 500, m.max_tx_bytes, 90)
         low = child_manifest(m, 8, RATE_ACTIVITY, 500, m.max_tx_bytes, 90)
-        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-007-S007")
+        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-008-S007")
         self.assertEqual(high.max_frames, 120)
         self.assertEqual(high.raw["stream"]["session_profile"], RATE_STREAMING)
         self.assertEqual(low.max_frames, 20)
@@ -327,6 +327,15 @@ if __name__ == "__main__":
     unittest.main()
 
 class LiveCoordinatorStaticBoundaryTests(unittest.TestCase):
+    def test_nothing_is_claimed_before_the_operator_start_press(self):
+        source = (Path(__file__).resolve().parents[1] / "scripts/interactive_hf3.py").read_text()
+        live = source[source.index("def live_run()") : source.index("def main()")]
+        wait = live.index("HF3_WAITING_FOR_OPERATOR_START")
+        self.assertLess(wait, live.index("HF3_NO_OPERATOR_START_NO_CLAIM"))
+        self.assertLess(live.index("HF3_NO_OPERATOR_START_NO_CLAIM"), live.index("claim = hf3.claim_outer"))
+        self.assertLess(live.rindex("host_idle_status(token)"), live.index("claim = hf3.claim_outer"))
+        self.assertLess(wait, live.rindex("host_idle_status(token)"))
+
     def test_outer_claim_is_after_final_host_idle_check(self):
         source = (Path(__file__).resolve().parents[1] / "scripts/interactive_hf3.py").read_text()
         live = source[source.index("def live_run()") : source.index("def main()")]

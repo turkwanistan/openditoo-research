@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze OPENDITOO-INTERACTIVE-HF3-007 to an unauthorized, reviewable manifest.
+"""Freeze OPENDITOO-INTERACTIVE-HF3-008 to an unauthorized, reviewable manifest.
 
 Zero device I/O, zero Host-session I/O and no claim. In environments where /mnt/c is not
 visible (notably WSL_MCP's sandbox), the accepted Runtime 006 ButtonProbe hashes are inherited
@@ -19,8 +19,8 @@ if str(ROOT) not in sys.path:
 
 from host import activity_session, frame_stream, interactive_acceptance as hf3
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-007.json"
-EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-007-PREPARATION-2026-09-10.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-008.json"
+EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-008-PREPARATION-2026-09-10.json"
 R006 = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json"
 
 
@@ -91,7 +91,11 @@ def main() -> int:
             {"experiment_id": "OPENDITOO-INTERACTIVE-HF3-006",
              "state": "consumed/unknown at 73 s after 5 full cycles, 15 clean reclaims, 16/16 first frames and owner visual 'looked great': a watchdog-detected lever yield surfaced as 409 SESSION_NOT_ACTIVE, not yet accepted as a confirmed yield",
              "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-006-LIVE-2026-09-10.json"},
+            {"experiment_id": "OPENDITOO-INTERACTIVE-HF3-007",
+             "state": "consumed, transport clean (1 session, 3 frames, lifetime_expired/stopped_clean) but 0 presses: owner missed the GO popup; SMTC path verified healthy afterwards",
+             "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-007-LIVE-2026-09-10.json"},
         ],
+        "operator_start": "HF3-008 consumes the outer claim only after the owner's first physical press (buffered and applied in-session); no press within 120 s exits with no claim, no Host session and the grant unconsumed.",
         "client_changes": "host/interactive_stream.InteractiveTransport: 50 ms client dispatch floor over the 40 ms Host floor (W8/W10-proven margin) PLUS a Host-anchored >=45 ms gap after the Host's own previous frame start (webcam policy 005 rule), and the W10 Studio's Host-confirmed stock-yield rule for a 409 SESSION_CANVAS_INVALIDATED on a send (0xBD mid-frame).",
         "host_change": "Runtime 007 Host 3faf520f...: every session's first frame uses the proven 10 ms packet spacing (later frames 0 ms). Note: the Host ledger's open record still reports the profile spacing (sendSpacingMs 0); the first-frame exception is in ActivitySessionHost.SendFrame. HF3-004 is also the first on-device evidence for that fix.",
         "design_change": "Single streaming_ack_clock Host session per run: PageCarousel owns Dashboard (held to its ~200 ms low-rate cadence) and Slots; Left/Right change pixels only and never close the session. Remaining session boundaries are device-ended 0xBD/0x09 canvas yields (BTN-7: reopen clean in 46-69 ms) and none planned for rollover (child lifetime/frames = outer envelope).",
@@ -145,7 +149,7 @@ def main() -> int:
             "long_lever_holds_mapped": False,
             "manual_choreography": [
                 "Start from a healthy Runtime 006 dashboard; coordinator suspends it and verifies Host idle.",
-                "scripts/hf3_operator_assist.py (no Ditoo/Host I/O) shows a topmost Windows GO popup when the first HF-3 child opens; no audio cue, because the Ditoo is also a Windows audio endpoint.",
+                "scripts/hf3_operator_assist.py (no Ditoo/Host I/O) shows a topmost READY popup once the probe is up; nothing is claimed until the owner's first press starts the run; no audio cue, because the Ditoo is also a Windows audio endpoint.",
                 "HF-3 opens ONE streaming session showing the Dashboard; Right selects Slots in the same session.",
                 "Confirm three reels spin; three short lever pulls stop reel 1, then 2, then 3.",
                 "One more short lever starts a new round.",

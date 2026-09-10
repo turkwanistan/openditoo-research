@@ -30,7 +30,10 @@ from host.interactive_pages import BufferedButtonEvents, PageCarousel, RATE_ACTI
 from host.pagination import Broker, ButtonEvents
 from host.slots_page import SlotsPage
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-007.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-008.json"
+# HF3-001 and HF3-007 each spent a one-use id with zero presses. Consume nothing until the owner's
+# first physical press; no press in this window -> exit with no claim and the grant unconsumed.
+OPERATOR_START_TIMEOUT_S = 120
 LOCAL = ROOT / ".openditoo-local/hf3"
 
 
@@ -282,6 +285,17 @@ def live_run() -> dict:
 
     source = ButtonEvents(events_file)
     mailbox = BufferedButtonEvents(source)
+    print("HF3_WAITING_FOR_OPERATOR_START press RIGHT on the Ditoo", file=sys.stderr, flush=True)
+    start_deadline = time.monotonic() + OPERATOR_START_TIMEOUT_S
+    while not mailbox.pending_count:  # the first press stays buffered and is applied in-session
+        mailbox.fill()
+        if mailbox.pending_count:
+            break
+        if time.monotonic() > start_deadline or not broker.alive:
+            broker.stop()
+            raise RuntimeError("HF3_NO_OPERATOR_START_NO_CLAIM")
+        time.sleep(0.05)
+    host_idle_status(token)  # re-check right before the irreversible claim (the wait took time)
     dashboard = DashboardPage(config, state,
                               renderer=LightningActivityRenderer(config, state, state_path=state_path))
     slots = SlotsPage()
