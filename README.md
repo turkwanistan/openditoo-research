@@ -4,7 +4,7 @@ Preservation-first reverse-engineering workspace for the Divoom Ditoo Plus.
 
 ## Project state
 
-Start with [`START_HERE.md`](START_HERE.md). The everyday MCP Dashboard v1 operating guide is [`PRODUCT.md`](PRODUCT.md), with the accepted baseline/release closure under `notes/`. Use [`PROJECT_STATE.md`](PROJECT_STATE.md) as the comprehensive static/reconnaissance evidence base when deeper preservation research is actually needed.
+Start with [`START_HERE.md`](START_HERE.md). The current implementation objective is physical AVRCP button reception and two-page pagination; the active executor handoff is `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md`, backed by `notes/OPENDITOO-BUTTON-AVRCP-RESEARCH-2026-09-10.md` and `notes/OPENDITOO-BUTTON-AVRCP-PAGINATION-PLAN-2026-09-10.md`. The everyday MCP Dashboard v1 operating guide is [`PRODUCT.md`](PRODUCT.md), with the accepted baseline/release closure under `notes/`. Use [`PROJECT_STATE.md`](PROJECT_STATE.md) as the comprehensive evidence base when deeper preservation research is actually needed.
 
 ## Artifact preservation
 

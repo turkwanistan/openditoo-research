@@ -4,9 +4,13 @@ OpenDitoo is a preservation-first reverse-engineering project for the owner's Di
 
 ## Current objective
 
-Day-1 application-first portability M0-M5 is complete through the first visible custom 16x16 frame. Current objective is bounded productization of that proven primitive:
+Day-1 application-first portability, MCP Dashboard v1, the R1-R5 rate ladder, general frame streaming, and W10 webcam productization are complete through the accepted Runtime 005 / webcam-product-004 baseline. The owner-selected current objective is **physical button navigation over Bluetooth**, followed by the smallest two-page pagination proof:
 
-`exact 16x16 PNG -> deterministic RGB888 decode -> stock-derived image encoder -> authenticated fixed-target Host -> Ditoo`
+`Ditoo left/right/lever -> AVRCP -> Windows receive-only ButtonProbe/ButtonBroker -> typed OpenDitoo input -> page router -> existing typed display session`
+
+The preserved exact-unit M7 HCI capture has been re-analysed as containing left/right/lever AVRCP pass-through events on AVCTP PSM `0x0017`: left=`0x4C` Previous, right=`0x4B` Next, lever=`0x44` Play plus near-simultaneous proprietary RFCOMM `0xBD`. The immediate implementation route is `notes/OPENDITOO-BUTTON-AVRCP-PAGINATION-PLAN-2026-09-10.md`; the current handoff is `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md`.
+
+For the initial proof, do **not** modify the Runtime 005 Host, open a second RFCOMM controller, weaken the canvas-invalidation fence, or pursue firmware/MassBoot/teardown. Build the Windows input receiver side-by-side and receive-only. First pagination uses the arrows only; the lever becomes a product action only after its simultaneous `0xBD` interaction with the existing Host is measured.
 
 The older MassBoot/update research remains preserved but is not the current execution priority.
 

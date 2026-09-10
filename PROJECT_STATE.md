@@ -1,4 +1,26 @@
 
+## 2026-09-10 current product/input update — AVRCP pagination route ACTIVE
+
+W10 webcam productization is closed. The accepted everyday baseline is MCP Dashboard Runtime 005 plus separately granted on-demand webcam policy `OPENDITOO-WEBCAM-PRODUCT-004`; current routing and authority details live in `START_HERE.md` and the current handoff.
+A concurrent 2026-09-10 fix (`24d0b70`) root-caused recurring Host outages to the visible task-started terminal being closable and prepared a `conhost.exe --headless` task switch. Applying that task change requires elevated PowerShell and is not assumed complete; preserve it independently of the button route.
+
+The owner-selected next objective is physical button navigation. Re-analysis of the already-preserved exact-unit M7 Android HCI capture supersedes the old whole-device conclusion that left/right/lever were Bluetooth-silent: the proprietary RFCOMM parser missed a separate AVCTP/AVRCP channel on PSM `0x0017`. Exact-unit controlled-sequence evidence is now classified as Left=`0x4C` Previous, Right=`0x4B` Next, repeated Left=`0x4C`, and Lever=`0x44` Play plus near-simultaneous proprietary RFCOMM `0xBD`. M remains bounded negative evidence only in the measured context. Historical M7 capture artifacts remain immutable; BTN-0 must reproduce this as a new derived artifact with repository code.
+
+Current implementation route:
+
+`preserved HCI AVRCP reproduction -> receive-only Windows ButtonProbe -> exact Windows physical receive proof -> typed ButtonBroker -> side-by-side page router -> Dashboard -> Right -> animation -> Left -> live Dashboard`
+
+The initial receiver must not modify the Runtime 005 Host, open a second RFCOMM controller, weaken the current canvas-invalidation fence, or pursue firmware/MassBoot/teardown. First physical pagination uses arrows only. Lever product semantics wait until the interaction between AVRCP and its simultaneous RFCOMM `0xBD` report is physically characterized under the Windows product context.
+
+Authoritative current files:
+
+- `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md`
+- `notes/OPENDITOO-BUTTON-AVRCP-RESEARCH-2026-09-10.md`
+- `notes/OPENDITOO-BUTTON-AVRCP-PAGINATION-PLAN-2026-09-10.md`
+- prior accepted baseline: `notes/OPENDITOO-HANDOFF-2026-09-10-W10.md`
+
+Everything below remains evidence/history and is superseded wherever it states an older current objective or the pre-AVRCP M7 product conclusion.
+
 ## 2026-09-08 M5 first custom frame — PASS
 
 The exact purchased Ditoo Plus successfully rendered the frozen custom diagnostic 16×16 frame over Windows-owned RFCOMM channel 1. The successful attempt sent the exact three-packet stock-derived sequence once, received wrapped `0x44` ACK payload `0x12`, closed cleanly, and visibly rendered the expected colored diagnostic marks. M5 authority is consumed and the one-shot runner is disarmed. This establishes a proven runtime image-control primitive suitable for bounded productization into typed PNG/image tooling; it does not by itself prove persistence across power cycle.
@@ -6,20 +28,19 @@ The exact purchased Ditoo Plus successfully rendered the frozen custom diagnosti
 # OpenDitoo Research — Canonical Project State
 
 **Target:** Divoom Ditoo Plus (pink purchased unit)  
-**State date:** 2026-09-08
-**Phase:** Day-1 M0-M5 complete; first custom frame PASS; typed 16×16 PNG runtime implementation in validation/deployment.
+**State date:** 2026-09-10
+**Phase:** W10 product baseline accepted; AVRCP physical-control reception and two-page pagination route active.
 **Safety posture:** preservation-first. No flashing, arbitrary proprietary writes, guessed service-mode entry, electrical probing, soldering, or destructive teardown has been authorized or performed.
 
 This file is the human-readable synthesis of the static/reconnaissance base and the
 2026-09-08 Day-1 execution. It supersedes ad-hoc chat summaries but does not replace raw
 evidence, hashes, or provenance under `artifacts/`.
 
-**Routing, 2026-09-09 (N1):** for *current* state read `START_HERE.md`,
-`notes/OPENDITOO-HANDOFF-2026-09-09.md` and `OPENDITOO-FORWARD-ROADMAP-2026-09-09.md`.
-M0-M8 are complete; the current sequence is N1-N5. Everything below dated 2026-09-08 or
-earlier — including the MassBoot/update/service-mode reconstruction research and its
-ranked priorities — is retained as **historical** research, not as an open backlog, and
-must not be restarted merely because those static paths exist.
+**Routing, 2026-09-10:** for current state read `START_HERE.md`, then
+`notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md`, the AVRCP research addendum and the pagination plan.
+The 2026-09-09 roadmap and earlier handoffs are historical context. Everything below that presents an older
+"current objective" — including MassBoot/update/service-mode priorities and the original RFCOMM-only M7
+navigation conclusion — is retained as history and must not override the current route.
 
 ## 0. 2026-09-08 Day-1 application-first execution update
 

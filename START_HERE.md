@@ -4,20 +4,19 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## Current session route — 2026-09-10
 
-**Owner-selected next objective (2026-09-10): physical button navigation / pagination.** After the W10 handoff baseline below, read `notes/OPENDITOO-BUTTON-AVRCP-PAGINATION-PLAN-2026-09-10.md`. The preserved M7 HCI capture has been re-analysed as containing left/right/lever AVRCP events on AVCTP PSM `0x0017`; the immediate route is offline AVRCP reproduction -> receive-only Windows ButtonProbe -> exact Windows physical proof -> two-page Dashboard <-> animation pagination. Do not modify the Runtime 005 Host or pursue firmware/MassBoot for these controls.
+**Current handoff / owner-selected objective (2026-09-10): physical button navigation + pagination.** Read `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md` first, then `notes/OPENDITOO-BUTTON-AVRCP-RESEARCH-2026-09-10.md` and `notes/OPENDITOO-BUTTON-AVRCP-PAGINATION-PLAN-2026-09-10.md`. The preserved M7 HCI capture has been re-analysed as containing left/right/lever AVRCP events on AVCTP PSM `0x0017`; the immediate route is offline AVRCP reproduction -> receive-only Windows ButtonProbe -> exact Windows physical proof -> two-page Dashboard <-> animation pagination. Do not modify the Runtime 005 Host or pursue firmware/MassBoot for these controls. The W10 material below is the accepted prior product baseline, not the active objective.
 
-0. **Read `notes/OPENDITOO-HANDOFF-2026-09-10-W10.md` first** — W10 is CLOSED: on-demand webcam (desktop shortcut,
+0. **Prior accepted product baseline:** after the current button handoff/plan, use `notes/OPENDITOO-HANDOFF-2026-09-10-W10.md` selectively — W10 is CLOSED: on-demand webcam (desktop shortcut,
    policy `OPENDITOO-WEBCAM-PRODUCT-004`) and dashboard Runtime 005 are live. The W9 handoff below is history.
    Previous: `notes/OPENDITOO-HANDOFF-2026-09-10-W9.md`. W8 is closed PASS and
    W9A is done offline. **W9B is DEFERRED by owner decision (2026-09-10)** — do not re-propose, re-prepare
    or execute it; 007 stays prepared, grant-ready and unauthorized so revival costs one grant. Panel refresh
    and visible unique-frame cadence are therefore **UNMEASURED and stay that way** — never describe
    16.285 fps as what the panel does. Post-v1 >18.46 fps research stays closed by default, since its gate
-   was W9B. **Current objective: W10 productization** — read `notes/OPENDITOO-W10-PLAN-2026-09-10.md` next:
+   was W9B. **W10 productization is closed** — use `notes/OPENDITOO-W10-PLAN-2026-09-10.md` only as prior accepted implementation evidence:
    W10A (Studio app) and W10B (live W10-001 + W10-002) are **closed PASS**; W10-001/002 are consumed. W10C
    on-demand webcam (desktop shortcut → Studio → dashboard restored on close) moved to **one connection per launch**: 001 (granted, then revoked) hit IMAGE_RX_RECV_TIMEOUT on its 4th
-   session reopen. **Runtime 004 is live** (Host `4a735bab…` with a separate 1800 s / 45000-frame streaming ceiling;
-   dashboard numbers unchanged; granted 2026-09-10; rollback in `.openditoo-local/rollback-runtime-003/`).
+   session reopen. Runtime 004 was superseded by **Runtime 005**, whose Host is `f7bd60d4…` and whose dashboard numbers remain unchanged; rollback history is preserved under `.openditoo-local/rollback-runtime-004/` and `.openditoo-local/rollback-runtime-003/`.
    `OPENDITOO-WEBCAM-PRODUCT-004` (003 + Runtime 005 Host; live Look/Colours, Host-confirmed stock yield) is **GRANTED** (owner,
    2026-09-10) through the local mode-0600 policy only; 001–003 revoked. Desktop shortcut `OpenDitoo Webcam` is live. Revoke: `python3 host/webcam_studio.py policy-revoke`. See the W10 note. The W9 handoff lists the remaining lower-priority items.
    Then `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` for the earlier webcam handoff. Then
@@ -73,19 +72,20 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | Runtime 005 | **active** local product policy; Host `f7bd60d4…` (high-resolution pacing clock); connected, runtime_revision remains 2 |
 | P3 product evidence | closed for v1; normal MCP use accepted; forced healthy-Lab outage waived |
 | P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
+| BTN-0 AVRCP evidence reproduction | **current / not yet implemented**: reproduce Left/Right/Left/Lever from preserved M7 HCI bytes with repository code; no device I/O |
+| BTN-1 Windows ButtonProbe | next: receive-only SMTC/WM_APPCOMMAND diagnostic; no Ditoo send capability |
+| BTN-2 exact Windows physical receive proof | next after BTN-0/1: Left → Right → Left → Lever twice while Runtime 005 remains the display baseline |
+| BTN-3..5 pagination | gated on BTN-2: typed broker, offline two-page router, then physical Dashboard → Right → animation → Left → Dashboard acceptance |
 
 ### Authority state
 
-Activations 001–009, R1–R5, S1 and S2 are consumed. No experimental one-shot transmission is live. Runtime 003 authority remains active only in the git-ignored mode-0600 `.openditoo-local/product-runtime-policy.json`; product status reports no authority blockers.
+Activations 001–009, R1–R5, S1 and S2 are consumed. No experimental one-shot transmission is live. The active MCP dashboard authority is the local git-ignored Runtime 005 policy (`OPENDITOO-PRODUCT-RUNTIME-005`); committed product templates remain unauthorized. The separately granted local webcam policy is `OPENDITOO-WEBCAM-PRODUCT-004`; it does not widen the dashboard policy. Neither existing product grant authorizes a new pagination/display behavior or new Bluetooth control surface.
 
-All committed product templates remain unauthorized. Runtime 003 covers the MCP dashboard only.
-Webcam transmission is covered only by the separately granted local W10C policy
-(`OPENDITOO-WEBCAM-PRODUCT-001`, owner-launched, bounded sessions, no retry) or by a fresh reviewed
-manifest and named grant; neither widens Runtime 003.
-The historical Runtime 002 cutover used `Grant OPENDITOO-PRODUCT-RUNTIME-002`; that revision
-is superseded, and its grant must not be reused for the webcam.
+BTN-0/BTN-1 are offline/receive-only preparation. Any later live pagination/display successor must follow `AGENTS.md` with a fresh reviewed policy/manifest and explicit named owner grant.
 
-### Current objective — W10 productization (W9B parked, optional)
+Historical authority bookkeeping remains preserved for verification: the superseded Runtime 002 cutover used the exact grant string `Grant OPENDITOO-PRODUCT-RUNTIME-002`. That historical grant does not authorize Runtime 005, webcam 004, or any button/pagination successor.
+
+### Prior objective — W10 productization (CLOSED; W9B parked)
 
 The MCP dashboard is already the owner's working everyday baseline. Do not reopen durability, firmware, MassBoot, ACK decoding, command enumeration, or speculative UI work as release blockers.
 

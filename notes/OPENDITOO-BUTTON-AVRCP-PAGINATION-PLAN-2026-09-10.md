@@ -1,8 +1,10 @@
 # OpenDitoo button/AVRCP + physical pagination implementation plan — 2026-09-10
 
-**Status:** PLANNED / no implementation or device I/O performed by this note.
+**Status:** ACTIVE IMPLEMENTATION ROUTE / planning and handoff prepared; no implementation or device I/O performed by this note.
 
 **Owner-selected immediate objective:** prove that the exact Ditoo Plus left arrow, right arrow, and lever can be received on Windows over Bluetooth while the existing OpenDitoo dashboard is operating; if that succeeds, use the arrows for the smallest possible physical two-page pagination proof: current MCP dashboard <-> one looping animation/GIF-derived page.
+
+**Research basis:** `notes/OPENDITOO-BUTTON-AVRCP-RESEARCH-2026-09-10.md`. **Current executor handoff:** `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md`.
 
 **Authority:** the live WSL repository and exact-unit evidence outrank this note. No firmware flashing, MassBoot, teardown, raw Bluetooth send, target override, or proprietary protocol exploration is part of this route.
 
