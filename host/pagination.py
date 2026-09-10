@@ -1,4 +1,5 @@
-"""Runtime 006: standing physical-button pagination over the accepted Runtime 005 supervisor.
+"""Runtime 007 (= Runtime 006 re-bound to the first-frame-spacing Host): standing physical-button
+pagination over the accepted Runtime 005 supervisor.
 
 Pages are a wrap-around list; Left/Right move, a short lever pull runs the current page's
 own action. Page 0 is the unchanged live MCP dashboard renderer; the other pages are small
@@ -35,10 +36,12 @@ from host.product_runtime_v2 import ProductPolicyError, read_runtime_state  # no
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_REVISION = 3
 EXACT_UNIT_ID = activity_session.EXACT_UNIT_ID
-TEMPLATE = ROOT / "product" / "OPENDITOO-PRODUCT-RUNTIME-006.json"
+TEMPLATE = ROOT / "product" / "OPENDITOO-PRODUCT-RUNTIME-007.json"
+# Runtime 007 is a Host re-bind only: pages, broker and probe must stay exactly Runtime 006's.
+R006_TEMPLATE = ROOT / "product" / "OPENDITOO-PRODUCT-RUNTIME-006.json"
 R005_TEMPLATE = ROOT / "product" / "OPENDITOO-PRODUCT-RUNTIME-005.json"
 PAGES_STATE_FILE = ROOT / ".openditoo-local" / "pagination-state.json"
-GRANT_TEXT = "Grant OPENDITOO-PRODUCT-RUNTIME-006"
+GRANT_TEXT = "Grant OPENDITOO-PRODUCT-RUNTIME-007"
 INPUT_TYPES = {"nav_left", "nav_right", "lever_candidate"}
 MAX_LINE_BYTES = 4096
 BROKER_RESTART_SECONDS = 5.0
@@ -325,6 +328,7 @@ def load_policy(path: Path, *, require_authority: bool = True, verify_hashes: bo
         raw = json.loads(Path(path).read_text(encoding="utf-8"))
         template = json.loads(TEMPLATE.read_text(encoding="utf-8"))
         r005 = json.loads(R005_TEMPLATE.read_text(encoding="utf-8"))
+        r006 = json.loads(R006_TEMPLATE.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ProductPolicyError("PRODUCT_POLICY_UNREADABLE", str(exc)) from exc
     _require(raw.get("runtime_revision") == RUNTIME_REVISION, "PRODUCT_RUNTIME_REVISION_MISMATCH")
@@ -332,6 +336,9 @@ def load_policy(path: Path, *, require_authority: bool = True, verify_hashes: bo
              "PRODUCT_POLICY_DRIFTED_FROM_TEMPLATE")
     for key in ("target", "session", "behavior", "product_id"):
         _require(raw[key] == r005[key], "PRODUCT_006_WIDENS_005_ENVELOPE", key)
+    _require(raw["pagination"] == r006["pagination"]
+             and raw["build"]["button_probe_sha256"] == r006["build"]["button_probe_sha256"],
+             "PRODUCT_007_CHANGES_MORE_THAN_THE_HOST")
     if require_authority:
         blockers = authority_blockers(path)
         _require(not blockers, blockers[0] if blockers else "")

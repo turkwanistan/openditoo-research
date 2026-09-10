@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # HF-3 one-use physical acceptance coordinator.
-# Requires the exact named grant already recorded in the manifest. It suspends Runtime 006,
+# Requires the exact named grant already recorded in the manifest. It suspends the dashboard runtime (Runtime 007),
 # gives the Host an 8 s handover settle, runs exactly one outer HF-3 claim, and restores the
-# existing Runtime 006 service on every exit path. The Python runner independently rechecks
+# existing the dashboard runtime (Runtime 007) service on every exit path. The Python runner independently rechecks
 # Host identity/idle before consuming the irreversible outer claim.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,13 +17,13 @@ cleanup(){
   rc=$?
   trap - EXIT INT TERM
   if [[ "$PRODUCT_WAS_ACTIVE" == true && "$PRODUCT_RESTORED" != true ]]; then
-    echo "HF3 restoring Runtime 006 dashboard..."
+    echo "HF3 restoring the dashboard runtime (Runtime 007) dashboard..."
     systemctl --user start "$SERVICE" || true
     for _ in $(seq 1 80); do
       state="$(systemctl --user is-active "$SERVICE" 2>/dev/null || true)"
       if [[ "$state" == active ]]; then
         PRODUCT_RESTORED=true
-        echo HF3_RUNTIME006_SERVICE_RESTORED
+        echo HF3_DASHBOARD_SERVICE_RESTORED
         break
       fi
       sleep 0.25
@@ -41,13 +41,13 @@ raise SystemExit(0 if r.get("status")=="connected" and r.get("last_error") is No
         sleep 0.5
       done
       if [[ "$connected" == true ]]; then
-        echo HF3_RUNTIME006_CONNECTED_RESTORED
+        echo HF3_DASHBOARD_CONNECTED_RESTORED
       else
-        echo HF3_RUNTIME006_CONNECTED_RESTORE_UNCONFIRMED >&2
+        echo HF3_DASHBOARD_CONNECTED_RESTORE_UNCONFIRMED >&2
         [[ "$rc" -ne 0 ]] || rc=3
       fi
     else
-      echo HF3_RUNTIME006_SERVICE_RESTORE_FAILED >&2
+      echo HF3_DASHBOARD_SERVICE_RESTORE_FAILED >&2
       [[ "$rc" -ne 0 ]] || rc=3
     fi
   fi
@@ -77,16 +77,16 @@ fi
 
 state="$(systemctl --user is-active "$SERVICE" 2>/dev/null || true)"
 if [[ "$state" == active ]]; then PRODUCT_WAS_ACTIVE=true; fi
-[[ "$PRODUCT_WAS_ACTIVE" == true ]] || { echo "HF3_RUNTIME006_NOT_ACTIVE: refusing to change controller state" >&2; exit 2; }
+[[ "$PRODUCT_WAS_ACTIVE" == true ]] || { echo "HF3_DASHBOARD_NOT_ACTIVE: refusing to change controller state" >&2; exit 2; }
 
-echo "HF3 suspending Runtime 006..."
+echo "HF3 suspending the dashboard runtime (Runtime 007)..."
 systemctl --user stop "$SERVICE"
 for _ in $(seq 1 80); do
   state="$(systemctl --user is-active "$SERVICE" 2>/dev/null || true)"
   [[ "$state" == inactive ]] && break
   sleep 0.25
 done
-[[ "$state" == inactive ]] || { echo "HF3_RUNTIME006_STOP_FAILED state=$state" >&2; exit 2; }
+[[ "$state" == inactive ]] || { echo "HF3_DASHBOARD_STOP_FAILED state=$state" >&2; exit 2; }
 
 echo "HF3 handover settle: 8 s"
 sleep 8

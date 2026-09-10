@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """HF-3 review/dry-run/grant/live entrypoint. Live mode assumes the shell coordinator has
-already suspended Runtime 006 and verified the Host idle; it independently rechecks Host identity
+already suspended the dashboard runtime (Runtime 007) and verified the Host idle; it independently rechecks Host identity
 and consumes the outer claim before the first child session.
 """
 from __future__ import annotations
@@ -30,7 +30,7 @@ from host.interactive_pages import BufferedButtonEvents, PageCarousel, RATE_ACTI
 from host.pagination import Broker, ButtonEvents
 from host.slots_page import SlotsPage
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-003.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-004.json"
 LOCAL = ROOT / ".openditoo-local/hf3"
 
 

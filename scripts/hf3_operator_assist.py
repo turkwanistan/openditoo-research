@@ -7,7 +7,7 @@ call. Start it before scripts/run_interactive_hf3.sh.
 - FINAL popup when the operator lands on Dashboard and another full cycle cannot fit (target
   cycles done, child-attempt headroom < 5, or the soft end of the lifetime); then one read-only
   WSL_MCP run_command (-> genuine wsl_mcp audit event -> lightning), then SIGINT to the runner so
-  it ends as operator_stop and the coordinator restores Runtime 006.
+  it ends as operator_stop and the coordinator restores the dashboard runtime (Runtime 007).
 Popups, not sounds: the Ditoo is itself a Windows audio endpoint.
 """
 from __future__ import annotations

@@ -96,7 +96,7 @@ def manifest(tmp: Path | None = None, *, max_sessions=28, max_frames=500, lifeti
              streaming_child=120):
     path = (tmp or Path(".")) / "HF3.json"
     return AcceptanceManifest(
-        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-002",
+        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-004",
         lifetime_seconds=lifetime, max_child_sessions=max_sessions,
         max_frames=max_frames,
         max_tx_bytes=max_frames * frame_stream.worst_case_frame_tx_bytes(),
@@ -125,7 +125,7 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         m = manifest()
         high = child_manifest(m, 7, RATE_STREAMING, 500, m.max_tx_bytes, 90)
         low = child_manifest(m, 8, RATE_ACTIVITY, 500, m.max_tx_bytes, 90)
-        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-002-S007")
+        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-004-S007")
         self.assertEqual(high.max_frames, 120)
         self.assertEqual(high.raw["stream"]["session_profile"], RATE_STREAMING)
         self.assertEqual(low.max_frames, 20)
@@ -264,7 +264,7 @@ class LiveCoordinatorStaticBoundaryTests(unittest.TestCase):
     def test_shell_refuses_before_stopping_runtime_when_not_execution_ready(self):
         source = (Path(__file__).resolve().parents[1] / "scripts/run_interactive_hf3.sh").read_text()
         self.assertLess(source.index("execution_ready"), source.index('systemctl --user stop "$SERVICE"'))
-        self.assertIn("HF3_RUNTIME006_CONNECTED_RESTORED", source)
+        self.assertIn("HF3_DASHBOARD_CONNECTED_RESTORED", source)
         self.assertIn("trap - EXIT INT TERM", source)
 
     def test_all_live_behavior_surfaces_are_hash_frozen(self):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze OPENDITOO-INTERACTIVE-HF3-003 to an unauthorized, reviewable manifest.
+"""Freeze OPENDITOO-INTERACTIVE-HF3-004 to an unauthorized, reviewable manifest.
 
 Zero device I/O, zero Host-session I/O and no claim. In environments where /mnt/c is not
 visible (notably WSL_MCP's sandbox), the accepted Runtime 006 ButtonProbe hashes are inherited
@@ -19,8 +19,8 @@ if str(ROOT) not in sys.path:
 
 from host import activity_session, frame_stream, interactive_acceptance as hf3
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-003.json"
-EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-003-PREPARATION-2026-09-10.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-004.json"
+EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-004-PREPARATION-2026-09-10.json"
 R006 = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json"
 
 
@@ -79,7 +79,11 @@ def main() -> int:
             {"experiment_id": "OPENDITOO-INTERACTIVE-HF3-002",
              "state": "consumed/unknown; first Right closed a 4.3 s-old activity child and the streaming child opened 29 ms later got IMAGE_RX_RECV_TIMEOUT; NO_RETRY on its first frame",
              "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-002-LIVE-2026-09-10.json"},
+            {"experiment_id": "OPENDITOO-INTERACTIVE-HF3-003",
+             "state": "grant withdrawn before any claim or device I/O: streaming first-frame IMAGE_RX_RECV_TIMEOUT (5/19 vs 0/199 activity) made ~21 streaming opens on the f7bd60d4 Host near-certain to fail",
+             "evidence": "captures/OPENDITOO-STREAMING-FIRST-FRAME-TIMEOUT-ANALYSIS-2026-09-10.json"},
         ],
+        "host_change": "Runtime 007 Host 3faf520f...: every session's first frame uses the proven 10 ms packet spacing (later frames 0 ms). Note: the Host ledger's open record still reports the profile spacing (sendSpacingMs 0); the first-frame exception is in ActivitySessionHost.SendFrame. HF3-004 is also the first on-device evidence for that fix.",
         "design_change": "Single streaming_ack_clock Host session per run: PageCarousel owns Dashboard (held to its ~200 ms low-rate cadence) and Slots; Left/Right change pixels only and never close the session. Remaining session boundaries are device-ended 0xBD/0x09 canvas yields (BTN-7: reopen clean in 46-69 ms) and none planned for rollover (child lifetime/frames = outer envelope).",
         "objective": "Prove the generic Dashboard <-> streaming_ack_clock page boundary with the three-reel slots app, including one-reel-per-lever behavior and ten complete high-rate profile cycles without retry after ambiguity.",
         "readiness": {

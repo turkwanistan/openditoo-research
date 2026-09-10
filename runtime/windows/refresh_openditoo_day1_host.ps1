@@ -77,7 +77,17 @@ try {
             if ($null -eq $owner) { break }
             Start-Sleep -Milliseconds 150
         } while ([DateTime]::UtcNow -lt $deadline)
-        if ($null -ne $owner) { throw "Port $Port remained owned by PID $owner after stopping only '$TaskName'; refusing process kill." }
+        if ($null -ne $owner) {
+            # Headless task (conhost --headless): stopping the task ends conhost only, orphaning the Host.
+            # Stop that one PID only if it IS the owned runtime exe; anything else is still refused.
+            $proc = Get-Process -Id $owner -ErrorAction SilentlyContinue
+            $ownedHost = $null -ne $proc -and $proc.Path -and
+                [System.IO.Path]::GetFullPath($proc.Path).Equals($expectedExecute, [StringComparison]::OrdinalIgnoreCase)
+            if (-not $ownedHost) { throw "Port $Port remained owned by PID $owner after stopping only '$TaskName'; not the owned runtime, refusing process kill." }
+            Stop-Process -Id $owner
+            if (-not $proc.WaitForExit(8000)) { throw "Owned Host PID $owner did not exit." }
+            Step 'ORPHANED_OWNED_HOST_STOPPED' $owner
+        }
 
         $updateStarted = $true
         Copy-Item -Path (Join-Path $Stage '*') -Destination $WindowsRoot -Recurse -Force

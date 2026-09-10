@@ -190,7 +190,13 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("Get-ScheduledTask -TaskName 'OpenTivoo Product Runtime'", src)
         self.assertIn("Stop-ScheduledTask -TaskName $TaskName", src)
         self.assertNotIn("Stop-ScheduledTask -TaskName 'OpenTivoo Product Runtime'", src)
-        self.assertNotIn("Stop-Process", src)
+        # Headless task orphans the Host on task stop: exactly one Stop-Process, by PID, only after the
+        # port owner's executable path is proven to be the owned runtime exe. Never by name.
+        self.assertEqual(src.count("Stop-Process"), 1)
+        self.assertIn("Stop-Process -Id $owner", src)
+        self.assertLess(src.index("$ownedHost = "), src.index("Stop-Process -Id $owner"))
+        self.assertIn("if (-not $ownedHost) { throw", src)
+        self.assertNotIn("Stop-Process -Name", src)
         self.assertIn("rawSendEnabled -ne $false", src)
         self.assertIn("PASS_TYPED_IMAGE", src)
         self.assertIn("$Backup", src)
@@ -1974,13 +1980,17 @@ class ProductRuntimeTests(unittest.TestCase):
 # The newest committed product template. Older revisions stay in the repository as records of
 # what was reviewed against a superseded Host build, and are deliberately NOT hash-valid any
 # more -- re-validating them would mean pretending an old policy still describes this binary.
-CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-005.json"
+CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-007.json"
+# The last revision-2 (product_runtime_v2) template: the v2 loader tests build their policies from
+# it, patching in this tree's code and Host hashes, since it no longer names the current Host.
+V2_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-005.json"
 
 
 class ProductRuntimeV2Tests(unittest.TestCase):
     def _policy_raw(self, authorized: bool = False) -> dict:
-        raw = json.loads(CURRENT_PRODUCT_TEMPLATE.read_text(encoding="utf-8"))
+        raw = json.loads(V2_PRODUCT_TEMPLATE.read_text(encoding="utf-8"))
         raw["build"]["code_sha256"] = product_runtime_v2.runtime_hashes()
+        raw["build"]["host_dll_sha256"] = activity_session.sha256_file(activity_session.HOST_BUILD_DLL)
         if authorized:
             scope = raw["authority"]["grant_scope_requested"]
             raw["authority"].update({
@@ -1998,11 +2008,11 @@ class ProductRuntimeV2Tests(unittest.TestCase):
 
     def test_the_current_committed_policy_is_disabled_and_hash_complete(self) -> None:
         path = CURRENT_PRODUCT_TEMPLATE
-        reviewed = product_runtime_v2.load_policy(path, require_authority=False)
+        reviewed = pagination.load_policy(path, require_authority=False)
         self.assertEqual(reviewed.product_id, product_runtime_v2.PRODUCT_ID)
-        self.assertIn("PRODUCT_AUTHORITY_MISSING", product_runtime_v2.authority_blockers(path))
+        self.assertIn("PRODUCT_AUTHORITY_MISSING", pagination.authority_blockers(path))
         with self.assertRaises(product_runtime_v2.ProductPolicyError) as blocked:
-            product_runtime_v2.load_policy(path, require_authority=True)
+            pagination.load_policy(path, require_authority=True)
         self.assertEqual(blocked.exception.code, "PRODUCT_AUTHORITY_MISSING")
 
     def test_observed_transport_reports_open_and_acks_without_changing_transport(self) -> None:
@@ -2090,10 +2100,10 @@ class ProductInstallationBoundaryTests(unittest.TestCase):
     def test_the_current_committed_template_is_disabled_and_hash_complete(self) -> None:
         path = CURRENT_PRODUCT_TEMPLATE
         raw = json.loads(path.read_text(encoding="utf-8"))
-        self.assertEqual(raw["runtime_revision"], 2)
+        self.assertEqual(raw["runtime_revision"], 3)
         self.assertFalse(raw["authority"]["persistent_runtime_authorized"])
         self.assertIsNone(raw["authority"]["grant_scope"])
-        reviewed = product_runtime_v2.load_policy(path, require_authority=False)
+        reviewed = pagination.load_policy(path, require_authority=False)
         self.assertTrue(reviewed.automatic_reconnect)
         self.assertTrue(reviewed.reclaim_on_canvas_invalidated)
 
@@ -2464,7 +2474,7 @@ class N3HostBoundaryTests(unittest.TestCase):
         # Spacing is resolved from the session's profile, which is a name the Host maps to
         # its own frozen constants. What must never appear is spacing as a caller argument.
         # A session's FIRST frame always uses the proven 10 ms spacing (first-frame
-        # IMAGE_RX_RECV_TIMEOUT: 5/19 streaming vs 0/195 activity opens); later frames use the profile's.
+        # IMAGE_RX_RECV_TIMEOUT: 5/19 streaming vs 0/199 activity opens); later frames use the profile's.
         self.assertIn("framesSent == 0 ? ActivitySendSpacingMs : SpacingFor(profile));", src)
         self.assertNotIn("SpacingFor(request", src)
 
@@ -3238,7 +3248,7 @@ class ProductRuntime003CutoverTests(unittest.TestCase):
         # Deliberately not hash-valid any more: an old policy must not be re-validatable
         # against a Host binary it never reviewed.
         for name in ("OPENDITOO-PRODUCT-RUNTIME-002.json", "OPENDITOO-PRODUCT-RUNTIME-003.json",
-                     "OPENDITOO-PRODUCT-RUNTIME-004.json"):
+                     "OPENDITOO-PRODUCT-RUNTIME-004.json", "OPENDITOO-PRODUCT-RUNTIME-005.json"):
             old = ROOT / "product" / name
             self.assertTrue(old.is_file(), "the superseded revision stays as a record")
             with self.assertRaises(product_runtime_v2.ProductPolicyError) as caught:
@@ -3254,7 +3264,7 @@ class ProductRuntime003CutoverTests(unittest.TestCase):
                          activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
 
     def test_the_product_policy_grants_no_streaming_authority(self) -> None:
-        raw = json.loads(CURRENT_PRODUCT_TEMPLATE.read_text(encoding="utf-8"))
+        raw = json.loads(V2_PRODUCT_TEMPLATE.read_text(encoding="utf-8"))
         scope = raw["authority"]["grant_scope_requested"]
         self.assertIn("streaming_ack_clock", scope)
         self.assertIn("own reviewed manifest", scope)
@@ -4813,8 +4823,7 @@ class PaginationTests(unittest.TestCase):
         self.assertFalse(broker.alive)
 
     def _policy(self) -> "pagination.StandingPolicy":
-        return pagination.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json",
-                                      require_authority=False, verify_hashes=False)
+        return pagination.load_policy(pagination.TEMPLATE, require_authority=False, verify_hashes=False)
 
     def test_page_survives_canvas_invalidation_through_runtime_005_supervisor(self) -> None:
         invalidated = activity_session.FakeSessionTransport(reports={2: [{"kind": "session_ended",
@@ -4870,8 +4879,69 @@ class PaginationTests(unittest.TestCase):
 
     @unittest.skipUnless(Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.dll").is_file(),
                          "the staged Windows ButtonProbe is only on the owner's machine")
-    def test_006_template_hashes_match_this_tree(self) -> None:
-        pagination.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json", require_authority=False)
+    def test_007_template_hashes_match_this_tree_and_006_is_a_superseded_record(self) -> None:
+        pagination.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-007.json", require_authority=False)
+        with self.assertRaises(product_runtime_v2.ProductPolicyError):
+            pagination.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json", require_authority=False)
+
+
+class HostFirstFrameRebindTests(unittest.TestCase):
+    """Runtime 007 / webcam 006: re-bind to the first-frame-spacing Host and nothing else."""
+
+    @staticmethod
+    def _load(name):
+        return json.loads((ROOT / "product" / name).read_text(encoding="utf-8"))
+
+    def test_runtime_007_is_runtime_006_plus_host_binding_only(self) -> None:
+        old, new = self._load("OPENDITOO-PRODUCT-RUNTIME-006.json"), self._load("OPENDITOO-PRODUCT-RUNTIME-007.json")
+        for key in ("target", "session", "behavior", "pagination", "product_id", "runtime_revision", "install"):
+            self.assertEqual(old[key], new[key], key)
+        self.assertEqual({k for k in old["build"]["code_sha256"]
+                          if old["build"]["code_sha256"][k] != new["build"]["code_sha256"][k]}, {"pagination_sha256"})
+        self.assertEqual(old["build"]["button_probe_sha256"], new["build"]["button_probe_sha256"])
+        self.assertNotEqual(old["build"]["host_dll_sha256"], new["build"]["host_dll_sha256"])
+        a = new["authority"]
+        self.assertEqual((a["policy_id"], a["required_grant_text"], a["supersedes"]),
+                         ("OPENDITOO-PRODUCT-RUNTIME-007", "Grant OPENDITOO-PRODUCT-RUNTIME-007",
+                          "OPENDITOO-PRODUCT-RUNTIME-006"))
+        self.assertFalse(a["persistent_runtime_authorized"])
+        self.assertIsNone(a["grant_text"])
+
+    def test_webcam_006_is_webcam_005_plus_host_and_studio_rebuild_only(self) -> None:
+        old, new = self._load("OPENDITOO-WEBCAM-PRODUCT-005.json"), self._load("OPENDITOO-WEBCAM-PRODUCT-006.json")
+        for key in ("target", "envelope", "behavior", "install"):
+            self.assertEqual(old[key], new[key], key)
+        self.assertEqual(old["adapter"]["windows_executable"], new["adapter"]["windows_executable"])
+        self.assertEqual(new["build"]["host_dll_sha256"],
+                         self._load("OPENDITOO-PRODUCT-RUNTIME-007.json")["build"]["host_dll_sha256"])
+        changed = {k for k in old["build"]["producer_code_sha256"]
+                   if old["build"]["producer_code_sha256"][k] != new["build"]["producer_code_sha256"].get(k)}
+        self.assertTrue(changed <= {
+            "host/webcam_studio.py",
+            "runtime/windows/OpenDitoo.Webcam.Studio/StudioTrial.cs",
+            "runtime/windows/OpenDitoo.Webcam.Studio/OpenDitoo.Webcam.Studio.csproj",
+        } | {k for k in changed if "/bin/Release/" in k}, changed)
+        self.assertFalse(new["authority"]["webcam_product_authorized"])
+        self.assertIsNone(new["authority"]["grant_text"])
+        self.assertEqual(new["authority"]["supersedes"], "OPENDITOO-WEBCAM-PRODUCT-005")
+
+    def test_host_and_studio_builds_are_path_independent(self) -> None:
+        for proj in ("OpenDitoo.Day1.Host/OpenDitoo.Day1.Host.csproj",
+                     "OpenDitoo.Webcam.Studio/OpenDitoo.Webcam.Studio.csproj"):
+            self.assertIn("<PathMap>", (ROOT / "runtime/windows" / proj).read_text(encoding="utf-8"), proj)
+
+    def test_cutover_007_needs_both_grants_saves_rollback_first_and_gates_before_restart(self) -> None:
+        shell = (ROOT / "scripts/cutover_runtime_007.sh").read_text(encoding="utf-8")
+        self.assertIn('"${1:-}" == "Grant OPENDITOO-PRODUCT-RUNTIME-007"', shell)
+        self.assertIn('"${2:-}" == "Grant OPENDITOO-WEBCAM-PRODUCT-006"', shell)
+        self.assertIn("--rollback", shell)
+        self.assertIn("git merge --ff-only", shell)
+        order = [shell.index(m) for m in ("R007_EXACT_WEBCAM_GRANT_REQUIRED", "R007_ROLLBACK_SAVED", "R007_HOST_IDLE",
+                                           "R007_MAIN_FAST_FORWARDED", "-Apply", "R007_HOST_DEPLOYED",
+                                           "R007_MAIN_OFFLINE_PASS", "start_and_confirm ||", "policy-grant")]
+        self.assertEqual(order, sorted(order))
+        self.assertNotIn("--force", shell)
+        self.assertNotIn("reset --hard", shell)
 
 
 class ButtonProbeStatusModeTests(unittest.TestCase):
