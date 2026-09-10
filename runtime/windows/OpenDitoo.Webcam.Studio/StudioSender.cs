@@ -61,6 +61,7 @@ internal static class StudioSender
         var dispatchIntervals = new Samples();
         var identity = new SourceIdentityLedger();
         long unchangedFrames = 0, duplicateSelections = 0, heartbeats = 0;
+        var yielded = false;
         byte[]? lastPixels = null;
         long lastSourceId = 0;
         double? previousDispatch = null;
@@ -83,7 +84,13 @@ internal static class StudioSender
                 if (now - lastContact >= heartbeatMs)
                 {
                     // A quiet scene is legitimate silence. Prove liveness without transmitting.
-                    if (!await Heartbeat(client, session.SessionId!)) { reason = "host_session_ended"; break; }
+                    if (!await Heartbeat(client, session.SessionId!))
+                    {
+                        // A button press during a quiet scene is noticed by the Host's idle observer.
+                        yielded = await HostConfirmsYield(client, trial.Id);
+                        (reason, outcome) = yielded ? ("canvas_invalidated", "stopped_yielded_to_stock") : ("host_session_ended", outcome);
+                        break;
+                    }
                     heartbeats++;
                     lastContact = WebcamFrames.NowMs;
                 }
@@ -129,11 +136,18 @@ internal static class StudioSender
         }
         catch (OperationCanceledException) when (stop.IsCancellationRequested)
         { reason = "operator_stop"; if (!session.OpenAttempted) outcome = "not_opened"; }
+        catch (IOException ex) when (ex.Message == "SESSION_CANVAS_INVALIDATED")
+        {
+            // A Ditoo button press: the Host has already ended the session and handed the screen back.
+            // Accepted as clean only on the Host's own record for THIS id; otherwise it stays unknown.
+            yielded = await HostConfirmsYield(client, trial.Id);
+            (reason, outcome) = yielded ? ("canvas_invalidated", "stopped_yielded_to_stock") : (ex.Message, "unknown");
+        }
         catch (Exception ex)
         { reason = ex.Message; outcome = session.OpenAttempted ? "unknown" : "not_opened"; }
         finally
         {
-            try { await session.Close(reason); }
+            try { if (!yielded) await session.Close(reason); }
             catch (Exception) { outcome = "unknown"; reason += ";close_unconfirmed"; }
         }
         var elapsedMs = WebcamFrames.NowMs - started;
@@ -153,14 +167,33 @@ internal static class StudioSender
         return JsonSerializer.SerializeToNode(result)!.AsObject();
     }
 
-    private static async Task<bool> Heartbeat(HttpClient client, string sessionId)
+    private static async Task<bool> HostConfirmsYield(HttpClient client, string experimentId)
+    {
+        try
+        {
+            var session = await HeartbeatSnapshot(client, "");
+            return session?["active"]?.GetValue<bool>() == false &&
+                   session["experimentId"]?.GetValue<string>() == experimentId &&
+                   session["terminalReason"]?.GetValue<string>() == "canvas_invalidated" &&
+                   session["terminalOutcome"]?.GetValue<string>() == "stopped_yielded_to_stock";
+        }
+        catch { return false; }
+    }
+
+    /// <summary>The Host's session snapshot. Refreshes liveness only when `sessionId` is the live one.</summary>
+    private static async Task<JsonNode?> HeartbeatSnapshot(HttpClient client, string sessionId)
     {
         using var response = await client.PostAsJsonAsync(TypedSession.Origin + "/v1/session/heartbeat", new { sessionId });
         await response.Content.LoadIntoBufferAsync(1024 * 1024);
         var body = JsonNode.Parse(await response.Content.ReadAsStringAsync());
         if (!response.IsSuccessStatusCode || body?["ok"]?.GetValue<bool>() != true)
             throw new IOException("HOST_HEARTBEAT_REFUSED");
-        return body["session"]?["active"]?.GetValue<bool>() == true &&
-               body["session"]?["sessionId"]?.GetValue<string>() == sessionId;
+        return body["session"];
+    }
+
+    private static async Task<bool> Heartbeat(HttpClient client, string sessionId)
+    {
+        var session = await HeartbeatSnapshot(client, sessionId);
+        return session?["active"]?.GetValue<bool>() == true && session["sessionId"]?.GetValue<string>() == sessionId;
     }
 }

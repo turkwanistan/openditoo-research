@@ -223,4 +223,14 @@ Owner: skip chasing FPS unless the gain is big (precise pacing would reach at mo
   new Studio revision is prepared and the webcam policy re-granted (batch with the stock-yield label fix).
 - Kept off `main` on purpose: editing Studio sources in the main checkout drifts the granted
   policy's hashes and would disable the working desktop shortcut.
-- The median cut is Studio-only; if a reduced palette goes live, add a Python mirror + shared fixture.
+- The median cut is Studio-only. No Python mirror is needed: the Studio preview renders the very bytes the
+  live sender transmits, so there is no offline-preview/device split to keep in parity.
+
+### Webcam policy 003 — looks switchable live, stock yield labelled correctly — 2026-09-10
+
+Owner: "i dont know which is my favorite without seeing it live on ditoo". The Studio window is the
+same in preview and live, so the Look/Colours pickers work mid-session. Also fixed: a Ditoo button
+press is recorded as `canvas_invalidated` / `stopped_yielded_to_stock` only when the Host's own
+session record for that exact id says so (otherwise `unknown`); covers both a refused frame and a
+yield noticed by the Host's idle observer during a quiet scene. Selftests: confirmed yield, and an
+unconfirmed one (record names another id) stays `unknown`. Envelope unchanged from 002.

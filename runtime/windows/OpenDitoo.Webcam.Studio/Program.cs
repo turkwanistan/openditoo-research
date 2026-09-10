@@ -195,7 +195,7 @@ static async Task<int> LivePolicy(string policyArgument, string rootArgument)
             return (new Trial(id, envelope.Seconds, envelope.MaxFrames, envelope.MaxBytes, envelope.IntervalMs), HostClient(token));
         }, result => Emit(new { kind = "session_result", experiment_id = result["experimentId"], result }));
         Emit(new { kind = "done", sessions = results.Count });
-        return results.All(r => r["outcome"]!.GetValue<string>() == "stopped_clean") ? 0 : 2;
+        return results.All(r => r["outcome"]!.GetValue<string>() is "stopped_clean" or "stopped_yielded_to_stock") ? 0 : 2;
     }
     catch (Exception ex)
     {

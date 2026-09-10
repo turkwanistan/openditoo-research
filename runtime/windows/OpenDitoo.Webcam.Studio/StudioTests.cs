@@ -10,17 +10,30 @@ namespace OpenDitoo.Webcam.Studio;
 internal static class StudioTests
 {
     /// <summary>Adds the heartbeat route in front of the frozen fake, which refuses unknown routes.</summary>
-    internal sealed class HeartbeatHandler(OfflineTests.FakeHandler inner, bool endSession = false) : DelegatingHandler(inner)
+    internal sealed class HeartbeatHandler(OfflineTests.FakeHandler inner, bool endSession = false,
+                                           int yieldAtFrame = 0, string yieldedId = "OFFLINE-W10") : DelegatingHandler(inner)
     {
-        internal int Heartbeats;
+        internal int Heartbeats, FrameCalls;
+        private bool yielded;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
-            if (request.RequestUri!.AbsolutePath != "/v1/session/heartbeat") return base.SendAsync(request, token);
-            Heartbeats++;
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new
+            var path = request.RequestUri!.AbsolutePath;
+            // Simulated Ditoo button press: the Host refuses the frame and ends the session itself.
+            if (path == "/v1/session/frame" && yieldAtFrame > 0 && ++FrameCalls == yieldAtFrame)
             {
-                ok = true, session = new { active = !endSession, sessionId = endSession ? null : "offline" },
-            }) });
+                yielded = true;
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Conflict) { Content = JsonContent.Create(new
+                { ok = false, errorCode = "SESSION_CANVAS_INVALIDATED" }) });
+            }
+            if (path == "/v1/session/close" && yielded) throw new IOException("SESSION_NOT_FOUND");
+            if (path != "/v1/session/heartbeat") return base.SendAsync(request, token);
+            Heartbeats++;
+            object session = yielded
+                ? new { active = false, experimentId = yieldedId, sessionId = (string?)null,
+                        terminalReason = "canvas_invalidated", terminalOutcome = "stopped_yielded_to_stock" }
+                : new { active = !endSession, experimentId = "OFFLINE-W10", sessionId = endSession ? null : "offline",
+                        terminalReason = (string?)null, terminalOutcome = (string?)null };
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { ok = true, session }) });
         }
     }
 
@@ -89,10 +102,11 @@ internal static class StudioTests
 
     private static async Task<(JsonObject Result, OfflineTests.FakeHandler Host, HeartbeatHandler Beat)> Session(
         string fault, ScriptedSource source, int intervalMs, int seconds, int maxFrames = 60,
-        int heartbeatMs = 10_000, CancellationToken stop = default, bool endSession = false)
+        int heartbeatMs = 10_000, CancellationToken stop = default, bool endSession = false,
+        int yieldAtFrame = 0, string yieldedId = "OFFLINE-W10")
     {
         var host = new OfflineTests.FakeHandler(fault);
-        var beat = new HeartbeatHandler(host, endSession);
+        var beat = new HeartbeatHandler(host, endSession, yieldAtFrame, yieldedId);
         var trial = new Trial("OFFLINE-W10", seconds, maxFrames, maxFrames * Trial.WorstCaseFrameTxBytes, intervalMs);
         var result = await StudioSender.Run(trial, source, new HttpClient(beat), stop, heartbeatMs: heartbeatMs);
         return (result, host, beat);
@@ -193,6 +207,16 @@ internal static class StudioTests
         // Host ended the session under us (lifetime/watchdog): the heartbeat notices and we stop.
         var (ended, _, _) = await Session("none", new ScriptedSource("static"), 50, 5, heartbeatMs: 300, endSession: true);
         Check("SENDER_HOST_SESSION_ENDED", Str(ended, "terminalReason").StartsWith("host_session_ended"));
+
+        // Ditoo button press: the Host's own record for this id says it yielded, so it is a clean yield.
+        var (yield, yieldHost, _) = await Session("none", new ScriptedSource("moving"), 100, 5, yieldAtFrame: 4);
+        Check("SENDER_STOCK_YIELD_CONFIRMED", Str(yield, "outcome") == "stopped_yielded_to_stock" &&
+            Str(yield, "terminalReason") == "canvas_invalidated" && yieldHost.Closes == 0,
+            $"outcome={Str(yield, "outcome")} reason={Str(yield, "terminalReason")}");
+        // Same refusal, but the Host record names another session: never assume, stay unknown.
+        var (other, _, _) = await Session("none", new ScriptedSource("moving"), 100, 5, yieldAtFrame: 4, yieldedId: "SOMETHING-ELSE");
+        Check("SENDER_STOCK_YIELD_UNCONFIRMED_IS_UNKNOWN", Str(other, "outcome") == "unknown",
+            $"outcome={Str(other, "outcome")} reason={Str(other, "terminalReason")}");
 
         // Frame budget ends the session cleanly.
         var (budget, budgetHost, _) = await Session("none", new ScriptedSource("moving"), 100, 5, maxFrames: 4);

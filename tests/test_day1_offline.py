@@ -4302,7 +4302,8 @@ for seq, reason in enumerate(script, 1):
     assert kind == "execute" and nonce == "%032x" % seq
     if reason == "die":
         sys.exit(3)
-    result = {"experimentId": experiment_id, "outcome": "stopped_clean", "terminalReason": reason,
+    outcome = "stopped_yielded_to_stock" if reason == "canvas_invalidated" else "stopped_clean"
+    result = {"experimentId": experiment_id, "outcome": outcome, "terminalReason": reason,
               "frames": 500, "packets": 1500, "bytes": 501200, "ackedTransportFps": 16.4}
     print(json.dumps({"kind": "session_result", "experiment_id": experiment_id, "result": result}), flush=True)
     if reason not in ("budget_exhausted", "lifetime_expired"):
@@ -4352,6 +4353,11 @@ print(json.dumps({"kind": "done"}), flush=True)
         self.assertEqual(len(summary["sessions"]), 1)
         self.assertEqual(len(claims), 1)
         self.assertEqual(summary["final"]["kind"], "done")
+
+    def test_host_confirmed_stock_yield_is_a_clean_launch_end(self) -> None:
+        summary, claims = self._run("canvas_invalidated")
+        self.assertEqual(summary["outcome"], "stopped_clean")
+        self.assertEqual([c["outcome"] for c in claims.values()], ["stopped_yielded_to_stock"])
 
     def test_studio_dying_mid_session_leaves_that_claim_unknown(self) -> None:
         summary, claims = self._run("budget_exhausted,die", max_sessions=60)

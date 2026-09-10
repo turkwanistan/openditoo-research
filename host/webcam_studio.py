@@ -147,8 +147,8 @@ def run(path: Path) -> dict:
 # one-use id claimed against the Studio's nonce. The next session starts only after a clean budget
 # or lifetime end; anything else ends the launch with no retry. Runtime 003 is not widened.
 
-POLICY_ID = "OPENDITOO-WEBCAM-PRODUCT-002"
-POLICY_TEMPLATE = ROOT / "product/OPENDITOO-WEBCAM-PRODUCT-002.json"
+POLICY_ID = "OPENDITOO-WEBCAM-PRODUCT-003"
+POLICY_TEMPLATE = ROOT / "product/OPENDITOO-WEBCAM-PRODUCT-003.json"
 LOCAL_POLICY = ROOT / ".openditoo-local/webcam-product-policy.json"
 # 002: one connection per launch. 001 rolled 60 s / 500-frame sessions over and the fourth reopen
 # hit IMAGE_RX_RECV_TIMEOUT (run 8f36a6d3); the Runtime 004 Host gives streaming its own 1800 s /
@@ -158,6 +158,7 @@ ENVELOPE = {"session_profile": "streaming_ack_clock", "host_floor_ms": 40, "slot
             "max_tx_bytes": 36001 * 1054, "ack_timeout_ms_per_frame": 5000, "handover_settle_seconds": 8,
             "max_sessions_per_launch": 1, "max_launch_seconds": 1800}
 CONTINUE_ONLY_AFTER = ["budget_exhausted", "lifetime_expired"]
+CLEAN_OUTCOMES = ("stopped_clean", "stopped_yielded_to_stock")
 
 
 def load_policy(path: Path = LOCAL_POLICY, *, authority: bool = True, verify: bool = True) -> dict:
@@ -278,7 +279,8 @@ def run_sessions(process, policy_sha: str, *, claim_dir: Path = activity_session
         if pending:
             pending[0].finish("unknown", {"result": {"terminalReason": "studio_ended_without_result"}})
     return {"policy_id": POLICY_ID, "run_nonce": run_nonce, "sessions": sessions, "final": final,
-            "outcome": "stopped_clean" if sessions and all(s["outcome"] == "stopped_clean" for s in sessions)
+            # A Host-confirmed stock yield (Ditoo button press) is a clean end, not a fault.
+            "outcome": "stopped_clean" if sessions and all(s["outcome"] in CLEAN_OUTCOMES for s in sessions)
             and (final or {}).get("kind") == "done" else "unknown"}
 
 
