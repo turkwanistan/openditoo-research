@@ -101,7 +101,10 @@ from it). Live, only after `Grant OPENDITOO-WEBCAM-W10-001`, from WSL: `bash scr
 Studio window opens; adjust framing live; **Stop** or closing the window ends the session cleanly.
 
 Changing any Studio source or the linked files after preparation invalidates W10-001 by hash — re-run
-`python3 scripts/prepare_webcam_w10.py` (it refuses an authorized or claimed manifest).
+`python3 scripts/prepare_webcam_w10.py` (it refuses an authorized or claimed manifest). Rebuilding
+*unchanged* sources is safe: the Studio csproj disables SourceLink/source-control queries, so the DLL
+no longer changes per git commit (verified: `571ea1f2…` before and after commit `f647ca4`). Commit
+`f647ca4` deliberately holds W10-001 in draft; `825db61` is the prepared state.
 
 ### Open decision (owner): W10C standing webcam authority
 

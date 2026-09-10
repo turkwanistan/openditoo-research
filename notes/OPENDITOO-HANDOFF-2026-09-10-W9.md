@@ -183,6 +183,11 @@ from 006, because none of them failed. The only change is operational: an 8 s ha
 window after the product service stops and the Host reports idle, before opening. That is
 insurance against the low-confidence handover theory, not a proven fix.
 
+**Do not rebuild the Runner before a revival.** Its csproj still lets SourceLink stamp the git
+commit into the PDB/DLL (found in W10: identical sources gave a different DLL after every commit),
+so a rebuild at any later commit drifts 007's frozen binary hashes and forces a re-preparation. The
+staged `C:\temp\openditoo-webcam-runner` copy and the repo `bin/` from preparation are what 007 binds.
+
 Before running: confirm the monitor, webcam and Ditoo have not moved since framing verification,
 and reload the stimulus page. Then the exact grant `Grant OPENDITOO-WEBCAM-N980P-007`, then only
 `scripts/run_webcam_w9b_optical_007_windows.ps1`, once, with the operator filming from a couple
