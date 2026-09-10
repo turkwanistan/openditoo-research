@@ -190,7 +190,13 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("Get-ScheduledTask -TaskName 'OpenTivoo Product Runtime'", src)
         self.assertIn("Stop-ScheduledTask -TaskName $TaskName", src)
         self.assertNotIn("Stop-ScheduledTask -TaskName 'OpenTivoo Product Runtime'", src)
-        self.assertNotIn("Stop-Process", src)
+        # Headless task orphans the Host on task stop: exactly one Stop-Process, by PID, only after the
+        # port owner's executable path is proven to be the owned runtime exe. Never by name.
+        self.assertEqual(src.count("Stop-Process"), 1)
+        self.assertIn("Stop-Process -Id $owner", src)
+        self.assertLess(src.index("$ownedHost = "), src.index("Stop-Process -Id $owner"))
+        self.assertIn("if (-not $ownedHost) { throw", src)
+        self.assertNotIn("Stop-Process -Name", src)
         self.assertIn("rawSendEnabled -ne $false", src)
         self.assertIn("PASS_TYPED_IMAGE", src)
         self.assertIn("$Backup", src)
