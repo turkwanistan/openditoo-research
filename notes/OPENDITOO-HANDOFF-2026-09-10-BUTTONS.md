@@ -4,6 +4,8 @@
 
 The owner has selected physical button navigation as the next objective. W10 webcam productization is closed; Runtime 005 and webcam-product-004 are the accepted baseline. The goal now is to prove the exact Ditoo Plus left/right/lever controls can be captured by the local Windows environment over Bluetooth, then use left/right for the smallest physical pagination proof: **live MCP dashboard -> looping animation -> live MCP dashboard**.
 
+For a fresh local Claude Code session, the prepared kickoff prompt is `notes/OPENDITOO-BUTTONS-CLAUDE-KICKOFF-PROMPT-2026-09-10.md`. It is a convenience entry point; this handoff and the live repository remain authoritative.
+
 ## Current route
 
 Read, in order:
