@@ -127,3 +127,25 @@ unauthorized manifest) before any claim or I/O; it did not spend the identity. W
 
 **Every further live webcam run still needs a fresh manifest + exact grant** (`prepare_webcam_w10.py NNN`,
 then a `run_webcam_w10_NNN_once.sh`), until the owner decides W10C.
+
+## W10C on-demand webcam — built, prepared, UNAUTHORIZED — 2026-09-10
+
+Owner request: "open a desktop app … it starts up for me to mess around, when I close/stop it goes
+back to the MCP dash". That needs back-to-back sessions (500-frame Host cap), so it is the standing
+policy shape: `product/OPENDITOO-WEBCAM-PRODUCT-001.json` (committed, unauthorized) →
+`.openditoo-local/webcam-product-policy.json` (mode 0600) only after `Grant OPENDITOO-WEBCAM-PRODUCT-001`.
+
+- **Launch:** desktop shortcut `OpenDitoo Webcam` → `wsl.exe … scripts/webcam_on_demand.sh`:
+  policy check (refuses before touching anything), stop Runtime 003, idle + 8 s settle, Studio
+  `live-policy` from `%LOCALAPPDATA%\OpenDitoo\WebcamStudio`, always restore the dashboard.
+- **Sessions:** `OPENDITOO-WEBCAM-LIVE-<run nonce>-<seq>`, fresh per session, durable claim against
+  the Studio's per-session nonce; next session only after clean `budget_exhausted`/`lifetime_expired`;
+  anything else ends the launch, no retry. 30 min / 60 sessions per launch.
+- **Revoke:** `python3 host/webcam_studio.py policy-revoke`. Remove shortcut: delete the .lnk.
+- **Evidence so far:** real-camera dry run rolls 5 sessions cleanly and a mid-run close ends as
+  `operator_stop`; protocol tests against a fake Studio (rollover, launch cap, Studio dying → that
+  claim `unknown`). Negative controls: launcher and Studio both refuse without the grant; dashboard untouched.
+- **Not yet exercised on the device:** session rollover (re-open right after a clean close). Expect a
+  brief freeze at each ~30 s boundary while the next session opens. The first granted launch is its evidence.
+- Changing Studio sources invalidates the policy by hash: `python3 scripts/prepare_webcam_w10.py product`
+  re-freezes the template; a granted local policy must then be revoked and re-granted.

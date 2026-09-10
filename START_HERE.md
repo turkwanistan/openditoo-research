@@ -10,8 +10,9 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
    and visible unique-frame cadence are therefore **UNMEASURED and stay that way** — never describe
    16.285 fps as what the panel does. Post-v1 >18.46 fps research stays closed by default, since its gate
    was W9B. **Current objective: W10 productization** — read `notes/OPENDITOO-W10-PLAN-2026-09-10.md` next:
-   W10A (Studio app) and W10B (live W10-001 + W10-002) are **closed PASS**; W10-001/002 are consumed. The
-   remaining W10 question is W10C standing webcam authority — an owner decision, not built. The W9 handoff lists the remaining lower-priority items.
+   W10A (Studio app) and W10B (live W10-001 + W10-002) are **closed PASS**; W10-001/002 are consumed. W10C
+   on-demand webcam (desktop shortcut → Studio → dashboard restored on close) is **built and prepared, UNAUTHORIZED**
+   pending `Grant OPENDITOO-WEBCAM-PRODUCT-001`; see the W10 note. The W9 handoff lists the remaining lower-priority items.
    Then `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` for the earlier webcam handoff. Then
    `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md`. The external N980P webcam
    plan is adopted as the route, with recorded amendments. Runtime 003 is deployed;

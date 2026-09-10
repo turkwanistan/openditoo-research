@@ -1,0 +1,45 @@
+{
+ "schema_version": 1,
+ "target": "OPENDITOO-WEBCAM-PRODUCT-001",
+ "status": "pass",
+ "prepared_from_git_head": "bbcbaa36aca7507fba00ca708717cc1a38f6c21f",
+ "staged_executable": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio\\OpenDitoo.Webcam.Studio.exe",
+ "checks": {
+  "studio_selftest": "pass",
+  "transform_parity": "pass",
+  "encoder_parity": "pass",
+  "host_identity_read_only": {
+   "target": "11:75:58:CE:DE:C7",
+   "raw_send_enabled": false,
+   "activity_session_active": true
+  },
+  "installed_host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb"
+ },
+ "selftest_lines": [
+  "STUDIO_CLOCK_ON_TIME_PASS",
+  "STUDIO_CLOCK_SKIPS_MISSED_SLOTS_PASS skipped=1 next=300",
+  "STUDIO_CLOCK_HOST_FLOOR_WINS_PASS next=340",
+  "STUDIO_CLOCK_NO_CATCHUP_BURST_PASS skipped=19 next=1050",
+  "STUDIO_CLOCK_IDLE_DOES_NOT_ADVANCE_PASS",
+  "STUDIO_SENDER_10FPS_DEADLINES_PASS frames=20 mean_dispatch_ms=98.7 skipped=0",
+  "STUDIO_SENDER_MAX_SKIPS_NOT_BURSTS_PASS frames=27 skipped=13",
+  "STUDIO_SENDER_UNCHANGED_NOT_SENT_PASS frames=1 unchanged=65 heartbeats=4",
+  "STUDIO_SENDER_DUPLICATE_NOT_SENT_PASS frames=1 duplicates=31",
+  "STUDIO_SENDER_CAMERA_STALL_PASS",
+  "STUDIO_SENDER_CAMERA_DISCONNECT_PASS",
+  "STUDIO_SENDER_OPERATOR_STOP_PASS",
+  "STUDIO_SENDER_STOP_BEFORE_OPEN_PASS",
+  "STUDIO_SENDER_HOST_FAULT_NO_RETRY_PASS attempts=2",
+  "STUDIO_SENDER_BUSY_HOST_NOT_OPENED_PASS",
+  "STUDIO_SENDER_HOST_SESSION_ENDED_PASS",
+  "STUDIO_SENDER_BUDGET_PASS",
+  "STUDIO_SELFTEST_PASS failures=0 device_io=false camera_io=false",
+  "TRANSFORM_SELFTEST_PASS cases=15 failures=0 deviceIo=false",
+  "ENCODER_SELFTEST_PASS cases=6 failures=0 deviceIo=false"
+ ],
+ "operation": {
+  "claim_created": false,
+  "host_session_io": false,
+  "device_io": false
+ }
+}
