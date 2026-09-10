@@ -1,6 +1,6 @@
 # OpenDitoo handoff — AVRCP physical controls + pagination — 2026-09-10
 
-**Status at handoff (2026-09-10 ~17:50Z): BTN-0..6 done; Runtime 006 (button pagination) is LIVE. Repository state outranks this note.**
+**Status at current checkpoint (2026-09-10): BTN-0..6 done; Runtime 006 is LIVE. The high-FPS interactive successor is implemented offline on `feat/high-fps-interactive-pages` through HF-3 preparation/dry-run, but is not physically exercised or granted. Repository state outranks this note.**
 
 ## Next session — start here
 
@@ -13,12 +13,13 @@
 **Owner decisions recorded:** lever = page-specific action; pages wrap; the owner plays PC media regularly (YouTube contention PASS, Spotify untested); never map long lever holds (they can put the Ditoo into a "recording" mode).
 
 **Open items, in value order**
-1. **BTN-9 high-FPS page (owner-selected next).** The page runner is capped at 5 fps by the frozen activity runner (200 ms) and Host activity floor (150 ms); 18.46 fps is the `streaming_ack_clock` ceiling. Plan agreed with the owner: reuse the Host's streaming profile unchanged and the webcam pacing lessons (Host-anchored ~45 ms floor, >=30 s young-link guard); sender = Python `frame_stream.stream_session` first (written for this, offline-tested, **never run live at speed**), fallback = a copied (not edited — webcam 005 hash-freezes the Studio) C# sender sidecar. The page switches profile on entry/exit, so the one-use trial must page in/out ~10 times and watch for `IMAGE_RX_RECV_TIMEOUT` on streaming reopen (webcam-product-001 failed on its 4th reopen). Also produce a denser spiral frame set for it.
-2. Cheap alternative if BTN-9 stalls: 200 ms interval (5 fps, current cap) with ~12 frames — asset + revision + grant, no code change.
-3. More dashboard pages (owner's goal): a page = class with `name`, `render(now_ms, dashboard_frame)`, `lever()` in `build_pages` + a template entry; batch several pages per revision/grant.
-4. Telemetry defect: `pages.recent_transitions[].first_ack_ms` is only published on the next input, so the latest transition can read `null`. Fix by calling `publish()` from `PagedRenderer.frame_sent` when it fills `first_ack_ms` (next revision).
-5. Untested under 006: webcam shortcut suspend -> restore (should work: same service name), Spotify contention, Windows reboot/logon start of the probe.
-6. Lever `0xBD`/arrow `0x09` session ends are tolerated by reclaim (46-69 ms, invisible). If reclaim churn ever matters, a successor Host could learn to distinguish them — only with display evidence, never by assumption.
+1. **HF-3 physical acceptance is the next execution boundary.** HF-1/HF-2/GAME-1/UI-1 are offline PASS at core implementation commit `65723e6`; canonical successor gate is 37/37 PASS. `OPENDITOO-INTERACTIVE-HF3-001` dry-runs 10 Dashboard <-> Slots cycles with 21 child opens / 81 ACKed frames / 60 unique inputs. Full plan: `notes/OPENDITOO-HIGH-FPS-INTERACTIVE-PAGES-PLAN-2026-09-10.md`.
+2. **Re-verify from normal local WSL before any grant.** WSL_MCP cannot see `/mnt/c`, so the installed Runtime 006 ButtonProbe `.exe/.dll` have not been directly re-hashed in this environment. Run `python3 scripts/prepare_interactive_hf3.py`, then `python3 scripts/interactive_hf3.py check` from the feature worktree. Both installed hashes must verify.
+3. **Named grant remains required.** Only after item 2 passes may the operator record exactly `Grant OPENDITOO-INTERACTIVE-HF3-001`; then `scripts/run_interactive_hf3.sh` owns the one-use trial. General/wildcard development approval is not a substitute.
+4. **HF-3 operator choreography:** Right -> Slots; three short pulls stop L/M/R; fourth short pull starts a fresh round; Left -> Dashboard; repeat for 10 profile cycles; on the final Dashboard trigger one genuine MCP activity event and inspect the lightning strike; Ctrl+C. Never long-hold the lever. The runner specifically watches for fourth-or-later streaming reopen failure and never retries an ambiguous child.
+5. **HF-4 standing successor comes only after HF-3 physical PASS.** It should productize the dual-rate page runtime + slots + lightning and preserve Runtime 006 as rollback. Then test webcam shortcut suspend/restore, Spotify contention, device power-cycle, and Windows reboot/logon.
+6. **Telemetry cleanup:** publish latest transition ACK latency immediately in the standing successor; HF-3 already captures input -> strictly later transport ACK across child-session boundaries.
+7. Lever `0xBD` / arrow `0x09` yields remain handled only as the exact known `canvas_invalidated` reclaim outcome; distinguish them further only if churn becomes material.
 
 **Evidence index:** `captures/OPENDITOO-M7-AVRCP-KEY-SWEEP-2026-09-09.json` (BTN-0), `…BTN2-WINDOWS-RECEIVE…`, `…BTN5-PAGINATION-ACCEPTANCE…`, `…BTN7-LEVER-CHARACTERIZATION…`, `…BTN8-MEDIA-CONTENTION…` (all 2026-09-10). Consumed/replay-forbidden: `OPENDITOO-PAGINATION-ACCEPTANCE-001`.
 

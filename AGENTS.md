@@ -12,6 +12,14 @@ Runtime 006 reuses Runtime 005's `run_product`, Host, target, session/pacing/bud
 
 The older MassBoot/update research remains preserved but is not the current execution priority.
 
+### Active successor objective — high-FPS interactive pages + richer MCP pulse
+
+The owner-selected successor work is specified in `notes/OPENDITOO-HIGH-FPS-INTERACTIVE-PAGES-PLAN-2026-09-10.md`. Treat BTN-9 as a platform capability, not a spiral optimization: pages must be able to select either the existing low-rate `activity` profile or the existing one-frame-in-flight `streaming_ack_clock` profile, while physical Left/Right remain global navigation and the short lever becomes a page-local action. The first meaningful high-rate acceptance app is a three-reel slots page whose reels stop one at a time on successive short lever pulls. In parallel, prototype the MCP activity pulse as a spatial lightning-strike animation that descends into the active icon before the accepted blue/cyan flare.
+
+Develop this successor side-by-side. Runtime 006 remains the live rollback baseline; do not edit its hash-bound files on `main`. Offline implementation/research may proceed autonomously, but a new live display/session still requires the exact named manifest/policy grant required by this contract.
+
+**Current successor checkpoint (2026-09-10):** HF-1, HF-2, GAME-1 and UI-1 are offline PASS on `feat/high-fps-interactive-pages` (core implementation commit `65723e6`). HF-3 is implemented as one outer one-use experiment, `OPENDITOO-INTERACTIVE-HF3-001`, with deterministic unique Host child ids and hard aggregate lifetime/session/frame/byte ceilings. The canonical successor verifier is 37/37 PASS and its 10-cycle dry-run is PASS. No successor device I/O has occurred. The tracked HF-3 manifest remains unauthorized/unconsumed. WSL_MCP cannot directly see the installed ButtonProbe under `/mnt/c`, so it is not a grant environment for HF-3; a normal local WSL session must re-run the preparation/check and directly verify those installed bytes before the exact grant `Grant OPENDITOO-INTERACTIVE-HF3-001` can be recorded. Do not build/cut over HF-4 standing authority before HF-3 physical acceptance.
+
 ## Evidence hierarchy
 
 1. Exact-unit raw captures, photos, exported app traffic, immutable artifacts and experiment results.

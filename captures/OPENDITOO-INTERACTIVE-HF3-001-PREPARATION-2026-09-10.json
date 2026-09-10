@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
+  "status": "pass_offline",
+  "prepared_from_git_head": "65723e66182ee22373d4c39b50c8730c348c51ac",
+  "manifest_sha256": "7ad8ef4d3eba00e8c4170757868be55e29b046e72b2dd448661bad0ca4184a23",
+  "checks": {
+    "code_hashes_verified": true,
+    "host_build_verified": true,
+    "host_dll_sha256": "f7bd60d4a56de4f4740bd84f7c645e201ddfd7ce29bf6c0f1e7512b1b67cd34e",
+    "button_probe_hashes_inherited_from_runtime006": true,
+    "button_probe_installed_bytes_verified_now": false,
+    "outer_budget_derived": true
+  },
+  "operation": {
+    "claim_created": false,
+    "host_session_io": false,
+    "device_io": false
+  },
+  "authority_blockers": [
+    "TRANSMISSION_AUTHORITY_MISSING",
+    "AUTHORITY_GRANT_UNATTRIBUTED",
+    "AUTHORITY_EXPIRY_MISSING"
+  ]
+}
