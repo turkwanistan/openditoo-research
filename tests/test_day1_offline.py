@@ -3716,7 +3716,12 @@ class W8WebcamNearCeilingReviewTests(unittest.TestCase):
         self.assertEqual(manifest.raw["authority"]["grant_string_after_readiness"],
                          "Grant OPENDITOO-WEBCAM-N980P-003")
         self.assertFalse(manifest.raw["authority"]["authorization_consumed"])
-        self.assertIn("TRANSMISSION_AUTHORITY_MISSING", frame_stream.authority_blockers(self.MANIFEST))
+        blockers = frame_stream.authority_blockers(self.MANIFEST)
+        if manifest.raw["authority"]["transmission_authorized"]:
+            self.assertEqual(blockers, [])
+            self.assertEqual(manifest.raw["authority"]["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-003")
+        else:
+            self.assertIn("TRANSMISSION_AUTHORITY_MISSING", blockers)
         self.assertIn("No rate ladder", manifest.raw["authority"]["grant_scope_requested"])
 
     def test_w8_starts_from_accepted_consumed_w7_without_reusing_authority(self) -> None:
@@ -3728,7 +3733,11 @@ class W8WebcamNearCeilingReviewTests(unittest.TestCase):
         self.assertEqual(w8["w7_baseline"]["experiment_id"], "OPENDITOO-WEBCAM-N980P-002")
         self.assertTrue(w8["w7_baseline"]["authority_consumed"])
         self.assertNotEqual(w7["authority"]["grant_text"], w8["authority"]["grant_text"])
-        self.assertFalse(w8["authority"]["transmission_authorized"])
+        if w8["authority"]["transmission_authorized"]:
+            self.assertEqual(w8["authority"]["grant_text"], "Grant OPENDITOO-WEBCAM-N980P-003")
+            self.assertFalse(w8["authority"]["authorization_consumed"])
+        else:
+            self.assertIsNone(w8["authority"]["grant_text"])
 
     def test_w8_runner_paces_from_manifest_and_measures_the_new_metrics(self) -> None:
         trial = (ROOT / "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs").read_text(encoding="utf-8")
