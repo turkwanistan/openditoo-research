@@ -1,0 +1,419 @@
+{
+ "schema_version": 1,
+ "capture_id": "OPENDITOO-BTN7-LEVER-CHARACTERIZATION-2026-09-10",
+ "status": "exact_unit_windows_receive_evidence",
+ "gate": {
+  "BTN7_LEVER_SHORT_PULL": "PASS_WITH_RECLAIM",
+  "BTN7_LEVER_LONG_HOLD": "UNRELIABLE"
+ },
+ "device_io": "none from ButtonProbe; Runtime 005 ran unchanged under its granted policy",
+ "method": {
+  "probe": "ButtonProbe --status mirror (SMTC PlaybackStatus follows Play/Pause like a real player)",
+  "script": "8 short pulls ~4 s apart, then 2 long holds ~2 s; operator later reported about 11 actions",
+  "telemetry": "Host session ledger + product-status sampler"
+ },
+ "operator_observation": "i think i did 11, they all did nothing i believe on the screen",
+ "hypothesis": "each pull toggles the Ditoo's own play state; toward-play sends AVRCP Play plus RFCOMM 0xBD, toward-pause sends AVRCP Pause only; a fixed 'Playing' SMTC status makes Windows drop Play (explains BTN-2 trial B)",
+ "per_action": [
+  {
+   "n": 1,
+   "smtc": "Pause",
+   "at": "17:18:52.612",
+   "bd": null
+  },
+  {
+   "n": 2,
+   "smtc": "Play",
+   "at": "17:18:56.655",
+   "bd": "17:18:56.803 (+148 ms)",
+   "reclaim_reopen_ms": 68
+  },
+  {
+   "n": 3,
+   "smtc": "Pause",
+   "at": "17:19:00.648",
+   "bd": null
+  },
+  {
+   "n": 4,
+   "smtc": "Play",
+   "at": "17:19:04.869",
+   "bd": "17:19:04.903 (+34 ms)",
+   "reclaim_reopen_ms": 69
+  },
+  {
+   "n": 5,
+   "smtc": "Pause",
+   "at": "17:19:09.148",
+   "bd": null
+  },
+  {
+   "n": 6,
+   "smtc": "Play",
+   "at": "17:19:13.420",
+   "bd": "17:19:13.257 (-163 ms)",
+   "reclaim_reopen_ms": 69
+  },
+  {
+   "n": 7,
+   "smtc": "Pause",
+   "at": "17:19:17.445",
+   "bd": null
+  },
+  {
+   "n": 8,
+   "smtc": "Play",
+   "at": "17:19:21.622",
+   "bd": "17:19:21.629 (+7 ms)",
+   "reclaim_reopen_ms": 54
+  },
+  {
+   "n": 9,
+   "smtc": "Pause",
+   "at": "17:19:27.008",
+   "bd": null,
+   "note": "+5.4 s: likely hold 1"
+  },
+  {
+   "n": 10,
+   "smtc": null,
+   "bd": "17:19:32.524",
+   "reclaim_reopen_ms": 46,
+   "note": "+5.5 s: likely hold 2; 0xBD with no SMTC event"
+  },
+  {
+   "n": 11,
+   "smtc": null,
+   "bd": "17:20:24.536",
+   "note": "extra action 52 s later; 0xBD with no SMTC event; Host-end raced the next frame POST -> HTTP 409 -> transport_fault -> ~1 s reconnect"
+  }
+ ],
+ "findings": [
+  {
+   "id": "SHORT-PULL-IS-ONE-SMTC-EVENT-IN-MIRROR-MODE",
+   "confidence": "MATCHED",
+   "statement": "8/8 short pulls produced exactly one SMTC event, strictly alternating Pause/Play in step with the mirrored status. Play/Pause together are one 'lever' input."
+  },
+  {
+   "id": "0xBD-ACCOMPANIES-EVERY-PLAY-DIRECTION-PULL",
+   "confidence": "MATCHED",
+   "statement": "4/4 short Play pulls carried RFCOMM 0xBD (Host-detected within -163..+148 ms of the SMTC callback); 0/5 Pause pulls did. Together with M7 (0xBD 1.7 ms before AVRCP Play), 0xBD is tied to the Ditoo entering its play state."
+  },
+  {
+   "id": "0xBD-IS-NOT-A-VISIBLE-TAKEOVER-UNDER-RECLAIM",
+   "confidence": "OPERATOR_OBSERVATION",
+   "statement": "Six 0xBD session ends, all reclaimed (46-69 ms reopen, one ~1 s via the 409 race); operator saw nothing on the screen. The Host fence is kept; the product tolerates it by reclaim and page state outside the session."
+  },
+  {
+   "id": "BTN2-TRIAL-B-EXPLAINED",
+   "confidence": "MATCHED",
+   "statement": "With a fixed 'Playing' status Windows delivered Pause but not Play; the lost trial-B lever was a Play-direction pull (its 0xBD reached the Host). Always-on broker must run in mirror mode."
+  },
+  {
+   "id": "LONG-HOLD-UNRELIABLE",
+   "confidence": "OBSERVED",
+   "statement": "Two later actions (likely the hold and the extra pull) produced 0xBD with no SMTC event. Product semantics use short pulls only; a held lever may be lost."
+  },
+  {
+   "id": "LONG-HOLD-ENTERED-A-DEVICE-MODE",
+   "confidence": "OPERATOR_OBSERVATION (single)",
+   "statement": "After the long holds the owner found the Ditoo in a 'recording' mode. The hold-type actions were exactly the ones that produced 0xBD with no Play/Pause event, i.e. the device did something other than toggle playback. Another 0xBD at 17:21:16.365 (after the capture) was reclaimed in 70 ms and the Host kept ACKing dashboard frames (displayState ours_last_acked). Nothing OpenDitoo sent can enter such a mode: the probe is receive-only and the Host sent only dashboard image frames.",
+   "consequence": "Never ask for or map long lever holds. The lever product action is short-pull only; how the Ditoo's hold mode interacts with our frames is unmeasured."
+  }
+ ],
+ "product_decision_basis": "lever = SMTC Play or Pause in mirror mode, short pull; acting on it costs a dashboard session end + reclaim on every other pull, invisible to the operator",
+ "probe_records": [
+  {
+   "epoch": "c6c450ccf808",
+   "seq": 1,
+   "at_monotonic_ms": 29906170.483,
+   "at_utc": "2026-09-10T17:18:15.5177088Z",
+   "type": "probe_started",
+   "pid": 28352,
+   "seconds": 1500,
+   "smtc": {
+    "acquired": true,
+    "playback_status": "Playing",
+    "status_mode": "mirror"
+   },
+   "rawinput_registered": true,
+   "merging": "none; every source logged separately"
+  },
+  {
+   "epoch": "c6c450ccf808",
+   "seq": 2,
+   "at_monotonic_ms": 29943265.091,
+   "at_utc": "2026-09-10T17:18:52.6122002Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Pause",
+   "normalized_candidate": "lever_candidate",
+   "status_before": "Playing"
+  },
+  {
+   "epoch": "c6c450ccf808",
+   "seq": 3,
+   "at_monotonic_ms": 29947308.857,
+   "at_utc": "2026-09-10T17:18:56.6559638Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Play",
+   "normalized_candidate": "lever_candidate",
+   "status_before": "Paused"
+  },
+  {
+   "epoch": "c6c450ccf808",
+   "seq": 4,
+   "at_monotonic_ms": 29951301.214,
+   "at_utc": "2026-09-10T17:19:00.6483210Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Pause",
+   "normalized_candidate": "lever_candidate",
+   "status_before": "Playing"
+  },
+  {
+   "epoch": "c6c450ccf808",
+   "seq": 5,
+   "at_monotonic_ms": 29955522.228,
+   "at_utc": "2026-09-10T17:19:04.8693357Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Play",
+   "normalized_candidate": "lever_candidate",
+   "status_before": "Paused"
+  },
+  {
+   "epoch": "c6c450ccf808",
+   "seq": 6,
+   "at_monotonic_ms": 29959801.422,
+   "at_utc": "2026-09-10T17:19:09.1485294Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Pause",
+   "normalized_candidate": "lever_candidate",
+   "status_before": "Playing"
+  },
+  {
+   "epoch": "c6c450ccf808",
+   "seq": 7,
+   "at_monotonic_ms": 29964073.672,
+   "at_utc": "2026-09-10T17:19:13.4207781Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Play",
+   "normalized_candidate": "lever_candidate",
+   "status_before": "Paused"
+  },
+  {
+   "epoch": "c6c450ccf808",
+   "seq": 8,
+   "at_monotonic_ms": 29968098.722,
+   "at_utc": "2026-09-10T17:19:17.4458296Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Pause",
+   "normalized_candidate": "lever_candidate",
+   "status_before": "Playing"
+  },
+  {
+   "epoch": "c6c450ccf808",
+   "seq": 9,
+   "at_monotonic_ms": 29972274.948,
+   "at_utc": "2026-09-10T17:19:21.6220546Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Play",
+   "normalized_candidate": "lever_candidate",
+   "status_before": "Paused"
+  },
+  {
+   "epoch": "c6c450ccf808",
+   "seq": 10,
+   "at_monotonic_ms": 29977661.234,
+   "at_utc": "2026-09-10T17:19:27.0083420Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Pause",
+   "normalized_candidate": "lever_candidate",
+   "status_before": "Playing"
+  }
+ ],
+ "host_ledger_window": [
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-10T17:18:56.8037429+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000003",
+   "sessionId": "878880bd9b18",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 1,
+    "packetsSent": 3,
+    "txBytesSent": 194,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-10T17:18:56.8717067+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000004",
+   "sessionId": "773199df4c8d",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 150,
+    "frameBudget": 500,
+    "txByteBudget": 101500,
+    "sessionProfile": "activity",
+    "sendSpacingMs": 10
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-10T17:19:04.9038205+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000004",
+   "sessionId": "773199df4c8d",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 1,
+    "packetsSent": 3,
+    "txBytesSent": 194,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-10T17:19:04.9724438+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000005",
+   "sessionId": "b7d0058774e4",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 150,
+    "frameBudget": 500,
+    "txByteBudget": 101500,
+    "sessionProfile": "activity",
+    "sendSpacingMs": 10
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-10T17:19:13.2571739+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000005",
+   "sessionId": "b7d0058774e4",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 1,
+    "packetsSent": 3,
+    "txBytesSent": 194,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-10T17:19:13.3260951+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000006",
+   "sessionId": "ebe30cf93789",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 150,
+    "frameBudget": 500,
+    "txByteBudget": 101500,
+    "sessionProfile": "activity",
+    "sendSpacingMs": 10
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-10T17:19:21.6292285+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000006",
+   "sessionId": "ebe30cf93789",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 1,
+    "packetsSent": 3,
+    "txBytesSent": 194,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-10T17:19:21.6835194+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000007",
+   "sessionId": "c82be72e49c3",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 150,
+    "frameBudget": 500,
+    "txByteBudget": 101500,
+    "sessionProfile": "activity",
+    "sendSpacingMs": 10
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-10T17:19:32.5249459+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000007",
+   "sessionId": "c82be72e49c3",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 1,
+    "packetsSent": 3,
+    "txBytesSent": 194,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-10T17:19:32.5709505+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000008",
+   "sessionId": "b9225c366144",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 150,
+    "frameBudget": 500,
+    "txByteBudget": 101500,
+    "sessionProfile": "activity",
+    "sendSpacingMs": 10
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-10T17:20:24.5361200+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000008",
+   "sessionId": "b9225c366144",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 8,
+    "packetsSent": 24,
+    "txBytesSent": 1549,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-10T17:20:25.5789300+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fdc68e73-000009",
+   "sessionId": "a719f70a2bf5",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 150,
+    "frameBudget": 500,
+    "txByteBudget": 101500,
+    "sessionProfile": "activity",
+    "sendSpacingMs": 10
+   }
+  }
+ ],
+ "operator_observation_later": "its in some weird recording mode, what was that (reported ~17:22Z, after the long holds)"
+}

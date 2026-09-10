@@ -4849,3 +4849,11 @@ class PaginationTests(unittest.TestCase):
                          "the staged Windows ButtonProbe is only on the owner's machine")
     def test_template_hashes_match_this_tree(self) -> None:
         pagination.load_policy(pagination.TEMPLATE, authority=False)
+
+
+class ButtonProbeStatusModeTests(unittest.TestCase):
+    def test_default_status_is_unchanged_and_mirror_follows_play_pause(self) -> None:
+        src = (BUTTON_PROBE / "Probe.cs").read_text(encoding="utf-8")
+        self.assertIn('string status = "playing";', src)
+        self.assertIn('if (status == "mirror" && button is "Play" or "Pause")', src)
+        self.assertIn('["status_before"] = before', src)

@@ -222,10 +222,12 @@ public static class Program
 
         int seconds = 900;
         string? logPath = null;
+        string status = "playing"; // playing | paused | mirror (follow Play/Pause like a real player)
         for (int i = 0; i < args.Length - 1; i++)
         {
             if (args[i] == "--seconds") seconds = Math.Clamp(int.Parse(args[i + 1]), 5, 3600);
             if (args[i] == "--log") logPath = args[i + 1];
+            if (args[i] == "--status" && args[i + 1] is "playing" or "paused" or "mirror") status = args[i + 1];
         }
 
         using var file = logPath == null ? null : new StreamWriter(logPath, append: true);
@@ -240,14 +242,23 @@ public static class Program
             smtc = SystemMediaTransportControlsInterop.GetForWindow(window.Handle);
             smtc.IsEnabled = true;
             smtc.IsPlayEnabled = smtc.IsPauseEnabled = smtc.IsNextEnabled = smtc.IsPreviousEnabled = true;
-            // Deliberately constant: the probe never toggles state, so raw Play vs Pause is the device's choice.
-            smtc.PlaybackStatus = MediaPlaybackStatus.Playing;
+            // playing/paused hold one status; mirror flips it on Play/Pause so Windows sees a real player.
+            smtc.PlaybackStatus = status == "paused" ? MediaPlaybackStatus.Paused : MediaPlaybackStatus.Playing;
             smtc.DisplayUpdater.Type = MediaPlaybackType.Music;
             smtc.DisplayUpdater.MusicProperties.Title = "OpenDitoo ButtonProbe";
             smtc.DisplayUpdater.Update();
-            smtc.ButtonPressed += (_, e) => log.Event("smtc", e.Button.ToString(), Normalize.Smtc(e.Button.ToString()));
+            var controls = smtc;
+            controls.ButtonPressed += (_, e) =>
+            {
+                string button = e.Button.ToString();
+                var before = controls.PlaybackStatus.ToString();
+                if (status == "mirror" && button is "Play" or "Pause")
+                    controls.PlaybackStatus = button == "Play" ? MediaPlaybackStatus.Playing : MediaPlaybackStatus.Paused;
+                log.Event("smtc", button, Normalize.Smtc(button), new() { ["status_before"] = before });
+            };
             smtcState["acquired"] = true;
             smtcState["playback_status"] = smtc.PlaybackStatus.ToString();
+            smtcState["status_mode"] = status;
         }
         catch (Exception exc)
         {
