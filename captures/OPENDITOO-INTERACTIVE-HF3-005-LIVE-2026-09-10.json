@@ -475,7 +475,10 @@
     "fix_for_HF3_006": "InteractiveTransport also waits >= 45 ms after the Host's own previous frame start, estimated from ACK receipt - hostFrameElapsedMs (never earlier than the true start); FakeHost models 12/0 ms arrival jitter; negative controls reproduce both HF3-004 and HF3-005 failures"
   },
   "runtime007_restore": "HF3_DASHBOARD_SERVICE_RESTORED / HF3_DASHBOARD_CONNECTED_RESTORED, RC=0",
-  "visual": "pending owner report",
+  "visual": {
+    "owner_report": "Reels spun smoothly and stopped one at a time: YES. Page switches felt instant: 'almost, yes'.",
+    "lightning": "not reached (run ended before FINAL)"
+  },
   "verdict": {
     "transport": "UNKNOWN (terminal pacing refusal; no retry)",
     "acceptance": "FAIL - 1 of 10 cycles",
