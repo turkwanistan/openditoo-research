@@ -49,9 +49,7 @@ fresh exact named grant before W7. Do not use `cli/webcam.py run` during W6 veri
 ## Post-W6 roadmap
 
 W7 = first 10-second physical webcam acceptance. W8 = one near-ceiling ACK-clock measurement.
-W9 = optical scene-to-display latency if useful. W10 = product polish and a separate decision on
-standing webcam authority. W2's seven-scene owner ranking remains optional/owner-dependent and
-is not a W6 safety blocker.
+The later roadmap now splits W9 into W9A source identity/motion truth and W9B combined unique-frame + optical latency; W10 adds product polish, fixed-rate absolute-deadline scheduling, and a separate decision on standing webcam authority. W2's seven-scene owner ranking remains optional/owner-dependent and is not a W6 safety blocker.
 
 
 ## Closure

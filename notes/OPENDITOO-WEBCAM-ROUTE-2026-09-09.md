@@ -653,11 +653,9 @@ named-grant boundary.
   judge transport cleanliness, freshness/orientation and owner-visible face/hand recognizability.
 - **W8:** one bounded near-ceiling ACK-clock characterization after W7; do not repeat R1–R5 or
   invent a new protocol/rate ladder.
-- **W9:** if useful, measure actual optical scene→Ditoo latency by filming source and display
-  together; never report ACK time as optical latency.
-- **W10:** only after experimental acceptance, add operator-friendly start/stop/preview polish and
-  decide whether webcam merits its own separate standing product authority. Runtime 003 remains
-  the MCP dashboard authority and is not widened by this work.
+- **W9A:** after W8, add monotonic capture/source identity plus deterministic temporal-marker motion truth; keep transport unchanged.
+- **W9B:** film the W9A stimulus and Ditoo together to measure unique visible transitions and actual optical scene→Ditoo latency; never report ACK/transport FPS as panel FPS.
+- **W10:** only after experimental acceptance, add operator-friendly start/stop/preview polish; fixed-rate modes use monotonic absolute deadlines, skip missed logical slots without catch-up, and do not consume a transmit interval on duplicate/no-new-frame selection. Decide separately whether webcam merits its own standing product authority. Runtime 003 remains the MCP dashboard authority and is not widened by this work.
 
 
 ## 16. W6 continuation — pre-claim ownership hardening and one-command Windows verifier
@@ -785,7 +783,7 @@ The Host ledger independently records the exact reviewed open envelope (10 s, 40
 
 Post-trial recovery was separately checked after the launcher's immediate snapshot: Runtime 003 had started a fresh product run, reported `status=connected`, and owned a fresh active `activity` Host session with ACKed dashboard frames. W7 is therefore fully closed. Both 001 and 002 are consumed and replay-forbidden.
 
-**Next boundary: W8.** If useful, perform one separately reviewed near-ceiling ACK-clock characterization. Do not create a new rate ladder and do not reuse either W7 grant. W9 remains the optional optical scene-to-display latency measurement; W10 remains product/operator polish and the separate standing webcam-authority decision.
+**Next boundary: W8.** If useful, perform one separately reviewed near-ceiling ACK-clock characterization. Do not create a new rate ladder and do not reuse either W7 grant. After W8, W9A adds source identity + deterministic motion truth, W9B combines unique-frame observation with optical scene-to-display latency, and W10 handles product/operator polish plus the fixed-rate absolute-deadline scheduler contract and separate standing webcam-authority decision.
 
 
 ## 21. W8 implementation checkpoint — 40 ms ACK-gated near-ceiling candidate
@@ -825,3 +823,18 @@ Root cause is the W8-only telemetry assertion added after W7: `hostFrameElapsedM
 The correction is intentionally narrow. Packet hash, frame number, packet totals, byte totals, exact target, session profile, one-frame-in-flight, 50 ms client pacing, and all no-retry/reconnect/reclaim rules remain unchanged. `hostFrameElapsedMs` must still exist, be non-negative, and remain within the manifest's reviewed **5,000 ms per-frame ACK budget**. The client now records a signed `clientMinusHostElapsedMs` residual for observation only; it no longer treats cross-process clock ordering as a fatal invariant. A dedicated fake-Host `coarse_clock` regression returns a valid Host elapsed value deliberately larger than the client-observed request duration and must remain clean.
 
 Fresh identity `OPENDITOO-WEBCAM-N980P-005` preserves the **50 ms client / 40 ms Host** pacing and 10-second ceilings of **201 frames / 603 packets / 211,854 bytes**. It is initially unauthorized and blocked only on Windows rebuild/freeze plus the updated selftest bundle: historical 40 ms arrival-jitter failure reproduction, 50 ms margin PASS, cross-clock telemetry PASS, transform/encoder parity, and real Host read-only status identity. Run `scripts/prepare_webcam_w8_telemetry_rerun_windows.ps1`; only after that no-device prep passes may the project request `Grant OPENDITOO-WEBCAM-N980P-005`.
+
+
+## 24. Cross-project high-FPS lesson review — roadmap update, no W8-005 transport change
+
+The OpenTivoo 10→30 fps technical note was reviewed against the live OpenDitoo implementation after candidate 005 was staged. Its central portable lesson is to treat **source cadence, scheduler cadence, transport cadence and physical display refresh as separate systems**. The numerical Tivoo results are explicitly **not** portable to Ditoo. OpenDitoo already has its own exact-unit R5 evidence: about **18.46 fps** is the measured ceiling of the current full-colour synchronous one-ACK-per-frame protocol shape. Therefore this review does **not** reopen R1-R5, create a 10/20/30 rate ladder, alter candidate 005, or introduce pipelining.
+
+Most architectural lessons are already present: N980P capture is independent of transform; raw and processed stages use capacity-one latest-frame slots; transformation runs while transport waits; the typed Host remains the single RFCOMM owner; no catch-up/reconnect loop exists; and W8 records source age, replacements, duplicates, queue depth and transport timing. Live webcam preconversion into a prerecorded bundle is specifically **not** adopted: the asynchronous transform worker already moves the ~1–2 ms resize/quantization work out of the sender's wait path while preserving genuine live capture.
+
+Three roadmap changes are adopted:
+
+1. **W9A — source identity + motion truth.** Add a monotonically increasing capture/source sequence ID at successful frame acquisition and propagate it through raw→transformed→selected/sent telemetry. Build a deterministic monitor stimulus with large temporal markers/frame counters that survive 16×16 transformation. This makes source duplicates, replacement/skipping and selected-frame uniqueness directly measurable instead of inferred from timestamps or nominal FPS. This work starts only after W8-005 is closed; it must not churn the frozen 005 producer.
+2. **W9B — combined unique-frame + optical latency.** Film the W9A source stimulus and physical Ditoo together for at least 30 decodable transitions, correlating source identity, sender selection and transport evidence with visible transitions where possible. Report true scene→visible latency separately from ACK/source-age metrics and never infer panel refresh from transport rate.
+3. **W10 fixed-rate scheduler contract.** Product fixed-rate modes use monotonic absolute deadlines (`next_due += interval`) so processing/ACK overhead is not blindly added to every nominal period. Missed deadlines advance/skip logical slots with **no catch-up burst**; duplicate/no-new-frame selection does not update the actual transmit/send-floor clock as though a frame was sent. ACK-clock mode remains governed by the separately accepted W8 contract.
+
+A possible effort to exceed the synchronous one-ACK-per-frame ceiling is now explicitly **post-v1 and conditional**. It may be researched only if W9B demonstrates visible benefit from additional unique update cadence and the owner wants to pursue it. Potential protocol-shape changes (pipelining/batching, firmware buffering, alternate/delta semantics) require a new reviewed plan and authority; OpenTivoo's 30 fps and 54/56 fps figures are not evidence that Ditoo can or should use those rates.

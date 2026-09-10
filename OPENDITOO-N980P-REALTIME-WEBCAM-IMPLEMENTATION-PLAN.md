@@ -1029,7 +1029,7 @@ Camera enumeration/benchmark may remain the Windows sidecar's typed CLI if invok
 
 ## Milestone W0 — freeze baseline and define webcam contracts
 
-**Objective/value**  
+**Objective/value**
 Prevent the webcam feature from accidentally widening S1, Runtime 002, or the activity session's accepted semantics.
 
 **Implementation work**
@@ -1075,7 +1075,7 @@ Prevent the webcam feature from accidentally widening S1, Runtime 002, or the ac
 
 ## Milestone W1 — actual N980P enumeration and camera-only backend benchmark
 
-**Objective/value**  
+**Objective/value**
 Replace generic webcam assumptions with measurements from the owner's exact N980P and Windows installation.
 
 **Implementation work**
@@ -1147,7 +1147,7 @@ Per mode/backend:
 
 ## Milestone W2 — 16×16 visual-quality shootout
 
-**Objective/value**  
+**Objective/value**
 Select a deterministic transform that preserves recognizability, not merely speed.
 
 **Implementation work**
@@ -1218,7 +1218,7 @@ Capture at least a few seconds per scene from the exact N980P so temporal stabil
 
 ## Milestone W3 — bounded freshest-frame pipeline, no Host/device
 
-**Objective/value**  
+**Objective/value**
 Prove camera → latest slots → transform → scheduler semantics without any Ditoo I/O.
 
 **Implementation work**
@@ -1275,7 +1275,7 @@ Prove camera → latest slots → transform → scheduler semantics without any 
 
 ## Milestone W4 — add streaming pacing profile to existing Host, offline only
 
-**Objective/value**  
+**Objective/value**
 Make `/v1/session/*` capable of the already-proven R5 pacing shape without changing the activity product or adding a new Bluetooth surface.
 
 **Implementation work**
@@ -1327,7 +1327,7 @@ Make `/v1/session/*` capable of the already-proven R5 pacing shape without chang
 
 ## Milestone W5 — local end-to-end dry run through encoder/Host client boundary, no Ditoo
 
-**Objective/value**  
+**Objective/value**
 Prove the full application path and telemetry before physical authority.
 
 **Implementation work**
@@ -1390,7 +1390,7 @@ If useful, run the actual Host in a no-device/fake-transport test harness; do no
 
 ## Milestone W6 — freeze first bounded physical webcam trial
 
-**Objective/value**  
+**Objective/value**
 Prepare, but do not silently execute, the first exact-unit webcam activation.
 
 **Implementation work**
@@ -1452,7 +1452,7 @@ Freeze:
 
 ## Milestone W7 — first bounded physical webcam acceptance trial
 
-**Objective/value**  
+**Objective/value**
 Prove that a true live N980P frame reaches the Ditoo with fresh-frame semantics and acceptable quality.
 
 **Preconditions**
@@ -1506,97 +1506,135 @@ Prove that a true live N980P frame reaches the Ditoo with fresh-frame semantics 
 
 ## Milestone W8 — near-ceiling freshness trial
 
-**Objective/value**  
-Exercise the fastest sensible one-ACK-per-frame webcam policy using existing R5 evidence rather than another rate ladder.
+**Objective/value**
+Characterize the fastest sensible **existing one-ACK-per-frame** webcam policy using Ditoo's own R5 evidence. Do not import OpenTivoo's 30/54 fps numbers and do not create another rate ladder.
 
-**Implementation work**
+**Current implementation state**
 
-Prepare a new manifest identity, e.g.:
-
-```text
-OPENDITOO-WEBCAM-N980P-ACKCLOCK-001
-```
-
-Set:
+Historical attempts 003 and 004 are consumed and replay-forbidden. Active candidate `OPENDITOO-WEBCAM-N980P-005` preserves the corrected bounded transport shape:
 
 - `sessionProfile=streaming_ack_clock`;
-- `minFrameIntervalMs=0`;
+- Host frame-start floor **40 ms**;
+- ACK-gated client dispatch-start floor **50 ms**, leaving 10 ms request-arrival margin;
 - zero packet spacing via profile;
-- 10–20 second lifetime;
-- appropriately bounded frames/bytes;
-- same source/transform unless W7 evidence justifies a specific fix.
+- 10-second lifetime;
+- max **201 frames / 603 application packets / 211,854 application bytes**;
+- same N980P source, transform, encoder and Host protocol as accepted W7;
+- one frame in flight; no retry/reconnect/reclaim/pipelining/catch-up.
+
+Attempt 004 established that 50/40 pacing itself survived; it failed only because the client compared Host `Environment.TickCount64` telemetry to client `Stopwatch` as though they were one clock domain. Candidate 005 fixes only that telemetry invariant.
 
 **Measure**
 
 All W7 metrics plus:
 
-- steady-state fps by quarters;
-- POST overhead separated from ACK/transport time if possible;
+- steady-state fps and source-age by quarters;
+- client dispatch intervals;
+- Host frame elapsed and client HTTP/ACK elapsed as **separate clock-domain telemetry**;
+- signed `clientMinusHostElapsedMs` observational residual, never treated as literal HTTP overhead or an ordering invariant;
 - percent of source frames replaced;
-- duplicated source frames (must be zero);
-- p95 frame age at send;
-- jitter.
+- duplicated source timestamps;
+- p95 frame age at send/ACK;
+- camera/transform counts and capacity-one queue-depth maxima.
 
 **Acceptance target**
 
-- ≥15.5 fps sustained;
+- ≥15.5 fps sustained is the original target, but characterize measured behavior even if lower;
 - no tearing/faults visible;
 - p95 source age at send ≤80 ms;
 - no increasing age trend by run quarter;
 - queue depth invariant;
 - no retries/pipelining.
 
-**Ditoo authority required?** Yes — new exact one-use experiment.
+**Ditoo authority required?** Yes — fresh exact one-use experiment.
 
 **Exit criteria**
 
-- sustainable near-ceiling behavior characterized once; do not start a new rate ladder unless this reveals a specific defect.
+- sustainable near-ceiling behavior characterized once; failures are preserved under consumed identities and are not retried;
+- do not start a new rate ladder unless a specific measured defect requires one.
 
 ---
 
-## Milestone W9 — optical physical-latency trial
+## Milestone W9A — source identity + deterministic motion truth
 
-**Objective/value**  
-Measure true scene-to-visible latency rather than using ACK as a proxy.
+**Objective/value**
+Make source uniqueness and scheduler skips directly observable before interpreting panel behavior. This carries forward the portable OpenTivoo lesson that source cadence, scheduler cadence, transport cadence and visible display cadence are separate systems.
 
 **Implementation work**
 
-- source monitor in N980P FOV displays large deterministic alternating patterns;
-- high-speed external camera records source monitor and Ditoo simultaneously;
-- run accepted webcam path for ≥30 transitions;
-- frame-by-frame timing analysis.
+- add a monotonically increasing **capture/source sequence ID** at successful N980P frame acquisition;
+- propagate that ID through raw latest-frame slot → transformed 16×16 frame → sender selection telemetry without changing pixel/transport behavior;
+- record bounded selection evidence sufficient to derive first/last source ID, duplicate selections, source-ID gaps/skips and sent-frame count;
+- build a deterministic monitor stimulus for the N980P field of view with large temporal markers/frame counters that survive the 16×16 transform;
+- keep camera acquisition, transform and transport decoupled; do not queue stale frames;
+- do **not** change W8-005 before it runs, and do not preconvert live webcam frames into a prerecorded bundle. The existing asynchronous transform worker already keeps resizing/quantization outside the sender's transport wait.
 
-**Files/modules likely affected**
+**Offline tests**
 
-- optional offline stimulus script;
-- analysis script/result artifact;
-- no transport changes.
+- sequence ID is monotonic and preserved across transform;
+- replacement of an older slot never reuses or rewinds identity;
+- duplicate/no-new-frame selection is distinguishable from a newly captured frame;
+- deterministic stimulus/frame-counter sequence is reproducible and decodable after the chosen 16×16 transform;
+- no additional Bluetooth/Host ownership path.
 
-**Dependencies**
+**Evidence produced**
 
-- W7 pass; preferably W8 pass.
+- camera/source IDs captured, transformed, selected and sent;
+- duplicate-selection count;
+- source sequence gaps and replacement/skipping statistics;
+- deterministic motion-truth fixture/hash.
+
+**Ditoo authority required?** No for implementation/offline stimulus validation.
+
+**Exit criteria**
+
+- source uniqueness can be distinguished from scheduler/transport/display repetition without inference from nominal FPS alone.
+
+---
+
+## Milestone W9B — combined unique-frame + optical physical-latency trial
+
+**Objective/value**
+Measure true scene-to-visible latency **and** determine whether unique source changes remain unique through the visible Ditoo output, rather than treating ACK or transport FPS as panel refresh.
+
+**Implementation work**
+
+- source monitor in N980P FOV displays the W9A deterministic temporal-marker stimulus;
+- external high-speed camera records source monitor and Ditoo simultaneously;
+- run the accepted webcam path for at least 30 clearly decodable transitions;
+- correlate stimulus/source sequence, sender-selected source ID, Host/transport completion and visible Ditoo transition where evidence permits;
+- keep display observations separate from transport claims.
 
 **Offline tests**
 
 - stimulus timing deterministic;
-- analysis frame-count conversion verified.
+- frame-count/time conversion verified;
+- source-ID correlation logic tested against known dropped/duplicated sequences.
 
 **Benchmarks/evidence produced**
 
-- true p50/p95/min/max scene-to-visible latency.
+- true p50/p95/min/max scene-to-visible latency;
+- visible unique-transition/repeat/skipped-transition counts;
+- explicit separation of camera/source duplicate, scheduler skip, transport failure and visible panel repeat where the evidence is sufficient;
+- operator observation of smoothness/tearing/artifacts.
 
-**Ditoo authority required?** Yes for the bounded Ditoo run; external filming itself does not.
+**Dependencies**
+
+- W7 pass; W8 characterization complete; W9A instrumentation complete.
+
+**Ditoo authority required?** Yes for the bounded Ditoo run; external stimulus/filming setup itself does not.
 
 **Exit criteria**
 
-- optical latency reported independently from source-age-at-ACK.
+- optical latency is reported independently from source-age-at-ACK;
+- no claim is made that transport FPS equals panel FPS.
 
 ---
 
 ## Milestone W10 — v1 productization / operator polish
 
-**Objective/value**  
-Turn accepted experimental behavior into a small usable webcam application without widening existing Runtime 002.
+**Objective/value**
+Turn accepted experimental behavior into a small usable webcam application without widening the existing dashboard Runtime 003 authority.
 
 **Implementation work**
 
@@ -1605,33 +1643,53 @@ Turn accepted experimental behavior into a small usable webcam application witho
 - source + matrix preview;
 - robust stop/camera-disconnect behavior;
 - concise operator documentation;
-- decide whether webcam gets a separate standing product authority only after experimental acceptance.
+- decide whether webcam gets a separate standing product authority only after experimental acceptance;
+- for any **fixed-rate** webcam mode, use a monotonic absolute-deadline timeline (`next_due += interval`) rather than `sleep(interval)` after work/ACK;
+- if a logical deadline is missed, advance/skip missed logical slots and select the newest frame; never catch up with a burst;
+- duplicate/no-new-frame selection must not update the actual last-transmit/send-floor timestamp as though a frame was sent.
+
+ACK-clock/near-ceiling mode remains separately defined by the accepted W8 transport contract; absolute-deadline product pacing must not silently weaken Host floors or one-frame-in-flight semantics.
 
 **Files/modules likely affected**
 
-- `PreviewForm.cs`
+- `PreviewForm.cs`;
 - sidecar CLI/docs;
+- scheduler/telemetry code as required;
 - a **new** product policy only if explicitly approved later.
 
 **Dependencies**
 
-- W7/W8 accepted;
-- W9 strongly preferred.
+- W7 accepted;
+- W8 characterized;
+- W9A complete;
+- W9B strongly preferred.
 
 **Offline tests**
 
+- absolute-deadline scheduler absorbs bounded work instead of accumulating it into every frame period;
+- deliberately missed deadlines produce skipped logical slots, not catch-up sends;
+- duplicate/no-new-frame input does not consume a transmit interval;
 - no auto-start unless separately approved;
 - no target selector/raw send;
-- no mutation of Runtime 002;
+- no mutation/widening of Runtime 003 dashboard authority;
 - all original OpenDitoo verifier tests pass.
 
-**Ditoo authority required?** No for coding/testing; **yes** for any live product authority/cutover.
+**Ditoo authority required?** No for coding/testing; **yes** for any live webcam product authority/cutover.
 
 **Exit criteria**
 
 - one-command/operator-friendly start/stop;
 - accepted preview/ROI usability;
-- no authority boundary regression.
+- no authority boundary regression;
+- fixed-rate pacing has explicit deadline/skip telemetry and no catch-up behavior.
+
+---
+
+## Deferred post-v1 research — beyond the synchronous one-ACK-per-frame ceiling
+
+Do **not** schedule this as part of W8-W10. OpenDitoo already measured about **18.46 fps** as the ceiling of the tested full-colour synchronous one-ACK-per-frame shape. OpenTivoo's 30 fps acceptance and 54/56 fps transport bracket are methodology references, not Ditoo capability evidence.
+
+Only open a new research track if W9B shows that the physical Ditoo display visibly benefits from more unique update cadence and the user wants to pursue it. A separately reviewed plan could then investigate protocol-shape changes such as safe pipelining/batching, device/firmware buffering, or alternate/delta frame semantics. Such work requires fresh authority boundaries and must not be smuggled into webcam productization.
 
 ---
 
@@ -2032,9 +2090,11 @@ W0 contract
 → W6 freeze exact first experiment
 → explicit owner grant boundary
 → W7 12 fps physical webcam acceptance
-→ W8 one ACK-clock near-ceiling trial
-→ W9 optical latency measurement
-→ W10 product polish / separate authority decision
+→ W8 one ACK-clock near-ceiling characterization
+→ W9A source identity + deterministic motion truth
+→ W9B combined unique-frame + optical latency measurement
+→ W10 product polish + absolute-deadline fixed-rate scheduler / separate authority decision
+→ optional post-v1 protocol-shape research only if W9B shows visible benefit
 ```
 
 The main engineering idea should remain simple throughout: **capture faster than the Ditoo, retain only the newest useful image, and let the existing one-ACK-per-frame Ditoo transaction be the clock.**
