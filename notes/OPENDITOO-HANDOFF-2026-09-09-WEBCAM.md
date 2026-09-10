@@ -117,7 +117,7 @@ refuses an unknown name. **The streaming profile has never been exercised live.*
 | W5 dry run + fault injection | **done** — healthy path + terminal fault boundaries verified offline |
 | W6 freeze trial manifest | **PASS / grant-ready** — exact W6-passing Windows build frozen; adapter/parity tests, nonce negative control, and 300.12 s real-camera soak passed |
 | W7 first physical trial | **PASS / consumed** — attempt 002 streamed 108 frames / 324 packets / 110,532 bytes in 10.0145 s (~10.78 fps), clean lifetime expiry, no retry/reconnect/reclaim; operator visually confirmed the webcam feed worked; Runtime 003 restored and verified connected |
-| W8 near-ceiling ACK-clock trial | **PASS / consumed**: 005 ran its full 10 s lifetime — 163 frames / 489 packets / 170,737 bytes, 16.285 fps (quarters 15.6/16.4/16.4/16.8), source age at send p95 51.86 ms, `lifetime_expired` / `stopped_clean`, client and Host ledger in exact agreement, no retry/reconnect/reclaim, 0 duplicate source frames. 003 (pacing) and 004 (telemetry validator) remain consumed failures |
+| W8 near-ceiling ACK-clock trial | **PASS / consumed**: 005 ran its full 10 s lifetime — 163 frames / 489 packets / 170,737 bytes, 16.285 fps (quarters 15.6/16.4/16.4/16.8), source age at send p95 51.86 ms, `lifetime_expired` / `stopped_clean`, client and Host ledger in exact agreement, no retry/reconnect/reclaim, 0 duplicate source frames. owner visual PASS ("looked great", no tearing). **W8 closed PASS.** 003 (pacing) and 004 (telemetry validator) remain consumed failures |
 | W9A source identity + motion truth | after W8; propagate monotonic capture/source IDs and build deterministic temporal-marker stimulus |
 | W9B unique-frame + optical latency | after W9A; film stimulus + Ditoo together, correlate source/scheduler/transport/visible transitions and scene→display latency |
 | W10 product polish/authority | fixed-rate modes use monotonic absolute deadlines/no catch-up; only after experimental acceptance; decide separate standing webcam authority |
@@ -153,7 +153,9 @@ device receives:
    restored and verified `connected` with `last_error=null`. Signed `clientMinusHostElapsedMs`
    (p50 1.14, p95 11.57, max 16.91 ms) is observational only, not HTTP overhead, and its retained
    percentiles do not expose the negative tail. Transport FPS is not physical panel FPS.
-   Attempt 005 is consumed and replay-forbidden; W9A is next.
+   Owner visual observation is **PASS** — "looked great", no tearing or artifacts reported versus the
+   W7 ~10.78 fps baseline; that accepts visible usability at the higher cadence only, not panel refresh.
+   **W8 is closed PASS.** Attempt 005 is consumed and replay-forbidden; W9A is next.
 9. **Do not change 005 using OpenTivoo high-FPS findings.** Ditoo's own R5 result (~18.46 fps) remains authoritative for the synchronous one-ACK-per-frame shape; OpenTivoo's 30 fps/54 fps results transfer methodology only.
 10. After W8 closes, do **W9A source identity + motion truth**: assign a monotonic capture/source sequence ID, preserve it through transform/selection telemetry, and build a deterministic monitor stimulus with temporal markers that survive 16×16 conversion.
 11. Then do **W9B combined unique-frame + optical latency**: film the stimulus and Ditoo together so source duplicates, scheduler skips, transport failures and visible panel repeats can be separated where evidence allows. Never call transport FPS panel FPS.

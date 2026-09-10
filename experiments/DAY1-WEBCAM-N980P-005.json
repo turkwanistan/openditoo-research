@@ -370,7 +370,9 @@
       "current_experiment_id": "OPENDITOO-PRODUCT-8d6f0892-000001",
       "verified": true
     },
-    "owner_visual_observation": "pending",
-    "transport_fps_caveat": "Transport FPS is not physical panel FPS. W9B is required to observe visible unique-frame cadence and true scene-to-visible latency."
-  }
+    "owner_visual_observation": "pass",
+    "transport_fps_caveat": "Transport FPS is not physical panel FPS. W9B is required to observe visible unique-frame cadence and true scene-to-visible latency.",
+    "owner_visual_observation_detail": "Owner reported the webcam \"looked great\" on the exact Ditoo at 16.285 fps. No tearing, artifact or degradation was reported relative to the accepted W7 ~10.78 fps baseline. This accepts visible usability at the higher cadence only; it is not a measurement of panel refresh, visible unique-frame cadence or scene-to-visible latency, which remain W9A/W9B work."
+  },
+  "acceptance_result": "W8 closed PASS: transport, rate, freshness, timing and owner visual observation all accepted."
 }

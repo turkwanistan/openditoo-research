@@ -940,5 +940,10 @@ Visible unique-frame cadence and true scene-to-visible latency remain unmeasured
 exactly what W9A/W9B exist to establish. Do not reopen >18.46 fps protocol work on the
 strength of this result.
 
-Attempt 005 is consumed and must never be replayed. W8's transport result is closed;
-owner visual observation is recorded separately.
+**Owner visual observation: PASS.** The owner reported the webcam "looked great" on the exact
+Ditoo at 16.285 fps, with no tearing, artifact or degradation reported relative to the accepted
+W7 ~10.78 fps baseline. This accepts visible usability at the higher cadence only. It is not a
+measurement of panel refresh, visible unique-frame cadence or scene-to-visible latency.
+
+**W8 is closed PASS** on transport, rate, freshness, timing and owner visual observation.
+Attempt 005 is consumed and must never be replayed. W9A is next.
