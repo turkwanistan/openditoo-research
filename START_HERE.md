@@ -74,7 +74,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | Runtime 003 | superseded 2026-09-10 by Runtime 004 (Host re-bind only); no longer hash-valid |
 | Runtime 004 | superseded 2026-09-10 by Runtime 005 (pacing clock); no longer hash-valid |
 | Runtime 005 | superseded 2026-09-10 17:44Z by Runtime 006; saved as rollback in `.openditoo-local/rollback-runtime-005/` (`scripts/cutover_runtime_006.sh --rollback`) |
-| Runtime 007 | **active** (granted 2026-09-10, live 20:42Z): Runtime 006 re-bound to the first-frame-spacing Host `3faf520f…` (+ webcam 006); cutover `scripts/cutover_runtime_007.sh`, rollback `--rollback`. See the re-bind note |
+| Runtime 007 | **active** (granted 2026-09-10, live 20:42Z; unattended reconnect after the Ditoo's battery died PASS 22:58Z): Runtime 006 re-bound to the first-frame-spacing Host `3faf520f…` (+ webcam 006); cutover `scripts/cutover_runtime_007.sh`, rollback `--rollback`. See the re-bind note |
 | Runtime 006 | superseded 2026-09-10 20:42Z by Runtime 007; exact-byte rollback in `.openditoo-local/rollback-runtime-006/` (granted 2026-09-10 17:44Z): Runtime 005 envelope + button pagination, runtime_revision 3, same Host `f7bd60d4…` |
 | P3 product evidence | closed for v1; normal MCP use accepted; forced healthy-Lab outage waived |
 | P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
@@ -90,7 +90,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | HF-1 high-FPS page primitive | **offline PASS** on `feat/high-fps-interactive-pages` (`65723e6`): generic `activity` / `streaming_ack_clock` page contract, buffered physical inputs, ACK-driven state, change-only output, 50 ms idle poll |
 | GAME-1 slots | **offline PASS**: procedural 3-reel 16x16 game; successive short lever pulls stop L/M/R, fourth starts a new round; 1000 deterministic rounds |
 | HF-2 profile orchestrator | **offline PASS**: one-controller activity <-> streaming transitions, 100 transition stress + 1000 mixed inputs; known canvas yield reclaims same page, ambiguity never retries |
-| HF-3 one-use interactive acceptance | **prepared/dry-run PASS, NOT LIVE**: `OPENDITOO-INTERACTIVE-HF3-001`; 37/37 focused tests; 10-cycle dry-run = 21 opens / 81 ACKed frames / 60 inputs. WSL_MCP cannot see `/mnt/c` to re-verify installed ButtonProbe, so grant-ready/live remains blocked until normal local WSL re-runs preparation/check. Exact named grant still required |
+| HF-3 one-use interactive acceptance | **PASS** (`OPENDITOO-INTERACTIVE-HF3-008`, 2026-09-10 22:59Z, on branch `feat/high-fps-interactive-pages`): 11 Dashboard↔Slots cycles, 66/66 inputs, 0 faults, owner visual "great"; evidence and handoff live on that branch. Next: HF-4 standing successor (needs its own reviewed revision + grant) |
 
 ### Authority state
 
