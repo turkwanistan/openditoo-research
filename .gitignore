@@ -23,6 +23,8 @@ captures/private/
 # traffic plus unrelated personal data. Never commit them; record SHA-256 only.
 bugreport-*.zip
 *btsnoop*
+# ...but not the offline parser module, which the committed tests import and holds no capture data.
+!host/btsnoop.py
 runtime/windows/OpenDitoo.Day1.Host/bin/Streaming/
 runtime/windows/OpenDitoo.Webcam.Probe/bin/
 runtime/windows/OpenDitoo.Webcam.Probe/obj/
