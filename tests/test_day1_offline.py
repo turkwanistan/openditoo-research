@@ -4206,12 +4206,16 @@ class W10WebcamStudioTests(unittest.TestCase):
     MANIFEST = ROOT / "experiments/DAY1-WEBCAM-W10-001.json"
     STUDIO = ROOT / "runtime/windows/OpenDitoo.Webcam.Studio"
 
-    def test_w10_001_is_grant_ready_unauthorized_and_unclaimed(self) -> None:
+    def test_w10_001_is_grant_ready_or_exactly_granted_and_unconsumed(self) -> None:
         data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
         authority = data["authority"]
-        self.assertFalse(authority["transmission_authorized"])
         self.assertFalse(authority["authorization_consumed"])
-        self.assertIsNone(authority["grant_text"])
+        if authority["transmission_authorized"]:
+            # Granted but not yet run: only the exact named grant, attributed and expiring.
+            self.assertEqual(authority["grant_text"], "Grant OPENDITOO-WEBCAM-W10-001")
+            self.assertTrue(authority["granted_by"] and authority["expires_at"])
+        else:
+            self.assertIsNone(authority["grant_text"])
         self.assertEqual(authority["grant_string_after_readiness"], "Grant OPENDITOO-WEBCAM-W10-001")
         self.assertIn("Confers no standing webcam authority", authority["grant_scope_requested"])
         self.assertTrue(data["readiness"]["grant_ready"])
