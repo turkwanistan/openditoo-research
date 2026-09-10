@@ -6,7 +6,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Bytes must depend on sources only. SourceLink stamps the git commit into the PDB, whose id
+         lands in the DLL, so every commit would otherwise drift the frozen W10 binary hash. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <EnableSourceLink>false</EnableSourceLink>
   </PropertyGroup>
   <!-- Linked read-only. Every file below is hash-frozen by the parked W9B-007 manifest, so W10
        adds files and never edits these. -->

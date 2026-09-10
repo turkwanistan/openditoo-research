@@ -3,12 +3,14 @@
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-W10-001",
   "milestone": "W10B first live webcam Studio session",
-  "status": "grant_ready_awaiting_named_grant",
+  "status": "draft_awaiting_preparation",
   "objective": "One bounded live session driven from the W10 Studio window: the operator frames the shot live (zoom/pan/mirror/rotate) while the exact 16x16 matrix streams, and ends it with the Stop button. Proves the product path end to end: absolute-deadline scheduler, unchanged/duplicate suppression with heartbeat, and a clean operator stop. Not a rate measurement and not a panel-refresh claim.",
   "readiness": {
     "execution_ready": false,
-    "grant_ready": true,
-    "blockers": [],
+    "grant_ready": false,
+    "blockers": [
+      "WINDOWS_PREPARATION_NOT_RUN"
+    ],
     "required_followup": "Run python3 scripts/prepare_webcam_w10.py (zero device I/O). Then the fresh exact grant `Grant OPENDITOO-WEBCAM-W10-001`, then only bash scripts/run_webcam_w10_once.sh, once."
   },
   "target": {
@@ -29,8 +31,7 @@
       "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
       "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36"
     },
-    "host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
-    "source_checkpoint": "a1fb8a62c4d099186b262341181a27d31656e5e7 + Studio build staged at C:\\temp\\openditoo-webcam-studio-w10"
+    "host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb"
   },
   "session": {
     "lifetime_seconds": 60,
@@ -51,29 +52,7 @@
     "source_description": "NexiGo VID_0C45 PID_2690 live camera framed by the operator in the W10 Studio window; WinRT Realtime freshest-frame slots; srgb_area transform with operator-adjustable zoom/pan/mirror/rotation and the deterministic 255-colour guard.",
     "live_source": {
       "producer_description": "W10 Studio (runtime/windows/OpenDitoo.Webcam.Studio): StudioCamera + StudioSender + StudioForm, linking the 007-frozen transform, encoder, slot and typed-session files read-only. SourceId assigned once at acquisition as in W9A.",
-      "producer_code_sha256": {
-        "runtime/windows/OpenDitoo.Webcam.Studio/Program.cs": "21e69ce7e7f04d94dddd85a472244ae31c179880a4eb441e222eeced3f0735b5",
-        "runtime/windows/OpenDitoo.Webcam.Studio/StudioCamera.cs": "73efe75264da487b4a88dbf63665a61d25f769e75db8d3c5511a0920460540ea",
-        "runtime/windows/OpenDitoo.Webcam.Studio/StudioForm.cs": "c7c8ad630a934e1b0574ec978769cb0062e50ae068920df674729bab7bdd3830",
-        "runtime/windows/OpenDitoo.Webcam.Studio/StudioSender.cs": "83bc030e34d8be415f121d5a5dbd25a34d71c98bde6e9348119cfca09db7590f",
-        "runtime/windows/OpenDitoo.Webcam.Studio/StudioTests.cs": "79f5f1370b444f124b5794f1376fda0eddb1e1b1eef9aa2035033a4a2253db83",
-        "runtime/windows/OpenDitoo.Webcam.Studio/StudioTrial.cs": "6e97e7bbcdeb79726bfe01a5340f9b1eac653d0fd1e124f91f7e1e7fc121a883",
-        "runtime/windows/OpenDitoo.Webcam.Studio/OpenDitoo.Webcam.Studio.csproj": "7b24b3ec1813dae0e0dd0a76c87bb5d7a40c5a34211485593bac907c9a9446cf",
-        "runtime/windows/OpenDitoo.Webcam.Probe/WebcamFrames.cs": "ed144646c459fea0337f5b920f8d17e6b8bc50caf93c100a65470f0c699eafad",
-        "runtime/windows/OpenDitoo.Webcam.Probe/LatestFrameSlot.cs": "b6021ed54c9a18fc40f101e0c50378b4fd8d16356c73878ce58fce21cc9198d0",
-        "runtime/windows/OpenDitoo.Webcam.Probe/FrameTransform.cs": "2d703b7dd7630dff071813c728862b33a0c5e68f245ee277ce0c7f9c8c85d623",
-        "runtime/windows/OpenDitoo.Webcam.Probe/DitooEncoder.cs": "a543919336212deed5fc7de354b932cadc68829eb848aee8043e1303cd0bfbb8",
-        "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs": "14addbc5b9c2f0da85cad090a4d2c672911b302ca36bb915fc9e03a1be1eb520",
-        "runtime/windows/OpenDitoo.Webcam.Runner/TypedSession.cs": "5ba7b540822eef6f438355f6b034ef315dd191a8809f37535199fac1ff102243",
-        "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs": "cdb64d7c521217376cf38989aca1d5640aee4cd9d3494ee2a287b4ea5d5f5fa4",
-        "host/webcam_studio.py": "156bd9b6df17e9c7a5fc369d93eb4beddd54ccbb66895c531c8fc9c00e68701a",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.deps.json": "58642f8242fc0f3f89d7f37a8c512fa8907f25801c3984a34e5d685be0241960",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.dll": "550af9d4efae50a0e53f674088269972e2870e9a6f2637f1cbfaabcd17db3ab6",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.exe": "e073e319321eac3818c7fc93621dbb787d8edaad154b0444f3c39fecd9cb907b",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.runtimeconfig.json": "05e2c41d6487512bdd7b09d280bb0c247e31ef20e2be58779bf742a9ac7bcd92",
-        "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/WinRT.Runtime.dll": "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
-      },
+      "producer_code_sha256": {},
       "camera": {
         "device_description": "NexiGo HD Webcam",
         "usb_vid": "0C45",
@@ -186,6 +165,6 @@
       "/v1/session/close"
     ],
     "claim_handshake": "Studio must produce one fresh valid 16x16 frame and show its window before emitting camera_ready + nonce; WSL creates the durable one-use claim only then, and only execute:<nonce> crosses the claim boundary.",
-    "deployment_state": "PASS preparation at a1fb8a62c4d099186b262341181a27d31656e5e7: Studio built, staged to C:\\temp\\openditoo-webcam-studio-w10, selftest + transform/encoder parity passed from the staged copy, Host identity checked read-only. No claim, session or device I/O."
+    "deployment_state": "not yet prepared"
   }
 }
