@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "experiment_id":  "OPENDITOO-WEBCAM-N980P-003",
+    "milestone":  "W8 near-ceiling webcam preparation",
+    "status":  "pass",
+    "prepared_from_git_head":  "25284be8572093efb4ab6cfb2d0692f8bfcea419",
+    "pacing":  {
+                   "session_profile":  "streaming_ack_clock",
+                   "host_floor_ms":  40,
+                   "client_dispatch_floor_ms":  40,
+                   "rule":  "one frame in flight; prior ACK required; dispatch start no earlier than 40 ms after previous dispatch start"
+               },
+    "budgets":  {
+                    "lifetime_seconds":  10,
+                    "max_frames":  251,
+                    "max_application_packets":  753,
+                    "max_tx_bytes":  264554
+                },
+    "checks":  {
+                   "adapter_selftest":  "pass",
+                   "fast_ack_40ms_floor_control":  "pass",
+                   "transform_selftest_cases":  15,
+                   "encoder_selftest_cases":  6,
+                   "real_host_status_selftest":  "pass",
+                   "exact_target":  "11:75:58:CE:DE:C7"
+               },
+    "telemetry":  [
+                      "effectiveFps",
+                      "framesByQuarter",
+                      "fpsByQuarter",
+                      "sourceAgeAtSendMsByQuarter",
+                      "dispatchIntervalMs",
+                      "ackMs",
+                      "hostFrameMs",
+                      "httpOverheadMs",
+                      "duplicateSourceFrames",
+                      "captured",
+                      "processed",
+                      "replaced",
+                      "replacementPercent",
+                      "rawQueueDepthMax",
+                      "readyQueueDepthMax"
+                  ],
+    "operation":  {
+                      "claim_created":  false,
+                      "host_session_io":  false,
+                      "device_io":  false
+                  }
+}
