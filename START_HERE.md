@@ -72,8 +72,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | Runtime 005 | **active** local product policy; Host `f7bd60d4…` (high-resolution pacing clock); connected, runtime_revision remains 2 |
 | P3 product evidence | closed for v1; normal MCP use accepted; forced healthy-Lab outage waived |
 | P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
-| BTN-0 AVRCP evidence reproduction | **current / not yet implemented**: reproduce Left/Right/Left/Lever from preserved M7 HCI bytes with repository code; no device I/O |
-| BTN-1 Windows ButtonProbe | next: receive-only SMTC/WM_APPCOMMAND diagnostic; no Ditoo send capability |
+| BTN-0 AVRCP evidence reproduction | **PASS** (`BTN0_AVRCP_REPRODUCTION=PASS`): `host/avctp.py` + direction-scoped L2CAP channels in `host/btsnoop.py` + `capture-avrcp-parse` reproduce 0x4C/0x4B/0x4C/0x44 (all press+release, all ACCEPTED) from the raw M7 bytes; derived `captures/OPENDITOO-M7-AVRCP-KEY-SWEEP-2026-09-09.json`. New: the first Left coincided with an unsolicited RFCOMM 0x09 report (-2.7 ms), so arrows are not assumed session-neutral |
+| BTN-1 Windows ButtonProbe | **current**: receive-only SMTC/WM_APPCOMMAND diagnostic; no Ditoo send capability |
 | BTN-2 exact Windows physical receive proof | next after BTN-0/1: Left → Right → Left → Lever twice while Runtime 005 remains the display baseline |
 | BTN-3..5 pagination | gated on BTN-2: typed broker, offline two-page router, then physical Dashboard → Right → animation → Left → Dashboard acceptance |
 

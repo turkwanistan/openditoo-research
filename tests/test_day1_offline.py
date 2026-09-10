@@ -4439,3 +4439,167 @@ class Runtime005PacingClockTests(unittest.TestCase):
         self.assertIn('"${2:-}" == "Grant OPENDITOO-WEBCAM-PRODUCT-004"', shell)
         self.assertTrue(shell.index("ROLLBACK_SAVED") < shell.index("refresh_openditoo_day1_host.ps1")
                         < shell.index("R005_HOST_DEPLOYED") < shell.index("policy-grant"))
+
+
+# --------------------------------------------------------------------------
+# BTN-0 — AVRCP pass-through key evidence from preserved HCI bytes
+# --------------------------------------------------------------------------
+
+import hashlib  # noqa: E402
+from host import avctp  # noqa: E402
+
+M7_BUGREPORT = ROOT / "bugreport-husky-CP1A.260505.005-2026-09-09-00-59-46.zip"
+M7_AVRCP = ROOT / "captures/OPENDITOO-M7-AVRCP-KEY-SWEEP-2026-09-09.json"
+
+
+def _avctp(label: int, response: bool, pdu_type: int = 0) -> bytes:
+    return bytes(((label << 4) | (pdu_type << 2) | (0x02 if response else 0x00),)) + b"\x11\x0e"
+
+
+def _pass_through(label: int, operation: int, released: bool, response: bool = False) -> bytes:
+    ctype = avctp.RESPONSE_ACCEPTED if response else avctp.CTYPE_CONTROL
+    op = operation | (avctp.STATE_RELEASED if released else 0)
+    return _avctp(label, response) + bytes((ctype, avctp.SUBUNIT_PANEL, avctp.OPCODE_PASS_THROUGH, op, 0))
+
+
+class AvrcpKeyEvidenceTests(unittest.TestCase):
+    PEER = "11:75:58:CE:DE:C7"
+    HANDLE = 0x000B
+    # As in M7: the Ditoo opens AVCTP (rx request, its scid 0x0043), the phone answers
+    # with dcid 0x0045. The phone's own AVDTP channel reuses 0x0043 for inbound data.
+    RX_CID, TX_CID = 0x0045, 0x0043
+
+    def _open(self, psm: int, identifier: int, scid: int, dcid: int, requester: str) -> list:
+        responder = "tx" if requester == "rx" else "rx"
+        return [(requester, _h4_acl(self.HANDLE, 2, _sig(btsnoop.SIG_CONNECTION_REQUEST, identifier, struct.pack("<HH", psm, scid)))),
+                (responder, _h4_acl(self.HANDLE, 2, _sig(btsnoop.SIG_CONNECTION_RESPONSE, identifier, struct.pack("<HHHH", dcid, scid, 0, 0))))]
+
+    def _press(self, label: int, operation: int) -> list:
+        out = []
+        for offset, released in ((0, False), (1, True)):
+            lab = (label + offset) & 0x0F
+            out.append(("rx", _h4_acl(self.HANDLE, 2, _l2cap(self.RX_CID, _pass_through(lab, operation, released)))))
+            out.append(("tx", _h4_acl(self.HANDLE, 2, _l2cap(self.TX_CID, _pass_through(lab, operation, released, True)))))
+        return out
+
+    def _read(self, records: list):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "c.btsnoop"
+            path.write_bytes(_btsnoop([("rx", _connection_complete(self.HANDLE, self.PEER))] + records))
+            _, items, other = avctp.read(path, peer_bdaddr=self.PEER)
+            rfcomm = btsnoop.read(path, peer_bdaddr=self.PEER, reveal_commands={0x58})
+        events, unpaired = avctp.pair_presses(items)
+        return events, unpaired, other, rfcomm
+
+    def _base(self) -> list:
+        return self._open(btsnoop.L2CAP_PSM_AVCTP, 7, self.TX_CID, self.RX_CID, requester="rx")
+
+    def test_left_right_left_lever_reconstructs_in_order_and_accepted(self) -> None:
+        records = self._base()
+        for label, operation in ((0, 0x4C), (2, 0x4B), (4, 0x4C), (6, 0x44)):
+            records += self._press(label, operation)
+        events, unpaired, other, _ = self._read(records)
+        self.assertEqual([event.operation for event in events], [0x4C, 0x4B, 0x4C, 0x44])
+        self.assertTrue(all(event.press_accepted and event.release_accepted for event in events))
+        self.assertTrue(all(event.direction == "rx" for event in events))
+        self.assertEqual(unpaired, [])
+        self.assertEqual(other, {"rx": 0, "tx": 0})
+
+    def test_cid_is_direction_scoped_so_a_reused_value_on_another_psm_is_not_avctp(self) -> None:
+        # Phone-opened AVDTP: its scid 0x0043 names inbound AVDTP data, while outbound
+        # 0x0043 is AVCTP. A direction-blind CID set would read AVDTP as a key press.
+        records = self._open(0x0019, 3, 0x0043, 0x0041, requester="tx") + self._base()
+        records.append(("rx", _h4_acl(self.HANDLE, 2, _l2cap(0x0043, _pass_through(9, 0x4B, False)))))
+        events, unpaired, other, _ = self._read(records)
+        self.assertEqual(events, [])
+        self.assertEqual(unpaired, [])
+
+    def test_release_without_press_and_press_without_release_never_become_events(self) -> None:
+        records = self._base()
+        records.append(("rx", _h4_acl(self.HANDLE, 2, _l2cap(self.RX_CID, _pass_through(1, 0x4B, True)))))
+        records.append(("rx", _h4_acl(self.HANDLE, 2, _l2cap(self.RX_CID, _pass_through(2, 0x4C, False)))))
+        events, unpaired, _, _ = self._read(records)
+        self.assertEqual(events, [])
+        self.assertEqual([(item.operation, item.released) for item in unpaired], [(0x4B, True), (0x4C, False)])
+
+    def test_acl_fragmented_pdu_reassembles_but_a_truncated_one_is_dropped(self) -> None:
+        records = self._base()
+        whole = _l2cap(self.RX_CID, _pass_through(0, 0x4B, False))
+        records += [("rx", _h4_acl(self.HANDLE, 2, whole[:6])), ("rx", _h4_acl(self.HANDLE, 1, whole[6:]))]
+        records.append(("rx", _h4_acl(self.HANDLE, 2, _l2cap(self.RX_CID, _pass_through(1, 0x4B, True)))))
+        # Truncated press: the L2CAP length promises more than ever arrives.
+        cut = _l2cap(self.RX_CID, _pass_through(2, 0x4C, False))
+        records.append(("rx", _h4_acl(self.HANDLE, 2, cut[:-2])))
+        events, _, _, _ = self._read(records)
+        self.assertEqual([event.operation for event in events], [0x4B])
+
+    def test_malformed_or_fragmented_avctp_fails_closed(self) -> None:
+        now = "t"
+        good = _pass_through(0, 0x4C, False)
+        self.assertIsNotNone(avctp.decode(now, "rx", good))
+        self.assertIsNone(avctp.decode(now, "rx", good[:-1]), msg="truncated pass-through")
+        self.assertIsNone(avctp.decode(now, "rx", good + b"\x00"), msg="length field disagrees")
+        self.assertIsNone(avctp.decode(now, "rx", _avctp(0, False, pdu_type=1) + good[3:]), msg="AVCTP start fragment")
+        self.assertIsNone(avctp.decode(now, "rx", b"\x00\x11\x0f" + good[3:]), msg="foreign profile id")
+        self.assertIsNone(avctp.decode(now, "rx", bytes((good[0] | 1,)) + good[1:]), msg="IPID set")
+
+    def test_unrelated_avctp_traffic_is_counted_not_labelled(self) -> None:
+        records = self._base()
+        # Vendor-dependent GetCapabilities and a volume-changed notification, as in M7.
+        for pdu in (bytes.fromhex("60110e0148000019581000000103"),
+                    bytes.fromhex("02110e0d4800001958310000020d08")):
+            records.append(("rx", _h4_acl(self.HANDLE, 2, _l2cap(self.RX_CID, pdu))))
+        events, unpaired, other, _ = self._read(records)
+        self.assertEqual((events, unpaired), ([], []))
+        self.assertEqual(other, {"rx": 2, "tx": 0})
+
+    def test_avctp_channel_does_not_change_rfcomm_results(self) -> None:
+        wire = encode_candidate_normal(0x58, bytes.fromhex("ffffff016a"))
+        rfcomm_records = [("tx", _h4_acl(self.HANDLE, 2, _sig(btsnoop.SIG_CONNECTION_REQUEST, 1, struct.pack("<HH", 3, 0x0041)))),
+                          ("rx", _h4_acl(self.HANDLE, 2, _sig(btsnoop.SIG_CONNECTION_RESPONSE, 1, struct.pack("<HHHH", 0x0044, 0x0041, 0, 0)))),
+                          ("tx", _h4_acl(self.HANDLE, 2, _l2cap(0x0044, _rfcomm_uih(2, wire))))]
+        _, _, _, alone = self._read(rfcomm_records)
+        events, _, _, mixed = self._read(self._base() + rfcomm_records + self._press(0, 0x4B))
+        self.assertEqual([event.operation for event in events], [0x4B])
+        self.assertEqual([frame.hex for frame in mixed[1]], [wire.hex()])
+        self.assertEqual([frame.hex for frame in alone[1]], [frame.hex for frame in mixed[1]])
+        self.assertEqual(mixed[0].rfcomm_cids, {0x0041, 0x0044})
+
+    def test_committed_artifact_records_the_controlled_sequence(self) -> None:
+        data = json.loads(M7_AVRCP.read_text(encoding="utf-8"))
+        self.assertFalse(data["device_io"])
+        self.assertFalse(data["derived_from"]["raw_bugreport_committed"])
+        historical = ROOT / data["derived_from"]["historical_record"]
+        self.assertEqual(hashlib.sha256(historical.read_bytes()).hexdigest(),
+                         data["derived_from"]["historical_record_sha256"], msg="historical M7 record is immutable")
+        derived = {event["pressed_at_utc"]: event for event in data["derived"]["key_events"]}
+        controlled = data["interpretation"]["controlled_sequence"]
+        self.assertEqual([(step["operation"], step["candidate_input"]) for step in controlled],
+                         [("0x4C", "nav_left"), ("0x4B", "nav_right"), ("0x4C", "nav_left"), ("0x44", "lever_candidate")])
+        for step in controlled:
+            event = derived[step["pressed_at_utc"]]
+            self.assertEqual(event["operation"], step["operation"])
+            self.assertTrue(event["press_accepted"] and event["release_accepted"])
+        lever = derived[controlled[3]["pressed_at_utc"]]["rfcomm_reports_within_window"]
+        self.assertEqual([(r["reported_command"], r["offset_ms_from_press"]) for r in lever], [("0xBD", -1.698)])
+        self.assertEqual(data["derived"]["unpaired_pass_through"], [])
+
+    @unittest.skipUnless(M7_BUGREPORT.is_file(), "the raw M7 bugreport is private and absent from this checkout")
+    def test_raw_capture_reproduces_the_committed_artifact_exactly(self) -> None:
+        data = json.loads(M7_AVRCP.read_text(encoding="utf-8"))
+        proc = subprocess.run([sys.executable, "cli/openditoo.py", "capture-avrcp-parse", "--capture", M7_BUGREPORT.name],
+                              cwd=ROOT, capture_output=True, text=True, check=True)
+        fresh = json.loads(proc.stdout)
+        self.assertTrue(fresh.pop("ok"))
+        self.assertEqual(fresh.pop("command"), "capture-avrcp-parse")
+        self.assertEqual(fresh, data["derived"])
+
+    @unittest.skipUnless(M7_BUGREPORT.is_file(), "the raw M7 bugreport is private and absent from this checkout")
+    def test_raw_capture_still_reproduces_the_historical_rfcomm_m7_result(self) -> None:
+        historical = json.loads((ROOT / "captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json").read_text(encoding="utf-8"))
+        view, frames, errors = btsnoop.read(M7_BUGREPORT, peer_bdaddr=self.PEER, reveal_commands={0x04})
+        self.assertEqual(view.fcs_failures, historical["method"]["parser_health"]["rfcomm_fcs_failures"])
+        self.assertEqual({d: len(e) for d, e in errors.items()}, historical["method"]["parser_health"]["decoder_errors"])
+        seen = {(frame.at.isoformat().replace("+00:00", "Z"), frame.hex) for frame in frames if frame.direction == "rx"}
+        for report in historical["unsolicited_reports"]:
+            self.assertIn((report["at_utc"], report["wire_hex"]), seen)

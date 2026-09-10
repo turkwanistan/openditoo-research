@@ -28,6 +28,7 @@ from host.ditoo_pixel_coloring import encode_rgb888_static_image, sha256_hex as 
 from host.png16 import Png16Error, decode_png16_rgb, png_sha256  # noqa: E402
 from host import activity_render  # noqa: E402
 from host import btsnoop  # noqa: E402
+from host import avctp  # noqa: E402
 from host import mcp_activity  # noqa: E402
 from host import activity_session  # noqa: E402
 from host import frame_stream  # noqa: E402
@@ -508,6 +509,29 @@ def capture_parse(args: argparse.Namespace) -> int:
              "command": f"0x{frame.command:02X}", "wire_hex": frame.hex, "sha256": frame.sha256}
             for frame in frames if frame.hex
         ]
+    if args.output:
+        Path(args.output).write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        result["output_file"] = args.output
+    emit(result)
+    return EXIT_OK
+
+
+def capture_avrcp_parse(args: argparse.Namespace) -> int:
+    """Offline (BTN-0): recover the peer's AVRCP pass-through key events from one capture.
+
+    Reads a local file and reaches no device. Only operation ids and the peer's own
+    device-state reports near each press are revealed; see host/avctp.py.
+    """
+    path = Path(args.btsnoop)
+    if not path.is_file():
+        emit({"ok": False, "command": "capture-avrcp-parse", "error_code": "INPUT_NOT_FOUND", "source_file": str(path)})
+        return EXIT_USAGE
+    try:
+        evidence = avctp.derive_evidence(path, args.peer_bdaddr, zip_entry=args.zip_entry)
+    except btsnoop.BtsnoopError as exc:
+        emit({"ok": False, "command": "capture-avrcp-parse", "error_code": "INVALID_BTSNOOP", "message": str(exc)})
+        return EXIT_USAGE
+    result = {"ok": True, "command": "capture-avrcp-parse", "device_io": False, **evidence}
     if args.output:
         Path(args.output).write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         result["output_file"] = args.output
@@ -1146,6 +1170,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--reveal", help="comma-separated command ids to include in the clear, e.g. 58,44")
     p.add_argument("--output")
     p.set_defaults(func=capture_parse)
+    p = sub.add_parser("capture-avrcp-parse", help="offline: recover AVRCP pass-through key events from a raw btsnoop capture")
+    p.add_argument("--capture", "--btsnoop", dest="btsnoop", required=True,
+                   help="an Android bugreport .zip, or an already-extracted btsnoop log")
+    p.add_argument("--zip-entry", help="which log inside the archive (default: the current btsnoop_hci.log)")
+    # Offline analysis filter over a local file; not a device target.
+    p.add_argument("--peer-bdaddr", default="11:75:58:CE:DE:C7")
+    p.add_argument("--output")
+    p.set_defaults(func=capture_avrcp_parse)
     p = sub.add_parser("activity-probe", help="diagnose the three MCP activity sources (read-only)")
     p.set_defaults(func=activity_probe)
     p = sub.add_parser("activity-status", help="normalized MCP activity state; collection health is separate from device health")

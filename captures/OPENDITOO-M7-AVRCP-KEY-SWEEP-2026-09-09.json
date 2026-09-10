@@ -1,0 +1,277 @@
+{
+ "schema_version": 1,
+ "capture_id": "OPENDITOO-M7-AVRCP-KEY-SWEEP-2026-09-09",
+ "status": "derived_exact_unit_avrcp_key_evidence",
+ "gate": "BTN0_AVRCP_REPRODUCTION=PASS",
+ "derived_at": "2026-09-10",
+ "derived_from": {
+  "historical_record": "captures/OPENDITOO-M7-KEY-SWEEP-2026-09-09.json",
+  "historical_record_sha256": "3a7c0f8752132da4b05d1fd54fef03beaa7ad478833ae8ccc6c642c05320653b",
+  "historical_record_modified": false,
+  "raw_bugreport_committed": false,
+  "reproduce": "python3 cli/openditoo.py capture-avrcp-parse --capture bugreport-husky-CP1A.260505.005-2026-09-09-00-59-46.zip",
+  "note": "`derived` is the exact command output minus ok/command. A private-evidence test re-runs it against the raw bugreport when present and requires byte-identical JSON."
+ },
+ "derived": {
+  "correlation_window_ms": 100,
+  "device_io": false,
+  "key_events": [
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "play",
+    "hold_ms": 45.581,
+    "operation": "0x44",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:57:03.321795Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xC4",
+    "released_at_utc": "2026-09-09T04:57:03.367376Z",
+    "rfcomm_reports_within_window": []
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "pause",
+    "hold_ms": 6.318,
+    "operation": "0x46",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:57:03.385936Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xC6",
+    "released_at_utc": "2026-09-09T04:57:03.392254Z",
+    "rfcomm_reports_within_window": []
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "play",
+    "hold_ms": 10.045,
+    "operation": "0x44",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:57:03.673200Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xC4",
+    "released_at_utc": "2026-09-09T04:57:03.683245Z",
+    "rfcomm_reports_within_window": []
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "pause",
+    "hold_ms": 8.728,
+    "operation": "0x46",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:57:04.046980Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xC6",
+    "released_at_utc": "2026-09-09T04:57:04.055708Z",
+    "rfcomm_reports_within_window": []
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "play",
+    "hold_ms": 10.349,
+    "operation": "0x44",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:57:04.311598Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xC4",
+    "released_at_utc": "2026-09-09T04:57:04.321947Z",
+    "rfcomm_reports_within_window": []
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "pause",
+    "hold_ms": 13.196,
+    "operation": "0x46",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:57:05.326844Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xC6",
+    "released_at_utc": "2026-09-09T04:57:05.340040Z",
+    "rfcomm_reports_within_window": []
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "play",
+    "hold_ms": 12.519,
+    "operation": "0x44",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:57:05.516470Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xC4",
+    "released_at_utc": "2026-09-09T04:57:05.528989Z",
+    "rfcomm_reports_within_window": []
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "pause",
+    "hold_ms": 7.986,
+    "operation": "0x46",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:57:05.741768Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xC6",
+    "released_at_utc": "2026-09-09T04:57:05.749754Z",
+    "rfcomm_reports_within_window": []
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "backward",
+    "hold_ms": 61.934,
+    "operation": "0x4C",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:58:11.708959Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xCC",
+    "released_at_utc": "2026-09-09T04:58:11.770893Z",
+    "rfcomm_reports_within_window": [
+     {
+      "at_utc": "2026-09-09T04:58:11.706261Z",
+      "offset_ms_from_press": -2.698,
+      "reported_command": "0x09",
+      "wire_hex": "010600040955026a0002"
+     }
+    ]
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "forward",
+    "hold_ms": 18.221,
+    "operation": "0x4B",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:58:19.907369Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xCB",
+    "released_at_utc": "2026-09-09T04:58:19.925590Z",
+    "rfcomm_reports_within_window": []
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "backward",
+    "hold_ms": 24.56,
+    "operation": "0x4C",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:58:27.953913Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xCC",
+    "released_at_utc": "2026-09-09T04:58:27.978473Z",
+    "rfcomm_reports_within_window": []
+   },
+   {
+    "direction": "peer_to_phone",
+    "evidence_label": "play",
+    "hold_ms": 69.467,
+    "operation": "0x44",
+    "press_accepted": true,
+    "pressed_at_utc": "2026-09-09T04:59:00.014282Z",
+    "release_accepted": true,
+    "release_operation_byte": "0xC4",
+    "released_at_utc": "2026-09-09T04:59:00.083749Z",
+    "rfcomm_reports_within_window": [
+     {
+      "at_utc": "2026-09-09T04:59:00.012584Z",
+      "offset_ms_from_press": -1.698,
+      "reported_command": "0xBD",
+      "wire_hex": "01090004bd5513014b007e0102"
+     }
+    ]
+   }
+  ],
+  "l2cap_psm": "0x0017",
+  "non_pass_through_avctp_pdus": {
+   "rx": 15,
+   "tx": 15
+  },
+  "pass_through_pdus": 48,
+  "peer": "11:75:58:CE:DE:C7",
+  "provenance": {
+   "btsnoop_sha256": "77f053988878540656e074853b100aef688bb17bafa39f265e6c2008df532b4f",
+   "container": "android_bugreport_zip",
+   "other_btsnoop_entries": [
+    "FS/data/misc/bluetooth/logs/btsnoop_hci.log.last"
+   ],
+   "source_file": "bugreport-husky-CP1A.260505.005-2026-09-09-00-59-46.zip",
+   "source_sha256": "8208881b53e41d823e9c7836deb35890da6900924949f0ba597252ea65a0af13",
+   "zip_entry": "FS/data/misc/bluetooth/logs/btsnoop_hci.log"
+  },
+  "unpaired_pass_through": []
+ },
+ "interpretation": {
+  "controlled_press_order": [
+   "K-F1 left arrow",
+   "K-F3 right arrow",
+   "K-F1 left arrow",
+   "K-F2 minus",
+   "K-B2 plus",
+   "K-B3 brightness",
+   "J-R1 joystick/lever",
+   "K-B1 M"
+  ],
+  "slot_spacing": "about 8 s; brightness 0x46 report at 04:58:52.335 anchors slot 6",
+  "controlled_sequence": [
+   {
+    "slot": 1,
+    "control": "K-F1 left arrow",
+    "operation": "0x4C",
+    "pressed_at_utc": "2026-09-09T04:58:11.708959Z",
+    "evidence_label": "backward",
+    "candidate_input": "nav_left"
+   },
+   {
+    "slot": 2,
+    "control": "K-F3 right arrow",
+    "operation": "0x4B",
+    "pressed_at_utc": "2026-09-09T04:58:19.907369Z",
+    "evidence_label": "forward",
+    "candidate_input": "nav_right"
+   },
+   {
+    "slot": 3,
+    "control": "K-F1 left arrow",
+    "operation": "0x4C",
+    "pressed_at_utc": "2026-09-09T04:58:27.953913Z",
+    "evidence_label": "backward",
+    "candidate_input": "nav_left"
+   },
+   {
+    "slot": 7,
+    "control": "J-R1 lever",
+    "operation": "0x44",
+    "pressed_at_utc": "2026-09-09T04:59:00.014282Z",
+    "evidence_label": "play",
+    "candidate_input": "lever_candidate"
+   }
+  ],
+  "evidence_labels_vs_product_names": "operation ids are named by AV/C panel standard (0x4C backward, 0x4B forward, 0x44 play). nav_left/nav_right/lever_candidate are future product names, not evidence.",
+  "every_press_released_and_accepted": "each controlled press has its 0x80-bit release; the phone ACCEPTED both press and release",
+  "findings": [
+   {
+    "id": "ARROWS-AND-LEVER-EMIT-AVRCP",
+    "confidence": "MATCHED",
+    "statement": "Left, right, left and the lever each produced exactly one AVRCP PASS THROUGH press/release pair on AVCTP PSM 0x0017, controller=Ditoo, in the controlled slots. Holds 18-69 ms."
+   },
+   {
+    "id": "LEVER-ALSO-EMITS-RFCOMM-0xBD",
+    "confidence": "MATCHED",
+    "statement": "The lever's AVRCP 0x44 press follows an unsolicited RFCOMM wrapped report 0xBD (data 13014b00) by 1.698 ms. The historical record attributed this 0xBD report to K-B1 M by order; slot timing plus the coincident AVRCP 0x44 places it in the lever slot. The historical file is not edited; this record supersedes that attribution.",
+    "consequence": "Runtime 005 treats any unsolicited non-ACK report as canvas_invalidated. A lever pull is therefore expected to end/yield the active dashboard session; measure, do not suppress."
+   },
+   {
+    "id": "FIRST-LEFT-COINCIDES-WITH-RFCOMM-0x09",
+    "confidence": "OBSERVED_ONCE",
+    "statement": "The historical 'unresolved' unsolicited 0x09 report (data 02) at 04:58:11.706261 precedes the first left press's AVRCP 0x4C by 2.698 ms. The repeat left (slot 3) and the right press had no RFCOMM report within 100 ms.",
+    "consequence": "An arrow can at least sometimes coincide with a non-ACK RFCOMM report. Under Runtime 005 that would register as canvas_invalidated and a reclaim. BTN-2 must record Host session identity across every arrow press; do not assume arrows leave the session alone."
+   },
+   {
+    "id": "PRE-SWEEP-PLAY-PAUSE-BURST",
+    "confidence": "OBSERVED_UNATTRIBUTED",
+    "statement": "Eight alternating 0x44/0x46 (play/pause) press/release pairs at 04:57:03.32-04:57:05.75, about 66 s before the first controlled press (and before the app's 04:57:50 query burst), outside the controlled schedule. Not attributed to any control; shows the lever's AVRCP operation can alternate Play/Pause with state."
+   },
+   {
+    "id": "M-BOUNDED-NEGATIVE",
+    "confidence": "MATCHED_UNDER_TESTED_CONTEXT",
+    "statement": "No peer ACL traffic at all between 04:59:01.73 and 04:59:18.59 (the M slot); no AVRCP or RFCOMM key-shaped event. Bounded negative only."
+   }
+  ],
+  "durable_correction": "left/right/lever were silent only on the proprietary RFCOMM application stream; the preserved exact-unit HCI capture proves left/right/lever on AVRCP."
+ },
+ "device_io": false
+}

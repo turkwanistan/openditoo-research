@@ -6,6 +6,10 @@ The owner has selected physical button navigation as the next objective. W10 web
 
 For a fresh local Claude Code session, the prepared kickoff prompt is `notes/OPENDITOO-BUTTONS-CLAUDE-KICKOFF-PROMPT-2026-09-10.md`. It is a convenience entry point; this handoff and the live repository remain authoritative.
 
+## Progress log (newest last; repository state outranks it)
+
+- **BTN-0 PASS (2026-09-10).** `python3 cli/openditoo.py capture-avrcp-parse --capture bugreport-husky-CP1A.260505.005-2026-09-09-00-59-46.zip` reproduces Left `0x4C`/`0xCC`, Right `0x4B`/`0xCB`, Left `0x4C`/`0xCC`, Lever `0x44`/`0xC4` from the raw M7 bytes (Ditoo-initiated AVCTP, CIDs rx `0x0045` / tx `0x0043`; every press and release ACCEPTED by the phone). Lever `0x44` follows RFCOMM `0xBD` by 1.698 ms. Derived artifact `captures/OPENDITOO-M7-AVRCP-KEY-SWEEP-2026-09-09.json`; historical M7 JSON untouched and hash-pinned. Two things the research note did not have: (1) the historical "unresolved" 0x09 report at 04:58:11.706 precedes the **first Left** press by 2.7 ms (repeat Left and Right had none) — so BTN-2 must check session identity across every arrow press; (2) an unattributed burst of 8 alternating Play/Pause pairs at 04:57:03–05, i.e. the lever's AVRCP op can alternate with state. L2CAP channel tracking for AVCTP is direction-scoped because M7 reuses CID `0x0043` for AVDTP rx and AVCTP tx. Offline suite 306 PASS locally (no PIL errors in this environment).
+
 ## Current route
 
 Read, in order:

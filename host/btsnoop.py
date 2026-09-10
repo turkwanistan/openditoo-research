@@ -29,6 +29,7 @@ H4_COMMAND, H4_ACL, H4_SCO, H4_EVENT = 0x01, 0x02, 0x03, 0x04
 EVT_CONNECTION_COMPLETE, EVT_DISCONNECTION_COMPLETE = 0x03, 0x05
 L2CAP_SIGNALLING_CID = 0x0001
 L2CAP_PSM_RFCOMM = 0x0003
+L2CAP_PSM_AVCTP = 0x0017
 SIG_CONNECTION_REQUEST, SIG_CONNECTION_RESPONSE = 0x02, 0x03
 SIG_DISCONNECTION_REQUEST, SIG_DISCONNECTION_RESPONSE = 0x06, 0x07
 
@@ -198,6 +199,72 @@ def _iter_l2cap(records, handles_for_peer: set | None):
                 yield record.at, record.direction, cid, pdu[4:]
 
 
+def acl_handles(records) -> dict[int, str]:
+    """Attribute ACL handles to peers so unrelated devices are excluded up front."""
+    handles: dict[int, str] = {}
+    for record in records:
+        if record.h4_type != H4_EVENT or len(record.payload) < 2:
+            continue
+        code, length = record.payload[0], record.payload[1]
+        params = record.payload[2:2 + length]
+        if code == EVT_CONNECTION_COMPLETE and len(params) >= 10 and params[0] == 0:
+            handles[struct.unpack("<H", params[1:3])[0]] = format_bdaddr(params[3:9])
+        elif code == EVT_DISCONNECTION_COMPLETE and len(params) >= 3 and params[0] == 0:
+            handles.pop(struct.unpack("<H", params[1:3])[0], None)
+    return handles
+
+
+def peer_handles(handles: dict[int, str], peer_bdaddr: str | None) -> set[int] | None:
+    if not peer_bdaddr:
+        return None
+    wanted = peer_bdaddr.upper()
+    selected = {handle for handle, address in handles.items() if address == wanted}
+    if not selected:
+        raise BtsnoopError(f"no completed ACL connection to {peer_bdaddr} in this capture")
+    return selected
+
+
+def channel_pdus(records, handles: set | None, psm: int):
+    """Yield (at, direction, payload) for every L2CAP PDU on channels opened for `psm`.
+
+    Unlike the RFCOMM pass in `read()`, channels are keyed by (direction, CID): each
+    side allocates its own CIDs, so one CID value can name one PSM inbound and another
+    outbound (the M7 capture reuses 0x0043 for AVDTP rx and AVCTP tx). Data toward the
+    requester uses the requester's source CID; data toward the responder uses the
+    responder's destination CID. A channel is live from its successful connection
+    response until either side's disconnection request/response names it.
+    """
+    pending: dict[tuple[int, str], int] = {}          # (identifier, request direction) -> scid
+    live: dict[tuple[str, int], tuple[int, int]] = {}  # (direction, cid) -> channel (scid, dcid)
+    for at, direction, cid, payload in _iter_l2cap(records, handles):
+        if cid == L2CAP_SIGNALLING_CID:
+            if len(payload) < 4:
+                continue
+            code, identifier = payload[0], payload[1]
+            body = payload[4:4 + struct.unpack("<H", payload[2:4])[0]]
+            opposite = CONTROLLER_TO_HOST if direction == HOST_TO_CONTROLLER else HOST_TO_CONTROLLER
+            if code == SIG_CONNECTION_REQUEST and len(body) >= 4:
+                requested, scid = struct.unpack("<HH", body[:4])
+                if requested == psm:
+                    pending[(identifier, direction)] = scid
+            elif code == SIG_CONNECTION_RESPONSE and len(body) >= 6:
+                dcid, scid, result = struct.unpack("<HHH", body[:6])
+                key = (identifier, opposite)  # the request travelled the other way
+                if key not in pending or result == 0x0001:
+                    continue
+                if result == 0 and pending[key] == scid:
+                    # This response travels toward the requester.
+                    live[(direction, scid)] = live[(opposite, dcid)] = (scid, dcid)
+                pending.pop(key, None)
+            elif code in (SIG_DISCONNECTION_REQUEST, SIG_DISCONNECTION_RESPONSE) and len(body) >= 4:
+                ends = set(struct.unpack("<HH", body[:4]))
+                for key in [key for key, channel in live.items() if set(channel) == ends]:
+                    del live[key]
+            continue
+        if (direction, cid) in live:
+            yield at, direction, payload
+
+
 def read(path: Path, peer_bdaddr: str | None = None, server_channel: int = 1,
          reveal_commands: set[int] | None = None, zip_entry: str | None = None):
     """Parse one capture into (TransportView, [ApplicationFrame], decoder errors).
@@ -211,23 +278,8 @@ def read(path: Path, peer_bdaddr: str | None = None, server_channel: int = 1,
     if records:
         view.first_at, view.last_at = records[0].at, records[-1].at
 
-    # Attribute ACL handles to peers so unrelated devices are excluded up front.
-    for record in records:
-        if record.h4_type != H4_EVENT or len(record.payload) < 2:
-            continue
-        code, length = record.payload[0], record.payload[1]
-        params = record.payload[2:2 + length]
-        if code == EVT_CONNECTION_COMPLETE and len(params) >= 10 and params[0] == 0:
-            view.handles[struct.unpack("<H", params[1:3])[0]] = format_bdaddr(params[3:9])
-        elif code == EVT_DISCONNECTION_COMPLETE and len(params) >= 3 and params[0] == 0:
-            view.handles.pop(struct.unpack("<H", params[1:3])[0], None)
-
-    handles = None
-    if peer_bdaddr:
-        wanted = peer_bdaddr.upper()
-        handles = {handle for handle, address in view.handles.items() if address == wanted}
-        if not handles:
-            raise BtsnoopError(f"no completed ACL connection to {peer_bdaddr} in this capture")
+    view.handles = acl_handles(records)
+    handles = peer_handles(view.handles, peer_bdaddr)
 
     # Learn which L2CAP CIDs carry RFCOMM (PSM 3) before decoding any RFCOMM.
     application_dlci = (server_channel << 1)
