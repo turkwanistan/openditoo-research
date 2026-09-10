@@ -77,4 +77,16 @@ The webcam shortcut is also affected (5/19 is mostly webcam launches), so this f
 - The dry-run FakeHost now enforces the floor, ACKs in 20 ms, and delivers every `0xBD` as a mid-send 409. Paced dry-run: 10 cycles, 21 sessions, 1053 frames. 43/43 successor tests. Legacy: only the 3 inherent Runtime 007 template/`frame_stream` hash errors.
 - It needs `Grant OPENDITOO-INTERACTIVE-HF3-005`.
 
+## HF3-005 — 1 cycle, then 429; HF3-006 prepared, grant-ready, UNAUTHORIZED
+
+**HF3-005** (20:56Z) got the first real interactive evidence:
+- **1 full cycle**, with each short pull stopping exactly one reel.
+- **3/3 clean `0xBD` reclaims**, 2 through the Host-confirmed mid-send rule.
+- **4/4 streaming first frames ACKed** on the Runtime 007 Host (5/5 including HF3-004).
+- Input → first later ACK 18–243 ms.
+
+It then failed: the reclaimed S004 got HTTP 429 at frame 11 even though the client dispatch gaps were ≥ 50 ms. The Host stamps frame start after the WSL→Windows hop, so arrival jitter beats a client-only margin. Evidence: `captures/OPENDITOO-INTERACTIVE-HF3-005-LIVE-2026-09-10.json`.
+
+**HF3-006** (`c8057d04…` superseded; now `359b2a12…`) adds webcam policy 005's **Host-anchored gap**: wait ≥ 45 ms after the Host's own previous frame start, estimated as ACK receipt − `hostFrameElapsedMs`, which is never earlier than the true start. The FakeHost now models 12/0 ms arrival jitter. Negative controls reproduce both the HF3-004 and HF3-005 429s, and only the anchored path passes. Paced dry-run: 10 cycles / 21 sessions / 982 frames. 43/43 successor tests. It needs `Grant OPENDITOO-INTERACTIVE-HF3-006`.
+
 WSL trap: this worktree's `.git` link pointed at the WSL_MCP mount (`/run/wsl-mcp/workspace`). `git worktree repair` from the main checkout fixes it.

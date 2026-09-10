@@ -30,7 +30,7 @@ from host.interactive_pages import BufferedButtonEvents, PageCarousel, RATE_ACTI
 from host.pagination import Broker, ButtonEvents
 from host.slots_page import SlotsPage
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-005.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-006.json"
 LOCAL = ROOT / ".openditoo-local/hf3"
 
 
@@ -104,27 +104,32 @@ class DryDashboard:
 
 
 class FakeHost:
-    """Enforces the Host's profile floor (HTTP 429 is terminal), ACKs simple streaming frames in
-    20 ms (HF3-004 saw 21 ms), and delivers every 0xBD as a mid-send 409 SESSION_CANVAS_INVALIDATED
-    with the Host's record confirming the yield -- the worst case the live Host produces."""
+    """Enforces the Host's profile floor at the Host's own frame start (HTTP 429 is terminal), with
+    request-arrival jitter alternating 12/0 ms (HF3-005: 50 ms client gaps still broke the 40 ms Host
+    floor), ACKs simple streaming frames in 20 ms (HF3-004 saw 21 ms), reports hostFrameElapsedMs, and
+    delivers every 0xBD as a mid-send 409 SESSION_CANVAS_INVALIDATED that the Host's record confirms."""
     def __init__(self, clock, invalidations=None):
         self.clock = clock; self.profile = RATE_ACTIVITY
         self.invalidations = [] if invalidations is None else invalidations
-        self.last_start = None; self.yielded = False
+        self.last_start = None; self.yielded = False; self.sends = 0
     def open(self, child):
         self.profile = (child.raw.get("stream") or {}).get("session_profile", RATE_ACTIVITY)
         return {"sessionId": child.experiment_id, "sessionProfile": self.profile}
     def send_frame(self, _rgb, expected):
         import io, urllib.error
         floor = 40 if self.profile != RATE_ACTIVITY else 150
+        self.sends += 1
+        self.clock.sleep(12 if self.sends % 2 else 0)  # request transit jitter before the Host stamps
         if self.last_start is not None and self.clock() - self.last_start < floor:
             raise urllib.error.HTTPError("fake", 429, "pacing", {}, io.BytesIO(b'{"errorCode":"SESSION_PACING_VIOLATION"}'))
         self.last_start = self.clock()
         if self.invalidations:  # BTN-7: Play-direction lever pull -> RFCOMM 0xBD, here mid-send
             self.invalidations.pop(); self.yielded = True
             raise urllib.error.HTTPError("fake", 409, "yield", {}, io.BytesIO(b'{"errorCode":"SESSION_CANVAS_INVALIDATED"}'))
-        self.clock.sleep(20 if self.profile != RATE_ACTIVITY else 40)
-        return {"ok": True, "imagePacketSha256": expected, "ackPayloadHex": "0x00"}
+        ack_ms = 20 if self.profile != RATE_ACTIVITY else 40
+        self.clock.sleep(ack_ms)
+        return {"ok": True, "imagePacketSha256": expected, "ackPayloadHex": "0x00",
+                "hostFrameElapsedMs": ack_ms}
     def poll_reports(self):
         if self.yielded:
             return [{"kind": "session_ended", "reason": "canvas_invalidated",

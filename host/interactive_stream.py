@@ -16,6 +16,12 @@ from host.interactive_pages import InteractivePageDriver, InteractiveStreamRende
 # frame inside the Host's 40 ms floor -> terminal HTTP 429. W8/W10 proved a 50 ms client dispatch
 # floor over the 40 ms Host floor; the interactive path now uses the same margin.
 CLIENT_MIN_DISPATCH_MS = 50
+# HF3-005 (exact unit): 50 ms client gaps still produced a sub-40 ms Host gap after 10 frames -- the
+# Host stamps a frame's start after the WSL->Windows hop, so arrival jitter eats the margin. As the
+# live webcam policy 005 does, also wait until >= 45 ms after the Host's own start of the previous
+# frame, estimated as (ACK receipt - hostFrameElapsedMs). Response transit only makes that estimate
+# LATER than the true start, so the Host always sees >= 45 ms.
+HOST_ANCHORED_GAP_MS = 45
 
 
 class HostConfirmedYield(Exception):
@@ -34,6 +40,7 @@ class InteractiveTransport:
     def __init__(self, inner, clock, sleep, min_dispatch_ms: int = CLIENT_MIN_DISPATCH_MS) -> None:
         self.inner, self.clock, self.sleep, self.min_dispatch_ms = inner, clock, sleep, min_dispatch_ms
         self.last_dispatch_ms = None
+        self.host_start_estimate_ms = None
         self.confirmed_yield = False
 
     def open(self, manifest):
@@ -46,13 +53,20 @@ class InteractiveTransport:
         return self.inner.close(reason)
 
     def send_frame(self, rgb: bytes, expected_packet_sha256: str) -> dict:
-        if self.last_dispatch_ms is not None:
-            wait = self.last_dispatch_ms + self.min_dispatch_ms - self.clock()
-            if wait > 0:
-                self.sleep(wait)
+        earliest = max(
+            -1 if self.last_dispatch_ms is None else self.last_dispatch_ms + self.min_dispatch_ms,
+            -1 if self.host_start_estimate_ms is None else self.host_start_estimate_ms + HOST_ANCHORED_GAP_MS)
+        wait = earliest - self.clock()
+        if wait > 0:
+            self.sleep(wait)
         self.last_dispatch_ms = self.clock()
         try:
-            return self.inner.send_frame(rgb, expected_packet_sha256)
+            ack = self.inner.send_frame(rgb, expected_packet_sha256)
+            elapsed = ack.get("hostFrameElapsedMs")
+            # A missing/implausible value falls back to the client floor alone (never an earlier send).
+            if isinstance(elapsed, (int, float)) and 0 <= elapsed <= 5000:
+                self.host_start_estimate_ms = self.clock() - elapsed
+            return ack
         except urllib.error.HTTPError as exc:
             if exc.code == 409 and _error_code(exc) == "SESSION_CANVAS_INVALIDATED" and any(
                     r.get("kind") == "session_ended" and r.get("reason") == "canvas_invalidated"

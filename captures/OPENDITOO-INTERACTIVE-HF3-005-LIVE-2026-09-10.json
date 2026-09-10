@@ -1,0 +1,484 @@
+{
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-005",
+  "grant": "Grant OPENDITOO-INTERACTIVE-HF3-005 (owner, in-session)",
+  "host": "3faf520f (Runtime 007)",
+  "outer_claim": {
+    "claimed_at": "2026-09-10T20:56:34.931538Z",
+    "code_hashes": {
+      "activity_lightning_renderer_sha256": "74389183ca694d46822eefe41ac941783bbd0ac70a5067d410dc827fc7c3f436",
+      "activity_lightning_sha256": "e264db92df9416e2fa004e0101eccb37d0e9bb66b7f86d45c734e01fdebb4714",
+      "activity_render_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+      "activity_session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+      "activity_ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+      "cli_transport_sha256": "07ebf960fb2208ddf8afe34dedc52d5275645584e41bae20fa8a6a063d821119",
+      "dashboard_page_sha256": "16bf19fd963b9c91548deb6aeed038e0514ee0a219bf6290b04ef0b042da20f4",
+      "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+      "frame_stream_sha256": "880970a6d494197b78adfeac0309cb2d86ce447dd6bb826c7ae5b0c270af7fa6",
+      "hf3_coordinator_sha256": "c5b847d79d5c4ceaded1132823ed3e0e708ce23b8952acb58028802d8e0a6215",
+      "hf3_entry_sha256": "25c148afee8fbc7a9a39423cb615982f9d269d23b075ebfe6572b5d9ebda9053",
+      "interactive_acceptance_sha256": "7109c8e5fe06082febe9be02f7a6254f7241fdde65a814c1583942269c71de0f",
+      "interactive_activity_sha256": "96a8a75742a17ae04b00a9334b5a0ebc8e0b3ebf0b76d8983a9ee48220028df6",
+      "interactive_pages_sha256": "5172a307a5d68d9573f9463430d9217d3866e9e615afe98e56f6aee7e22731e0",
+      "interactive_runtime_sha256": "f92c6f47ff328ceb3cee4501d72105e52baa7a605e8b92323c832ab3fc8b93c6",
+      "interactive_stream_sha256": "24dfda940b10ec182ac4e33ad9ba249ae503c0219421bf38c1e3a0cae1d8aa12",
+      "mcp_activity_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+      "pagination_input_sha256": "b2e31de5399dd8bf8bf83a37ff4f20d0b9201de1a82fd5c6d7736326d775db91",
+      "slots_page_sha256": "0f6116af8b56ad74295c1637f88dd6a857b80a3855e1f61dfef3558f48dc158b"
+    },
+    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-005",
+    "host_build_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+    "manifest_file": "/home/wan/Projects/openditoo-research/.openditoo-local/worktrees/high-fps-interactive-pages/experiments/DAY1-INTERACTIVE-HF3-005.json",
+    "manifest_sha256": "feeca91fe3678a39b8a6fc7c0f9c02f12eec285f054f2656cb42657ea217b8a1",
+    "outcome": "unknown",
+    "state": "finished",
+    "terminal_reason": "transport_fault"
+  },
+  "result": {
+    "terminal_reason": "transport_fault",
+    "outcome": "unknown",
+    "elapsed_ms": 34191,
+    "completed_profile_cycles": 1
+  },
+  "orchestrator": {
+    "status": "failed",
+    "current_page": "carousel",
+    "current_rate_mode": "streaming_ack_clock",
+    "session_sequence": 4,
+    "page_transitions": 0,
+    "profile_transitions": 0,
+    "session_reclaims": 3,
+    "buffered_inputs": 0,
+    "last_error": "HTTPError: HTTP Error 429: Too Many Requests",
+    "page_state": {
+      "page": "slots",
+      "page_rate_mode": "streaming_ack_clock",
+      "page_transitions": 3,
+      "profile_transitions": 3,
+      "pages": {
+        "dashboard": {
+          "pulse_step": null,
+          "pulse_sources": [],
+          "next_collect_ms": 35523,
+          "enter_count": 2,
+          "exit_count": 2,
+          "background_polls": 6,
+          "hidden_pulses_dropped": 0
+        },
+        "slots": {
+          "round": 2,
+          "state": "spinning",
+          "stopped_reels": 2,
+          "positions": [
+            12,
+            27,
+            21
+          ],
+          "frames_acked": 141,
+          "result": null,
+          "enter_count": 2,
+          "exit_count": 1
+        }
+      }
+    }
+  },
+  "budget": {
+    "child_attempts": 4,
+    "child_opens": 4,
+    "frames_acked": 164,
+    "tx_bytes_acked": 25750
+  },
+  "children": [
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S001",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 59,
+      "packets_sent": 177,
+      "tx_bytes_sent": 9379,
+      "realized_fps": 5.415,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S002",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 20,
+      "packets_sent": 60,
+      "tx_bytes_sent": 3057,
+      "realized_fps": 4.376,
+      "detail": "{\"display_state\": \"unknown_not_ours\", \"frames_sent\": 20, \"kind\": \"session_ended\", \"outcome\": \"stopped_yielded_to_stock\", \"reason\": \"canvas_invalidated\", \"tx_bytes_sent\": 3057}"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S003",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 75,
+      "packets_sent": 225,
+      "tx_bytes_sent": 11784,
+      "realized_fps": 4.141,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S004",
+      "terminal_reason": "transport_fault",
+      "outcome": "unknown",
+      "frames_sent": 10,
+      "packets_sent": 30,
+      "tx_bytes_sent": 1530,
+      "realized_fps": 16.835,
+      "detail": "HTTPError: HTTP Error 429: Too Many Requests"
+    }
+  ],
+  "client_ack_latency_ms_including_floor_wait": {
+    "p50": 45,
+    "p95": 82,
+    "n": 164
+  },
+  "input_to_first_later_ack": [
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 2,
+      "type": "nav_right",
+      "result": "navigate",
+      "observed_at_monotonic": 8.303,
+      "first_later_ack_ms": 18.0,
+      "ack_child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S001"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 3,
+      "type": "lever_candidate",
+      "result": "stopped_reel_1",
+      "observed_at_monotonic": 9.682,
+      "first_later_ack_ms": 45.0,
+      "ack_child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S001"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 4,
+      "type": "lever_candidate",
+      "result": "stopped_reel_2",
+      "observed_at_monotonic": 10.939,
+      "first_later_ack_ms": 69.0,
+      "ack_child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S002"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 5,
+      "type": "lever_candidate",
+      "result": "stopped_reel_3",
+      "observed_at_monotonic": 11.924,
+      "first_later_ack_ms": 41.0,
+      "ack_child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S002"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 6,
+      "type": "lever_candidate",
+      "result": "new_round",
+      "observed_at_monotonic": 15.465,
+      "first_later_ack_ms": 120.0,
+      "ack_child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S003"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 7,
+      "type": "nav_left",
+      "result": "navigate",
+      "observed_at_monotonic": 17.132,
+      "first_later_ack_ms": 243.0,
+      "ack_child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S003"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 8,
+      "type": "nav_right",
+      "result": "navigate",
+      "observed_at_monotonic": 31.852,
+      "first_later_ack_ms": 32.0,
+      "ack_child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S003"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 9,
+      "type": "lever_candidate",
+      "result": "stopped_reel_1",
+      "observed_at_monotonic": 32.898,
+      "first_later_ack_ms": 50.0,
+      "ack_child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S003"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 10,
+      "type": "lever_candidate",
+      "result": "stopped_reel_2",
+      "observed_at_monotonic": 33.652,
+      "first_later_ack_ms": 65.0,
+      "ack_child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-005-S004"
+    }
+  ],
+  "host_ledger": [
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T20:56:34.9779978+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-005-S001",
+      "sessionId": "26159f04521e",
+      "detail": {
+        "lifetimeSeconds": 150,
+        "minIntervalMs": 40,
+        "frameBudget": 1500,
+        "txByteBudget": 1581000,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T20:56:45.8214610+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-005-S001",
+      "sessionId": "26159f04521e",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 59,
+        "packetsSent": 177,
+        "txBytesSent": 9379,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T20:56:45.8523530+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-005-S002",
+      "sessionId": "e3936b8deef5",
+      "detail": {
+        "lifetimeSeconds": 140,
+        "minIntervalMs": 40,
+        "frameBudget": 1441,
+        "txByteBudget": 1518814,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T20:56:50.3839791+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-005-S002",
+      "sessionId": "e3936b8deef5",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 20,
+        "packetsSent": 60,
+        "txBytesSent": 3057,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T20:56:50.4298696+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-005-S003",
+      "sessionId": "69c2856ba2ff",
+      "detail": {
+        "lifetimeSeconds": 135,
+        "minIntervalMs": 40,
+        "frameBudget": 1421,
+        "txByteBudget": 1497734,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T20:57:08.5070393+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-005-S003",
+      "sessionId": "69c2856ba2ff",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 75,
+        "packetsSent": 225,
+        "txBytesSent": 11784,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T20:57:08.5435569+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-005-S004",
+      "sessionId": "efedaae40c69",
+      "detail": {
+        "lifetimeSeconds": 117,
+        "minIntervalMs": 40,
+        "frameBudget": 1346,
+        "txByteBudget": 1418684,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T20:57:09.1194491+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-005-S004",
+      "sessionId": "efedaae40c69",
+      "detail": {
+        "reason": "transport_fault",
+        "outcome": "stopped_clean",
+        "detail": "",
+        "framesSent": 10,
+        "packetsSent": 30,
+        "txBytesSent": 1530,
+        "displayState": "ours_last_acked"
+      }
+    }
+  ],
+  "probe_events": [
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 1,
+      "at_monotonic_ms": 43005507.381,
+      "at_utc": "2026-09-10T20:56:34.8546210Z",
+      "type": "probe_started",
+      "pid": 28608,
+      "seconds": 0,
+      "smtc": {
+        "acquired": true,
+        "playback_status": "Playing",
+        "status_mode": "mirror"
+      },
+      "rawinput_registered": true,
+      "merging": "none; every source logged separately"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 2,
+      "at_monotonic_ms": 43013840.444,
+      "at_utc": "2026-09-10T20:56:43.1875545Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 3,
+      "at_monotonic_ms": 43015262.326,
+      "at_utc": "2026-09-10T20:56:44.6094335Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 4,
+      "at_monotonic_ms": 43016452.396,
+      "at_utc": "2026-09-10T20:56:45.7995038Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 5,
+      "at_monotonic_ms": 43017491.014,
+      "at_utc": "2026-09-10T20:56:46.8381210Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 6,
+      "at_monotonic_ms": 43021040.868,
+      "at_utc": "2026-09-10T20:56:50.3879771Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 7,
+      "at_monotonic_ms": 43022683.65,
+      "at_utc": "2026-09-10T20:56:52.0307575Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 8,
+      "at_monotonic_ms": 43037105.63,
+      "at_utc": "2026-09-10T20:57:06.4527383Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 9,
+      "at_monotonic_ms": 43038449.956,
+      "at_utc": "2026-09-10T20:57:07.7970626Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "f6a59b999ea4",
+      "seq": 10,
+      "at_monotonic_ms": 43039189.72,
+      "at_utc": "2026-09-10T20:57:08.5368278Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    }
+  ],
+  "operator_assist_log": [
+    {
+      "event": "runner_seen",
+      "pid": 1784040,
+      "at_utc": "2026-09-10T20:56:34.652036Z"
+    },
+    {
+      "event": "go_popup",
+      "hf3_opens": 1,
+      "at_utc": "2026-09-10T20:56:35.093474Z"
+    },
+    {
+      "event": "runner_exited_before_final",
+      "at_utc": "2026-09-10T20:57:09.198810Z"
+    }
+  ],
+  "findings": {
+    "accepted_behaviour": "1 complete Dashboard<->Slots cycle; each short pull stopped exactly one reel (L, M, R), 4th started a new round, re-entry kept state; 3/3 device-ended 0xBD reclaims clean (2 via the Host-confirmed mid-send 409 rule); 4/4 streaming first frames ACKed on the 3faf520f Host (5/5 incl. HF3-004); no IMAGE_RX_RECV_TIMEOUT",
+    "failure": "S004 (reclaimed session) got HTTP 429 SESSION_PACING_VIOLATION at frame 11 (16.8 fps) although real client dispatch gaps were >=50 ms",
+    "root_cause": "the Host stamps frame start after the WSL->Windows hop and pre-send checks; request-arrival jitter >10 ms eats the 50-over-40 margin (the same reason webcam policy 005 anchors to the Host's frame start)",
+    "fix_for_HF3_006": "InteractiveTransport also waits >= 45 ms after the Host's own previous frame start, estimated from ACK receipt - hostFrameElapsedMs (never earlier than the true start); FakeHost models 12/0 ms arrival jitter; negative controls reproduce both HF3-004 and HF3-005 failures"
+  },
+  "runtime007_restore": "HF3_DASHBOARD_SERVICE_RESTORED / HF3_DASHBOARD_CONNECTED_RESTORED, RC=0",
+  "visual": "pending owner report",
+  "verdict": {
+    "transport": "UNKNOWN (terminal pacing refusal; no retry)",
+    "acceptance": "FAIL - 1 of 10 cycles",
+    "replay": "FORBIDDEN"
+  }
+}

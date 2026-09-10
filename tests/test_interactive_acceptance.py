@@ -96,7 +96,7 @@ def manifest(tmp: Path | None = None, *, max_sessions=28, max_frames=500, lifeti
              streaming_child=120):
     path = (tmp or Path(".")) / "HF3.json"
     return AcceptanceManifest(
-        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-005",
+        path=path, raw={}, experiment_id="OPENDITOO-INTERACTIVE-HF3-006",
         lifetime_seconds=lifetime, max_child_sessions=max_sessions,
         max_frames=max_frames,
         max_tx_bytes=max_frames * frame_stream.worst_case_frame_tx_bytes(),
@@ -125,7 +125,7 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         m = manifest()
         high = child_manifest(m, 7, RATE_STREAMING, 500, m.max_tx_bytes, 90)
         low = child_manifest(m, 8, RATE_ACTIVITY, 500, m.max_tx_bytes, 90)
-        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-005-S007")
+        self.assertEqual(high.experiment_id, "OPENDITOO-INTERACTIVE-HF3-006-S007")
         self.assertEqual(high.max_frames, 120)
         self.assertEqual(high.raw["stream"]["session_profile"], RATE_STREAMING)
         self.assertEqual(low.max_frames, 20)
@@ -217,6 +217,17 @@ class AcceptanceEnvelopeTests(unittest.TestCase):
         raw = self._slots_session(entry.FakeHost(clock), clock, raw=True)
         self.assertEqual((raw["terminal_reason"], raw["outcome"]), ("transport_fault", "unknown"))
         self.assertIn("429", raw["detail"])  # HF3-004's exact failure
+        # HF3-005's failure: a 50 ms client floor alone still loses to arrival jitter at the Host.
+        from host import interactive_stream as ist
+        clock = FakeClock()
+        old = ist.HOST_ANCHORED_GAP_MS
+        ist.HOST_ANCHORED_GAP_MS = -10**9  # disable the Host anchor
+        try:
+            floor_only = self._slots_session(entry.FakeHost(clock), clock)
+        finally:
+            ist.HOST_ANCHORED_GAP_MS = old
+        self.assertEqual((floor_only["terminal_reason"], floor_only["outcome"]), ("transport_fault", "unknown"))
+        self.assertIn("429", floor_only["detail"])
         clock = FakeClock()
         ok = self._slots_session(entry.FakeHost(clock), clock)
         self.assertEqual(ok["outcome"], "stopped_clean", ok.get("detail"))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze OPENDITOO-INTERACTIVE-HF3-005 to an unauthorized, reviewable manifest.
+"""Freeze OPENDITOO-INTERACTIVE-HF3-006 to an unauthorized, reviewable manifest.
 
 Zero device I/O, zero Host-session I/O and no claim. In environments where /mnt/c is not
 visible (notably WSL_MCP's sandbox), the accepted Runtime 006 ButtonProbe hashes are inherited
@@ -19,8 +19,8 @@ if str(ROOT) not in sys.path:
 
 from host import activity_session, frame_stream, interactive_acceptance as hf3
 
-MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-005.json"
-EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-005-PREPARATION-2026-09-10.json"
+MANIFEST = ROOT / "experiments/DAY1-INTERACTIVE-HF3-006.json"
+EVIDENCE = ROOT / "captures/OPENDITOO-INTERACTIVE-HF3-006-PREPARATION-2026-09-10.json"
 R006 = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json"
 
 
@@ -85,8 +85,11 @@ def main() -> int:
             {"experiment_id": "OPENDITOO-INTERACTIVE-HF3-004",
              "state": "consumed/unknown at 7.4 s: first streaming frame on the 3faf520f Host ACKed (first-frame fix 1/1); after Right a simple Slots frame ACKed in 21 ms and the ACK-clocked next dispatch hit the 40 ms Host floor -> terminal HTTP 429",
              "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-004-LIVE-2026-09-10.json"},
+            {"experiment_id": "OPENDITOO-INTERACTIVE-HF3-005",
+             "state": "consumed/unknown at 34 s after 1 full cycle, 3 clean 0xBD reclaims and 4/4 first frames: a reclaimed session got HTTP 429 despite >=50 ms client gaps (Host-side arrival jitter)",
+             "evidence": "captures/OPENDITOO-INTERACTIVE-HF3-005-LIVE-2026-09-10.json"},
         ],
-        "client_changes": "host/interactive_stream.InteractiveTransport: 50 ms client dispatch floor over the 40 ms Host floor (W8/W10-proven margin), and the W10 Studio's Host-confirmed stock-yield rule for a 409 SESSION_CANVAS_INVALIDATED on a send (0xBD mid-frame).",
+        "client_changes": "host/interactive_stream.InteractiveTransport: 50 ms client dispatch floor over the 40 ms Host floor (W8/W10-proven margin) PLUS a Host-anchored >=45 ms gap after the Host's own previous frame start (webcam policy 005 rule), and the W10 Studio's Host-confirmed stock-yield rule for a 409 SESSION_CANVAS_INVALIDATED on a send (0xBD mid-frame).",
         "host_change": "Runtime 007 Host 3faf520f...: every session's first frame uses the proven 10 ms packet spacing (later frames 0 ms). Note: the Host ledger's open record still reports the profile spacing (sendSpacingMs 0); the first-frame exception is in ActivitySessionHost.SendFrame. HF3-004 is also the first on-device evidence for that fix.",
         "design_change": "Single streaming_ack_clock Host session per run: PageCarousel owns Dashboard (held to its ~200 ms low-rate cadence) and Slots; Left/Right change pixels only and never close the session. Remaining session boundaries are device-ended 0xBD/0x09 canvas yields (BTN-7: reopen clean in 46-69 ms) and none planned for rollover (child lifetime/frames = outer envelope).",
         "objective": "Prove the generic Dashboard <-> streaming_ack_clock page boundary with the three-reel slots app, including one-reel-per-lever behavior and ten complete high-rate profile cycles without retry after ambiguity.",
