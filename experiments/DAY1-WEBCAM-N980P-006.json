@@ -3,13 +3,15 @@
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-N980P-006",
   "milestone": "W9B combined unique-frame + optical scene-to-visible latency trial",
-  "status": "authorized_awaiting_live_preflight",
+  "status": "consumed_unknown_transport_fault",
   "objective": "First W9B trial. Transport, pacing, budgets, camera, transform and Host are IDENTICAL to the accepted W8-005 run; nothing about the protocol is being retested. What is new is only what is observed: the W9A monotonic source identity is now carried through selection telemetry, and the scene in front of the camera is the deterministic motion-truth stimulus, filmed simultaneously with the Ditoo by an external high-speed camera. Purpose is to separate camera/source cadence, scheduler selection, transport completion and physical display behavior, and to measure true scene-to-visible latency. No rate ladder, pipelining, retry, reconnect or reclaim.",
   "readiness": {
     "execution_ready": false,
-    "grant_ready": true,
-    "blockers": [],
-    "required_followup": "Execute only scripts/run_webcam_w9b_optical_windows.ps1 once while this exact one-use grant remains live, with the operator filming. Never replay 002-005 and never reuse any prior grant."
+    "grant_ready": false,
+    "blockers": [
+      "AUTHORITY_ALREADY_CONSUMED"
+    ],
+    "required_followup": "Do not replay attempt 006. Preserve its evidence. W9B still has no optical evidence. If another physical trial is justified, use a fresh reviewed identity with a new exact grant."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -151,8 +153,8 @@
   },
   "authority": {
     "experiment_id": "OPENDITOO-WEBCAM-N980P-006",
-    "transmission_authorized": true,
-    "authorization_consumed": false,
+    "transmission_authorized": false,
+    "authorization_consumed": true,
     "granted_by": "operator, in-session, 2026-09-10",
     "grant_text": "Grant OPENDITOO-WEBCAM-N980P-006",
     "expires_at": "2026-09-10T05:30:00Z",
@@ -252,5 +254,21 @@
     "claim_created": false,
     "host_session_io": false,
     "device_io": false
+  },
+  "w9b_attempt": {
+    "status": "consumed_unknown_transport_fault",
+    "terminal_reason": "SESSION_FRAME_FAIL_CLOSED;close_unconfirmed",
+    "host_ledger_detail": "IMAGE_RX_RECV_TIMEOUT; NO_RETRY",
+    "host_ledger_frames": 0,
+    "host_ledger_packets": 0,
+    "host_ledger_tx_bytes": 0,
+    "client_frames": 0,
+    "pacing_violation_observed": false,
+    "automatic_retry_performed": false,
+    "same_identity_retry_forbidden": true,
+    "runtime_003_restored": true,
+    "failure_evidence_file": "captures/OPENDITOO-WEBCAM-W9B-006-FAILURE-2026-09-10.json",
+    "failure_evidence_sha256": "a403b9c6e690b4859eb36c502df6836ebd32a2a96ef552cc0402c18c28137db9",
+    "diagnosis": "Device did not ACK within the 5000 ms budget. Not a code, hash, authority, pacing or camera fault."
   }
 }

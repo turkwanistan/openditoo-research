@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-WEBCAM-N980P-006",
+  "milestone": "W9B first optical trial \u2014 consumed failure",
+  "status": "consumed_unknown_transport_fault",
+  "date": "2026-09-10",
+  "result": {
+    "client_outcome": "unknown",
+    "client_terminal_reason": "SESSION_FRAME_FAIL_CLOSED;close_unconfirmed",
+    "client_frames": 0,
+    "client_bytes": 0,
+    "elapsed_ms": 5160.602600000799,
+    "host_ledger": {
+      "reason": "transport_fault",
+      "outcome": "unknown",
+      "detail": "IMAGE_RX_RECV_TIMEOUT; NO_RETRY",
+      "frames_sent": 0,
+      "packets_sent": 0,
+      "tx_bytes_sent": 0,
+      "display_state": "unknown_nothing_sent"
+    },
+    "retry": false,
+    "reconnect": false,
+    "reclaim": false,
+    "pacing_violation": false
+  },
+  "timeline_utc": {
+    "product_session_closed": "05:05:42.618 operator_stop/stopped_clean, framesSent=1",
+    "webcam_session_opened": "05:05:46.656 (3.99 s later)",
+    "webcam_terminal": "05:05:51.748 transport_fault after 5.09 s, the full ACK budget",
+    "product_reopened": "05:05:52.291, first frame ACKed 05:05:52.593 (~0.24 s)"
+  },
+  "diagnosis": {
+    "not_a_code_fault": "Everything client-side worked. The camera captured 379 frames, the transform ran normally (p95 2.50 ms, max 11.38 ms), and W9A source identity populated correctly: selected id 76, zero duplicate and zero out-of-order selections. No hash, authority, pacing, budget or camera fault occurred.",
+    "failure_point": "The Host opened the session, then received no ACK from the Ditoo within the reviewed 5000 ms budget and terminated transport_fault / IMAGE_RX_RECV_TIMEOUT with NO_RETRY. The ledger records zero packets actually sent and displayState unknown_nothing_sent.",
+    "device_healthy_immediately_after": "Runtime 003 reopened 0.54 s after the failure and the Ditoo ACKed its first frame within ~0.24 s. The device was responsive before and after, but silent during the 006 window.",
+    "observed_difference_from_successful_runs": "Controller handover timing was effectively identical to the successful W7-002 (4.15 s gap) and W8-005 (3.97 s gap) runs; 006 had a 3.99 s gap. The one difference is that the product session stopped for 006 had sent only 1 frame, meaning it had opened seconds earlier, whereas 002 and 005 stopped long-running sessions (347 and 220 frames). A Bluetooth link opened and torn down within seconds, then reopened 4 s later, is a plausible mechanism for the device ignoring the new connection.",
+    "confidence": "LOW on root cause. This is a single sample and a plausible mechanism, NOT a demonstrated one. It may simply be a transient Bluetooth fault. Do not record the short-lived-predecessor theory as established."
+  },
+  "authority": {
+    "consumed": true,
+    "same_identity_retry_forbidden": true,
+    "automatic_retry_performed": false
+  },
+  "recovery": {
+    "runtime_003_restored": true,
+    "status": "connected",
+    "run_nonce": "54537468",
+    "last_error": null,
+    "verified": true
+  },
+  "optical_evidence": "NONE. Nothing was displayed, so the operator footage of this attempt contains no Ditoo transitions and is not usable. No latency, unique-frame or panel evidence exists for W9B yet.",
+  "evidence_files": {
+    "result": "captures/OPENDITOO-WEBCAM-W9B-006-LIVE-RESULT-2026-09-10.json",
+    "result_sha256": "92906371f424661774b04871ec7b43f75fb5fe0e52aad4877a089d8728f0b3c3",
+    "raw": "captures/OPENDITOO-WEBCAM-W9B-006-LIVE-RAW-2026-09-10.log",
+    "raw_sha256": "92906371f424661774b04871ec7b43f75fb5fe0e52aad4877a089d8728f0b3c3"
+  },
+  "source_identity_observed": {
+    "duplicateSelections": 0,
+    "firstSelectedSourceId": 76,
+    "lastAcquiredSourceId": 378,
+    "lastSelectedSourceId": 76,
+    "outOfOrderSelections": 0,
+    "selectedCount": 1,
+    "selectedSourceIdWindow": 1,
+    "selectedSourceIds": [
+      76
+    ],
+    "skippedBetweenSelections": 0
+  }
+}

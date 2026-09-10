@@ -1092,3 +1092,59 @@ Offline suite is **274 tests PASS**.
 Operator hardware is confirmed available (phone slow-mo). Outstanding: the physical setup
 (monitor in the N980P's field of view, high-speed camera framing monitor and Ditoo together), a
 fresh reviewed W9B manifest, and a new exact grant. W8-005's authority confers nothing.
+
+
+## 29. W9B attempt 006 consumed — device did not ACK; no optical evidence yet — 2026-09-10
+
+`OPENDITOO-WEBCAM-N980P-006` executed once after its exact named grant and **failed**. It is
+consumed, `unknown`, and replay-forbidden. **W9B still has no optical evidence.**
+
+### What happened
+
+The Host opened the reviewed session, then received no ACK from the Ditoo within the reviewed
+5000 ms budget and terminated `transport_fault` / `IMAGE_RX_RECV_TIMEOUT; NO_RETRY`. The ledger
+records `framesSent=0, packetsSent=0, txBytesSent=0, displayState=unknown_nothing_sent`. The
+client aborted at 5.16 s with `SESSION_FRAME_FAIL_CLOSED;close_unconfirmed`. No retry, no
+reconnect, no reclaim, no pacing violation.
+
+### What this was NOT
+
+Everything client-side worked. The camera captured 379 frames, the transform ran normally
+(p95 2.50 ms, max 11.38 ms), and **W9A source identity populated correctly**: selected source
+id 76, zero duplicate selections, zero out-of-order selections. No hash, authority, pacing,
+budget or camera fault occurred. The W9A instrumentation is exonerated and must not be "fixed"
+in response to this failure.
+
+### Timeline
+
+| UTC | Event |
+| --- | --- |
+| 05:05:42.618 | Runtime 003 session closed `operator_stop` / `stopped_clean`, framesSent=1 |
+| 05:05:46.656 | 006 session opened (3.99 s later) |
+| 05:05:51.748 | 006 terminal `transport_fault` after 5.09 s — the full ACK budget |
+| 05:05:52.291 | Runtime 003 reopened; first frame ACKed 05:05:52.593 (~0.24 s) |
+
+The device was responsive immediately before and immediately after, and silent only during the
+006 window.
+
+### Candidate mechanism, held at LOW confidence
+
+Controller handover timing was effectively identical to the successful runs: W7-002 had a
+4.15 s gap, W8-005 3.97 s, and 006 3.99 s. The one observed difference is that the product
+session stopped for 006 had sent only **1** frame, meaning it had opened seconds earlier,
+whereas 002 and 005 stopped long-running sessions (347 and 220 frames). A Bluetooth link opened
+and torn down within seconds, then reopened 4 s later, is a plausible mechanism for the device
+ignoring the new connection.
+
+**This is one sample and a plausible mechanism, not a demonstrated one.** It may simply be a
+transient Bluetooth fault. Do not let the short-lived-predecessor theory harden into accepted
+evidence by repetition.
+
+### Operator footage
+
+Nothing was displayed, so the footage of this attempt contains no Ditoo transitions and is not
+usable.
+
+Evidence: `captures/OPENDITOO-WEBCAM-W9B-006-FAILURE-2026-09-10.json`, plus the live result and
+raw log, all hash-pinned in the manifest's `w9b_attempt`. Runtime 003 was restored and verified
+`connected` with `last_error=null` and fresh `run_nonce=54537468`.

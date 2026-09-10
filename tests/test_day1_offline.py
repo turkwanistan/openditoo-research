@@ -4153,3 +4153,48 @@ class W9BOpticalAnalysisTests(unittest.TestCase):
         self.assertIn('"device_io": False', source)
         for forbidden in ("session", "8796", "Grant ", "requests", "http"):
             self.assertNotIn(forbidden, source)
+
+
+class W9BFirstOpticalAttemptTests(unittest.TestCase):
+    """W9B attempt 006: consumed, unknown, and never replayable."""
+
+    MANIFEST = ROOT / "experiments/DAY1-WEBCAM-N980P-006.json"
+    FAILURE = ROOT / "captures/OPENDITOO-WEBCAM-W9B-006-FAILURE-2026-09-10.json"
+
+    def test_006_is_consumed_unknown_transport_fault_and_not_replayable(self) -> None:
+        data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+        attempt = data["w9b_attempt"]
+        self.assertEqual(data["status"], "consumed_unknown_transport_fault")
+        self.assertTrue(data["authority"]["authorization_consumed"])
+        self.assertFalse(data["authority"]["transmission_authorized"])
+        self.assertFalse(data["readiness"]["grant_ready"])
+        self.assertEqual(data["readiness"]["blockers"], ["AUTHORITY_ALREADY_CONSUMED"])
+        self.assertTrue(attempt["same_identity_retry_forbidden"])
+        self.assertFalse(attempt["automatic_retry_performed"])
+        self.assertFalse(attempt["pacing_violation_observed"])
+        self.assertEqual((attempt["host_ledger_frames"], attempt["host_ledger_packets"],
+                          attempt["host_ledger_tx_bytes"]), (0, 0, 0))
+        self.assertTrue(self.FAILURE.is_file())
+        self.assertEqual(activity_session.sha256_file(self.FAILURE), attempt["failure_evidence_sha256"])
+        claim = activity_session.SessionClaim("OPENDITOO-WEBCAM-N980P-006").read()
+        self.assertEqual((claim["state"], claim["outcome"]), ("finished", "unknown"))
+
+    def test_failure_evidence_exonerates_the_w9a_instrumentation(self) -> None:
+        evidence = json.loads(self.FAILURE.read_text(encoding="utf-8"))
+        identity = evidence["source_identity_observed"]
+        # The point of preserving this: W9A worked, so a future attempt must not "fix" it.
+        self.assertEqual(identity["duplicateSelections"], 0)
+        self.assertEqual(identity["outOfOrderSelections"], 0)
+        self.assertEqual(identity["selectedSourceIds"], [76])
+        self.assertIn("Not a code, hash, authority, pacing or camera fault",
+                      json.loads(self.MANIFEST.read_text(encoding="utf-8"))["w9b_attempt"]["diagnosis"])
+        self.assertEqual(evidence["result"]["host_ledger"]["detail"], "IMAGE_RX_RECV_TIMEOUT; NO_RETRY")
+        self.assertTrue(evidence["recovery"]["runtime_003_restored"])
+
+    def test_root_cause_confidence_is_recorded_as_low(self) -> None:
+        evidence = json.loads(self.FAILURE.read_text(encoding="utf-8"))
+        # One sample and a plausible mechanism is not a demonstrated cause. Pinning this stops
+        # the short-lived-predecessor theory hardening into accepted evidence by repetition.
+        self.assertTrue(evidence["diagnosis"]["confidence"].startswith("LOW on root cause"))
+        self.assertIn("NOT a demonstrated one", evidence["diagnosis"]["confidence"])
+        self.assertIn("NONE", evidence["optical_evidence"])
