@@ -4405,3 +4405,34 @@ class Runtime004StreamingCeilingTests(unittest.TestCase):
         self.assertLessEqual(envelope["session_lifetime_seconds"], 1800)
         self.assertLessEqual(envelope["max_frames"], 1800 * 1000 // 40)
         self.assertEqual(envelope["max_frames"], envelope["session_lifetime_seconds"] * 1000 // envelope["slot_interval_ms"] + 1)
+
+
+class Runtime005PacingClockTests(unittest.TestCase):
+    """Runtime 005: the Host pacing floor uses a high-resolution clock. Nothing else moves."""
+
+    def test_005_differs_from_004_only_in_host_binding(self) -> None:
+        old = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-004.json").read_text(encoding="utf-8"))
+        new = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-005.json").read_text(encoding="utf-8"))
+        for key in ("behavior", "session", "target", "install", "product_id", "runtime_revision", "schema_version"):
+            self.assertEqual(old[key], new[key], key)
+        self.assertEqual(old["build"]["code_sha256"], new["build"]["code_sha256"])
+        self.assertFalse(new["authority"]["persistent_runtime_authorized"])
+        self.assertEqual(new["authority"]["supersedes"], "OPENDITOO-PRODUCT-RUNTIME-004")
+        webcam = json.loads((ROOT / "product/OPENDITOO-WEBCAM-PRODUCT-004.json").read_text(encoding="utf-8"))
+        self.assertEqual(webcam["build"]["host_dll_sha256"], new["build"]["host_dll_sha256"])
+        self.assertFalse(webcam["authority"]["webcam_product_authorized"])
+
+    def test_host_pacing_uses_a_high_resolution_clock(self) -> None:
+        host = (ROOT / "runtime/windows/OpenDitoo.Day1.Host/ActivitySessionHost.cs").read_text(encoding="utf-8")
+        code = "\n".join(line for line in host.splitlines() if not line.strip().startswith("//"))
+        self.assertNotIn("TickCount64", code)
+        self.assertIn("Stopwatch.GetTimestamp() * 1000.0 / Stopwatch.Frequency", code)
+        self.assertIn("lastFrameStartedMs = NowMs;", code)
+        self.assertIn("if (sinceLast < minFrameIntervalMs)", code)
+
+    def test_cutover_requires_both_exact_grants_and_saves_rollback_first(self) -> None:
+        shell = (ROOT / "scripts/cutover_runtime_005.sh").read_text(encoding="utf-8")
+        self.assertIn('"${1:-}" == "Grant OPENDITOO-PRODUCT-RUNTIME-005"', shell)
+        self.assertIn('"${2:-}" == "Grant OPENDITOO-WEBCAM-PRODUCT-004"', shell)
+        self.assertTrue(shell.index("ROLLBACK_SAVED") < shell.index("refresh_openditoo_day1_host.ps1")
+                        < shell.index("R005_HOST_DEPLOYED") < shell.index("policy-grant"))

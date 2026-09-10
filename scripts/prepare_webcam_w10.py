@@ -17,6 +17,8 @@ from host import activity_session, frame_stream, webcam_studio, webcam_trial
 
 ROOT = frame_stream.ROOT
 ATTEMPT = sys.argv[1] if len(sys.argv) > 1 else "001"
+# `product <sha256>` freezes a deterministic, not-yet-deployed Host candidate; the cutover verifies it.
+EXPECT_HOST = sys.argv[2] if len(sys.argv) > 2 else None
 PRODUCT = ATTEMPT == "product"
 if not PRODUCT and not re.fullmatch(r"[0-9]{3}", ATTEMPT):
     raise SystemExit("W10_PREP_ATTEMPT_INVALID")
@@ -80,9 +82,14 @@ def main() -> None:
         if marker not in output:
             raise SystemExit("W10_PREP_MARKER_MISSING " + marker)
     identity = host_identity()
-    host_dll = activity_session.sha256_file(activity_session.HOST_BUILD_DLL)
-    if activity_session.sha256_file(INSTALLED_HOST) != host_dll:
-        raise SystemExit("W10_PREP_INSTALLED_HOST_DRIFT")
+    if EXPECT_HOST:
+        if not (PRODUCT and re.fullmatch(r"[0-9a-f]{64}", EXPECT_HOST)):
+            raise SystemExit("W10_PREP_EXPECTED_HOST_INVALID")
+        host_dll = EXPECT_HOST
+    else:
+        host_dll = activity_session.sha256_file(activity_session.HOST_BUILD_DLL)
+        if activity_session.sha256_file(INSTALLED_HOST) != host_dll:
+            raise SystemExit("W10_PREP_INSTALLED_HOST_DRIFT")
     frozen = {str(p.relative_to(ROOT)): activity_session.sha256_file(p)
               for p in webcam_studio.producer_sources() + webcam_studio.producer_binaries()}
     if PRODUCT:
@@ -98,7 +105,8 @@ def main() -> None:
         "schema_version": 1, "target": name, "status": "pass",
         "prepared_from_git_head": head, "staged_executable": exe,
         "checks": {"studio_selftest": "pass", "transform_parity": "pass", "encoder_parity": "pass",
-                   "host_identity_read_only": identity, "installed_host_dll_sha256": host_dll},
+                   "host_identity_read_only": identity, "host_dll_sha256": host_dll,
+                   "host_verified_now": not EXPECT_HOST},
         "selftest_lines": [line for line in output.splitlines() if line.startswith(("STUDIO_", "TRANSFORM_", "ENCODER_"))],
         "operation": {"claim_created": False, "host_session_io": False, "device_io": False},
     }
@@ -113,7 +121,8 @@ def main() -> None:
         "from the staged copy, Host identity checked read-only. No claim, session or device I/O.")
     MANIFEST.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
     if PRODUCT:
-        webcam_studio.load_policy(MANIFEST, authority=False)  # the WSL policy review must pass as prepared
+        # With a candidate Host the hash check waits for the cutover (policy-check after deploy).
+        webcam_studio.load_policy(MANIFEST, authority=False, verify=not EXPECT_HOST)
         blockers = ["WEBCAM_PRODUCT_GRANT_REQUIRED"]
     else:
         webcam_studio.review(MANIFEST)  # the WSL review must pass as prepared

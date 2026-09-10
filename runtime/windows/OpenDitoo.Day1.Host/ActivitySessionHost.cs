@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -110,7 +111,11 @@ static class ActivitySessionHost
     private static DateTimeOffset startedAt, deadline, lastWorkerContact;
     private static int minFrameIntervalMs, maxFrames, maxTxBytes;
     private static int framesSent, packetsSent, txBytesSent;
-    private static long lastFrameStartedTicks;
+    // Frame-start clock for the pacing floor and hostFrameElapsedMs. High-resolution on purpose:
+    // Environment.TickCount64 ticks every ~15.6 ms here, which made the 40 ms floor behave like ~46.9 ms
+    // and ended webcam run 3c5398de with SESSION_PACING_VIOLATION after 3,631 frames.
+    private static double NowMs => Stopwatch.GetTimestamp() * 1000.0 / Stopwatch.Frequency;
+    private static double lastFrameStartedMs;
     private static string terminalReason = "", terminalOutcome = "";
     private static string displayState = "unknown_nothing_sent";
     private static readonly List<string> acks = [];
@@ -191,7 +196,7 @@ static class ActivitySessionHost
             maxTxBytes = txByteBudget;
             framesSent = packetsSent = txBytesSent = 0;
             releaseIssued = false;
-            lastFrameStartedTicks = 0;
+            lastFrameStartedMs = 0;
             terminalReason = terminalOutcome = "";
             displayState = "unknown_nothing_sent";
             acks.Clear();
@@ -236,9 +241,7 @@ static class ActivitySessionHost
                 Terminate("budget_exhausted", "stopped_clean");
                 throw new SessionRejectedException("SESSION_FRAME_BUDGET_EXHAUSTED", 409);
             }
-            var sinceLast = lastFrameStartedTicks == 0
-                ? int.MaxValue
-                : (int)((Environment.TickCount64 - lastFrameStartedTicks));
+            var sinceLast = lastFrameStartedMs == 0 ? double.MaxValue : NowMs - lastFrameStartedMs;
             if (sinceLast < minFrameIntervalMs)
                 throw new SessionRejectedException("SESSION_PACING_VIOLATION", 429);
 
@@ -260,7 +263,7 @@ static class ActivitySessionHost
                 if (!report.IsAck) { YieldCanvas(report); throw new SessionRejectedException("SESSION_CANVAS_INVALIDATED", 409); }
             }
 
-            lastFrameStartedTicks = Environment.TickCount64;
+            lastFrameStartedMs = NowMs;
             DitooReport ack;
             try
             {
@@ -289,7 +292,7 @@ static class ActivitySessionHost
             if (acks.Count > AckWindow) acks.RemoveAt(0);
             // The Host's own send-to-ACK figure. A client can only measure HTTP round trip,
             // which folds in transport it does not own; S2 had to infer the difference.
-            var hostElapsedMs = (int)(Environment.TickCount64 - lastFrameStartedTicks);
+            var hostElapsedMs = (int)Math.Round(NowMs - lastFrameStartedMs);
             return new FrameResult(framesSent, hex, encoded.PacketSha256, encoded.PaletteColors,
                                    packetsSent, txBytesSent, deadline.ToString("O"), hostElapsedMs);
         }

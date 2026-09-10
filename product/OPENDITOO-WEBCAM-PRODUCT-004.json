@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "policy_id": "OPENDITOO-WEBCAM-PRODUCT-003",
+  "policy_id": "OPENDITOO-WEBCAM-PRODUCT-004",
   "product_id": "OPENDITOO-WEBCAM-ON-DEMAND-V1",
-  "description": "On-demand live webcam for the owner's exact Ditoo Plus. The owner launches it; the MCP dashboard (Runtime 003) is suspended for exactly as long as the Studio window is open and restored when it closes. 002: one connection per launch (no session rollover). 003: look preset and palette cap selectable live; Ditoo button press recorded as a Host-confirmed stock yield.",
-  "status": "superseded_by_OPENDITOO-WEBCAM-PRODUCT-004",
+  "description": "On-demand live webcam for the owner's exact Ditoo Plus. The owner launches it; the MCP dashboard (Runtime 003) is suspended for exactly as long as the Studio window is open and restored when it closes. 002: one connection per launch (no session rollover). 003: look preset and palette cap selectable live; Ditoo button press recorded as a Host-confirmed stock yield. 004: re-bound to the Runtime 005 Host (high-resolution pacing clock).",
+  "status": "template_unauthorized_grant_ready",
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
     "installed_firmware": "v42012"
@@ -40,9 +40,10 @@
   "evidence": {
     "W10-001": "transport PASS + owner visual PASS (500 frames, 16.458 fps ACKed transport)",
     "W10-002": "operator Stop + live zoom/pan PASS (290 frames)",
-    "not_yet_exercised": "live look/colour switching on the device; the first 003 launch is its evidence",
+    "not_yet_exercised": "a long session on the Runtime 005 Host; the first 004 launch is its evidence",
     "WEBCAM-PRODUCT-001 run 8f36a6d3": "3 clean rollovers then session 4 IMAGE_RX_RECV_TIMEOUT 1.04 s after a close; launch stopped fail-closed, dashboard restored. Motivates one connection per launch.",
-    "WEBCAM-PRODUCT-002 run e6e80228": "one connection, 5786 frames in 5 min 52 s, ended by owner button press: Host canvas_invalidated / stopped_yielded_to_stock; client mislabelled it unknown (fixed in 003)"
+    "WEBCAM-PRODUCT-002 run e6e80228": "one connection, 5786 frames in 5 min 52 s, ended by owner button press: Host canvas_invalidated / stopped_yielded_to_stock; client mislabelled it unknown (fixed in 003)",
+    "WEBCAM-PRODUCT-003 run 3c5398de": "looks switched live, owner ranked srgb_area default + normalized as sharp option; ended after 3631 frames by SESSION_PACING_VIOLATION caused by the Host TickCount64 floor (~46.9 ms effective) leaving ~3 ms of margin; fixed in the Runtime 005 Host"
   },
   "build": {
     "producer_code_sha256": {
@@ -52,7 +53,7 @@
       "runtime/windows/OpenDitoo.Webcam.Studio/StudioForm.cs": "c52498199962feacb50268ce97b328b8e778ef82c918846017dbd0d834b26dcc",
       "runtime/windows/OpenDitoo.Webcam.Studio/StudioSender.cs": "c926cf5baf2a9ade0caffa75b508d6e64f6194014fdb31126c8f7ba874a38b30",
       "runtime/windows/OpenDitoo.Webcam.Studio/StudioTests.cs": "814dd346f7da46c75bfb61a438d4e044e92f8e37d8f121910b78cc53dc2ea785",
-      "runtime/windows/OpenDitoo.Webcam.Studio/StudioTrial.cs": "fefe5df6fbc8a517267d85c1b89d073f1f6e1d5c6600d7d6d79d9e4fc86155d2",
+      "runtime/windows/OpenDitoo.Webcam.Studio/StudioTrial.cs": "597ddbdfbb76e2ac598a3fa89350ef6f68e0c3c0ee8f75764cefd656e6c8b230",
       "runtime/windows/OpenDitoo.Webcam.Studio/OpenDitoo.Webcam.Studio.csproj": "5eaf67ab28455e7e03264dfbe730aa45fb0233009dc4947b41cfabba497d2abc",
       "runtime/windows/OpenDitoo.Webcam.Probe/WebcamFrames.cs": "ed144646c459fea0337f5b920f8d17e6b8bc50caf93c100a65470f0c699eafad",
       "runtime/windows/OpenDitoo.Webcam.Probe/LatestFrameSlot.cs": "b6021ed54c9a18fc40f101e0c50378b4fd8d16356c73878ce58fce21cc9198d0",
@@ -61,16 +62,16 @@
       "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs": "14addbc5b9c2f0da85cad090a4d2c672911b302ca36bb915fc9e03a1be1eb520",
       "runtime/windows/OpenDitoo.Webcam.Runner/TypedSession.cs": "5ba7b540822eef6f438355f6b034ef315dd191a8809f37535199fac1ff102243",
       "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs": "cdb64d7c521217376cf38989aca1d5640aee4cd9d3494ee2a287b4ea5d5f5fa4",
-      "host/webcam_studio.py": "5582d804c71dc4a8ca39d6417665874b280f2d60d106d59df9ca06ff27620118",
+      "host/webcam_studio.py": "af693431e7400492f10f0b77d7c3289fc7bedd20e437a8c4bdecaff2270f40f5",
       "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
       "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.deps.json": "58642f8242fc0f3f89d7f37a8c512fa8907f25801c3984a34e5d685be0241960",
-      "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.dll": "e7e177479ebcad678ddc39357931907182ca94a3dce28aef7e9c4cfecea7b6e0",
+      "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.dll": "f10a66f60664714850506535463c374af0c314d3c6e09c898d07cc7781a36adb",
       "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.exe": "e073e319321eac3818c7fc93621dbb787d8edaad154b0444f3c39fecd9cb907b",
       "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.runtimeconfig.json": "05e2c41d6487512bdd7b09d280bb0c247e31ef20e2be58779bf742a9ac7bcd92",
       "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/WinRT.Runtime.dll": "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
     },
-    "host_dll_sha256": "4a735bab2fafe86001006d8277481b553f41c299e04c31462a72d0f3caf42112",
-    "source_checkpoint": "1605ce6a800161c7b81be142c714a8e6a595a0d4 + Studio build staged at C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio"
+    "host_dll_sha256": "f7bd60d4a56de4f4740bd84f7c645e201ddfd7ce29bf6c0f1e7512b1b67cd34e",
+    "source_checkpoint": "554cc6816ed6c6caa0682ecb64af8025d1c8256d + Studio build staged at C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio"
   },
   "adapter": {
     "windows_executable": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio\\OpenDitoo.Webcam.Studio.exe",
@@ -81,7 +82,7 @@
       "/v1/session/heartbeat",
       "/v1/session/close"
     ],
-    "deployment_state": "PASS preparation at 1605ce6a800161c7b81be142c714a8e6a595a0d4: Studio built, staged to C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio, selftest + transform/encoder parity passed from the staged copy, Host identity checked read-only. No claim, session or device I/O."
+    "deployment_state": "PASS preparation at 554cc6816ed6c6caa0682ecb64af8025d1c8256d: Studio built, staged to C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio, selftest + transform/encoder parity passed from the staged copy, Host identity checked read-only. No claim, session or device I/O."
   },
   "install": {
     "local_policy": ".openditoo-local/webcam-product-policy.json (mode 0600, git-ignored)",
@@ -89,14 +90,14 @@
     "revocation": "python3 host/webcam_studio.py policy-revoke moves the local policy to .openditoo-local/revoked/ marked revoked"
   },
   "authority": {
-    "policy_id": "OPENDITOO-WEBCAM-PRODUCT-003",
+    "policy_id": "OPENDITOO-WEBCAM-PRODUCT-004",
     "webcam_product_authorized": false,
     "revoked": false,
     "granted_by": null,
     "grant_text": null,
     "grant_scope": null,
-    "grant_string": "Grant OPENDITOO-WEBCAM-PRODUCT-003",
-    "grant_scope_requested": "Standing on-demand webcam authority until revoked: whenever the owner launches the webcam, suspend the MCP dashboard, then stream the live N980P webcam through the W10 Studio to exact Ditoo 11:75:58:CE:DE:C7 v42012 via the existing typed Host 127.0.0.1:8796 (Runtime 004 build, operator-selectable look among the five parity-tested W2 presets and palette cap 255/64/32/16/8, changeable live, streaming_ack_clock profile, 40 ms Host floor, 50 ms client floor) as ONE session per launch of at most 30 min and 36001 frames / 108003 packets / 37945054 application bytes, one connection and one frame in flight, under a fresh one-use id; stop on window close, Stop, any fault or unknown outcome with no retry/reconnect/reclaim/pipelining; restore the dashboard on exit. Does not start by itself, does not widen the dashboard runtime policy, grants no raw send, target selection, firmware or persistence, and does not revive any W7-W10 experiment grant or WEBCAM-PRODUCT-001/002.",
-    "supersedes": "OPENDITOO-WEBCAM-PRODUCT-002"
+    "grant_string": "Grant OPENDITOO-WEBCAM-PRODUCT-004",
+    "grant_scope_requested": "Standing on-demand webcam authority until revoked: whenever the owner launches the webcam, suspend the MCP dashboard, then stream the live N980P webcam through the W10 Studio to exact Ditoo 11:75:58:CE:DE:C7 v42012 via the existing typed Host 127.0.0.1:8796 (Runtime 005 build, operator-selectable look among the five parity-tested W2 presets and palette cap 255/64/32/16/8, changeable live, streaming_ack_clock profile, 40 ms Host floor, 50 ms client floor) as ONE session per launch of at most 30 min and 36001 frames / 108003 packets / 37945054 application bytes, one connection and one frame in flight, under a fresh one-use id; stop on window close, Stop, any fault or unknown outcome with no retry/reconnect/reclaim/pipelining; restore the dashboard on exit. Does not start by itself, does not widen the dashboard runtime policy, grants no raw send, target selection, firmware or persistence, and does not revive any W7-W10 experiment grant or WEBCAM-PRODUCT-001/002/003.",
+    "supersedes": "OPENDITOO-WEBCAM-PRODUCT-003"
   }
 }
