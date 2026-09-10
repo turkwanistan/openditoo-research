@@ -90,7 +90,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | HF-1 high-FPS page primitive | **offline PASS** on `feat/high-fps-interactive-pages` (`65723e6`): generic `activity` / `streaming_ack_clock` page contract, buffered physical inputs, ACK-driven state, change-only output, 50 ms idle poll |
 | GAME-1 slots | **offline PASS**: procedural 3-reel 16x16 game; successive short lever pulls stop L/M/R, fourth starts a new round; 1000 deterministic rounds |
 | HF-2 profile orchestrator | **offline PASS**: one-controller activity <-> streaming transitions, 100 transition stress + 1000 mixed inputs; known canvas yield reclaims same page, ambiguity never retries |
-| HF-3 one-use interactive acceptance | 001 consumed (0 cycles, no start cue). 002 consumed/unknown (first-frame `IMAGE_RX_RECV_TIMEOUT`). 003 grant **withdrawn before use**. **Root cause:** first-frame timeouts happen only on `streaming_ack_clock` opens (5/19 vs 0/199 activity), so it's a Host issue, not the page design. A first-frame-10 ms-spacing Host fix is **built, not deployed**; installing it needs Host re-bind revisions of Runtime 006 and webcam 005 plus owner grants. See `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` |
+| HF-3 one-use interactive acceptance | **PASS** — `OPENDITOO-INTERACTIVE-HF3-008` (2026-09-10 22:59Z, Runtime 007 Host): 11 Dashboard↔Slots cycles, 66/66 inputs exactly once and in order, 23/23 first frames, 22 Host-confirmed reclaims, 923 frames with the Host ledger in exact agreement, 0 timeouts/pacing faults; owner visual "great". Lightning visual carries to HF-4. 001–007 consumed (see `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md`) |
 
 ### Authority state
 

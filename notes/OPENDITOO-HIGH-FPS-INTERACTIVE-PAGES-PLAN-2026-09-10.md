@@ -34,6 +34,10 @@ The owner issued the exact named grant `Grant OPENDITOO-INTERACTIVE-HF3-001` aft
 
 HF3-001 ran from local WSL and is **consumed**. Transport was clean (2 activity children, 13 frames, exact ledger agreement, Runtime 006 restored `connected`), but acceptance was **not met**: 0 cycles and 0 SMTC events, because the window opened without any operator cue. The 001 envelope was also too small for 10 human-paced cycles with the BTN-7 `0xBD` reclaims (a negative-control test pins this). HF3-002 adds GO/FINAL popups through `scripts/hf3_operator_assist.py` and an envelope of 150 s / 48 children / 1500 frames / 400 per streaming child. Its paced dry-run fits 10 cycles in 41 attempts and 951 frames. 39/39 PASS. HF3-002 was granted and failed closed at the first Right: closing a 4.3 s-old activity session and reopening as streaming 29 ms later gave `IMAGE_RX_RECV_TIMEOUT` (evidence `captures/OPENDITOO-INTERACTIVE-HF3-002-LIVE-2026-09-10.json`). **This supersedes §6's transition rules.** Pages switch inside ONE `streaming_ack_clock` session (`PageCarousel`), and low-rate pages keep their cadence as a page property. HF3-003 is prepared on that design and awaits its own grant. Evidence for 001: `captures/OPENDITOO-INTERACTIVE-HF3-001-LIVE-2026-09-10.json`.
 
+## HF-3 PASS — 2026-09-10 (HF3-008)
+
+`HF3_INTERACTIVE_LIVE=PASS`: 11 cycles, 66/66 inputs, 23/23 first frames, 22 Host-confirmed reclaims, 923 frames with the ledger exact, 0 faults, owner visual "great". Lightning visual is pending and carries to HF-4. The accepted architecture supersedes §6's per-profile sessions: ONE streaming session with in-session paging, plus the client pacing and yield rules recorded in the HF-3 handoff. Runtime 007's first-frame-spacing Host is the transport base.
+
 ## 1. Goal
 
 Turn the physical-button pagination proof into a reusable interactive application platform rather than optimizing one spiral asset.

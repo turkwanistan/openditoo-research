@@ -1,0 +1,1800 @@
+{
+  "experiment_id": "OPENDITOO-INTERACTIVE-HF3-008",
+  "grant": "Grant OPENDITOO-INTERACTIVE-HF3-008 (owner, in-session)",
+  "host": "3faf520f (Runtime 007)",
+  "pre_run_note": "Ditoo battery ran out at 22:35Z; after the owner powered it, Runtime 007 reconnected unattended at 22:58:29Z (42 bounded reconnect attempts, then connected, last_error null) before the run",
+  "operator_start": "READY popup 22:59:08Z; owner's first RIGHT started the run and the outer claim at 22:59:15Z",
+  "outer_claim": {
+    "claimed_at": "2026-09-10T22:59:15.481245Z",
+    "code_hashes": {
+      "activity_lightning_renderer_sha256": "74389183ca694d46822eefe41ac941783bbd0ac70a5067d410dc827fc7c3f436",
+      "activity_lightning_sha256": "e264db92df9416e2fa004e0101eccb37d0e9bb66b7f86d45c734e01fdebb4714",
+      "activity_render_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+      "activity_session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+      "activity_ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+      "cli_transport_sha256": "07ebf960fb2208ddf8afe34dedc52d5275645584e41bae20fa8a6a063d821119",
+      "dashboard_page_sha256": "16bf19fd963b9c91548deb6aeed038e0514ee0a219bf6290b04ef0b042da20f4",
+      "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+      "frame_stream_sha256": "880970a6d494197b78adfeac0309cb2d86ce447dd6bb826c7ae5b0c270af7fa6",
+      "hf3_coordinator_sha256": "c5b847d79d5c4ceaded1132823ed3e0e708ce23b8952acb58028802d8e0a6215",
+      "hf3_entry_sha256": "c10aa7c7d8d3801a3e072d5cf6e12c4ad06797f42577495d8947e13d379c03dc",
+      "interactive_acceptance_sha256": "93f5f74464880ce0f8386c167522bebe68943f7c7be8d9815946117aba614527",
+      "interactive_activity_sha256": "96a8a75742a17ae04b00a9334b5a0ebc8e0b3ebf0b76d8983a9ee48220028df6",
+      "interactive_pages_sha256": "5172a307a5d68d9573f9463430d9217d3866e9e615afe98e56f6aee7e22731e0",
+      "interactive_runtime_sha256": "f92c6f47ff328ceb3cee4501d72105e52baa7a605e8b92323c832ab3fc8b93c6",
+      "interactive_stream_sha256": "acc9e908e0d7aa99efcc70cbd2cd108a6045ae66035ce54819db23abebb07394",
+      "mcp_activity_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+      "pagination_input_sha256": "b2e31de5399dd8bf8bf83a37ff4f20d0b9201de1a82fd5c6d7736326d775db91",
+      "slots_page_sha256": "0f6116af8b56ad74295c1637f88dd6a857b80a3855e1f61dfef3558f48dc158b"
+    },
+    "experiment_id": "OPENDITOO-INTERACTIVE-HF3-008",
+    "host_build_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+    "manifest_file": "/home/wan/Projects/openditoo-research/.openditoo-local/worktrees/high-fps-interactive-pages/experiments/DAY1-INTERACTIVE-HF3-008.json",
+    "manifest_sha256": "6039f9a9c5768ddb1601695389066d39f1d650622958906001a57c838814faa6",
+    "outcome": "stopped_clean",
+    "state": "finished",
+    "terminal_reason": "operator_stop"
+  },
+  "result": {
+    "terminal_reason": "operator_stop",
+    "outcome": "stopped_clean",
+    "elapsed_ms": 85701,
+    "completed_profile_cycles": 11,
+    "cycle_target_met": true
+  },
+  "orchestrator": {
+    "status": "stopped",
+    "current_page": "carousel",
+    "current_rate_mode": "streaming_ack_clock",
+    "session_sequence": 23,
+    "page_transitions": 0,
+    "profile_transitions": 0,
+    "session_reclaims": 22,
+    "buffered_inputs": 0,
+    "last_error": null,
+    "page_state": {
+      "page": "dashboard",
+      "page_rate_mode": "activity",
+      "page_transitions": 22,
+      "profile_transitions": 22,
+      "pages": {
+        "dashboard": {
+          "pulse_step": null,
+          "pulse_sources": [],
+          "next_collect_ms": 86443,
+          "enter_count": 12,
+          "exit_count": 11,
+          "background_polls": 36,
+          "hidden_pulses_dropped": 1
+        },
+        "slots": {
+          "round": 12,
+          "state": "spinning",
+          "stopped_reels": 0,
+          "positions": [
+            16,
+            10,
+            3
+          ],
+          "frames_acked": 912,
+          "result": null,
+          "enter_count": 11,
+          "exit_count": 11
+        }
+      }
+    }
+  },
+  "budget": {
+    "child_attempts": 23,
+    "child_opens": 23,
+    "frames_acked": 923,
+    "tx_bytes_acked": 139366
+  },
+  "host_ledger_agreement": "exact: 923 frames / 139,366 application bytes; Host terminals 22 canvas_invalidated/stopped_yielded_to_stock + 1 clean close",
+  "children": [
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S001",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 78,
+      "tx_bytes_sent": 11685,
+      "realized_fps": 18.678,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S002",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 21,
+      "tx_bytes_sent": 3159,
+      "realized_fps": 7.175,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S003",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 86,
+      "tx_bytes_sent": 12941,
+      "realized_fps": 14.276,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S004",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 20,
+      "tx_bytes_sent": 3057,
+      "realized_fps": 6.363,
+      "detail": "{\"display_state\": \"unknown_not_ours\", \"frames_sent\": 20, \"kind\": \"session_ended\", \"outcome\": \"stopped_yielded_to_stock\", \"reason\": \"canvas_invalidated\", \"tx_bytes_sent\": 3057}"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S005",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 57,
+      "tx_bytes_sent": 8618,
+      "realized_fps": 13.791,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S006",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 18,
+      "tx_bytes_sent": 2751,
+      "realized_fps": 7.709,
+      "detail": "{\"display_state\": \"unknown_not_ours\", \"frames_sent\": 18, \"kind\": \"session_ended\", \"outcome\": \"stopped_yielded_to_stock\", \"reason\": \"canvas_invalidated\", \"tx_bytes_sent\": 2751}"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S007",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 58,
+      "tx_bytes_sent": 8759,
+      "realized_fps": 12.283,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S008",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 16,
+      "tx_bytes_sent": 2445,
+      "realized_fps": 5.125,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S009",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 55,
+      "tx_bytes_sent": 8291,
+      "realized_fps": 13.35,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S010",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 19,
+      "tx_bytes_sent": 2886,
+      "realized_fps": 6.449,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S011",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 64,
+      "tx_bytes_sent": 9650,
+      "realized_fps": 13.328,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S012",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 17,
+      "tx_bytes_sent": 2598,
+      "realized_fps": 8.138,
+      "detail": "{\"display_state\": \"unknown_not_ours\", \"frames_sent\": 17, \"kind\": \"session_ended\", \"outcome\": \"stopped_yielded_to_stock\", \"reason\": \"canvas_invalidated\", \"tx_bytes_sent\": 2598}"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S013",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 63,
+      "tx_bytes_sent": 9482,
+      "realized_fps": 13.081,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S014",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 15,
+      "tx_bytes_sent": 2292,
+      "realized_fps": 5.102,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S015",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 64,
+      "tx_bytes_sent": 9623,
+      "realized_fps": 13.571,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S016",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 17,
+      "tx_bytes_sent": 2598,
+      "realized_fps": 7.128,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S017",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 45,
+      "tx_bytes_sent": 6803,
+      "realized_fps": 12.212,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S018",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 16,
+      "tx_bytes_sent": 2445,
+      "realized_fps": 6.061,
+      "detail": "{\"display_state\": \"unknown_not_ours\", \"frames_sent\": 16, \"kind\": \"session_ended\", \"outcome\": \"stopped_yielded_to_stock\", \"reason\": \"canvas_invalidated\", \"tx_bytes_sent\": 2445}"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S019",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 69,
+      "tx_bytes_sent": 10397,
+      "realized_fps": 14.136,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S020",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 16,
+      "tx_bytes_sent": 2427,
+      "realized_fps": 6.349,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S021",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 70,
+      "tx_bytes_sent": 10547,
+      "realized_fps": 12.197,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S022",
+      "terminal_reason": "canvas_invalidated",
+      "outcome": "stopped_yielded_to_stock",
+      "frames_sent": 15,
+      "tx_bytes_sent": 2280,
+      "realized_fps": 3.63,
+      "detail": "host-confirmed yield during send: HostConfirmedYield: SESSION_CANVAS_INVALIDATED;host_confirmed"
+    },
+    {
+      "child_experiment_id": "OPENDITOO-INTERACTIVE-HF3-008-S023",
+      "terminal_reason": "operator_stop",
+      "outcome": "stopped_clean",
+      "frames_sent": 24,
+      "tx_bytes_sent": 3632,
+      "realized_fps": 9.21,
+      "detail": "external stop requested"
+    }
+  ],
+  "inputs": {
+    "count": 66,
+    "results": {
+      "navigate": 22,
+      "stopped_reel_1": 11,
+      "stopped_reel_2": 11,
+      "stopped_reel_3": 11,
+      "new_round": 11
+    },
+    "lever_sequence_exact": true,
+    "first_later_ack_ms": {
+      "p50": 60.0,
+      "p95": 242.0,
+      "max": 273.0
+    }
+  },
+  "client_ack_ms_including_floor_wait": {
+    "p50": 48,
+    "p95": 83,
+    "n": 923
+  },
+  "transport_fps_sessions_50plus_frames": [
+    18.678,
+    14.276,
+    13.791,
+    12.283,
+    13.35,
+    13.328,
+    13.081,
+    13.571,
+    14.136,
+    12.197
+  ],
+  "first_frame_fix": "23/23 streaming first frames ACKed this run; 44/44 on the 3faf520f Host across HF3-004..008 (old Host 5/19 failed)",
+  "image_rx_recv_timeout": 0,
+  "pacing_violations": 0,
+  "mcp_pulse": {
+    "genuine_event": "WSL_MCP run_command audit event 23:00:33Z (operator assist)",
+    "observed": "owner was on Slots (11th cycle) when it arrived: collected into status, visual pulse dropped (hidden_pulses_dropped=1), not replayed on return at ~23:00:40Z -- live evidence for no-stale-pulse replay",
+    "lightning_visual": "NOT OBSERVED (owner: no bolt seen); carried into HF-4 standing acceptance"
+  },
+  "host_ledger": [
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:15.5141056+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S001",
+      "sessionId": "b16359505ab8",
+      "detail": {
+        "lifetimeSeconds": 180,
+        "minIntervalMs": 40,
+        "frameBudget": 1500,
+        "txByteBudget": 1581000,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:19.6507105+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S001",
+      "sessionId": "b16359505ab8",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 78,
+        "packetsSent": 234,
+        "txBytesSent": 11685,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:19.6811903+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S002",
+      "sessionId": "9ab0b146de3b",
+      "detail": {
+        "lifetimeSeconds": 176,
+        "minIntervalMs": 40,
+        "frameBudget": 1422,
+        "txByteBudget": 1498788,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:22.5797425+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S002",
+      "sessionId": "9ab0b146de3b",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 21,
+        "packetsSent": 63,
+        "txBytesSent": 3159,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:22.6126949+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S003",
+      "sessionId": "a2ba3a8cd09b",
+      "detail": {
+        "lifetimeSeconds": 173,
+        "minIntervalMs": 40,
+        "frameBudget": 1401,
+        "txByteBudget": 1476654,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:28.5848642+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S003",
+      "sessionId": "a2ba3a8cd09b",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 86,
+        "packetsSent": 258,
+        "txBytesSent": 12941,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:28.6378884+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S004",
+      "sessionId": "e120163b4335",
+      "detail": {
+        "lifetimeSeconds": 167,
+        "minIntervalMs": 40,
+        "frameBudget": 1315,
+        "txByteBudget": 1386010,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:31.7364936+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S004",
+      "sessionId": "e120163b4335",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 20,
+        "packetsSent": 60,
+        "txBytesSent": 3057,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:31.7832892+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S005",
+      "sessionId": "86e247a5b7da",
+      "detail": {
+        "lifetimeSeconds": 164,
+        "minIntervalMs": 40,
+        "frameBudget": 1295,
+        "txByteBudget": 1364930,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:35.8893133+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S005",
+      "sessionId": "86e247a5b7da",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 57,
+        "packetsSent": 171,
+        "txBytesSent": 8618,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:35.9202051+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S006",
+      "sessionId": "b4cec1aa5481",
+      "detail": {
+        "lifetimeSeconds": 160,
+        "minIntervalMs": 40,
+        "frameBudget": 1238,
+        "txByteBudget": 1304852,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:38.1971745+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S006",
+      "sessionId": "b4cec1aa5481",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 18,
+        "packetsSent": 54,
+        "txBytesSent": 2751,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:38.2721550+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S007",
+      "sessionId": "f0177d17f9e6",
+      "detail": {
+        "lifetimeSeconds": 158,
+        "minIntervalMs": 40,
+        "frameBudget": 1220,
+        "txByteBudget": 1285880,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:42.9488415+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S007",
+      "sessionId": "f0177d17f9e6",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 58,
+        "packetsSent": 174,
+        "txBytesSent": 8759,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:43.0174779+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S008",
+      "sessionId": "6b20a349f7fa",
+      "detail": {
+        "lifetimeSeconds": 153,
+        "minIntervalMs": 40,
+        "frameBudget": 1162,
+        "txByteBudget": 1224748,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:46.0754652+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S008",
+      "sessionId": "6b20a349f7fa",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 16,
+        "packetsSent": 48,
+        "txBytesSent": 2445,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:46.1196384+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S009",
+      "sessionId": "0a555dd00dc7",
+      "detail": {
+        "lifetimeSeconds": 150,
+        "minIntervalMs": 40,
+        "frameBudget": 1146,
+        "txByteBudget": 1207884,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:50.2124408+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S009",
+      "sessionId": "0a555dd00dc7",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 55,
+        "packetsSent": 165,
+        "txBytesSent": 8291,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:50.2408684+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S010",
+      "sessionId": "37be10e3f11e",
+      "detail": {
+        "lifetimeSeconds": 146,
+        "minIntervalMs": 40,
+        "frameBudget": 1091,
+        "txByteBudget": 1149914,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:53.1610566+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S010",
+      "sessionId": "37be10e3f11e",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 19,
+        "packetsSent": 57,
+        "txBytesSent": 2886,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:53.1965381+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S011",
+      "sessionId": "e6d7feb8195a",
+      "detail": {
+        "lifetimeSeconds": 143,
+        "minIntervalMs": 40,
+        "frameBudget": 1072,
+        "txByteBudget": 1129888,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T22:59:57.9683579+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S011",
+      "sessionId": "e6d7feb8195a",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 64,
+        "packetsSent": 192,
+        "txBytesSent": 9650,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T22:59:58.0000626+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S012",
+      "sessionId": "177bbd0614ab",
+      "detail": {
+        "lifetimeSeconds": 138,
+        "minIntervalMs": 40,
+        "frameBudget": 1008,
+        "txByteBudget": 1062432,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:00.0479528+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S012",
+      "sessionId": "177bbd0614ab",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 17,
+        "packetsSent": 51,
+        "txBytesSent": 2598,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:00.0925222+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S013",
+      "sessionId": "8d5d124fe290",
+      "detail": {
+        "lifetimeSeconds": 136,
+        "minIntervalMs": 40,
+        "frameBudget": 991,
+        "txByteBudget": 1044514,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:04.8720903+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S013",
+      "sessionId": "8d5d124fe290",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 63,
+        "packetsSent": 189,
+        "txBytesSent": 9482,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:04.9148766+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S014",
+      "sessionId": "0bb6c3e0746b",
+      "detail": {
+        "lifetimeSeconds": 131,
+        "minIntervalMs": 40,
+        "frameBudget": 928,
+        "txByteBudget": 978112,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:07.8198297+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S014",
+      "sessionId": "0bb6c3e0746b",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 15,
+        "packetsSent": 45,
+        "txBytesSent": 2292,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:07.8567464+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S015",
+      "sessionId": "c6d3020ddb11",
+      "detail": {
+        "lifetimeSeconds": 128,
+        "minIntervalMs": 40,
+        "frameBudget": 913,
+        "txByteBudget": 962302,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:12.5412890+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S015",
+      "sessionId": "c6d3020ddb11",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 64,
+        "packetsSent": 192,
+        "txBytesSent": 9623,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:12.5788290+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S016",
+      "sessionId": "6d32431cd92a",
+      "detail": {
+        "lifetimeSeconds": 123,
+        "minIntervalMs": 40,
+        "frameBudget": 849,
+        "txByteBudget": 894846,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:14.9359908+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S016",
+      "sessionId": "6d32431cd92a",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 17,
+        "packetsSent": 51,
+        "txBytesSent": 2598,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:14.9661502+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S017",
+      "sessionId": "2909bbbc2155",
+      "detail": {
+        "lifetimeSeconds": 121,
+        "minIntervalMs": 40,
+        "frameBudget": 832,
+        "txByteBudget": 876928,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:18.6218931+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S017",
+      "sessionId": "2909bbbc2155",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 45,
+        "packetsSent": 135,
+        "txBytesSent": 6803,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:18.6550485+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S018",
+      "sessionId": "47c449a5185c",
+      "detail": {
+        "lifetimeSeconds": 117,
+        "minIntervalMs": 40,
+        "frameBudget": 787,
+        "txByteBudget": 829498,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:21.2366279+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S018",
+      "sessionId": "47c449a5185c",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 16,
+        "packetsSent": 48,
+        "txBytesSent": 2445,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:21.3018586+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S019",
+      "sessionId": "d5fd6b75b95f",
+      "detail": {
+        "lifetimeSeconds": 115,
+        "minIntervalMs": 40,
+        "frameBudget": 771,
+        "txByteBudget": 812634,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:26.1472687+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S019",
+      "sessionId": "d5fd6b75b95f",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 69,
+        "packetsSent": 207,
+        "txBytesSent": 10397,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:26.1905516+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S020",
+      "sessionId": "aa395f34d54f",
+      "detail": {
+        "lifetimeSeconds": 110,
+        "minIntervalMs": 40,
+        "frameBudget": 702,
+        "txByteBudget": 739908,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:28.6821604+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S020",
+      "sessionId": "aa395f34d54f",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 16,
+        "packetsSent": 48,
+        "txBytesSent": 2427,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:28.7151821+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S021",
+      "sessionId": "91cbf5fe1eba",
+      "detail": {
+        "lifetimeSeconds": 107,
+        "minIntervalMs": 40,
+        "frameBudget": 686,
+        "txByteBudget": 723044,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:34.4222303+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S021",
+      "sessionId": "91cbf5fe1eba",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 70,
+        "packetsSent": 210,
+        "txBytesSent": 10547,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:34.4570984+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S022",
+      "sessionId": "12b841195b2a",
+      "detail": {
+        "lifetimeSeconds": 102,
+        "minIntervalMs": 40,
+        "frameBudget": 616,
+        "txByteBudget": 649264,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:38.5603252+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S022",
+      "sessionId": "12b841195b2a",
+      "detail": {
+        "reason": "canvas_invalidated",
+        "outcome": "stopped_yielded_to_stock",
+        "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+        "framesSent": 15,
+        "packetsSent": 45,
+        "txBytesSent": 2280,
+        "displayState": "unknown_not_ours"
+      }
+    },
+    {
+      "kind": "open",
+      "atUtc": "2026-09-10T23:00:38.6178123+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S023",
+      "sessionId": "0a364d663c88",
+      "detail": {
+        "lifetimeSeconds": 97,
+        "minIntervalMs": 40,
+        "frameBudget": 601,
+        "txByteBudget": 633454,
+        "sessionProfile": "streaming_ack_clock",
+        "sendSpacingMs": 0
+      }
+    },
+    {
+      "kind": "terminal",
+      "atUtc": "2026-09-10T23:00:41.1779293+00:00",
+      "experimentId": "OPENDITOO-INTERACTIVE-HF3-008-S023",
+      "sessionId": "0a364d663c88",
+      "detail": {
+        "reason": "page_transition",
+        "outcome": "stopped_clean",
+        "detail": "",
+        "framesSent": 24,
+        "packetsSent": 72,
+        "txBytesSent": 3632,
+        "displayState": "ours_last_acked"
+      }
+    }
+  ],
+  "probe_events": [
+    {
+      "epoch": "55fa751442ba",
+      "seq": 1,
+      "at_monotonic_ms": 50359190.619,
+      "at_utc": "2026-09-10T22:59:08.5378556Z",
+      "type": "probe_started",
+      "pid": 12760,
+      "seconds": 0,
+      "smtc": {
+        "acquired": true,
+        "playback_status": "Playing",
+        "status_mode": "mirror"
+      },
+      "rawinput_registered": true,
+      "merging": "none; every source logged separately"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 2,
+      "at_monotonic_ms": 50366112.895,
+      "at_utc": "2026-09-10T22:59:15.4600049Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 3,
+      "at_monotonic_ms": 50369258.048,
+      "at_utc": "2026-09-10T22:59:18.6051546Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 4,
+      "at_monotonic_ms": 50370303.228,
+      "at_utc": "2026-09-10T22:59:19.6503357Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 5,
+      "at_monotonic_ms": 50371431.07,
+      "at_utc": "2026-09-10T22:59:20.7781770Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 6,
+      "at_monotonic_ms": 50373157.236,
+      "at_utc": "2026-09-10T22:59:22.5043438Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 7,
+      "at_monotonic_ms": 50375905.374,
+      "at_utc": "2026-09-10T22:59:25.2524808Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 8,
+      "at_monotonic_ms": 50377293.397,
+      "at_utc": "2026-09-10T22:59:26.6405053Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 9,
+      "at_monotonic_ms": 50378330.292,
+      "at_utc": "2026-09-10T22:59:27.6773994Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 10,
+      "at_monotonic_ms": 50379242.437,
+      "at_utc": "2026-09-10T22:59:28.5895458Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 11,
+      "at_monotonic_ms": 50380342.136,
+      "at_utc": "2026-09-10T22:59:29.6892431Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 12,
+      "at_monotonic_ms": 50382404.333,
+      "at_utc": "2026-09-10T22:59:31.7514404Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 13,
+      "at_monotonic_ms": 50383458.72,
+      "at_utc": "2026-09-10T22:59:32.8058307Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 14,
+      "at_monotonic_ms": 50384506.903,
+      "at_utc": "2026-09-10T22:59:33.8540112Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 15,
+      "at_monotonic_ms": 50385756.641,
+      "at_utc": "2026-09-10T22:59:35.1037479Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 16,
+      "at_monotonic_ms": 50386518.053,
+      "at_utc": "2026-09-10T22:59:35.8651611Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 17,
+      "at_monotonic_ms": 50387480.473,
+      "at_utc": "2026-09-10T22:59:36.8275804Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 18,
+      "at_monotonic_ms": 50388844.178,
+      "at_utc": "2026-09-10T22:59:38.1912853Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 19,
+      "at_monotonic_ms": 50390126.942,
+      "at_utc": "2026-09-10T22:59:39.4740499Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 20,
+      "at_monotonic_ms": 50391713.665,
+      "at_utc": "2026-09-10T22:59:41.0607730Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 21,
+      "at_monotonic_ms": 50392707.134,
+      "at_utc": "2026-09-10T22:59:42.0542424Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 22,
+      "at_monotonic_ms": 50393596.969,
+      "at_utc": "2026-09-10T22:59:42.9440773Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 23,
+      "at_monotonic_ms": 50394518.518,
+      "at_utc": "2026-09-10T22:59:43.8656267Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 24,
+      "at_monotonic_ms": 50396650.834,
+      "at_utc": "2026-09-10T22:59:45.9979419Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 25,
+      "at_monotonic_ms": 50397911.276,
+      "at_utc": "2026-09-10T22:59:47.2583837Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 26,
+      "at_monotonic_ms": 50399051.33,
+      "at_utc": "2026-09-10T22:59:48.3984378Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 27,
+      "at_monotonic_ms": 50399964.754,
+      "at_utc": "2026-09-10T22:59:49.3118629Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 28,
+      "at_monotonic_ms": 50400841.616,
+      "at_utc": "2026-09-10T22:59:50.1887241Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 29,
+      "at_monotonic_ms": 50401810.995,
+      "at_utc": "2026-09-10T22:59:51.1581036Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 30,
+      "at_monotonic_ms": 50403798.518,
+      "at_utc": "2026-09-10T22:59:53.1456263Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 31,
+      "at_monotonic_ms": 50405266.936,
+      "at_utc": "2026-09-10T22:59:54.6140450Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 32,
+      "at_monotonic_ms": 50406651.202,
+      "at_utc": "2026-09-10T22:59:55.9983088Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 33,
+      "at_monotonic_ms": 50407693.126,
+      "at_utc": "2026-09-10T22:59:57.0402339Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 34,
+      "at_monotonic_ms": 50408629.321,
+      "at_utc": "2026-09-10T22:59:57.9764275Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 35,
+      "at_monotonic_ms": 50409532.451,
+      "at_utc": "2026-09-10T22:59:58.8795604Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 36,
+      "at_monotonic_ms": 50410657.017,
+      "at_utc": "2026-09-10T23:00:00.0041242Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 37,
+      "at_monotonic_ms": 50412208.48,
+      "at_utc": "2026-09-10T23:00:01.5555871Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 38,
+      "at_monotonic_ms": 50413474.284,
+      "at_utc": "2026-09-10T23:00:02.8213907Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 39,
+      "at_monotonic_ms": 50414679.394,
+      "at_utc": "2026-09-10T23:00:04.0265007Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 40,
+      "at_monotonic_ms": 50415506.564,
+      "at_utc": "2026-09-10T23:00:04.8536706Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 41,
+      "at_monotonic_ms": 50416351.099,
+      "at_utc": "2026-09-10T23:00:05.6982050Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 42,
+      "at_monotonic_ms": 50418427.103,
+      "at_utc": "2026-09-10T23:00:07.7742092Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 43,
+      "at_monotonic_ms": 50419906.695,
+      "at_utc": "2026-09-10T23:00:09.2538015Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 44,
+      "at_monotonic_ms": 50421204.465,
+      "at_utc": "2026-09-10T23:00:10.5515714Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 45,
+      "at_monotonic_ms": 50422303.181,
+      "at_utc": "2026-09-10T23:00:11.6502884Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 46,
+      "at_monotonic_ms": 50423222.35,
+      "at_utc": "2026-09-10T23:00:12.5694567Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 47,
+      "at_monotonic_ms": 50424079.338,
+      "at_utc": "2026-09-10T23:00:13.4264448Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 48,
+      "at_monotonic_ms": 50425532.026,
+      "at_utc": "2026-09-10T23:00:14.8791333Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 49,
+      "at_monotonic_ms": 50426559.132,
+      "at_utc": "2026-09-10T23:00:15.9062388Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 50,
+      "at_monotonic_ms": 50427712.077,
+      "at_utc": "2026-09-10T23:00:17.0591841Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 51,
+      "at_monotonic_ms": 50428512.004,
+      "at_utc": "2026-09-10T23:00:17.8591108Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 52,
+      "at_monotonic_ms": 50429277.96,
+      "at_utc": "2026-09-10T23:00:18.6250674Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 53,
+      "at_monotonic_ms": 50430112.931,
+      "at_utc": "2026-09-10T23:00:19.4600377Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 54,
+      "at_monotonic_ms": 50431864.388,
+      "at_utc": "2026-09-10T23:00:21.2114965Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 55,
+      "at_monotonic_ms": 50433889.3,
+      "at_utc": "2026-09-10T23:00:23.2364067Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 56,
+      "at_monotonic_ms": 50434985.858,
+      "at_utc": "2026-09-10T23:00:24.3329658Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 57,
+      "at_monotonic_ms": 50435986.808,
+      "at_utc": "2026-09-10T23:00:25.3339140Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 58,
+      "at_monotonic_ms": 50436825.501,
+      "at_utc": "2026-09-10T23:00:26.1726072Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 59,
+      "at_monotonic_ms": 50437650.457,
+      "at_utc": "2026-09-10T23:00:26.9975637Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 60,
+      "at_monotonic_ms": 50439274.974,
+      "at_utc": "2026-09-10T23:00:28.6220802Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 61,
+      "at_monotonic_ms": 50441208.989,
+      "at_utc": "2026-09-10T23:00:30.5560975Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 62,
+      "at_monotonic_ms": 50443116.481,
+      "at_utc": "2026-09-10T23:00:32.4635886Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Next",
+      "normalized_candidate": "nav_right",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 63,
+      "at_monotonic_ms": 50444211.108,
+      "at_utc": "2026-09-10T23:00:33.5582143Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 64,
+      "at_monotonic_ms": 50445105.4,
+      "at_utc": "2026-09-10T23:00:34.4525068Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 65,
+      "at_monotonic_ms": 50445941.71,
+      "at_utc": "2026-09-10T23:00:35.2888193Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Pause",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Playing"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 66,
+      "at_monotonic_ms": 50449184.164,
+      "at_utc": "2026-09-10T23:00:38.5312720Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Play",
+      "normalized_candidate": "lever_candidate",
+      "status_before": "Paused"
+    },
+    {
+      "epoch": "55fa751442ba",
+      "seq": 67,
+      "at_monotonic_ms": 50450519.497,
+      "at_utc": "2026-09-10T23:00:39.8666032Z",
+      "type": "event",
+      "source": "smtc",
+      "raw_button": "Previous",
+      "normalized_candidate": "nav_left",
+      "status_before": "Playing"
+    }
+  ],
+  "operator_assist_log": [
+    {
+      "event": "runner_seen",
+      "pid": 1822253,
+      "at_utc": "2026-09-10T22:59:08.373479Z"
+    },
+    {
+      "event": "ready_popup",
+      "at_utc": "2026-09-10T22:59:08.601169Z"
+    },
+    {
+      "event": "run_started",
+      "hf3_opens": 1,
+      "at_utc": "2026-09-10T22:59:15.615097Z"
+    },
+    {
+      "event": "final_dashboard",
+      "lefts": 10,
+      "hf3_opens": 21,
+      "elapsed_s": 75.0,
+      "at_utc": "2026-09-10T23:00:30.611924Z"
+    },
+    {
+      "event": "mcp_event",
+      "response": "event: message\r\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"content\":[{\"text\":\"{\\n  \\\"ok\\\": true,\\n  \\\"exit_code\\\": 0,\\n  \\\"timed_out\\\": false,\\n  \\\"sandbox\\\": \\\"bubblewrap\\\",\\n  \\\"write_scope\\\": \\\"none\\",
+      "at_utc": "2026-09-10T23:00:33.158727Z"
+    },
+    {
+      "event": "sigint_sent",
+      "pid": 1822253,
+      "at_utc": "2026-09-10T23:00:41.168615Z"
+    }
+  ],
+  "runtime007_restore": "HF3_DASHBOARD_SERVICE_RESTORED / HF3_DASHBOARD_CONNECTED_RESTORED, RC=0",
+  "owner_visual": "Great, no issues (reels smooth, one reel per pull, page switches instant)",
+  "verdict": {
+    "HF3_INTERACTIVE_LIVE": "PASS",
+    "transport": "PASS",
+    "slots_paging_visual": "PASS (owner)",
+    "lightning_visual": "PENDING (HF-4)",
+    "hidden_pulse_no_replay": "PASS (live, 1 event)",
+    "panel_fps": "UNMEASURED (transport FPS is not panel FPS)"
+  }
+}

@@ -109,4 +109,26 @@ It ended when the Host watchdog caught a lever `0xBD` between frames: the next s
 
 HF3-007 was transport-clean (1 session, 3 frames, `lifetime_expired`), but the owner missed the GO popup, so the probe saw 0 presses. SMTC was verified healthy afterwards. This is the second id spent on start timing. **HF3-008** therefore suspends the dashboard, starts the probe, shows a 60 s topmost READY popup and waits. The owner's **first press starts the run**: the press is buffered and applied, and only then is the outer claim taken (after a second Host idle check). No press within 120 s means it exits with **no claim**: the grant stays unconsumed and the dashboard is restored. Everything else is HF3-007's code and envelope (180 s / 48 / 1500). 44/44 tests. Needs `Grant OPENDITOO-INTERACTIVE-HF3-008`.
 
+## HF3-008 — **HF3_INTERACTIVE_LIVE=PASS**
+
+Owner-started at 22:59:15Z. Just before it, the Ditoo's battery had died, and Runtime 007 reconnected unattended once the Ditoo was powered again.
+
+- **11 complete Dashboard↔Slots cycles** (target 10) and 22 in-session page transitions.
+- **66/66 inputs** applied exactly once and in order: 44 lever pulls gave exactly 11 × (reel 1, 2, 3, new round). Input → first later ACK p50 60 ms / p95 242 ms / max 273 ms.
+- **23 sessions, 23/23 first frames ACKed** (44/44 on the new Host). 22 device-ended yields, all Host-confirmed.
+- **923 frames / 139,366 B**, identical in the Host ledger. **0** `IMAGE_RX_RECV_TIMEOUT`, **0** pacing violations. Transport 12–18.7 fps per session (not panel FPS). Clean `operator_stop`; Runtime 007 restored.
+- Owner visual: **"Great, no issues."**
+- The genuine MCP event arrived while Slots was visible, so it was collected and its pulse **dropped, not replayed** (live evidence).
+- **The lightning animation is still visually unaccepted.** It carries into HF-4 standing acceptance.
+
+Evidence: `captures/OPENDITOO-INTERACTIVE-HF3-008-LIVE-2026-09-10.json`.
+
+**Accepted architecture for HF-4:**
+- One `streaming_ack_clock` Host session carries all pages (`PageCarousel`), and Left/Right change pixels only.
+- Low-rate pages are held to ~200 ms change-only.
+- The interactive transport keeps a 50 ms client floor plus a ≥ 45 ms Host-anchored gap.
+- A 409 `SESSION_CANVAS_INVALIDATED`/`SESSION_NOT_ACTIVE` counts as a stock yield only when the Host confirms it; the session is then reclaimed.
+- Hidden-page MCP collection runs on a joined worker thread.
+- Runtime 007's Host has first-frame 10 ms spacing.
+
 WSL trap: this worktree's `.git` link pointed at the WSL_MCP mount (`/run/wsl-mcp/workspace`). `git worktree repair` from the main checkout fixes it.

@@ -3,7 +3,7 @@
   "kind": "interactive_page_acceptance",
   "experiment_id": "OPENDITOO-INTERACTIVE-HF3-008",
   "milestone": "HF-3 one-use high-FPS interactive page / repeated profile-open acceptance",
-  "status": "prepared_unauthorized",
+  "status": "completed_transport_clean",
   "predecessors": [
     {
       "experiment_id": "OPENDITOO-INTERACTIVE-HF3-001",
@@ -157,10 +157,11 @@
     "experiment_id": "OPENDITOO-INTERACTIVE-HF3-008",
     "required_grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-008",
     "transmission_authorized": false,
-    "authorization_consumed": false,
-    "granted_by": null,
-    "grant_text": null,
-    "expires_at": null,
-    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 180 s, 48 child session attempts (one planned session; the rest only Host-confirmed device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately."
+    "authorization_consumed": true,
+    "granted_by": "operator, in-session",
+    "grant_text": "Grant OPENDITOO-INTERACTIVE-HF3-008",
+    "expires_at": "2026-09-10T23:27:31.405598Z",
+    "grant_scope_requested": "ONE bounded HF-3 interactive acceptance on exact Ditoo 11:75:58:CE:DE:C7 v42012: at most 180 s, 48 child session attempts (one planned session; the rest only Host-confirmed device-ended canvas-yield reclaims), 1500 ACKed frames and derived byte ceiling; only the streaming_ack_clock profile; Dashboard + slots pages; physical Left/Right + short lever; known canvas-invalidated reclaim only; no retry after ambiguity, no raw send/pipelining/target override/persistence; Runtime 006 suspended then restored separately.",
+    "consumed_at": "2026-09-10T23:00:41.186474Z"
   }
 }
