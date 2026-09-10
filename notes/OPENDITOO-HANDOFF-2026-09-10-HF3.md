@@ -48,6 +48,8 @@ The owner granted `Grant OPENDITOO-INTERACTIVE-HF3-003` and I materialized it. I
 
 Installing it changes the Host hash that Runtime 006 (`f7bd60d4…`) and webcam policy 005 bind. Both then need re-bound successor revisions (precedent: Runtime 004 was a Host re-bind only) and owner grants.
 
+**Prepared (2026-09-10):** Runtime 007 + webcam 006 on branch `feat/host-first-frame-spacing` (`46c8b9d`, off main). It has a reproducible Host `3faf520f…` (PathMap), an exact-byte rollback, and needs two grants. See that branch's `notes/OPENDITOO-HOST-FIRST-FRAME-REBIND-2026-09-10.md`. After cutover, rebase this branch onto main and re-freeze HF3-004 against `3faf520f…`.
+
 **Next (owner decision):**
 1. Approve a reviewed Host re-bind revision that installs the first-frame-spacing Host, with Runtime 006 → re-bound runtime and webcam 005 → re-bound policy, preserving rollback to the `f7bd60d4` Host.
 2. Then run a fresh HF-3 (`…-HF3-004`) on the `PageCarousel` design.
