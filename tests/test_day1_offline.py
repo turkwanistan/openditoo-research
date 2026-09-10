@@ -4640,3 +4640,212 @@ class ButtonProbeBoundaryTests(unittest.TestCase):
         src = self._source()
         self.assertIn("if (!Normalize.IsMediaVk(key.VKey)) return;", src)
         self.assertIn("vk is VkNext or VkPrev or VkStop or VkPlayPause", src)
+
+
+# --------------------------------------------------------------------------
+# BTN-3/4 — read-only button event cursor + two-page router, entirely offline
+# --------------------------------------------------------------------------
+
+from host import pagination  # noqa: E402
+
+
+def _probe_line(epoch: str, seq: int, button: str | None = None, source: str = "smtc", kind: str = "event") -> str:
+    record = {"epoch": epoch, "seq": seq, "at_utc": "2026-09-10T00:00:00Z", "type": kind}
+    if kind == "event":
+        candidate = {"Previous": "nav_left", "Next": "nav_right", "Pause": "lever_candidate"}.get(button)
+        record.update(source=source, raw_button=button, normalized_candidate=candidate)
+    return json.dumps(record) + "\n"
+
+
+class PaginationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        self.events_path = self.dir / "button-events.ndjson"
+        self.clock = {"s": 100.0}
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
+
+    def _append(self, *lines: str) -> None:
+        with self.events_path.open("a", encoding="utf-8") as handle:
+            handle.write("".join(lines))
+
+    def _frames(self) -> frame_stream.FrameSet:
+        return frame_stream.build_frame_set(frame_stream.frames_from_source(ROOT / "assets/pagination/spiral-10.rgb888"))
+
+    class Dashboard:
+        def __init__(self) -> None:
+            self.calls = 0
+            self.sent = 0
+            self.pulse_step = None
+            self.pulse_sources: set = set()
+
+        def __call__(self, _now):
+            self.calls += 1
+            return bytes([0, 200, 0]) * 256, self.pulse_step is not None
+
+        def frame_sent(self):
+            self.sent += 1
+
+    def _renderer(self, dashboard=None):
+        router = pagination.PageRouter(lambda: self.clock["s"])
+        events = pagination.ButtonEvents(self.events_path)
+        dashboard = dashboard or self.Dashboard()
+        return router, events, dashboard, pagination.PagedRenderer(router, events, dashboard, self._frames(), 250)
+
+    def test_right_enters_animation_once_and_left_returns(self) -> None:
+        self._append(_probe_line("e1", 1, kind="probe_started"))
+        router, _, dashboard, render = self._renderer()
+        self.assertEqual(render(0)[0], bytes([0, 200, 0]) * 256)
+        self._append(_probe_line("e1", 2, "Next"))
+        frame, _ = render(50)
+        self.assertEqual(router.page, "animation")
+        self.assertEqual(frame, self._frames().frames[0])
+        for tick in range(5):  # repeated ticks never re-apply the same event
+            render(100 + tick * 50)
+        self.assertEqual(len(router.transitions), 1)
+        self._append(_probe_line("e1", 3, "Previous"))
+        self.assertEqual(render(400)[0], bytes([0, 200, 0]) * 256)
+        self.assertEqual([(t["from"], t["to"]) for t in router.transitions],
+                         [("dashboard", "animation"), ("animation", "dashboard")])
+
+    def test_edge_presses_bursts_and_lever_are_no_ops(self) -> None:
+        router, _, _, render = self._renderer()
+        self._append(_probe_line("e1", 1, "Previous"), _probe_line("e1", 2, "Next"),
+                     _probe_line("e1", 3, "Next"), _probe_line("e1", 4, "Pause"))
+        render(0)
+        self.assertEqual(router.page, "animation")
+        self.assertEqual(len(router.transitions), 1, msg="burst right/right must not jump twice")
+        self.assertEqual([i["type"] for i in router.ignored], ["nav_left", "nav_right", "lever_candidate"])
+
+    def test_events_written_before_start_are_never_replayed(self) -> None:
+        self._append(_probe_line("old", 1, "Next"))
+        router, _, _, render = self._renderer()
+        render(0)
+        self.assertEqual(router.page, "dashboard")
+
+    def test_epoch_restart_gap_duplicate_and_foreign_sources(self) -> None:
+        events = pagination.ButtonEvents(self.events_path)
+        self._append(_probe_line("e1", 1, "Next"), _probe_line("e1", 1, "Next"),  # duplicate
+                     _probe_line("e1", 2, "Next", source="wm_appcommand"),       # diagnostic source
+                     _probe_line("e1", 5, "Previous"))                           # gap 3..4
+        got = events.poll()
+        self.assertEqual([(e["seq"], e["type"]) for e in got], [(1, "nav_right"), (5, "nav_left")])
+        self.assertEqual(events.gaps, 1)
+        self._append(_probe_line("e2", 1, kind="probe_started"), _probe_line("e2", 2, "Next"))
+        self.assertEqual([(e["epoch"], e["seq"]) for e in events.poll()], [("e2", 2)])
+        self.assertEqual(events.epochs, 2)
+
+    def test_partial_line_waits_and_missing_broker_is_quiet(self) -> None:
+        events = pagination.ButtonEvents(self.dir / "absent.ndjson")
+        self.assertEqual(events.poll(), [])
+        events = pagination.ButtonEvents(self.events_path)
+        line = _probe_line("e1", 1, "Next")
+        self._append(line[:10])
+        self.assertEqual(events.poll(), [])
+        self._append(line[10:])
+        self.assertEqual([e["type"] for e in events.poll()], ["nav_right"])
+
+    def test_animation_runs_only_on_page_one_and_collection_never_pauses(self) -> None:
+        router, _, dashboard, render = self._renderer()
+        self._append(_probe_line("e1", 1, "Next"))
+        seen = set()
+        for tick in range(12):
+            self.clock["s"] += 0.25
+            seen.add(render(tick * 250)[0])
+        self.assertEqual(len(seen), 10, msg="all ten frames play in a loop")
+        self.assertEqual(dashboard.calls, 12, msg="dashboard collection continues on page 1")
+        render.frame_sent()
+        self.assertEqual(dashboard.sent, 0, msg="animation ACKs never advance the dashboard pulse")
+
+    def test_stale_pulse_is_cleared_on_return(self) -> None:
+        dashboard = self.Dashboard()
+        router, _, _, render = self._renderer(dashboard)
+        self._append(_probe_line("e1", 1, "Next"))
+        render(0)
+        dashboard.pulse_step, dashboard.pulse_sources = 0, {"wsl_mcp"}
+        self._append(_probe_line("e1", 2, "Previous"))
+        render(50)
+        self.assertIsNone(dashboard.pulse_step)
+        self.assertEqual(dashboard.pulse_sources, set())
+
+    def _policy(self) -> dict:
+        policy = json.loads(pagination.TEMPLATE.read_text(encoding="utf-8"))
+        policy["authority"] = {"pagination_acceptance_authorized": True, "grant_text": pagination.GRANT_TEXT,
+                               "granted_by": "test"}
+        return policy
+
+    def test_page_survives_canvas_invalidation_and_claim_is_one_use(self) -> None:
+        # BTN-2: an arrow press can itself end the Host session. The next session must
+        # come back on the selected page, and the Host fence is honoured unchanged.
+        invalidated = activity_session.FakeSessionTransport(reports={2: [{"kind": "session_ended",
+            "reason": "canvas_invalidated", "outcome": "stopped_yielded_to_stock"}]})
+        second = activity_session.FakeSessionTransport()
+        transports = [invalidated, second]
+        self._append(_probe_line("e1", 1, kind="probe_started"))
+        events = pagination.ButtonEvents(self.events_path)
+        self._append(_probe_line("e1", 2, "Next"))
+        clock = self.clock
+        result = pagination.run(
+            self._policy(), lambda: transports.pop(0), stop_requested=lambda: False, events=events,
+            monotonic=lambda: clock["s"], sleep=lambda sec: clock.__setitem__("s", clock["s"] + sec),
+            state_file=self.dir / "state.json", claim_dir=self.dir / "claims", max_sessions=2,
+            config={"poll_seconds": 2.0, "sources": {}}, activity_state=mcp_activity.blank_state(),
+            waiting_collector=lambda _c, _s: None,
+            renderer_for_dashboard=lambda _c, _s, _m: self.Dashboard())
+        self.assertEqual(result["runtime"]["reclaims"], 1)
+        self.assertEqual(result["final_page"], "animation")
+        spiral = {hashlib.sha256(f).hexdigest() for f in self._frames().frames}
+        self.assertTrue(second.frames, msg="the reclaimed session painted something")
+        # The new session resumes the animation, not the dashboard.
+        self.assertTrue(all(frame["imagePacketSha256"] in set(self._frames().packet_sha256)
+                            for frame in second.frames))
+        self.assertIsNotNone(result["transitions"][0]["first_ack_ms"])
+        self.assertTrue(spiral)
+        with self.assertRaises(activity_session.SessionError) as again:
+            pagination.run(self._policy(), lambda: activity_session.FakeSessionTransport(),
+                           stop_requested=lambda: True, claim_dir=self.dir / "claims",
+                           state_file=self.dir / "state.json")
+        self.assertEqual(again.exception.code, "AUTHORITY_ALREADY_CONSUMED")
+
+    def test_template_is_unauthorized_reviewed_and_narrow(self) -> None:
+        template = json.loads(pagination.TEMPLATE.read_text(encoding="utf-8"))
+        self.assertFalse(template["authority"]["pagination_acceptance_authorized"])
+        self.assertEqual(template["authority"]["required_grant_text"], "Grant OPENDITOO-PAGINATION-ACCEPTANCE-001")
+        with self.assertRaises(pagination.PaginationPolicyError) as blocked:
+            pagination.load_policy(pagination.TEMPLATE, verify=False)
+        self.assertEqual(blocked.exception.code, "PAGINATION_AUTHORITY_MISSING")
+        self.assertEqual(template["pages"], ["dashboard", "animation"])
+        self.assertEqual(template["behavior"]["lever_action"], "ignored")
+        self.assertLessEqual(template["run"]["total_lifetime_seconds"], 300)
+        live = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-005.json").read_text(encoding="utf-8"))
+        for key in ("lifetime_seconds", "max_frames", "max_tx_bytes", "min_frame_interval_ms",
+                    "poll_interval_ms", "pulse_freshness_seconds"):
+            self.assertEqual(template["session"][key], live["session"][key], key)
+        self.assertEqual(template["build"]["host_dll_sha256"], live["build"]["host_dll_sha256"])
+        for name, digest in live["build"]["code_sha256"].items():
+            self.assertEqual(template["build"]["code_sha256"][name], digest, msg="Runtime 005 modules reused unchanged")
+        with tempfile.TemporaryDirectory() as tmp:
+            drifted = self._policy()
+            drifted["behavior"]["lever_action"] = "select"
+            path = Path(tmp) / "p.json"
+            path.write_text(json.dumps(drifted), encoding="utf-8")
+            with self.assertRaises(pagination.PaginationPolicyError) as drift:
+                pagination.load_policy(path, verify=False)
+            self.assertEqual(drift.exception.code, "PAGINATION_POLICY_DRIFTED_FROM_TEMPLATE")
+        with self.assertRaises(pagination.PaginationPolicyError):
+            pagination.grant("Grant OPENDITOO-PAGINATION-ACCEPTANCE-002", "test")
+
+    def test_consumer_has_no_write_or_side_effect_path(self) -> None:
+        src = (ROOT / "host/pagination.py").read_text(encoding="utf-8")
+        for forbidden in ("subprocess", "os.system", "socket", "urllib", "shutil", "unlink", "rmtree"):
+            self.assertNotIn(forbidden, src, msg=forbidden)
+        reader = src[src.index("class ButtonEvents"):src.index("class PageRouter")]
+        self.assertNotIn('"w"', reader)
+        self.assertNotIn("write", reader)
+
+    @unittest.skipUnless(Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.dll").is_file(),
+                         "the staged Windows ButtonProbe is only on the owner's machine")
+    def test_template_hashes_match_this_tree(self) -> None:
+        pagination.load_policy(pagination.TEMPLATE, authority=False)

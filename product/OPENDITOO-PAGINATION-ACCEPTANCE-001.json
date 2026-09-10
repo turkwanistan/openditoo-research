@@ -1,0 +1,93 @@
+{
+ "schema_version": 1,
+ "experiment_id": "OPENDITOO-PAGINATION-ACCEPTANCE-001",
+ "kind": "pagination_acceptance",
+ "milestone": "BTN-5",
+ "purpose": "One bounded physical acceptance: dashboard -> physical Right -> looping animation -> physical Left -> live dashboard, then Runtime 005 restored.",
+ "target": {
+  "exact_unit_id": "11:75:58:CE:DE:C7",
+  "installed_firmware": "v42012",
+  "transport": "existing typed activity-session Host only (127.0.0.1:8796); no second RFCOMM controller"
+ },
+ "pages": [
+  "dashboard",
+  "animation"
+ ],
+ "navigation": {
+  "dashboard+nav_right": "animation",
+  "animation+nav_left": "dashboard",
+  "dashboard+nav_left": "no-op",
+  "animation+nav_right": "no-op",
+  "wrap": false
+ },
+ "animation": {
+  "file": "assets/pagination/spiral-10.rgb888",
+  "sha256": "28773bc3c985d6c8e5d4828192645aaefa3a9b563acac8c48baaa6d1a8822c54",
+  "frames": 10,
+  "interval_ms": 250,
+  "loop": true,
+  "provenance": "procedural 5-colour rotating spiral on black, generated offline once; 147-byte image groups (dashboard ~194)"
+ },
+ "run": {
+  "total_lifetime_seconds": 300,
+  "one_use": true,
+  "sequence": "scripts/pagination_acceptance.sh: settle >=30 s, stop openditoo-product.service, Host idle, 8 s settle, start ButtonProbe, pagination-run, stop probe, restart Runtime 005 service",
+  "restore": "systemctl --user start openditoo-product.service (Runtime 005, unchanged)"
+ },
+ "session": {
+  "lifetime_seconds": 600,
+  "max_frames": 500,
+  "max_tx_bytes": 101500,
+  "min_frame_interval_ms": 150,
+  "poll_interval_ms": 50,
+  "pulse_freshness_seconds": 30,
+  "note": "identical to the granted Runtime 005 local policy"
+ },
+ "behavior": {
+  "raw_send_enabled": false,
+  "target_override_enabled": false,
+  "lever_action": "ignored",
+  "input_source": "ButtonProbe NDJSON, source=smtc only, read-only consumer",
+  "events_file": ".openditoo-local/button-events.ndjson",
+  "reclaim_on_canvas_invalidated": true,
+  "automatic_reconnect": true,
+  "reconnect_backoff_seconds": [
+   1,
+   2,
+   5,
+   10,
+   30
+  ],
+  "why_reclaim_within_window": "BTN-2: an arrow press can end the Host session (RFCOMM 0x09); page state survives in the router and the next session resumes it. Same reclaim/backoff as Runtime 005, bounded by the 300 s window",
+  "no_retry_of_this_experiment": "the O_EXCL claim is consumed before any device I/O; a failed or ambiguous run needs a new id and grant"
+ },
+ "build": {
+  "code_sha256": {
+   "renderer_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+   "ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+   "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+   "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+   "product_runtime_sha256": "85b6ca70a1340bd53cc69441034c780d39d62db985cf6d61a10c1bccb0483e0d",
+   "pagination_sha256": "2b63a675e474d0006c192601e210b90552ee03155a9f964ce8207978bcd62795",
+   "cli_sha256": "1f066a9673ef64db12c87aef3eff9af444052b14dbac821ce628022351cb7143",
+   "frame_stream_sha256": "a3964065c7225f76b3ae90b52860454dd04468d62e6d24078da3e84069c6c6df"
+  },
+  "host_dll_sha256": "f7bd60d4a56de4f4740bd84f7c645e201ddfd7ce29bf6c0f1e7512b1b67cd34e",
+  "button_probe_sha256": {
+   "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.exe": "79521fba144fac4f4922b95236e4a3bedd62a49f1a5ede22f2b71d9909471252",
+   "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.dll": "f758b922808874d84d531209b2d8f35556888fbdf0cb7f3c9fc117268fb75ae6"
+  }
+ },
+ "acceptance": [
+  "one physical Right -> one nav_right -> animation visible and visibly running",
+  "one physical Left -> one nav_left -> live MCP dashboard restored",
+  "one genuine MCP activity pulse renders on the restored dashboard",
+  "no double page event; no stock screen from arrows; clean stop and Runtime 005 restored",
+  "measure: event multiplicity, applied-to-first-ACK latency, session identity"
+ ],
+ "authority": {
+  "pagination_acceptance_authorized": false,
+  "required_grant_text": "Grant OPENDITOO-PAGINATION-ACCEPTANCE-001",
+  "does_not_authorize": "standing pagination (Runtime 006), lever actions, webcam changes, any other display"
+ }
+}

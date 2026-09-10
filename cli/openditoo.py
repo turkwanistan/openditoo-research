@@ -942,6 +942,30 @@ def product_runtime_run(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def pagination_run(args: argparse.Namespace) -> int:
+    """BTN-5: one-use two-page pagination acceptance. Only the granted local policy may run."""
+    from host import pagination
+    try:
+        policy = pagination.load_policy()
+        token = read_token()
+        config = _activity_config()
+    except pagination.PaginationPolicyError as exc:
+        emit({"ok": False, "command": "pagination-run", "error_code": exc.code, "detail": exc.detail, "device_io": False})
+        return EXIT_BLOCKED
+    import signal
+    import threading
+    stop = threading.Event()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, lambda _s, _f: stop.set())
+    try:
+        result = pagination.run(policy, lambda: _HostSessionTransport(token), stop_requested=stop.is_set, config=config)
+    except activity_session.SessionError as exc:
+        emit({"ok": False, "command": "pagination-run", "error_code": exc.code, "detail": exc.detail, "device_io": False})
+        return EXIT_BLOCKED
+    emit({"ok": True, "command": "pagination-run", "device_io": True, **result})
+    return EXIT_OK
+
+
 def manifest_check(args: argparse.Namespace) -> int:
     path = Path(args.file)
     try:
@@ -1178,6 +1202,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--peer-bdaddr", default="11:75:58:CE:DE:C7")
     p.add_argument("--output")
     p.set_defaults(func=capture_avrcp_parse)
+    p = sub.add_parser("pagination-run", help="run the granted one-use two-page pagination acceptance")
+    p.set_defaults(func=pagination_run)
     p = sub.add_parser("activity-probe", help="diagnose the three MCP activity sources (read-only)")
     p.set_defaults(func=activity_probe)
     p = sub.add_parser("activity-status", help="normalized MCP activity state; collection health is separate from device health")
