@@ -1031,3 +1031,64 @@ gates nothing: arming still requires unspent authority and an unclaimed one-use 
 and the on-disk claim can never be released. A regression test pins both directions — drift
 still raises `STREAM_LIVE_PRODUCER_HASH_DRIFT` with verification on, and skipping the hash
 comparison does not weaken any other structural check.
+
+## 28. W9B offline analysis tooling — footage decode and correlation — 2026-09-10
+
+The offline half of W9B is implemented: `host/w9b_optical.py` plus `cli/w9b.py`. It reads
+files and never touches a device. The live trial still needs its own reviewed manifest and a
+fresh named grant; none is created here.
+
+### The measurement shape
+
+One high-speed video frame must contain **both** the stimulus monitor and the Ditoo. That is
+what makes the result honest: the two are on the same exposure and therefore the same clock, so
+no camera/host clock alignment is needed and none can drift. Both regions decode with the same
+W9A cell code:
+
+* the **monitor** shows the stimulus directly, so it decodes **unmirrored**;
+* the **Ditoo** shows what the production transform produced, so it decodes **mirrored**.
+
+Latency for counter N is `(first footage frame the Ditoo shows N) - (first frame the monitor
+shows N)`, divided by the footage frame rate. "First" is deliberate: a value held across several
+frames is one appearance, not several.
+
+### What it reports
+
+`scene_to_visible_latency_ms` (min/p50/p95/max/mean), `visible_unique_transitions`,
+`visible_repeat_frames`, `skipped_between_visible`, `monitor_undecodable`, `ditoo_undecodable`,
+`impossible_negative_matches`, and `meets_minimum_transitions` against W9B's ≥30 bar — reported,
+never silently enforced.
+
+A Ditoo appearance *before* the monitor showed the same value is physically impossible, so it is
+a decode error or a counter wrap. Those are counted and excluded rather than averaged in, because
+averaging one in reports a faster-than-light panel.
+
+`correlate_with_trial` places the four cadences side by side — camera/source acquisition,
+scheduler selection, transport completion, physical display — and deliberately does not reduce
+them to one number. Collapsing them is the exact mistake W9A and W9B exist to prevent.
+
+### Verified
+
+- Both regions decode out of one synthetic filmed frame, each with its own mirror convention.
+- Decoding survives a genuinely perspective-skewed region (corners `(90,60) (430,110) (400,430)
+  (60,360)` decoded 2731 correctly), so footage need not be axis-aligned.
+- End-to-end through the CLI on 60 synthetic frames with an injected 7-frame lag at 240 fps:
+  recovered **29.1667 ms**, min = p50 = p95 = max, 53 correlated transitions, 0 impossible
+  matches, and the 7 pre-lag blank-panel frames correctly counted as `ditoo_undecodable`.
+- `check` passes on correct corners and fails (`ok=false`, exit 2) on a grossly wrong region.
+  A small corner error still decodes, by design: cell interiors are sampled and the outer ring
+  dropped, which is the tolerance real monitor/camera misalignment needs. `check` is therefore a
+  gross-error gate, not a precision alignment tool.
+
+Frame extraction stays external (`ffmpeg -i slowmo.mov -vsync 0 frames/%06d.png`) because ffmpeg
+already does it better than a wrapper would. Region corners are hand-marked rather than
+auto-detected: a wrong auto-detect produces a confident wrong latency, while a wrong hand-marked
+corner fails to decode and is visible immediately.
+
+Offline suite is **274 tests PASS**.
+
+### Still required before W9B can run
+
+Operator hardware is confirmed available (phone slow-mo). Outstanding: the physical setup
+(monitor in the N980P's field of view, high-speed camera framing monitor and Ditoo together), a
+fresh reviewed W9B manifest, and a new exact grant. W8-005's authority confers nothing.

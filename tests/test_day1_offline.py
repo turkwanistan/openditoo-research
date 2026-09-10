@@ -4029,3 +4029,103 @@ class W9AMotionTruthStimulusTests(unittest.TestCase):
         # The stimulus displays; it must never acquire authority or touch the device.
         for forbidden in ("session", "8796", "fetch(", "Grant "):
             self.assertNotIn(forbidden, html)
+
+
+class W9BOpticalAnalysisTests(unittest.TestCase):
+    """W9B: scene-to-visible latency from footage, correlated with source identity."""
+
+    def _scene(self, monitor_counter: int, ditoo_counter: int):
+        import numpy as np
+        from host import frame_transform, motion_truth
+        scene = np.full((600, 800, 3), 80, dtype=np.uint8)
+        scene[40:280, 40:280] = motion_truth.render_source(monitor_counter, 240)
+        panel = np.frombuffer(
+            frame_transform.transform(motion_truth.render_source(ditoo_counter),
+                                      frame_transform.DEFAULT), dtype=np.uint8).reshape(16, 16, 3)
+        scene[350:510, 500:660] = panel.repeat(10, axis=0).repeat(10, axis=1)
+        return scene, [(40, 40), (280, 40), (280, 280), (40, 280)], \
+            [(500, 350), (660, 350), (660, 510), (500, 510)]
+
+    def test_both_regions_decode_from_one_filmed_frame(self) -> None:
+        import numpy as np
+        from host import w9b_optical
+        # The whole method depends on the monitor and the Ditoo sharing one exposure, so both
+        # must decode out of the same image, each with its own mirror convention.
+        scene, monitor_quad, ditoo_quad = self._scene(1234, 1200)
+        self.assertEqual(w9b_optical.decode_region(scene, monitor_quad, mirrored=False), 1234)
+        self.assertEqual(w9b_optical.decode_region(scene, ditoo_quad, mirrored=True), 1200)
+
+    def test_decoding_survives_a_perspective_skewed_region(self) -> None:
+        import numpy as np
+        from PIL import Image
+        from host import motion_truth, w9b_optical
+        # Real footage is never axis-aligned. A rectified decode is the point of the quad.
+        source = Image.fromarray(motion_truth.render_source(2731, 240))
+        corners = [(90, 60), (430, 110), (400, 430), (60, 360)]
+        square = [(0, 0), (source.width, 0), (source.width, source.height), (0, source.height)]
+        rows, values = [], []
+        for (tx, ty), (sx, sy) in zip(corners, square):
+            rows += [[tx, ty, 1, 0, 0, 0, -sx * tx, -sx * ty], [0, 0, 0, tx, ty, 1, -sy * tx, -sy * ty]]
+            values += [sx, sy]
+        coefficients = np.linalg.lstsq(np.asarray(rows, dtype=float),
+                                       np.asarray(values, dtype=float), rcond=None)[0].tolist()
+        scene = Image.new("RGB", (800, 600), (80, 80, 80))
+        warped = source.transform(scene.size, Image.Transform.PERSPECTIVE, coefficients,
+                                  Image.Resampling.BICUBIC)
+        mask = Image.fromarray((np.asarray(warped).sum(axis=2) > 0).astype(np.uint8) * 255)
+        scene.paste(warped, (0, 0), mask)
+        self.assertEqual(w9b_optical.decode_region(np.asarray(scene), corners, mirrored=False), 2731)
+
+    def test_latency_is_first_appearance_to_first_appearance(self) -> None:
+        from host import w9b_optical
+        # Monitor shows 1..4 held two frames each; the Ditoo shows each 6 frames later.
+        monitor = [1, 1, 2, 2, 3, 3, 4, 4, None, None]
+        ditoo = [None] * 6 + [1, 1, None, None]
+        report = w9b_optical.analyse(monitor, ditoo, fps=200.0)
+        self.assertEqual(report["monitor_unique_counters"], 4)
+        # 6 frames at 200 fps is 30 ms, and a held value contributes one appearance, not several.
+        self.assertEqual(report["scene_to_visible_latency_ms"]["p50"], 30.0)
+        self.assertEqual(report["correlated_transitions"], 1)
+        self.assertFalse(report["meets_minimum_transitions"])
+
+    def test_a_ditoo_appearance_before_the_monitor_is_excluded_not_negated(self) -> None:
+        from host import w9b_optical
+        # A negative latency is physically impossible, so it is a decode error or a counter
+        # wrap. Counting it beats averaging it in and reporting a faster-than-light panel.
+        report = w9b_optical.analyse([None, 7], [7, None], fps=100.0)
+        self.assertEqual(report["impossible_negative_matches"], 1)
+        self.assertEqual(report["scene_to_visible_latency_ms"]["count"], 0)
+
+    def test_report_counts_undecodable_repeats_and_skips_separately(self) -> None:
+        from host import w9b_optical
+        report = w9b_optical.analyse([1, 2, 3, None], [1, 1, 3, None], fps=100.0)
+        self.assertEqual(report["monitor_undecodable"], 1)
+        self.assertEqual(report["ditoo_undecodable"], 1)
+        self.assertEqual(report["visible_repeat_frames"], 1)   # 1 held across two frames
+        self.assertEqual(report["skipped_between_visible"], 1)  # 2 was never displayed
+        self.assertIn("not transport FPS", report["caveat"])
+
+    def test_thirty_transitions_is_the_reported_bar_not_a_silent_gate(self) -> None:
+        from host import w9b_optical
+        monitor = list(range(40))
+        ditoo = [None] * 3 + list(range(37))
+        report = w9b_optical.analyse(monitor, ditoo, fps=240.0)
+        self.assertGreaterEqual(report["correlated_transitions"], 30)
+        self.assertTrue(report["meets_minimum_transitions"])
+
+    def test_correlation_keeps_the_four_cadences_apart(self) -> None:
+        from host import w9b_optical
+        report = w9b_optical.analyse([1, 2], [None, 1], fps=100.0)
+        correlation = w9b_optical.correlate_with_trial(report, {
+            "frames": 163, "effectiveFps": 16.284636748005234,
+            "sourceIdentity": {"lastAcquiredSourceId": 333, "selectedCount": 163,
+                               "skippedBetweenSelections": 170, "duplicateSelections": 0}})
+        self.assertEqual((correlation["source_acquired"], correlation["scheduler_selected"],
+                          correlation["transport_frames_acked"]), (333, 163, 163))
+        self.assertIn("Never infer panel refresh from ACK rate", correlation["caveat"])
+
+    def test_the_cli_is_offline_and_has_no_device_surface(self) -> None:
+        source = (ROOT / "cli/w9b.py").read_text(encoding="utf-8")
+        self.assertIn('"device_io": False', source)
+        for forbidden in ("session", "8796", "Grant ", "requests", "http"):
+            self.assertNotIn(forbidden, source)
