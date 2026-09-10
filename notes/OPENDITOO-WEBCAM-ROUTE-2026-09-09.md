@@ -838,3 +838,46 @@ Three roadmap changes are adopted:
 3. **W10 fixed-rate scheduler contract.** Product fixed-rate modes use monotonic absolute deadlines (`next_due += interval`) so processing/ACK overhead is not blindly added to every nominal period. Missed deadlines advance/skip logical slots with **no catch-up burst**; duplicate/no-new-frame selection does not update the actual transmit/send-floor clock as though a frame was sent. ACK-clock mode remains governed by the separately accepted W8 contract.
 
 A possible effort to exceed the synchronous one-ACK-per-frame ceiling is now explicitly **post-v1 and conditional**. It may be researched only if W9B demonstrates visible benefit from additional unique update cadence and the owner wants to pursue it. Potential protocol-shape changes (pipelining/batching, firmware buffering, alternate/delta semantics) require a new reviewed plan and authority; OpenTivoo's 30 fps and 54/56 fps figures are not evidence that Ditoo can or should use those rates.
+
+## 25. W8-005 Windows preparation PASS — grant-ready, no device I/O — 2026-09-09
+
+`scripts/prepare_webcam_w8_telemetry_rerun_windows.ps1` ran once from git head
+`cce5b189b753df226f18cbcc2077c800063173ae` and reported
+`W8_TELEMETRY_RERUN_PREP_PASS`. It is no-device preparation: `claim_created=false`,
+`host_session_io=false`, `device_io=false`, and Runtime 003 was never stopped.
+
+Verified coverage:
+
+- runner rebuilt Release and staged to `C:\temp\openditoo-webcam-runner`;
+- `ADAPTER_SELFTEST_PASS failures=0 device_io=false camera_io=false` across ten fault cases;
+- `ADAPTER_W8_40MS_ARRIVAL_JITTER_REPRO_PASS frames=1 outcome=unknown reason=PACING_VIOLATION` —
+  the historical 003 failure still reproduces under the 8 ms simulated arrival skew;
+- `ADAPTER_W8_50MS_ARRIVAL_JITTER_PASS frames=17 client_interval_ms=50 outcome=stopped_clean` —
+  the corrected client floor stays clean under the same skew;
+- `ADAPTER_HOST_ELAPSED_CROSS_CLOCK_PASS frames=11 outcome=stopped_clean` — the coarse-clock
+  control that would have aborted 004 now completes;
+- `TRANSFORM_SELFTEST_PASS cases=15`, `ENCODER_SELFTEST_PASS cases=6`;
+- real read-only Host status identity `target=11:75:58:CE:DE:C7`, `device_io=false`,
+  `host_session_io=false`;
+- exact producer/runner hash refreeze into the manifest.
+
+Post-prep offline validation: `DAY1_OFFLINE_PASS tests=256`;
+`check_webcam_w8_telemetry_rerun.py` reports `ok=true`, `manifest_valid=true`,
+`grant_ready=true`, `execution_ready=false`, `claim_created=false`, `device_io=false`,
+with blockers `TRANSMISSION_AUTHORITY_MISSING`, `AUTHORITY_GRANT_UNATTRIBUTED`,
+`AUTHORITY_EXPIRY_MISSING`, `LIVE_PREFLIGHT_NOT_PERFORMED`.
+
+Frozen identities: manifest `032dcc810385e14553468eb8fc8b75d9d2bd708459f26251b3d5d7b6ef2138fe`,
+preparation evidence `55a717ca6d2939659a5eed7f0888dea9fb0c909a21166124fa2a372f0fc83e6d`
+(`captures/OPENDITOO-WEBCAM-W8-TELEMETRY-005-PREPARATION-2026-09-09.json`).
+
+No `OPENDITOO-WEBCAM-N980P-005` claim exists and the Host ledger contains no 005 entry;
+its only recent activity is normal Runtime 003 product sessions. The candidate is
+**grant-ready and unauthorized**. The single remaining gate is the exact operator grant
+`Grant OPENDITOO-WEBCAM-N980P-005`, after which only
+`scripts/run_webcam_w8_telemetry_rerun_windows.ps1` may execute, exactly once.
+
+Note on file shape: the PowerShell writer emits CRLF, so `git diff --check` flags carriage
+returns as trailing whitespace on this checkpoint. That matches the committed 004
+preparation checkpoint (`d76b266`) and must not be normalized here — rewriting the bytes
+would invalidate the recorded `evidence_sha256` and `manifest_sha256`.

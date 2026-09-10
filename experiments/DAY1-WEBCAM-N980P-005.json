@@ -1,210 +1,221 @@
 {
-  "schema_version": 1,
-  "kind": "frame_stream",
-  "experiment_id": "OPENDITOO-WEBCAM-N980P-005",
-  "milestone": "W8 near-ceiling webcam freshness characterization \u2014 cross-clock telemetry correction",
-  "status": "review_pending_windows_build",
-  "objective": "Fresh replacement for consumed attempt 004. Preserve the proven 50 ms client / 40 ms Host pacing margin and all camera/transform/session validation. Remove only the invalid fatal cross-clock ordering assumption for hostFrameElapsedMs; keep it bounded to the reviewed 5000 ms ACK budget and record signed client-minus-Host elapsed residual as telemetry. One 10-second characterization only; no rate ladder, pipelining, retry, reconnect or reclaim.",
-  "readiness": {
-    "execution_ready": false,
-    "grant_ready": false,
-    "blockers": [
-      "WINDOWS_W8_005_RUNNER_BUILD_NOT_FROZEN",
-      "WINDOWS_W8_005_OFFLINE_SELFTEST_NOT_VERIFIED"
-    ],
-    "required_followup": "Run scripts/prepare_webcam_w8_telemetry_rerun_windows.ps1. It must rebuild/stage the corrected runner, pass the cross-clock telemetry regression plus 40/50 ms pacing controls, parity tests and real-Host read-only status test, and perform no claim/session/device I/O."
-  },
-  "target": {
-    "exact_unit_id": "11:75:58:CE:DE:C7",
-    "installed_firmware": "v42012",
-    "model": "Ditoo Plus",
-    "pairing_precheck": "authenticated exact target; no target override"
-  },
-  "transport": {
-    "measured_endpoint": "Windows Classic RFCOMM channel 1",
-    "owner": "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
-    "connection_shape": "one connection; one frame in flight; one ACK per frame",
-    "one_controller_rule": "After a fresh named grant only: stop the MCP product supervisor and verify its session closed; Android Divoom app disconnected. OpenTivoo and port 8779 untouched. Restore MCP separately under its existing Runtime 003 policy after terminal close."
-  },
-  "build": {
-    "code_sha256": {
-      "frame_stream_sha256": "b1dd51d2f65cd8e9210d748e90a9a173b902f576326c0d0b519dea04c40ffcee",
-      "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
-      "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36"
-    },
-    "host_dll_sha256": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
-    "installed_dll_sha256_verified": "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
-    "source_checkpoint": "3a790e3 + W8-005 cross-clock telemetry correction; Windows rebuild not yet frozen",
-    "identity_note": "Host remains unchanged. Client keeps the 50 ms pacing margin and changes only hostFrameElapsedMs validation from an invalid cross-clock ordering test to a 0..5000 ms telemetry bound; exact rebuilt runner must be frozen by Windows prep."
-  },
-  "session": {
-    "lifetime_seconds": 10,
-    "min_frame_interval_ms": 40,
-    "poll_interval_ms": 10,
-    "automatic_retry": false,
-    "automatic_reconnect": false,
-    "stock_screen_reclaim": false,
-    "replay_after_interruption": false,
-    "shape": "ACK-gated W8 rerun with a 50 ms absolute client dispatch-start floor against the unchanged 40 ms Host streaming backstop. The 10 ms margin covers measured variable localhost request-arrival latency; one prior ACK is always required, packet spacing remains zero, and pipelining is forbidden."
-  },
-  "stream": {
-    "source_kind": "live",
-    "session_profile": "streaming_ack_clock",
-    "playback_interval_ms": 50,
-    "loop": false,
-    "source_description": "NexiGo VID_0C45 PID_2690 live camera; WinRT Realtime freshest-frame slots; fixed srgb_area transform and deterministic 255-colour guard",
-    "live_source": {
-      "producer_description": "W8-005 Windows camera/transform/encoder + typed-session adapter. Same proven 50 ms pacing path as 004. Only telemetry validation changes: hostFrameElapsedMs is bounded by the 5000 ms ACK budget but not ordered against a separate-process Stopwatch reading; signed client-minus-Host residual is recorded for observation.",
-      "producer_code_sha256": {
-        "runtime/windows/OpenDitoo.Webcam.Probe/DitooEncoder.cs": "a543919336212deed5fc7de354b932cadc68829eb848aee8043e1303cd0bfbb8",
-        "runtime/windows/OpenDitoo.Webcam.Probe/FrameTransform.cs": "2d703b7dd7630dff071813c728862b33a0c5e68f245ee277ce0c7f9c8c85d623",
-        "runtime/windows/OpenDitoo.Webcam.Probe/LatestFrameSlot.cs": "cb4f88cd51af5c7f7941f2d973b58f421f1628e7bcb2ad569f3ca7065f7f965b",
-        "runtime/windows/OpenDitoo.Webcam.Probe/WebcamFrames.cs": "2a0cf08850d83a8ba8661c1a29273b59f469d3e3a8b651002a7c5025551da7f3",
-        "runtime/windows/OpenDitoo.Webcam.Runner/OpenDitoo.Webcam.Runner.csproj": "4c6c90f3eafbd51188130d1e80e1234dc8e3f105da983dd404fb7a20e0747489",
-        "runtime/windows/OpenDitoo.Webcam.Runner/Program.cs": "0b3187b468c9f42024c72efc680a2fad2b189efa45d9104861883afa0fbfe469",
-        "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs": "14addbc5b9c2f0da85cad090a4d2c672911b302ca36bb915fc9e03a1be1eb520",
-        "runtime/windows/OpenDitoo.Webcam.Runner/TypedSession.cs": "1280bb0442f5428b8b855f89aeb7a8876871e70a785c3208d745f85406a41cd7",
-        "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs": "2269db8c37d63e9c450b6092ff64aa0d0f07150af11e48ef4bef07e211151baf",
-        "host/webcam_trial.py": "75b2cbe47980f85a0b08f0a97bfd5fcd81e11b534948ec2d10380639d1f3846e",
-        "cli/webcam.py": "1dbed50b2533c76bb72ad2c4313365c8756a316d4fd06029b0299bc7583f528f",
-        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
-        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.deps.json": "8848608ffa3024a9cb91318ec0df04be5e8872e3b8ced952ea17e681e64774f8",
-        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.dll": "d9b1ccbad28223d943a38187a4bbb347e8d1e8783f67ac8fe3db41b50ec5dff9",
-        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.exe": "c11b7c1e12a333a88546c9ae4bd1d1e68912d6bddc3cb4095afa7bd23108fc69",
-        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.runtimeconfig.json": "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2",
-        "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/WinRT.Runtime.dll": "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
-      },
-      "camera": {
-        "device_description": "NexiGo HD Webcam",
-        "usb_vid": "0C45",
-        "usb_pid": "2690",
-        "subtype": "NV12",
-        "width": 640,
-        "height": 480,
-        "requested_fps": 60,
-        "acquisition_mode": "Realtime",
-        "observed_rate_exception": "Exposure-quantised 30 fps previously measured; see route section 11. Re-measure in trial preflight, do not promise 60 fps."
-      },
-      "transform": {
-        "preset": "srgb_area",
-        "linear_light": false,
-        "zoom": 1,
-        "offset_x": 0,
-        "offset_y": 0,
-        "mirror": true,
-        "quarter_turns": 0,
-        "roi": {
-          "left": 80,
-          "top": 0,
-          "side": 480
-        },
-        "output": "16x16 RGB888, 768 bytes, at most 255 colours",
-        "palette_guard": "closest weighted-colour pair, deterministic scan-order tie break, applied last"
-      },
-      "privacy": "No saved camera stills or video; metrics only"
-    }
-  },
-  "budgets": {
-    "connection_attempts": 1,
-    "max_frames": 201,
-    "max_application_packets": 603,
-    "max_tx_bytes": 211854,
-    "ack_timeout_ms_per_frame": 5000,
-    "derivation": "min(floor(10000 / 50) + 1, 500) = 201 frames; 201 * 3 = 603 packets; canonical encoder worst-case is 1054 application bytes including both preambles, so 201 * 1054 = 211854 bytes."
-  },
-  "stop_policy": {
-    "stop_immediately_on": [
-      "camera missing or no valid first frame before claim/open",
-      "camera disconnect or transform exception",
-      "Host profile not confirmed as streaming_ack_clock",
-      "target, firmware, source or executable hash mismatch",
-      "any Host refusal, HTTP/send fault or ACK timeout",
-      "malformed or unexpected report / canvas invalidation / stock takeover",
-      "operator stop",
-      "10 second lifetime or frame/byte budget reached"
-    ],
-    "on_ambiguous_outcome_resend": false,
-    "collection_continues_after_display_stop": true,
-    "on_camera_disconnect": "Stop new submissions, allow an already-submitted frame to settle, request close once. Ambiguous close is unknown. Never resend, reconnect or reclaim.",
-    "on_host_fault": "Terminal unknown; never resend or retry; cleanup must not overwrite unknown.",
-    "source_cleanup": "Cancel capture/processor and dispose the reader/camera. Collection-continuation flag refers to existing MCP collection, not retaining webcam capture.",
-    "recovery": "Restore the MCP product separately under Runtime 003 after verifying experiment terminal ownership; do not overlap controllers."
-  },
-  "acceptance": {
-    "transport": "Characterize one clean 10-second run; zero retries/reconnects/reclaims/pacing refusals/encoder-hash mismatches; one frame in flight; queue depth max <=1; duplicate source frames = 0.",
-    "rate": "Target >=15.5 fps sustained. 13-15.5 fps is investigate-not-auto-fail if source freshness is excellent and transport is clean. The 50 ms client floor has a 20 fps theoretical scheduling ceiling; do not create a rate ladder.",
-    "freshness": "p95 source age at send <=80 ms target; inspect p95 by quarter for increasing age trend; latest-frame-wins replacement rate is measured, not treated as loss.",
-    "timing": "Report HTTP POST round-trip ACK timing, Host send-to-ACK timing, their bounded difference as localhost/serialization overhead estimate, and dispatch jitter separately. Do not call any of these optical latency.",
-    "visual": "Owner checks tearing/faults and whether the already-accepted webcam image remains usable at higher cadence.",
-    "queue": "Raw and processed slots are capacity one by construction; report observed max depth for both."
-  },
-  "persistence_analysis": {
-    "expected_effect": "volatile display only",
-    "forbidden": "firmware, gallery/persistent uploads, raw send, target selection, command enumeration, pipelining",
-    "product_policy_effect": "none; Runtime 003 is not webcam authority"
-  },
-  "authority": {
-    "experiment_id": "OPENDITOO-WEBCAM-N980P-005",
-    "transmission_authorized": false,
-    "authorization_consumed": false,
-    "granted_by": null,
-    "grant_text": null,
-    "expires_at": null,
-    "grant_string_after_readiness": "Grant OPENDITOO-WEBCAM-N980P-005",
-    "grant_scope_requested": "ONE 10-second W8 replacement live-camera characterization to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile; unchanged 40 ms Host floor plus proven 50 ms client dispatch-start floor, at most 201 frames / 603 packets / 211854 application bytes; hostFrameElapsedMs accepted only as bounded 0..5000 ms telemetry across an independent clock domain; one connection and one frame in flight, zero packet spacing, no retry/reconnect/reclaim/pipelining; suspend and restore Runtime 003 separately. No rate ladder; attempts 001-004 grants may not be reused."
-  },
-  "adapter": {
-    "kind": "windows_native_camera_to_typed_session",
-    "windows_executable": "C:\\temp\\openditoo-webcam-runner\\OpenDitoo.Webcam.Runner.exe",
-    "typed_origin": "http://127.0.0.1:8796",
-    "routes": [
-      "/v1/status",
-      "/v1/session/open",
-      "/v1/session/frame",
-      "/v1/session/close"
-    ],
-    "claim_handshake": "Runner must produce one fresh valid 16x16 frame and emit camera_ready + nonce before WSL creates the durable one-use claim; only execute:<nonce> may cross the claim boundary.",
-    "deployment_state": "PENDING W8-005 Windows rebuild/freeze and cross-clock telemetry regression verification; no claim/session/device I/O authorized."
-  },
-  "w6_verification": {
-    "status": "pass",
-    "evidence_file": "captures/OPENDITOO-WEBCAM-W6-WINDOWS-OFFLINE-RESULT-2026-09-09.json",
-    "evidence_sha256": "38c510c0a2cc6f95b5a22f77090505b42ddedbcbce22d0774ad0c87cc1eded1f",
-    "windows_offline_pass": true,
-    "soak_seconds": 300.1216216000021,
-    "soak_growth_after_warmup_bytes": 9416,
-    "camera_frames_captured": 8647,
-    "camera_frames_replaced": 5376,
-    "transform_p95_ms": 1.4379999935626984,
-    "claim_created": false,
-    "host_session_io": false,
-    "device_io": false
-  },
-  "w7_baseline": {
-    "experiment_id": "OPENDITOO-WEBCAM-N980P-002",
-    "status": "pass",
-    "frames": 108,
-    "elapsed_ms": 10014.480400003493,
-    "effective_fps": 10.784383780906131,
-    "ack_p50_ms": 27.173600003123283,
-    "ack_p95_ms": 57.36860000342131,
-    "source_age_send_p95_ms": 50.607799999415874,
-    "owner_visible_acceptance": "pass",
-    "authority_consumed": true
-  },
-  "w8_failed_baseline": {
-    "experiment_id": "OPENDITOO-WEBCAM-N980P-004",
-    "status": "consumed_unknown_client_telemetry_validation",
-    "client_counted_frames": 8,
-    "host_ledger_frames": 9,
-    "host_ledger_packets": 27,
-    "host_ledger_tx_bytes": 9420,
-    "client_interval_ms": 50,
-    "terminal_reason": "HOST_FRAME_ELAPSED_INVALID",
-    "outcome": "unknown",
-    "pacing_violation_observed": false,
-    "diagnosis": "Host ACKed frame 9; client rejected it only because of invalid cross-clock telemetry comparison.",
-    "authority_consumed": true,
-    "same_identity_retry_forbidden": true
-  }
+    "schema_version":  1,
+    "kind":  "frame_stream",
+    "experiment_id":  "OPENDITOO-WEBCAM-N980P-005",
+    "milestone":  "W8 near-ceiling webcam freshness characterization — cross-clock telemetry correction",
+    "status":  "grant_ready_awaiting_named_grant",
+    "objective":  "Fresh replacement for consumed attempt 004. Preserve the proven 50 ms client / 40 ms Host pacing margin and all camera/transform/session validation. Remove only the invalid fatal cross-clock ordering assumption for hostFrameElapsedMs; keep it bounded to the reviewed 5000 ms ACK budget and record signed client-minus-Host elapsed residual as telemetry. One 10-second characterization only; no rate ladder, pipelining, retry, reconnect or reclaim.",
+    "readiness":  {
+                      "execution_ready":  false,
+                      "grant_ready":  true,
+                      "blockers":  [
+
+                                   ],
+                      "required_followup":  "Obtain the fresh exact grant `Grant OPENDITOO-WEBCAM-N980P-005`. Then execute only scripts/run_webcam_w8_telemetry_rerun_windows.ps1 once. Never replay 004 and never create a rate ladder."
+                  },
+    "target":  {
+                   "exact_unit_id":  "11:75:58:CE:DE:C7",
+                   "installed_firmware":  "v42012",
+                   "model":  "Ditoo Plus",
+                   "pairing_precheck":  "authenticated exact target; no target override"
+               },
+    "transport":  {
+                      "measured_endpoint":  "Windows Classic RFCOMM channel 1",
+                      "owner":  "Windows OpenDitoo Day1 Host 127.0.0.1:8796",
+                      "connection_shape":  "one connection; one frame in flight; one ACK per frame",
+                      "one_controller_rule":  "After a fresh named grant only: stop the MCP product supervisor and verify its session closed; Android Divoom app disconnected. OpenTivoo and port 8779 untouched. Restore MCP separately under its existing Runtime 003 policy after terminal close."
+                  },
+    "build":  {
+                  "code_sha256":  {
+                                      "frame_stream_sha256":  "b1dd51d2f65cd8e9210d748e90a9a173b902f576326c0d0b519dea04c40ffcee",
+                                      "encoder_sha256":  "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+                                      "session_sha256":  "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36"
+                                  },
+                  "host_dll_sha256":  "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
+                  "installed_dll_sha256_verified":  "0da3a18b52647a91e4cf2b13349af09dc7c60fec6b3ac13067c1f3f31372decb",
+                  "source_checkpoint":  "cce5b189b753df226f18cbcc2077c800063173ae + Windows W8-005 runner rebuild/freeze",
+                  "identity_note":  "W8-005 runner rebuilt/staged. 40 ms failure reproduction, 50 ms pacing-margin control, cross-clock Host elapsed telemetry regression, parity, and real read-only Host status checks passed. Host/Runtime 003 unchanged; no claim/session/device I/O."
+              },
+    "session":  {
+                    "lifetime_seconds":  10,
+                    "min_frame_interval_ms":  40,
+                    "poll_interval_ms":  10,
+                    "automatic_retry":  false,
+                    "automatic_reconnect":  false,
+                    "stock_screen_reclaim":  false,
+                    "replay_after_interruption":  false,
+                    "shape":  "ACK-gated W8 rerun with a 50 ms absolute client dispatch-start floor against the unchanged 40 ms Host streaming backstop. The 10 ms margin covers measured variable localhost request-arrival latency; one prior ACK is always required, packet spacing remains zero, and pipelining is forbidden."
+                },
+    "stream":  {
+                   "source_kind":  "live",
+                   "session_profile":  "streaming_ack_clock",
+                   "playback_interval_ms":  50,
+                   "loop":  false,
+                   "source_description":  "NexiGo VID_0C45 PID_2690 live camera; WinRT Realtime freshest-frame slots; fixed srgb_area transform and deterministic 255-colour guard",
+                   "live_source":  {
+                                       "producer_description":  "W8-005 Windows camera/transform/encoder + typed-session adapter. Same proven 50 ms pacing path as 004. Only telemetry validation changes: hostFrameElapsedMs is bounded by the 5000 ms ACK budget but not ordered against a separate-process Stopwatch reading; signed client-minus-Host residual is recorded for observation.",
+                                       "producer_code_sha256":  {
+                                                                    "runtime/windows/OpenDitoo.Webcam.Probe/DitooEncoder.cs":  "a543919336212deed5fc7de354b932cadc68829eb848aee8043e1303cd0bfbb8",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Probe/FrameTransform.cs":  "2d703b7dd7630dff071813c728862b33a0c5e68f245ee277ce0c7f9c8c85d623",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Probe/LatestFrameSlot.cs":  "cb4f88cd51af5c7f7941f2d973b58f421f1628e7bcb2ad569f3ca7065f7f965b",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Probe/WebcamFrames.cs":  "2a0cf08850d83a8ba8661c1a29273b59f469d3e3a8b651002a7c5025551da7f3",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/OpenDitoo.Webcam.Runner.csproj":  "4c6c90f3eafbd51188130d1e80e1234dc8e3f105da983dd404fb7a20e0747489",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/Program.cs":  "0b3187b468c9f42024c72efc680a2fad2b189efa45d9104861883afa0fbfe469",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs":  "14addbc5b9c2f0da85cad090a4d2c672911b302ca36bb915fc9e03a1be1eb520",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/TypedSession.cs":  "1280bb0442f5428b8b855f89aeb7a8876871e70a785c3208d745f85406a41cd7",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs":  "2269db8c37d63e9c450b6092ff64aa0d0f07150af11e48ef4bef07e211151baf",
+                                                                    "host/webcam_trial.py":  "75b2cbe47980f85a0b08f0a97bfd5fcd81e11b534948ec2d10380639d1f3846e",
+                                                                    "cli/webcam.py":  "1dbed50b2533c76bb72ad2c4313365c8756a316d4fd06029b0299bc7583f528f",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll":  "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.deps.json":  "8848608ffa3024a9cb91318ec0df04be5e8872e3b8ced952ea17e681e64774f8",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.dll":  "15ae3651f3611081efe71617f4cba2fe9af150f6d72e9f1eb01ca60c84077800",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.exe":  "c11b7c1e12a333a88546c9ae4bd1d1e68912d6bddc3cb4095afa7bd23108fc69",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Runner.runtimeconfig.json":  "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2",
+                                                                    "runtime/windows/OpenDitoo.Webcam.Runner/bin/Release/net8.0-windows10.0.19041.0/WinRT.Runtime.dll":  "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
+                                                                },
+                                       "camera":  {
+                                                      "device_description":  "NexiGo HD Webcam",
+                                                      "usb_vid":  "0C45",
+                                                      "usb_pid":  "2690",
+                                                      "subtype":  "NV12",
+                                                      "width":  640,
+                                                      "height":  480,
+                                                      "requested_fps":  60,
+                                                      "acquisition_mode":  "Realtime",
+                                                      "observed_rate_exception":  "Exposure-quantised 30 fps previously measured; see route section 11. Re-measure in trial preflight, do not promise 60 fps."
+                                                  },
+                                       "transform":  {
+                                                         "preset":  "srgb_area",
+                                                         "linear_light":  false,
+                                                         "zoom":  1,
+                                                         "offset_x":  0,
+                                                         "offset_y":  0,
+                                                         "mirror":  true,
+                                                         "quarter_turns":  0,
+                                                         "roi":  {
+                                                                     "left":  80,
+                                                                     "top":  0,
+                                                                     "side":  480
+                                                                 },
+                                                         "output":  "16x16 RGB888, 768 bytes, at most 255 colours",
+                                                         "palette_guard":  "closest weighted-colour pair, deterministic scan-order tie break, applied last"
+                                                     },
+                                       "privacy":  "No saved camera stills or video; metrics only"
+                                   }
+               },
+    "budgets":  {
+                    "connection_attempts":  1,
+                    "max_frames":  201,
+                    "max_application_packets":  603,
+                    "max_tx_bytes":  211854,
+                    "ack_timeout_ms_per_frame":  5000,
+                    "derivation":  "min(floor(10000 / 50) + 1, 500) = 201 frames; 201 * 3 = 603 packets; canonical encoder worst-case is 1054 application bytes including both preambles, so 201 * 1054 = 211854 bytes."
+                },
+    "stop_policy":  {
+                        "stop_immediately_on":  [
+                                                    "camera missing or no valid first frame before claim/open",
+                                                    "camera disconnect or transform exception",
+                                                    "Host profile not confirmed as streaming_ack_clock",
+                                                    "target, firmware, source or executable hash mismatch",
+                                                    "any Host refusal, HTTP/send fault or ACK timeout",
+                                                    "malformed or unexpected report / canvas invalidation / stock takeover",
+                                                    "operator stop",
+                                                    "10 second lifetime or frame/byte budget reached"
+                                                ],
+                        "on_ambiguous_outcome_resend":  false,
+                        "collection_continues_after_display_stop":  true,
+                        "on_camera_disconnect":  "Stop new submissions, allow an already-submitted frame to settle, request close once. Ambiguous close is unknown. Never resend, reconnect or reclaim.",
+                        "on_host_fault":  "Terminal unknown; never resend or retry; cleanup must not overwrite unknown.",
+                        "source_cleanup":  "Cancel capture/processor and dispose the reader/camera. Collection-continuation flag refers to existing MCP collection, not retaining webcam capture.",
+                        "recovery":  "Restore the MCP product separately under Runtime 003 after verifying experiment terminal ownership; do not overlap controllers."
+                    },
+    "acceptance":  {
+                       "transport":  "Characterize one clean 10-second run; zero retries/reconnects/reclaims/pacing refusals/encoder-hash mismatches; one frame in flight; queue depth max \u003c=1; duplicate source frames = 0.",
+                       "rate":  "Target \u003e=15.5 fps sustained. 13-15.5 fps is investigate-not-auto-fail if source freshness is excellent and transport is clean. The 50 ms client floor has a 20 fps theoretical scheduling ceiling; do not create a rate ladder.",
+                       "freshness":  "p95 source age at send \u003c=80 ms target; inspect p95 by quarter for increasing age trend; latest-frame-wins replacement rate is measured, not treated as loss.",
+                       "timing":  "Report HTTP POST round-trip ACK timing, Host send-to-ACK timing, their bounded difference as localhost/serialization overhead estimate, and dispatch jitter separately. Do not call any of these optical latency.",
+                       "visual":  "Owner checks tearing/faults and whether the already-accepted webcam image remains usable at higher cadence.",
+                       "queue":  "Raw and processed slots are capacity one by construction; report observed max depth for both."
+                   },
+    "persistence_analysis":  {
+                                 "expected_effect":  "volatile display only",
+                                 "forbidden":  "firmware, gallery/persistent uploads, raw send, target selection, command enumeration, pipelining",
+                                 "product_policy_effect":  "none; Runtime 003 is not webcam authority"
+                             },
+    "authority":  {
+                      "experiment_id":  "OPENDITOO-WEBCAM-N980P-005",
+                      "transmission_authorized":  false,
+                      "authorization_consumed":  false,
+                      "granted_by":  null,
+                      "grant_text":  null,
+                      "expires_at":  null,
+                      "grant_string_after_readiness":  "Grant OPENDITOO-WEBCAM-N980P-005",
+                      "grant_scope_requested":  "ONE 10-second W8 replacement live-camera characterization to exact Ditoo 11:75:58:CE:DE:C7 v42012 via existing typed Host 127.0.0.1:8796 and streaming_ack_clock profile; unchanged 40 ms Host floor plus proven 50 ms client dispatch-start floor, at most 201 frames / 603 packets / 211854 application bytes; hostFrameElapsedMs accepted only as bounded 0..5000 ms telemetry across an independent clock domain; one connection and one frame in flight, zero packet spacing, no retry/reconnect/reclaim/pipelining; suspend and restore Runtime 003 separately. No rate ladder; attempts 001-004 grants may not be reused."
+                  },
+    "adapter":  {
+                    "kind":  "windows_native_camera_to_typed_session",
+                    "windows_executable":  "C:\\temp\\openditoo-webcam-runner\\OpenDitoo.Webcam.Runner.exe",
+                    "typed_origin":  "http://127.0.0.1:8796",
+                    "routes":  [
+                                   "/v1/status",
+                                   "/v1/session/open",
+                                   "/v1/session/frame",
+                                   "/v1/session/close"
+                               ],
+                    "claim_handshake":  "Runner must produce one fresh valid 16x16 frame and emit camera_ready + nonce before WSL creates the durable one-use claim; only execute:\u003cnonce\u003e may cross the claim boundary.",
+                    "deployment_state":  "PASS W8-005 preparation: rebuilt/staged/frozen with 50 ms margin and corrected cross-clock telemetry semantics; no claim/session/device I/O."
+                },
+    "w6_verification":  {
+                            "status":  "pass",
+                            "evidence_file":  "captures/OPENDITOO-WEBCAM-W6-WINDOWS-OFFLINE-RESULT-2026-09-09.json",
+                            "evidence_sha256":  "38c510c0a2cc6f95b5a22f77090505b42ddedbcbce22d0774ad0c87cc1eded1f",
+                            "windows_offline_pass":  true,
+                            "soak_seconds":  300.1216216000021,
+                            "soak_growth_after_warmup_bytes":  9416,
+                            "camera_frames_captured":  8647,
+                            "camera_frames_replaced":  5376,
+                            "transform_p95_ms":  1.4379999935626984,
+                            "claim_created":  false,
+                            "host_session_io":  false,
+                            "device_io":  false
+                        },
+    "w7_baseline":  {
+                        "experiment_id":  "OPENDITOO-WEBCAM-N980P-002",
+                        "status":  "pass",
+                        "frames":  108,
+                        "elapsed_ms":  10014.480400003493,
+                        "effective_fps":  10.784383780906131,
+                        "ack_p50_ms":  27.173600003123283,
+                        "ack_p95_ms":  57.36860000342131,
+                        "source_age_send_p95_ms":  50.607799999415874,
+                        "owner_visible_acceptance":  "pass",
+                        "authority_consumed":  true
+                    },
+    "w8_failed_baseline":  {
+                               "experiment_id":  "OPENDITOO-WEBCAM-N980P-004",
+                               "status":  "consumed_unknown_client_telemetry_validation",
+                               "client_counted_frames":  8,
+                               "host_ledger_frames":  9,
+                               "host_ledger_packets":  27,
+                               "host_ledger_tx_bytes":  9420,
+                               "client_interval_ms":  50,
+                               "terminal_reason":  "HOST_FRAME_ELAPSED_INVALID",
+                               "outcome":  "unknown",
+                               "pacing_violation_observed":  false,
+                               "diagnosis":  "Host ACKed frame 9; client rejected it only because of invalid cross-clock telemetry comparison.",
+                               "authority_consumed":  true,
+                               "same_identity_retry_forbidden":  true
+                           },
+    "w8_telemetry_rerun_preparation":  {
+                                           "status":  "pass",
+                                           "evidence_file":  "captures/OPENDITOO-WEBCAM-W8-TELEMETRY-005-PREPARATION-2026-09-09.json",
+                                           "evidence_sha256":  "55a717ca6d2939659a5eed7f0888dea9fb0c909a21166124fa2a372f0fc83e6d",
+                                           "unsafe_40ms_arrival_jitter_reproduced":  true,
+                                           "safe_50ms_arrival_jitter_pass":  true,
+                                           "cross_clock_host_elapsed_telemetry_pass":  true,
+                                           "real_host_status_selftest":  true,
+                                           "claim_created":  false,
+                                           "host_session_io":  false,
+                                           "device_io":  false
+                                       }
 }
