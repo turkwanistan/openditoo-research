@@ -70,8 +70,7 @@ foreach ($property in $doc.stream.live_source.producer_code_sha256.PSObject.Prop
     $property.Value = (Get-FileHash -Algorithm SHA256 $sourcePath).Hash.ToLowerInvariant()
 }
 
-$escapedRepo = $WslRepositoryPath.Replace("'", "'\"'\"'")
-$gitHead = (& wsl.exe -d $Distro -- bash -lc "cd '$escapedRepo' && git rev-parse HEAD").Trim()
+$gitHead = (& wsl.exe -d $Distro -- bash -lc 'cd "$1" && git rev-parse HEAD' _ $WslRepositoryPath).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'W7_RERUN_GIT_HEAD_LOOKUP_FAILED' }
 $evidence = [ordered]@{
     schema_version = 1
@@ -117,8 +116,7 @@ $doc | ConvertTo-Json -Depth 30 | Set-Content -Path $manifestPath -Encoding UTF8
 $manifestSha = (Get-FileHash -Algorithm SHA256 $manifestPath).Hash.ToLowerInvariant()
 
 # Re-enter WSL only for read-only/offline validation of the just-frozen manifest.
-$validate = "cd '$escapedRepo' && python3 scripts/verify_day1_offline.py && python3 scripts/check_webcam_trial.py"
-& wsl.exe -d $Distro -- bash -lc $validate
+& wsl.exe -d $Distro -- bash -lc 'cd "$1" && python3 scripts/verify_day1_offline.py && python3 scripts/check_webcam_trial.py' _ $WslRepositoryPath
 if ($LASTEXITCODE -ne 0) { throw 'W7_RERUN_WSL_OFFLINE_VALIDATION_FAILED' }
 
 Write-Output ("W7_RERUN_PREP_PASS experiment_id=OPENDITOO-WEBCAM-N980P-002 manifest_sha256={0} evidence_sha256={1} claim_created=false host_session_io=false device_io=false" -f $manifestSha, $evidenceSha)
