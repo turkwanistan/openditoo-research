@@ -117,7 +117,7 @@ refuses an unknown name. **The streaming profile has never been exercised live.*
 | W5 dry run + fault injection | **done** — healthy path + terminal fault boundaries verified offline |
 | W6 freeze trial manifest | **PASS / grant-ready** — exact W6-passing Windows build frozen; adapter/parity tests, nonce negative control, and 300.12 s real-camera soak passed |
 | W7 first physical trial | **PASS / consumed** — attempt 002 streamed 108 frames / 324 packets / 110,532 bytes in 10.0145 s (~10.78 fps), clean lifetime expiry, no retry/reconnect/reclaim; operator visually confirmed the webcam feed worked; Runtime 003 restored and verified connected |
-| W8 near-ceiling ACK-clock trial | after W7 acceptance; one bounded identity, no new rate ladder |
+| W8 near-ceiling ACK-clock trial | **implemented / awaiting Windows prep** — fresh 003 identity; ACK-gated + 40 ms absolute dispatch floor; 251/753/264,554 hard ceilings; expanded quarter/freshness/Host-vs-HTTP telemetry; no authority |
 | W9 optical latency | after W8 if useful; camera and Ditoo filmed together, separate from ACK latency |
 | W10 product polish/authority | only after experimental acceptance; decide whether webcam gets separate standing product authority |
 
@@ -137,7 +137,9 @@ device receives:
 1. **W7 is closed PASS.** Preserve both consumed identities: 001 is the zero-I/O status-contract failure; 002 is the successful physical acceptance trial and must not be replayed.
 2. W7 attempt 002 evidence: 108 frames / 324 packets / 110,532 bytes in 10.0145 s (~10.78 fps), ACK p50 27.17 ms / p95 57.37 ms, source age at send p50 36.12 ms / p95 50.61 ms, source age at ACK p50 69.22 ms / p95 100.49 ms, `lifetime_expired` / `stopped_clean`, no retry/reconnect/reclaim. Owner-visible acceptance PASS.
 3. Runtime 003 cleanup is independently verified: a fresh product runtime session connected and the Host again owns an active `activity` session with ACKed dashboard frames.
-4. **Next: W8**, one separately reviewed near-ceiling ACK-clock characterization if it still adds value. Do not infer or reuse W7 authority. W9 optical latency remains optional; W10 is product polish/separate webcam-authority decision.
+4. **W8 implementation is prepared under fresh identity `OPENDITOO-WEBCAM-N980P-003`.** The W7 camera/transform/encoder/Host path is unchanged. The client floor is now manifest-driven: W7 remains representable at 90 ms; W8 uses 40 ms, still ACK-gated and never pipelined. Because W7 observed 27.17 ms ACK p50, the external plan's old `minFrameIntervalMs=0` recommendation is superseded by the deployed Host's real 40 ms backstop. W8 ceiling is 251 frames / 753 packets / 264,554 bytes in 10 s.
+5. Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/prepare_webcam_w8_windows.ps1`. It rebuilds/stages only the webcam runner, exercises a fast-ACK fake Host proving the 40 ms floor, reruns transform/encoder parity, checks only the real Host's read-only status endpoint, and freezes exact binary hashes. It cannot claim, grant, stop Runtime 003, open a Host session, or touch the Ditoo.
+6. Only after W8 prep passes, request the distinct exact grant `Grant OPENDITOO-WEBCAM-N980P-003`; then use only `scripts/run_webcam_w8_windows.ps1` for the one 10-second characterization. W9 optical latency remains optional; W10 is product polish/separate webcam-authority decision.
 
 ## 7. Working style that earned its keep
 

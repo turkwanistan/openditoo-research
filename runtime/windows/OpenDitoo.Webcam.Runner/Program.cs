@@ -87,10 +87,19 @@ try
     var token = File.ReadAllText(Path.Combine(root, ".openditoo-local/host.token")).Trim();
     Trial.Require(token.Length >= 32, "HOST_TOKEN_INVALID");
     using var live = TypedSession.Live(token);
-    var finished = await Sender.Run(trialLive, frames, live, stop.Token);
-    Emit(new { kind = "result", experiment_id = trialLive.Id, result = finished,
-        captured = frames.Captured, replaced = frames.Replaced, transformMs = frames.TransformMs.Snapshot() });
-    return JsonSerializer.SerializeToNode(finished)!["outcome"]!.GetValue<string>() == "stopped_clean" ? 0 : 2;
+    var finished = JsonSerializer.SerializeToNode(await Sender.Run(trialLive, frames, live, stop.Token))!.AsObject();
+    var processed = frames.Processed;
+    finished["captured"] = frames.Captured;
+    finished["rawReplaced"] = frames.RawReplaced;
+    finished["processed"] = processed;
+    finished["replaced"] = frames.Replaced;
+    finished["taken"] = frames.Taken;
+    finished["replacementPercent"] = processed == 0 ? 0 : frames.Replaced * 100.0 / processed;
+    finished["rawQueueDepthMax"] = frames.RawMaxDepth;
+    finished["readyQueueDepthMax"] = frames.ReadyMaxDepth;
+    finished["transformMs"] = JsonSerializer.SerializeToNode(frames.TransformMs.Snapshot());
+    Emit(new { kind = "result", experiment_id = trialLive.Id, result = finished });
+    return finished["outcome"]!.GetValue<string>() == "stopped_clean" ? 0 : 2;
 }
 catch (Exception ex)
 {

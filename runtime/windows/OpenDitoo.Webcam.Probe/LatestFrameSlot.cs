@@ -26,6 +26,7 @@ internal sealed class LatestFrameSlot<T>
     internal long Offered { get; private set; }
     internal long Replaced { get; private set; }
     internal long Taken { get; private set; }
+    internal int MaxDepthObserved { get; private set; }
 
     /// <summary>Depth is 0 or 1, by construction. Asserted by the caller's invariant checks.</summary>
     internal int Depth { get { lock (gate) return occupied ? 1 : 0; } }
@@ -38,6 +39,7 @@ internal sealed class LatestFrameSlot<T>
             if (occupied) Replaced++;   // the previous frame is dropped, not queued
             item = value;
             occupied = true;
+            MaxDepthObserved = Math.Max(MaxDepthObserved, 1);
             available.Set();
         }
     }

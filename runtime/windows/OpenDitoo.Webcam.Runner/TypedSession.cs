@@ -16,6 +16,8 @@ internal sealed class TypedSession(HttpClient client) : IDisposable
     internal int Bytes { get; private set; }
     private bool closed;
     internal readonly Samples AckMs = new();
+    internal readonly Samples HostFrameMs = new();
+    internal readonly Samples HttpOverheadMs = new();
 
     internal static TypedSession Live(string token)
     {
@@ -87,9 +89,16 @@ internal sealed class TypedSession(HttpClient client) : IDisposable
             result["packetsSentTotal"]?.GetValue<int>() != (Frames + 1) * 3 ||
             result["txBytesSentTotal"]?.GetValue<int>() != Bytes + packet.Length + 15)
             throw new IOException("SESSION_FRAME_RESPONSE_MISMATCH");
+        var totalMs = WebcamFrames.NowMs - started;
+        var hostFrameMs = result["hostFrameElapsedMs"]?.GetValue<int>()
+            ?? throw new IOException("HOST_FRAME_ELAPSED_MISSING");
+        if (hostFrameMs < 0 || hostFrameMs > totalMs + 10)
+            throw new IOException("HOST_FRAME_ELAPSED_INVALID");
         Frames++;
         Bytes += packet.Length + 15;
-        AckMs.Add(WebcamFrames.NowMs - started);
+        AckMs.Add(totalMs);
+        HostFrameMs.Add(hostFrameMs);
+        HttpOverheadMs.Add(Math.Max(0, totalMs - hostFrameMs));
     }
 
     internal async Task Close(string reason)
@@ -113,6 +122,12 @@ internal static class Sender
         var outcome = "stopped_clean";
         var sourceAges = new Samples();
         var ackAges = new Samples();
+        var dispatchIntervals = new Samples();
+        var quarterFrames = new int[4];
+        var sourceAgesByQuarter = Enumerable.Range(0, 4).Select(_ => new Samples()).ToArray();
+        var duplicateSourceFrames = 0;
+        double? lastSourceTimestamp = null;
+        double? previousDispatch = null;
         var started = WebcamFrames.NowMs;
         var lastDispatch = double.NegativeInfinity;
         try
@@ -124,7 +139,7 @@ internal static class Sender
             {
                 if (stop.IsCancellationRequested) { reason = "operator_stop"; break; }
                 if (source.Fault is { } fault) { reason = fault; break; }
-                var wait = Trial.ClientInterval - (WebcamFrames.NowMs - lastDispatch);
+                var wait = trial.ClientIntervalMs - (WebcamFrames.NowMs - lastDispatch);
                 if (wait > 0) { await Task.Delay(TimeSpan.FromMilliseconds(wait), stop); continue; }
                 if (!source.TryTake(out var frame)) { source.Wait(stop); continue; }
                 var age = WebcamFrames.NowMs - frame.CapturedQpcMs;
@@ -133,10 +148,20 @@ internal static class Sender
                 if (WebcamFrames.NowMs - started >= trial.Seconds * 1000) break;
                 var bytes = DitooEncoder.EncodeRgb888(frame.Pixels).Packet.Length + 15;
                 if (session.Bytes + bytes > trial.MaxBytes) { reason = "budget_exhausted"; break; }
-                lastDispatch = WebcamFrames.NowMs;
+                var dispatch = WebcamFrames.NowMs;
+                if (previousDispatch is { } prior) dispatchIntervals.Add(dispatch - prior);
+                previousDispatch = dispatch;
+                lastDispatch = dispatch;
+                if (lastSourceTimestamp is { } priorSource && frame.CapturedQpcMs == priorSource)
+                    duplicateSourceFrames++;
+                lastSourceTimestamp = frame.CapturedQpcMs;
+                var quarter = Math.Max(0, Math.Min(3,
+                    (int)Math.Floor((dispatch - started) / (trial.Seconds * 1000.0 / 4.0))));
                 sourceAges.Add(age);
+                sourceAgesByQuarter[quarter].Add(age);
                 await session.Frame(frame); // one request in flight, never resend
                 ackAges.Add(WebcamFrames.NowMs - frame.CapturedQpcMs);
+                quarterFrames[quarter]++;
             }
             if (session.Frames == trial.MaxFrames) reason = "budget_exhausted";
         }
@@ -149,9 +174,20 @@ internal static class Sender
             try { await session.Close(reason); }
             catch (Exception) { outcome = "unknown"; reason += ";close_unconfirmed"; }
         }
+        var elapsedMs = WebcamFrames.NowMs - started;
+        var quarterSeconds = trial.Seconds / 4.0;
+        var fpsByQuarter = quarterFrames.Select(count => count / quarterSeconds).ToArray();
         return new { outcome, terminalReason = reason, frames = session.Frames, packets = session.Frames * 3,
-            bytes = session.Bytes, elapsedMs = WebcamFrames.NowMs - started,
-            sourceAgeAtSendMs = sourceAges.Snapshot(), sourceAgeAtAckMs = ackAges.Snapshot(),
-            ackMs = session.AckMs.Snapshot(), retry = false, reconnect = false, reclaim = false };
+            bytes = session.Bytes, elapsedMs,
+            effectiveFps = elapsedMs > 0 ? session.Frames / (elapsedMs / 1000.0) : 0,
+            clientIntervalMs = trial.ClientIntervalMs,
+            framesByQuarter = quarterFrames, fpsByQuarter,
+            sourceAgeAtSendMs = sourceAges.Snapshot(),
+            sourceAgeAtSendMsByQuarter = sourceAgesByQuarter.Select(samples => samples.Snapshot()).ToArray(),
+            sourceAgeAtAckMs = ackAges.Snapshot(),
+            dispatchIntervalMs = dispatchIntervals.Snapshot(), duplicateSourceFrames,
+            ackMs = session.AckMs.Snapshot(), hostFrameMs = session.HostFrameMs.Snapshot(),
+            httpOverheadMs = session.HttpOverheadMs.Snapshot(),
+            retry = false, reconnect = false, reclaim = false };
     }
 }

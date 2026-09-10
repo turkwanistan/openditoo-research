@@ -24,7 +24,12 @@ internal sealed class WebcamFrames : IFrameSource, IAsyncDisposable
     private string? fault;
     internal readonly Samples TransformMs = new();
     internal long Captured => raw.Offered;
+    internal long RawReplaced => raw.Replaced;
+    internal long Processed => ready.Offered;
     internal long Replaced => ready.Replaced;
+    internal long Taken => ready.Taken;
+    internal int RawMaxDepth => raw.MaxDepthObserved;
+    internal int ReadyMaxDepth => ready.MaxDepthObserved;
     public string? Fault => Volatile.Read(ref fault);
     internal static double NowMs => Stopwatch.GetTimestamp() * 1000d / Stopwatch.Frequency;
 

@@ -46,11 +46,12 @@ internal static class OfflineTests
                     var sha = DitooEncoder.Sha256Hex(encoded.Packet);
                     Trial.Require(body["expectedImagePacketSha256"]!.GetValue<string>() == sha, "ENCODER_HASH_DRIFT");
                     if (fault == "frame" && Attempts == 2) throw new IOException("SIMULATED_LOST_FRAME_RESPONSE");
-                    await Task.Delay(65, token);
+                    var simulatedHostMs = fault == "fast_ack" ? 5 : 54;
+                    await Task.Delay(fault == "fast_ack" ? 5 : 65, token);
                     Frames++; Bytes += encoded.Packet.Length + 15;
                     response = new { ok = true, imagePacketSha256 = fault == "hash" ? "wrong" : sha,
                         frame = Frames, packetCount = 3, packetsSentTotal = Frames * 3, txBytesSentTotal = Bytes,
-                        ackPayloadHex = "0x44" };
+                        ackPayloadHex = "0x44", hostFrameElapsedMs = simulatedHostMs };
                     break;
                 case "/v1/session/close":
                     Closes++;
@@ -106,6 +107,21 @@ internal static class OfflineTests
                 (fault != "none" || handler.Frames >= 5);
             if (!passed) failures++;
             Console.WriteLine($"ADAPTER_CASE_{(passed ? "PASS" : "FAIL")} name={fault} opens={handler.Opens} attempts={handler.Attempts} closes={handler.Closes} outcome={result["outcome"]}");
+        }
+        // W8 control: ACK returns far faster than the permanent 40 ms Host backstop. The
+        // manifest-driven client floor must still keep dispatch starts legal without a 90 ms timer.
+        var w8Handler = new FakeHandler("fast_ack");
+        using (var w8Session = new TypedSession(new HttpClient(w8Handler)))
+        {
+            var w8 = JsonSerializer.SerializeToNode(await Sender.Run(
+                new("OFFLINE-W8", 1, 26, 26 * Trial.WorstCaseFrameTxBytes, Trial.W8ClientInterval),
+                new GeneratedFrames(w8Handler, "fast_ack"), w8Session, CancellationToken.None))!;
+            var w8Pass = w8["outcome"]!.GetValue<string>() == "stopped_clean" &&
+                w8["clientIntervalMs"]!.GetValue<int>() == 40 &&
+                w8["frames"]!.GetValue<int>() >= 20 &&
+                w8["duplicateSourceFrames"]!.GetValue<int>() == 0;
+            if (!w8Pass) failures++;
+            Console.WriteLine($"ADAPTER_W8_ACK_FLOOR_{(w8Pass ? "PASS" : "FAIL")} frames={w8["frames"]} client_interval_ms={w8["clientIntervalMs"]} outcome={w8["outcome"]}");
         }
         Console.WriteLine($"ADAPTER_SELFTEST_{(failures == 0 ? "PASS" : "FAIL")} failures={failures} device_io=false camera_io=false");
         return failures == 0 ? 0 : 2;

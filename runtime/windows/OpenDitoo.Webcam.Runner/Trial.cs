@@ -4,11 +4,14 @@ using System.Text.RegularExpressions;
 
 namespace OpenDitoo.Webcam.Runner;
 
-internal sealed record Trial(string Id, int Seconds, int MaxFrames, int MaxBytes)
+internal sealed record Trial(string Id, int Seconds, int MaxFrames, int MaxBytes, int ClientIntervalMs = 90)
 {
     internal const string Target = "11:75:58:CE:DE:C7";
     internal const string Profile = "streaming_ack_clock";
-    internal const int HostFloor = 40, ClientInterval = 90;
+    internal const int HostFloor = 40;
+    internal const int W7ClientInterval = 90;
+    internal const int W8ClientInterval = 40;
+    internal const int WorstCaseFrameTxBytes = 1054;
     internal static string Hash(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
     internal static void Require(bool condition, string reason)
     { if (!condition) throw new InvalidOperationException(reason); }
@@ -34,15 +37,20 @@ internal sealed record Trial(string Id, int Seconds, int MaxFrames, int MaxBytes
         var stream = doc["stream"]!;
         var settings = doc["session"]!;
         var budgets = doc["budgets"]!;
+        var clientInterval = stream["playback_interval_ms"]!.GetValue<int>();
+        Require(clientInterval == W7ClientInterval || clientInterval == W8ClientInterval,
+            "CLIENT_INTERVAL_NOT_REVIEWED");
+        var expectedFrames = Math.Min(10_000 / clientInterval + 1, 500);
+        var expectedPackets = expectedFrames * 3;
+        var expectedBytes = expectedFrames * WorstCaseFrameTxBytes;
         Require(stream["source_kind"]!.GetValue<string>() == "live" &&
             stream["session_profile"]!.GetValue<string>() == Profile &&
-            stream["playback_interval_ms"]!.GetValue<int>() == ClientInterval &&
             stream["loop"]!.GetValue<bool>() == false &&
             settings["min_frame_interval_ms"]!.GetValue<int>() == HostFloor &&
             settings["lifetime_seconds"]!.GetValue<int>() == 10 &&
-            budgets["max_frames"]!.GetValue<int>() == 112 &&
-            budgets["max_tx_bytes"]!.GetValue<int>() == 118048 &&
-            budgets["max_application_packets"]!.GetValue<int>() == 336 &&
+            budgets["max_frames"]!.GetValue<int>() == expectedFrames &&
+            budgets["max_tx_bytes"]!.GetValue<int>() == expectedBytes &&
+            budgets["max_application_packets"]!.GetValue<int>() == expectedPackets &&
             budgets["connection_attempts"]!.GetValue<int>() == 1 &&
             budgets["ack_timeout_ms_per_frame"]!.GetValue<int>() == 5000, "TRIAL_ENVELOPE_MISMATCH");
         foreach (var flag in new[] { "automatic_retry", "automatic_reconnect", "stock_screen_reclaim", "replay_after_interruption" })
@@ -78,6 +86,6 @@ internal sealed record Trial(string Id, int Seconds, int MaxFrames, int MaxBytes
         Require(Hash(Path.Combine(root, "runtime/windows/OpenDitoo.Day1.Host/bin/Release/net8.0/OpenDitoo.Day1.Host.dll")) == expectedHost &&
             Hash(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "OpenDitoo/Day1Host/OpenDitoo.Day1.Host.dll")) == expectedHost, "HOST_HASH_DRIFT");
-        return new(id, 10, 112, 118048);
+        return new(id, 10, expectedFrames, expectedBytes, clientInterval);
     }
 }

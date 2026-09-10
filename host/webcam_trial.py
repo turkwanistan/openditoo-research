@@ -69,9 +69,16 @@ def review(path: Path, *, authority: bool = False):
     doc = manifest.raw
     if not re.fullmatch(r"OPENDITOO-WEBCAM-N980P-[0-9]{3}", manifest.experiment_id):
         raise ValueError("WEBCAM_EXPERIMENT_ID_INVALID")
-    if (stream["source_kind"], stream["session_profile"], stream["playback_interval_ms"],
-        manifest.lifetime_seconds, manifest.min_frame_interval_ms, manifest.max_frames,
-        manifest.max_tx_bytes) != ("live", "streaming_ack_clock", 90, 10, 40, 112, 118048):
+    playback_ms = stream["playback_interval_ms"]
+    if playback_ms not in (40, 90):
+        raise ValueError("WEBCAM_CLIENT_INTERVAL_NOT_REVIEWED")
+    expected_frames = min(10_000 // playback_ms + 1, activity_session.MAX_SESSION_FRAMES)
+    expected_packets = expected_frames * activity_session.PACKETS_PER_FRAME
+    expected_bytes = expected_frames * frame_stream.worst_case_frame_tx_bytes()
+    if (stream["source_kind"], stream["session_profile"], manifest.lifetime_seconds,
+        manifest.min_frame_interval_ms, manifest.max_frames, manifest.max_application_packets,
+        manifest.max_tx_bytes) != ("live", "streaming_ack_clock", 10, 40, expected_frames,
+                                  expected_packets, expected_bytes):
         raise ValueError("WEBCAM_ENVELOPE_MISMATCH")
     producer = stream["live_source"]
     camera, transform = producer["camera"], producer["transform"]
