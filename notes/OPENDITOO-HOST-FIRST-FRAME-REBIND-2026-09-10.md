@@ -1,6 +1,6 @@
-# Runtime 007 + webcam 006 — first-frame-spacing Host re-bind (prepared, UNAUTHORIZED)
+# Runtime 007 + webcam 006 — first-frame-spacing Host re-bind (LIVE 2026-09-10 20:42Z)
 
-Branch `feat/host-first-frame-spacing` (off `main` at `0c7b522`). Nothing is deployed. The live product is still Runtime 006 + webcam 005 on Host `f7bd60d4…`.
+Branch `feat/host-first-frame-spacing` (off `main` at `0c7b522`). **LIVE since 20:42Z** (owner granted both). Cutover attempts 1–2 failed safe and were rolled back: the headless-task orphaned Host, then a stale verifier pin. Attempt 3 PASS. Evidence: `captures/OPENDITOO-RUNTIME-007-CUTOVER-2026-09-10.json`. Rollback: `bash scripts/cutover_runtime_007.sh --rollback`. **The fix itself is still unproven on the device** until streaming opens happen on the new Host.
 
 ## Why
 

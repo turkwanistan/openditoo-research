@@ -1,0 +1,72 @@
+{
+  "capture_id": "OPENDITOO-RUNTIME-007-CUTOVER-2026-09-10",
+  "grants": [
+    "Grant OPENDITOO-PRODUCT-RUNTIME-007",
+    "Grant OPENDITOO-WEBCAM-PRODUCT-006"
+  ],
+  "attempts": [
+    {
+      "n": 1,
+      "result": "FAILED_SAFE_BEFORE_SWAP",
+      "cause": "headless Host task: Stop-ScheduledTask ends conhost only; orphaned Host kept port 8796; refresh refused to kill; rollback's Host copy hit the locked DLL and stopped early (Host/Studio/policies were never changed; dashboard restarted manually on Runtime 006, source diff vs pre-cutover empty)",
+      "markers": [
+        "R007_ROLLBACK_SAVED pre=0c7b52273c8a",
+        "R007_HOST_IDLE",
+        "R007_MAIN_FAST_FORWARDED 46c8b9d",
+        "Port 8796 remained owned by PID 19120 after stopping only 'OpenDitoo Day1 Host'; refusing process kill.",
+        "R007_FAILED: HOST_REFRESH -- rolling back",
+        "RC=1"
+      ]
+    },
+    {
+      "n": 2,
+      "result": "FAILED_GATE_ROLLED_BACK",
+      "cause": "Host deployed (orphaned owned Host stopped by exact exe path), but verify_day1_offline's verify_stream_boundary still pinned the old SendFrameGroup literal; automatic rollback restored Runtime 006 + webcam 005 byte-exactly",
+      "markers": [
+        "R007_ROLLBACK_SAVED pre=bb0c20fbc9f7",
+        "R007_HOST_IDLE",
+        "R007_MAIN_FAST_FORWARDED 1b28d81",
+        "ORPHANED_OWNED_HOST_STOPPED=19120",
+        "REFRESH_STATUS=PASS_TYPED_IMAGE",
+        "R007_HOST_DEPLOYED 3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+        "R007_STUDIO_BUILT",
+        "R007_FAILED: OFFLINE_GATE -- rolling back",
+        "R007_ROLLED_BACK_TO_RUNTIME_006",
+        "R007_ROLLBACK_WEBCAM_005_POLICY_CHECK_PASS",
+        "RC=2"
+      ]
+    },
+    {
+      "n": 3,
+      "result": "PASS",
+      "markers": [
+        "R007_ROLLBACK_SAVED pre=bca72ef4cbd1",
+        "R007_HOST_IDLE",
+        "R007_MAIN_FAST_FORWARDED d6c0894",
+        "ORPHANED_OWNED_HOST_STOPPED=10648",
+        "REFRESH_STATUS=PASS_TYPED_IMAGE",
+        "R007_HOST_DEPLOYED 3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+        "R007_STUDIO_BUILT",
+        "R007_MAIN_OFFLINE_PASS",
+        "R007_LOCAL_POLICY_WRITTEN",
+        "R007_PRODUCT_CHECK_PASS",
+        "R007_DASHBOARD_CONNECTED",
+        "R007_WEBCAM_006_POLICY_CHECK_PASS",
+        "R007_CUTOVER_PASS main=d6c0894 host=3faf520f46ce rollback=.openditoo-local/rollback-runtime-006",
+        "RC=0"
+      ]
+    }
+  ],
+  "post_cutover": {
+    "main": "d6c0894",
+    "installed_host_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+    "installed_studio_dll_sha256": "c259dca845cc2d4ccccfc568906e428d1613ca4f73905faf0cdcacb5e28eb779",
+    "local_policies": [
+      "OPENDITOO-PRODUCT-RUNTIME-007",
+      "OPENDITOO-WEBCAM-PRODUCT-006"
+    ],
+    "dashboard": "connected, last_error null, run_nonce 87459ea7; Host activity session OPENDITOO-PRODUCT-87459ea7-000001 44 frames ours_last_acked",
+    "rollback": ".openditoo-local/rollback-runtime-006 (bash scripts/cutover_runtime_007.sh --rollback)"
+  },
+  "unproven": "The first-frame fix itself is not yet exercised: no streaming_ack_clock open has happened on the new Host. The next webcam launches / HF3-004 are that evidence (baseline 5/19 first-frame timeouts)."
+}

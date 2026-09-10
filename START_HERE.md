@@ -74,8 +74,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | Runtime 003 | superseded 2026-09-10 by Runtime 004 (Host re-bind only); no longer hash-valid |
 | Runtime 004 | superseded 2026-09-10 by Runtime 005 (pacing clock); no longer hash-valid |
 | Runtime 005 | superseded 2026-09-10 17:44Z by Runtime 006; saved as rollback in `.openditoo-local/rollback-runtime-005/` (`scripts/cutover_runtime_006.sh --rollback`) |
-| Runtime 007 | Runtime 006 re-bound to the first-frame-spacing Host `3faf520f…` (+ webcam 006); cutover `scripts/cutover_runtime_007.sh`, rollback `--rollback`. See the re-bind note |
-| Runtime 006 | **active until the 007 cutover** (granted 2026-09-10 17:44Z): Runtime 005 envelope + button pagination, runtime_revision 3, same Host `f7bd60d4…` |
+| Runtime 007 | **active** (granted 2026-09-10, live 20:42Z): Runtime 006 re-bound to the first-frame-spacing Host `3faf520f…` (+ webcam 006); cutover `scripts/cutover_runtime_007.sh`, rollback `--rollback`. See the re-bind note |
+| Runtime 006 | superseded 2026-09-10 20:42Z by Runtime 007; exact-byte rollback in `.openditoo-local/rollback-runtime-006/` (granted 2026-09-10 17:44Z): Runtime 005 envelope + button pagination, runtime_revision 3, same Host `f7bd60d4…` |
 | P3 product evidence | closed for v1; normal MCP use accepted; forced healthy-Lab outage waived |
 | P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
 | BTN-0 AVRCP evidence reproduction | **PASS** (`BTN0_AVRCP_REPRODUCTION=PASS`): `host/avctp.py` + direction-scoped L2CAP channels in `host/btsnoop.py` + `capture-avrcp-parse` reproduce 0x4C/0x4B/0x4C/0x44 (all press+release, all ACCEPTED) from the raw M7 bytes; derived `captures/OPENDITOO-M7-AVRCP-KEY-SWEEP-2026-09-09.json`. New: the first Left coincided with an unsolicited RFCOMM 0x09 report (-2.7 ms), so arrows are not assumed session-neutral |
