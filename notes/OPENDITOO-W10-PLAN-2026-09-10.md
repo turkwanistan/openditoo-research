@@ -252,3 +252,6 @@ asserts the task action equals the exe and would need the same change.
 
 Also fixed: `prepare_webcam_w10.py product` named its evidence file after 002 and overwrote it when
 preparing 003; the name now follows the policy id and the 002 record was restored from git.
+
+**Webcam 003 granted 2026-09-10** (`Grant OPENDITOO-WEBCAM-PRODUCT-003`): local policy materialized (mode 0600,
+`policy-check` PASS); 002 local was revoked at the merge. First 003 launch (live look switching) pending.
