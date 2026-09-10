@@ -225,7 +225,7 @@ public static class Program
         string status = "playing"; // playing | paused | mirror (follow Play/Pause like a real player)
         for (int i = 0; i < args.Length - 1; i++)
         {
-            if (args[i] == "--seconds") seconds = Math.Clamp(int.Parse(args[i + 1]), 5, 3600);
+            if (args[i] == "--seconds") seconds = int.Parse(args[i + 1]) == 0 ? 0 : Math.Clamp(int.Parse(args[i + 1]), 5, 3600); // 0 = until stopped
             if (args[i] == "--log") logPath = args[i + 1];
             if (args[i] == "--status" && args[i + 1] is "playing" or "paused" or "mirror") status = args[i + 1];
         }
@@ -272,9 +272,12 @@ public static class Program
             ["rawinput_registered"] = rawInput, ["merging"] = "none; every source logged separately",
         });
 
-        var timer = new System.Windows.Forms.Timer { Interval = seconds * 1000 };
-        timer.Tick += (_, _) => Application.ExitThread();
-        timer.Start();
+        if (seconds > 0)
+        {
+            var timer = new System.Windows.Forms.Timer { Interval = seconds * 1000 };
+            timer.Tick += (_, _) => Application.ExitThread();
+            timer.Start();
+        }
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; Application.ExitThread(); };
         Application.Run();
 

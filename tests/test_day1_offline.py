@@ -4643,7 +4643,7 @@ class ButtonProbeBoundaryTests(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# BTN-3/4 — read-only button event cursor + two-page router, entirely offline
+# BTN-3/4/6 — read-only button event cursor + Runtime 006 N-page router, offline
 # --------------------------------------------------------------------------
 
 from host import pagination  # noqa: E402
@@ -4652,12 +4652,14 @@ from host import pagination  # noqa: E402
 def _probe_line(epoch: str, seq: int, button: str | None = None, source: str = "smtc", kind: str = "event") -> str:
     record = {"epoch": epoch, "seq": seq, "at_utc": "2026-09-10T00:00:00Z", "type": kind}
     if kind == "event":
-        candidate = {"Previous": "nav_left", "Next": "nav_right", "Pause": "lever_candidate"}.get(button)
+        candidate = {"Previous": "nav_left", "Next": "nav_right", "Pause": "lever_candidate", "Play": "lever_candidate"}.get(button)
         record.update(source=source, raw_button=button, normalized_candidate=candidate)
     return json.dumps(record) + "\n"
 
 
 class PaginationTests(unittest.TestCase):
+    """Runtime 006: N-page wrap router, per-page lever, supervised broker, offline."""
+
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self.tmp.name)
@@ -4688,167 +4690,186 @@ class PaginationTests(unittest.TestCase):
         def frame_sent(self):
             self.sent += 1
 
-    def _renderer(self, dashboard=None):
-        router = pagination.PageRouter(lambda: self.clock["s"])
+    def _pages(self, extra: int = 1) -> list:
+        mono = lambda: self.clock["s"]
+        return [pagination.DashboardPage()] + [
+            pagination.AnimationPage(f"anim{i}", self._frames(), 250, mono) for i in range(extra)]
+
+    def _renderer(self, pages=None, dashboard=None):
+        router = pagination.PageRouter(pages or self._pages(), lambda: self.clock["s"])
         events = pagination.ButtonEvents(self.events_path)
         dashboard = dashboard or self.Dashboard()
-        return router, events, dashboard, pagination.PagedRenderer(router, events, dashboard, self._frames(), 250)
+        return router, dashboard, pagination.PagedRenderer(router, events, dashboard)
 
-    def test_right_enters_animation_once_and_left_returns(self) -> None:
-        self._append(_probe_line("e1", 1, kind="probe_started"))
-        router, _, dashboard, render = self._renderer()
-        self.assertEqual(render(0)[0], bytes([0, 200, 0]) * 256)
-        self._append(_probe_line("e1", 2, "Next"))
-        frame, _ = render(50)
-        self.assertEqual(router.page, "animation")
-        self.assertEqual(frame, self._frames().frames[0])
-        for tick in range(5):  # repeated ticks never re-apply the same event
-            render(100 + tick * 50)
-        self.assertEqual(len(router.transitions), 1)
-        self._append(_probe_line("e1", 3, "Previous"))
-        self.assertEqual(render(400)[0], bytes([0, 200, 0]) * 256)
-        self.assertEqual([(t["from"], t["to"]) for t in router.transitions],
-                         [("dashboard", "animation"), ("animation", "dashboard")])
-
-    def test_edge_presses_bursts_and_lever_are_no_ops(self) -> None:
-        router, _, _, render = self._renderer()
-        self._append(_probe_line("e1", 1, "Previous"), _probe_line("e1", 2, "Next"),
-                     _probe_line("e1", 3, "Next"), _probe_line("e1", 4, "Pause"))
+    def test_arrows_wrap_both_ways_across_n_pages(self) -> None:
+        router, _, render = self._renderer(self._pages(extra=2))
+        self._append(_probe_line("e1", 1, "Next"), _probe_line("e1", 2, "Next"), _probe_line("e1", 3, "Next"))
         render(0)
-        self.assertEqual(router.page, "animation")
-        self.assertEqual(len(router.transitions), 1, msg="burst right/right must not jump twice")
-        self.assertEqual([i["type"] for i in router.ignored], ["nav_left", "nav_right", "lever_candidate"])
+        self.assertEqual(router.page.name, "dashboard", msg="three rights on three pages wraps home")
+        self._append(_probe_line("e1", 4, "Previous"))
+        render(50)
+        self.assertEqual(router.page.name, "anim1", msg="left from the dashboard wraps to the last page")
+        self.assertEqual(len(router.transitions), 4)
+        for tick in range(5):  # repeated ticks never re-apply an event
+            render(100 + tick * 50)
+        self.assertEqual(len(router.transitions), 4)
+
+    def test_two_pages_page_and_return_like_btn5(self) -> None:
+        router, _, render = self._renderer()
+        self.assertEqual(render(0)[0], bytes([0, 200, 0]) * 256)
+        self._append(_probe_line("e1", 1, "Next"))
+        self.assertEqual(render(50)[0], self._frames().frames[0])
+        self._append(_probe_line("e1", 2, "Previous"))
+        self.assertEqual(render(100)[0], bytes([0, 200, 0]) * 256)
+
+    def test_lever_runs_the_current_pages_action_only(self) -> None:
+        router, _, render = self._renderer()
+        self._append(_probe_line("e1", 1, "Pause"))
+        render(0)
+        self.assertEqual(router.actions[-1]["page"], "dashboard")
+        self.assertIsNone(router.actions[-1]["result"], msg="dashboard has no lever action yet")
+        self._append(_probe_line("e1", 2, "Next"))
+        self.clock["s"] += 0.6  # frame index 2
+        render(50)
+        self._append(_probe_line("e1", 3, "Play"))
+        frozen = render(100)[0]
+        self.assertEqual(router.actions[-1]["result"], "paused")
+        self.clock["s"] += 5
+        self.assertEqual(render(150)[0], frozen, msg="paused animation holds its frame")
+        self._append(_probe_line("e1", 4, "Pause"))
+        self.assertEqual(render(200)[0], frozen, msg="resume continues from the frozen frame")
+        self.assertEqual(router.actions[-1]["result"], "resumed")
+        self.assertEqual(len(router.transitions), 1, msg="the lever never navigates")
 
     def test_events_written_before_start_are_never_replayed(self) -> None:
         self._append(_probe_line("old", 1, "Next"))
-        router, _, _, render = self._renderer()
+        router, _, render = self._renderer()
         render(0)
-        self.assertEqual(router.page, "dashboard")
+        self.assertEqual(router.page.name, "dashboard")
 
     def test_epoch_restart_gap_duplicate_and_foreign_sources(self) -> None:
         events = pagination.ButtonEvents(self.events_path)
-        self._append(_probe_line("e1", 1, "Next"), _probe_line("e1", 1, "Next"),  # duplicate
-                     _probe_line("e1", 2, "Next", source="wm_appcommand"),       # diagnostic source
-                     _probe_line("e1", 5, "Previous"))                           # gap 3..4
-        got = events.poll()
-        self.assertEqual([(e["seq"], e["type"]) for e in got], [(1, "nav_right"), (5, "nav_left")])
+        self._append(_probe_line("e1", 1, "Next"), _probe_line("e1", 1, "Next"),
+                     _probe_line("e1", 2, "Next", source="wm_appcommand"), _probe_line("e1", 5, "Previous"))
+        self.assertEqual([(e["seq"], e["type"]) for e in events.poll()], [(1, "nav_right"), (5, "nav_left")])
         self.assertEqual(events.gaps, 1)
         self._append(_probe_line("e2", 1, kind="probe_started"), _probe_line("e2", 2, "Next"))
         self.assertEqual([(e["epoch"], e["seq"]) for e in events.poll()], [("e2", 2)])
         self.assertEqual(events.epochs, 2)
 
-    def test_partial_line_waits_and_missing_broker_is_quiet(self) -> None:
-        events = pagination.ButtonEvents(self.dir / "absent.ndjson")
-        self.assertEqual(events.poll(), [])
+    def test_truncated_file_rebases_and_partial_line_waits(self) -> None:
         events = pagination.ButtonEvents(self.events_path)
-        line = _probe_line("e1", 1, "Next")
+        self._append(_probe_line("e1", 1, "Next"))
+        events.poll()
+        self.events_path.write_text("")  # broker restart truncates
+        line = _probe_line("e2", 1, "Previous")
         self._append(line[:10])
         self.assertEqual(events.poll(), [])
         self._append(line[10:])
-        self.assertEqual([e["type"] for e in events.poll()], ["nav_right"])
+        self.assertEqual([e["type"] for e in events.poll()], ["nav_left"])
+        self.assertEqual(pagination.ButtonEvents(self.dir / "absent").poll(), [])
 
-    def test_animation_runs_only_on_page_one_and_collection_never_pauses(self) -> None:
-        router, _, dashboard, render = self._renderer()
+    def test_collection_never_pauses_and_stale_pulse_clears(self) -> None:
+        dashboard = self.Dashboard()
+        router, _, render = self._renderer(dashboard=dashboard)
         self._append(_probe_line("e1", 1, "Next"))
-        seen = set()
-        for tick in range(12):
+        for tick in range(6):
             self.clock["s"] += 0.25
-            seen.add(render(tick * 250)[0])
-        self.assertEqual(len(seen), 10, msg="all ten frames play in a loop")
-        self.assertEqual(dashboard.calls, 12, msg="dashboard collection continues on page 1")
+            render(tick * 250)
+        self.assertEqual(dashboard.calls, 6)
         render.frame_sent()
         self.assertEqual(dashboard.sent, 0, msg="animation ACKs never advance the dashboard pulse")
-
-    def test_stale_pulse_is_cleared_on_return(self) -> None:
-        dashboard = self.Dashboard()
-        router, _, _, render = self._renderer(dashboard)
-        self._append(_probe_line("e1", 1, "Next"))
-        render(0)
         dashboard.pulse_step, dashboard.pulse_sources = 0, {"wsl_mcp"}
         self._append(_probe_line("e1", 2, "Previous"))
-        render(50)
+        render(2000)
         self.assertIsNone(dashboard.pulse_step)
-        self.assertEqual(dashboard.pulse_sources, set())
 
-    def _policy(self) -> dict:
-        policy = json.loads(pagination.TEMPLATE.read_text(encoding="utf-8"))
-        policy["authority"] = {"pagination_acceptance_authorized": True, "grant_text": pagination.GRANT_TEXT,
-                               "granted_by": "test"}
-        return policy
+    def test_broker_is_supervised_rate_limited_and_stopped(self) -> None:
+        class Proc:
+            def __init__(self): self.rc = None
+            def poll(self): return self.rc
+            def terminate(self): self.rc = -15
+            def wait(self, timeout=None): return self.rc
+        launched = []
+        def popen(args, **_kw):
+            launched.append(args)
+            return Proc()
+        broker = pagination.Broker(Path("/x/probe.exe"), r"\\wsl\events", self.events_path, popen=popen,
+                                   monotonic=lambda: self.clock["s"])
+        self._append("stale\n")
+        broker.ensure()
+        self.assertEqual(self.events_path.read_bytes(), b"", msg="each broker start is a fresh bounded file")
+        self.assertIn("mirror", launched[0])
+        self.assertEqual(launched[0][launched[0].index("--seconds") + 1], "0")
+        broker.process.rc = 1  # probe died
+        broker.ensure()
+        self.assertEqual(len(launched), 1, msg="no restart inside the 5 s window")
+        self.clock["s"] += 5
+        broker.ensure()
+        self.assertEqual(len(launched), 2)
+        broker.stop()
+        self.assertFalse(broker.alive)
 
-    def test_page_survives_canvas_invalidation_and_claim_is_one_use(self) -> None:
-        # BTN-2: an arrow press can itself end the Host session. The next session must
-        # come back on the selected page, and the Host fence is honoured unchanged.
+    def _policy(self) -> "pagination.StandingPolicy":
+        return pagination.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json",
+                                      require_authority=False, verify_hashes=False)
+
+    def test_page_survives_canvas_invalidation_through_runtime_005_supervisor(self) -> None:
         invalidated = activity_session.FakeSessionTransport(reports={2: [{"kind": "session_ended",
             "reason": "canvas_invalidated", "outcome": "stopped_yielded_to_stock"}]})
         second = activity_session.FakeSessionTransport()
         transports = [invalidated, second]
-        self._append(_probe_line("e1", 1, kind="probe_started"))
         events = pagination.ButtonEvents(self.events_path)
-        self._append(_probe_line("e1", 2, "Next"))
+        self._append(_probe_line("e1", 1, "Next"))
         clock = self.clock
-        result = pagination.run(
-            self._policy(), lambda: transports.pop(0), stop_requested=lambda: False, events=events,
+        state = pagination.run_product(
+            self._policy(), lambda: transports.pop(0), events=events, pages=self._pages(),
             monotonic=lambda: clock["s"], sleep=lambda sec: clock.__setitem__("s", clock["s"] + sec),
-            state_file=self.dir / "state.json", claim_dir=self.dir / "claims", max_sessions=2,
+            state_file=self.dir / "state.json", pages_state_file=self.dir / "pages.json", max_sessions=2,
             config={"poll_seconds": 2.0, "sources": {}}, activity_state=mcp_activity.blank_state(),
-            waiting_collector=lambda _c, _s: None,
-            renderer_for_dashboard=lambda _c, _s, _m: self.Dashboard())
-        self.assertEqual(result["runtime"]["reclaims"], 1)
-        self.assertEqual(result["final_page"], "animation")
-        spiral = {hashlib.sha256(f).hexdigest() for f in self._frames().frames}
-        self.assertTrue(second.frames, msg="the reclaimed session painted something")
-        # The new session resumes the animation, not the dashboard.
-        self.assertTrue(all(frame["imagePacketSha256"] in set(self._frames().packet_sha256)
-                            for frame in second.frames))
-        self.assertIsNotNone(result["transitions"][0]["first_ack_ms"])
-        self.assertTrue(spiral)
-        with self.assertRaises(activity_session.SessionError) as again:
-            pagination.run(self._policy(), lambda: activity_session.FakeSessionTransport(),
-                           stop_requested=lambda: True, claim_dir=self.dir / "claims",
-                           state_file=self.dir / "state.json")
-        self.assertEqual(again.exception.code, "AUTHORITY_ALREADY_CONSUMED")
+            waiting_collector=lambda _c, _s: None, renderer_for_dashboard=lambda _c, _s, _m: self.Dashboard())
+        self.assertEqual(state["reclaims"], 1)
+        self.assertTrue(second.frames)
+        self.assertTrue(all(f["imagePacketSha256"] in set(self._frames().packet_sha256) for f in second.frames),
+                        msg="the reclaimed session resumes the animation page")
+        pages = json.loads((self.dir / "pages.json").read_text(encoding="utf-8"))
+        self.assertEqual(pages["current_page"], "anim0")
+        self.assertEqual(pages["recent_transitions"][0]["to"], "anim0")
 
-    def test_template_is_unauthorized_reviewed_and_narrow(self) -> None:
-        template = json.loads(pagination.TEMPLATE.read_text(encoding="utf-8"))
-        self.assertFalse(template["authority"]["pagination_acceptance_authorized"])
-        self.assertEqual(template["authority"]["required_grant_text"], "Grant OPENDITOO-PAGINATION-ACCEPTANCE-001")
-        with self.assertRaises(pagination.PaginationPolicyError) as blocked:
-            pagination.load_policy(pagination.TEMPLATE, verify=False)
-        self.assertEqual(blocked.exception.code, "PAGINATION_AUTHORITY_MISSING")
-        self.assertEqual(template["pages"], ["dashboard", "animation"])
-        self.assertEqual(template["behavior"]["lever_action"], "ignored")
-        self.assertLessEqual(template["run"]["total_lifetime_seconds"], 300)
+    def test_006_template_is_unauthorized_and_keeps_the_005_envelope(self) -> None:
+        template = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json").read_text(encoding="utf-8"))
         live = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-005.json").read_text(encoding="utf-8"))
-        for key in ("lifetime_seconds", "max_frames", "max_tx_bytes", "min_frame_interval_ms",
-                    "poll_interval_ms", "pulse_freshness_seconds"):
-            self.assertEqual(template["session"][key], live["session"][key], key)
-        self.assertEqual(template["build"]["host_dll_sha256"], live["build"]["host_dll_sha256"])
+        self.assertFalse(template["authority"]["persistent_runtime_authorized"])
+        self.assertEqual(template["authority"]["required_grant_text"], "Grant OPENDITOO-PRODUCT-RUNTIME-006")
+        for key in ("target", "session", "behavior", "product_id", "install"):
+            self.assertEqual(template[key], live[key], key)
         for name, digest in live["build"]["code_sha256"].items():
             self.assertEqual(template["build"]["code_sha256"][name], digest, msg="Runtime 005 modules reused unchanged")
+        self.assertEqual(template["build"]["host_dll_sha256"], live["build"]["host_dll_sha256"])
+        self.assertEqual(template["pagination"]["pages"][0]["name"], "dashboard")
+        self.assertIn("--status mirror", template["pagination"]["broker"]["args"])
+        self.assertEqual(pagination.authority_blockers(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json"),
+                         ["PRODUCT_AUTHORITY_MISSING", "PRODUCT_AUTHORITY_UNATTRIBUTED"])
         with tempfile.TemporaryDirectory() as tmp:
-            drifted = self._policy()
-            drifted["behavior"]["lever_action"] = "select"
+            drifted = dict(template, session=dict(template["session"], min_frame_interval_ms=40))
             path = Path(tmp) / "p.json"
             path.write_text(json.dumps(drifted), encoding="utf-8")
-            with self.assertRaises(pagination.PaginationPolicyError) as drift:
-                pagination.load_policy(path, verify=False)
-            self.assertEqual(drift.exception.code, "PAGINATION_POLICY_DRIFTED_FROM_TEMPLATE")
-        with self.assertRaises(pagination.PaginationPolicyError):
-            pagination.grant("Grant OPENDITOO-PAGINATION-ACCEPTANCE-002", "test")
+            with self.assertRaises(product_runtime_v2.ProductPolicyError) as drift:
+                pagination.load_policy(path, require_authority=False, verify_hashes=False)
+            self.assertEqual(drift.exception.code, "PRODUCT_POLICY_DRIFTED_FROM_TEMPLATE")
 
-    def test_consumer_has_no_write_or_side_effect_path(self) -> None:
+    def test_consumer_has_no_device_or_shell_side_effect(self) -> None:
         src = (ROOT / "host/pagination.py").read_text(encoding="utf-8")
-        for forbidden in ("subprocess", "os.system", "socket", "urllib", "shutil", "unlink", "rmtree"):
+        for forbidden in ("os.system", "shell=True", "socket", "urllib", "shutil", "rmtree"):
             self.assertNotIn(forbidden, src, msg=forbidden)
-        reader = src[src.index("class ButtonEvents"):src.index("class PageRouter")]
-        self.assertNotIn('"w"', reader)
+        reader = src[src.index("class ButtonEvents"):src.index("class Broker")]
         self.assertNotIn("write", reader)
+        self.assertEqual(src.count("subprocess.Popen"), 1, msg="the only process started is the probe")
 
     @unittest.skipUnless(Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.dll").is_file(),
                          "the staged Windows ButtonProbe is only on the owner's machine")
-    def test_template_hashes_match_this_tree(self) -> None:
-        pagination.load_policy(pagination.TEMPLATE, authority=False)
+    def test_006_template_hashes_match_this_tree(self) -> None:
+        pagination.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json", require_authority=False)
 
 
 class ButtonProbeStatusModeTests(unittest.TestCase):
