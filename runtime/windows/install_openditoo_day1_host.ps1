@@ -83,7 +83,10 @@ try {
     }
     $TaskUserName = $currentIdentity.Name
     Step 'SCHEDULED_TASK_USER' $TaskUserName
-    $action = New-ScheduledTaskAction -Execute $InstalledExe -Argument ('--token-file "' + $TokenFile + '"')
+    # Headless console: a console exe started by an Interactive task otherwise gets a visible (Windows
+    # Terminal) window, and closing it kills the Host with 0xC000013A (two outages on 2026-09-10).
+    $action = New-ScheduledTaskAction -Execute (Join-Path $env:WINDIR 'System32\conhost.exe') `
+        -Argument ('--headless "' + $InstalledExe + '" --token-file "' + $TokenFile + '"')
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $TaskUserName
     $principal = New-ScheduledTaskPrincipal -UserId $TaskUserName -LogonType Interactive -RunLevel Limited
     $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew

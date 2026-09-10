@@ -30,8 +30,11 @@ $actions = @($task.Actions)
 if ($actions.Count -ne 1) { throw "Task '$TaskName' must have exactly one action." }
 $actualExecute = [System.IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables([string]$actions[0].Execute))
 $expectedExecute = [System.IO.Path]::GetFullPath($InstalledExe)
-if (-not $actualExecute.Equals($expectedExecute, [StringComparison]::OrdinalIgnoreCase)) {
-    throw "Task '$TaskName' action does not match owned runtime. Expected '$expectedExecute'; got '$actualExecute'."
+# The owned runtime may be launched directly (legacy) or through a headless console host (no closable window).
+$headless = $actualExecute.Equals([System.IO.Path]::GetFullPath((Join-Path $env:WINDIR 'System32\conhost.exe')), [StringComparison]::OrdinalIgnoreCase) -and
+    ([string]$actions[0].Arguments).StartsWith('--headless "' + $InstalledExe + '"', [StringComparison]::OrdinalIgnoreCase)
+if (-not $headless -and -not $actualExecute.Equals($expectedExecute, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Task '$TaskName' action does not match owned runtime. Expected '$expectedExecute' (optionally via conhost --headless); got '$actualExecute'."
 }
 if (-not (Test-Path -LiteralPath $WindowsRoot -PathType Container)) { throw "Owned runtime root is missing: $WindowsRoot" }
 

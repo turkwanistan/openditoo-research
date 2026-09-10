@@ -53,3 +53,14 @@ evidence; a long clean run closes it.
 4. Older items unchanged: reboot/logon autostart observation, `product-status connecting` defect,
    genuine source outage never tested end to end. W9B stays deferred; >18.46 fps stays closed
    (precise pacing could reach only ~19–20 fps under the 50 ms client floor; owner declined).
+
+## Addendum — Host console window confirmed as the outage cause (2026-09-10 ~10:30)
+
+Second outage: the Host (restarted by the 10:03 cutover) exited `0xC000013A` at ~10:17; the owner's
+shortcut then correctly refused (no Host) at 10:29/10:30. Restarting the task showed the mechanism
+directly: a task-started Host is hosted in a **visible Windows Terminal window titled
+`…\OpenDitoo.Day1.Host.exe`**; closing it kills the Host. Fix prepared: launch through
+`conhost.exe --headless` (installer + refresh script updated; `runtime/windows/set_openditoo_day1_host_headless.ps1`
+switches the existing task and restarts it; no binary change, so no policy hash moves). Applying it
+needs an **elevated** PowerShell (the task was registered with admin rights; `Set-ScheduledTask` →
+Access denied from the normal session). Until applied: do not close that terminal window.
