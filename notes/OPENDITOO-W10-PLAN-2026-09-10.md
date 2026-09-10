@@ -169,3 +169,22 @@ second occurrence consistent with the fast-reopen theory, but it is **not demons
 reopened at the same ~1 s gap and worked, so the failure is intermittent (1 of 3 fast reopens here).
 Log: `.openditoo-local/webcam-product-log/20260910T125111Z.json` (local); Host ledger entries for
 `OPENDITOO-WEBCAM-LIVE-8f36a6d3-00{1..4}`.
+
+## Option A — one connection per launch — 2026-09-10
+
+Owner chose to remove rollovers instead of pacing them ("do A").
+
+- **Host `4a735bab…`**: `streaming_ack_clock` has its own Host-owned ceiling, 1800 s /
+  45000 frames (the lifetime at the 40 ms floor); `activity` keeps 900 s / 500. The per-session ACK
+  list is bounded to the latest 500. The build is commit-independent (SourceLink off).
+- **Runtime 004 cutover PASS** (`Grant OPENDITOO-PRODUCT-RUNTIME-004`): `scripts/cutover_runtime_004.sh`
+  saved rollback (`.openditoo-local/rollback-runtime-003/`: DLL `0da3a18b…` + 003 local policy), stopped
+  the dashboard, `refresh -Apply` → `PASS_TYPED_IMAGE`, OpenTivoo preserved, installed = repo DLL
+  `4a735bab…`, local policy re-bound, `product-check` PASS, dashboard `connected`.
+- Webcam 001 local policy revoked (`.openditoo-local/revoked/`). **Webcam 002** prepared against the
+  deployed Host: one session of ≤30 min / 36001 frames per launch; unauthorized until
+  `Grant OPENDITOO-WEBCAM-PRODUCT-002`.
+- Trap paid: `dotnet publish -o <elsewhere>` still rebuilds the repo `bin/Release` DLL that the live
+  product policy hash-checks. The supervisor only checks at start, so restoring the DLL at once was
+  enough; build candidates somewhere that cannot touch `bin/Release`, or only at cutover.
+- Not yet exercised on the device: a streaming session beyond 500 frames on the new Host.

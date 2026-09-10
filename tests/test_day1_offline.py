@@ -1974,7 +1974,7 @@ class ProductRuntimeTests(unittest.TestCase):
 # The newest committed product template. Older revisions stay in the repository as records of
 # what was reviewed against a superseded Host build, and are deliberately NOT hash-valid any
 # more -- re-validating them would mean pretending an old policy still describes this binary.
-CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-003.json"
+CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-004.json"
 
 
 class ProductRuntimeV2Tests(unittest.TestCase):
@@ -3235,11 +3235,12 @@ class ProductRuntime003CutoverTests(unittest.TestCase):
     def test_superseded_templates_are_kept_but_no_longer_describe_this_binary(self) -> None:
         # Deliberately not hash-valid any more: an old policy must not be re-validatable
         # against a Host binary it never reviewed.
-        old = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-002.json"
-        self.assertTrue(old.is_file(), "the superseded revision stays as a record")
-        with self.assertRaises(product_runtime_v2.ProductPolicyError) as caught:
-            product_runtime_v2.load_policy(old, require_authority=False)
-        self.assertEqual(caught.exception.code, "PRODUCT_HOST_HASH_MISMATCH")
+        for name in ("OPENDITOO-PRODUCT-RUNTIME-002.json", "OPENDITOO-PRODUCT-RUNTIME-003.json"):
+            old = ROOT / "product" / name
+            self.assertTrue(old.is_file(), "the superseded revision stays as a record")
+            with self.assertRaises(product_runtime_v2.ProductPolicyError) as caught:
+                product_runtime_v2.load_policy(old, require_authority=False)
+            self.assertEqual(caught.exception.code, "PRODUCT_HOST_HASH_MISMATCH")
 
     def test_the_current_template_names_the_deployed_host_build(self) -> None:
         raw = json.loads(CURRENT_PRODUCT_TEMPLATE.read_text(encoding="utf-8"))

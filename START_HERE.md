@@ -11,9 +11,10 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
    16.285 fps as what the panel does. Post-v1 >18.46 fps research stays closed by default, since its gate
    was W9B. **Current objective: W10 productization** — read `notes/OPENDITOO-W10-PLAN-2026-09-10.md` next:
    W10A (Studio app) and W10B (live W10-001 + W10-002) are **closed PASS**; W10-001/002 are consumed. W10C
-   on-demand webcam (desktop shortcut → Studio → dashboard restored on close) is **GRANTED** (`Grant OPENDITOO-WEBCAM-PRODUCT-001`, owner, 2026-09-10) through the local mode-0600
-   `.openditoo-local/webcam-product-policy.json` only; the committed template stays unauthorized. Standing until
-   `python3 host/webcam_studio.py policy-revoke`. Device rollover not yet observed; see the W10 note. The W9 handoff lists the remaining lower-priority items.
+   on-demand webcam (desktop shortcut → Studio → dashboard restored on close) moved to **one connection per launch**: 001 (granted, then revoked) hit IMAGE_RX_RECV_TIMEOUT on its 4th
+   session reopen. **Runtime 004 is live** (Host `4a735bab…` with a separate 1800 s / 45000-frame streaming ceiling;
+   dashboard numbers unchanged; granted 2026-09-10; rollback in `.openditoo-local/rollback-runtime-003/`).
+   `OPENDITOO-WEBCAM-PRODUCT-002` is prepared, **UNAUTHORIZED**. See the W10 note. The W9 handoff lists the remaining lower-priority items.
    Then `notes/OPENDITOO-HANDOFF-2026-09-09-WEBCAM.md` for the earlier webcam handoff. Then
    `notes/OPENDITOO-WEBCAM-ROUTE-2026-09-09.md`. The external N980P webcam
    plan is adopted as the route, with recorded amendments. Runtime 003 is deployed;
@@ -62,7 +63,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | A1 collection worker | installed/preserved; product owns collection while active |
 | P1 Runtime 001 | historical accepted evidence; superseded and deliberately no longer hash-valid |
 | P2 Runtime 002 | telemetry accepted; superseded by Runtime 003 and deliberately no longer hash-valid |
-| Runtime 003 | active local product policy; connected, no errors, runtime_revision remains 2 |
+| Runtime 003 | superseded 2026-09-10 by Runtime 004 (Host re-bind only); no longer hash-valid |
+| Runtime 004 | **active** local product policy; Host `4a735bab…`; connected, no errors, runtime_revision remains 2 |
 | P3 product evidence | closed for v1; normal MCP use accepted; forced healthy-Lab outage waived |
 | P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
 

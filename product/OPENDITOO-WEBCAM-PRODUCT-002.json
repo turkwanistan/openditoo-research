@@ -3,7 +3,7 @@
   "policy_id": "OPENDITOO-WEBCAM-PRODUCT-002",
   "product_id": "OPENDITOO-WEBCAM-ON-DEMAND-V1",
   "description": "On-demand live webcam for the owner's exact Ditoo Plus. The owner launches it; the MCP dashboard (Runtime 003) is suspended for exactly as long as the Studio window is open and restored when it closes. 002: one connection per launch (no session rollover).",
-  "status": "template_unauthorized",
+  "status": "template_unauthorized_grant_ready",
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
     "installed_firmware": "v42012"
@@ -44,8 +44,31 @@
     "WEBCAM-PRODUCT-001 run 8f36a6d3": "3 clean rollovers then session 4 IMAGE_RX_RECV_TIMEOUT 1.04 s after a close; launch stopped fail-closed, dashboard restored. Motivates one connection per launch."
   },
   "build": {
-    "producer_code_sha256": {},
-    "host_dll_sha256": null
+    "producer_code_sha256": {
+      "runtime/windows/OpenDitoo.Webcam.Studio/Program.cs": "ac6a3d2c9fb388b25e0fb903721ef520c1ba60efefb222b459a08c92ff442035",
+      "runtime/windows/OpenDitoo.Webcam.Studio/StudioCamera.cs": "73efe75264da487b4a88dbf63665a61d25f769e75db8d3c5511a0920460540ea",
+      "runtime/windows/OpenDitoo.Webcam.Studio/StudioForm.cs": "fa7e50ba0569e219064fd597795ac4dad8b1fb162a9ad6158c64c3e782647db7",
+      "runtime/windows/OpenDitoo.Webcam.Studio/StudioSender.cs": "83bc030e34d8be415f121d5a5dbd25a34d71c98bde6e9348119cfca09db7590f",
+      "runtime/windows/OpenDitoo.Webcam.Studio/StudioTests.cs": "79f5f1370b444f124b5794f1376fda0eddb1e1b1eef9aa2035033a4a2253db83",
+      "runtime/windows/OpenDitoo.Webcam.Studio/StudioTrial.cs": "163d8986e73ae82115b68b06e1742e6dbcec8aa494e4e4057103ca6910fc2983",
+      "runtime/windows/OpenDitoo.Webcam.Studio/OpenDitoo.Webcam.Studio.csproj": "5eaf67ab28455e7e03264dfbe730aa45fb0233009dc4947b41cfabba497d2abc",
+      "runtime/windows/OpenDitoo.Webcam.Probe/WebcamFrames.cs": "ed144646c459fea0337f5b920f8d17e6b8bc50caf93c100a65470f0c699eafad",
+      "runtime/windows/OpenDitoo.Webcam.Probe/LatestFrameSlot.cs": "b6021ed54c9a18fc40f101e0c50378b4fd8d16356c73878ce58fce21cc9198d0",
+      "runtime/windows/OpenDitoo.Webcam.Probe/FrameTransform.cs": "2d703b7dd7630dff071813c728862b33a0c5e68f245ee277ce0c7f9c8c85d623",
+      "runtime/windows/OpenDitoo.Webcam.Probe/DitooEncoder.cs": "a543919336212deed5fc7de354b932cadc68829eb848aee8043e1303cd0bfbb8",
+      "runtime/windows/OpenDitoo.Webcam.Runner/Trial.cs": "14addbc5b9c2f0da85cad090a4d2c672911b302ca36bb915fc9e03a1be1eb520",
+      "runtime/windows/OpenDitoo.Webcam.Runner/TypedSession.cs": "5ba7b540822eef6f438355f6b034ef315dd191a8809f37535199fac1ff102243",
+      "runtime/windows/OpenDitoo.Webcam.Runner/OfflineTests.cs": "cdb64d7c521217376cf38989aca1d5640aee4cd9d3494ee2a287b4ea5d5f5fa4",
+      "host/webcam_studio.py": "b81dde82c51fbc9cb11a7144ac74f517341466f5ab8013431232b949fc1d6578",
+      "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
+      "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.deps.json": "58642f8242fc0f3f89d7f37a8c512fa8907f25801c3984a34e5d685be0241960",
+      "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.dll": "c84529dfd7053dc6a0290d294bb1f48924fb1a3ee29a4016c6cbd832e4be0f71",
+      "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.exe": "e073e319321eac3818c7fc93621dbb787d8edaad154b0444f3c39fecd9cb907b",
+      "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/OpenDitoo.Webcam.Studio.runtimeconfig.json": "05e2c41d6487512bdd7b09d280bb0c247e31ef20e2be58779bf742a9ac7bcd92",
+      "runtime/windows/OpenDitoo.Webcam.Studio/bin/Release/net8.0-windows10.0.19041.0/WinRT.Runtime.dll": "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
+    },
+    "host_dll_sha256": "4a735bab2fafe86001006d8277481b553f41c299e04c31462a72d0f3caf42112",
+    "source_checkpoint": "5ec4c7b416b7a1a7ae24763036064f573d188730 + Studio build staged at C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio"
   },
   "adapter": {
     "windows_executable": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio\\OpenDitoo.Webcam.Studio.exe",
@@ -56,7 +79,7 @@
       "/v1/session/heartbeat",
       "/v1/session/close"
     ],
-    "deployment_state": "PASS preparation at bbcbaa36aca7507fba00ca708717cc1a38f6c21f: Studio built, staged to C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio, selftest + transform/encoder parity passed from the staged copy, Host identity checked read-only. No claim, session or device I/O."
+    "deployment_state": "PASS preparation at 5ec4c7b416b7a1a7ae24763036064f573d188730: Studio built, staged to C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\WebcamStudio, selftest + transform/encoder parity passed from the staged copy, Host identity checked read-only. No claim, session or device I/O."
   },
   "install": {
     "local_policy": ".openditoo-local/webcam-product-policy.json (mode 0600, git-ignored)",
