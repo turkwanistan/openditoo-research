@@ -1,0 +1,172 @@
+{
+ "schema_version": 1,
+ "capture_id": "OPENDITOO-BTN5-PAGINATION-ACCEPTANCE-2026-09-10",
+ "experiment_id": "OPENDITOO-PAGINATION-ACCEPTANCE-001",
+ "grant_text": "Grant OPENDITOO-PAGINATION-ACCEPTANCE-001",
+ "status": "consumed_pass_navigation",
+ "gates": {
+  "BTN5_PAGINATION_NAVIGATION": "PASS",
+  "BTN5_LIVE_PULSE_ON_RETURN": "NOT_EXERCISED"
+ },
+ "operator_observation": "done, it correctly paged back and forth to the spiral",
+ "measured": {
+  "physical_presses": 2,
+  "smtc_events": 2,
+  "transitions": 2,
+  "input_gaps": 0,
+  "double_page_events": 0,
+  "host_sessions": [
+   "558bb9a51f08 (OPENDITOO-PRODUCT-b220b369-000001) open 16:56:16.391Z -> operator_stop/stopped_clean 16:56:42.468Z, 18 frames / 54 packets / 2740 bytes"
+  ],
+  "canvas_invalidated": 0,
+  "reclaims": 0,
+  "reconnects": 0,
+  "stock_takeover_from_arrows": "none (one session end-to-end; operator saw clean paging)",
+  "right": {
+   "smtc_at_utc": "2026-09-10T16:56:28.8199815Z",
+   "applied_at_utc": "2026-09-10T16:56:28.869472Z",
+   "smtc_to_router_ms": 49.5,
+   "router_to_first_ack_ms": 59.4,
+   "smtc_to_first_ack_ms": 108.9
+  },
+  "left": {
+   "smtc_at_utc": "2026-09-10T16:56:32.7331400Z",
+   "applied_at_utc": "2026-09-10T16:56:32.821158Z",
+   "smtc_to_router_ms": 88.0,
+   "router_to_first_ack_ms": 196.2,
+   "smtc_to_first_ack_ms": 284.2
+  },
+  "latency_note": "SMTC callback (Windows clock) to Host frame ACK; excludes the Ditoo AVRCP->Windows hop (~5 ms in BTN-2) and panel refresh (unmeasured). smtc_to_router includes the 50 ms render tick and the UNC file hop.",
+  "animation_visible_s": 3.95,
+  "runtime_005_restored": "openditoo-product.service active; fresh session OPENDITOO-PRODUCT-fdc68e73-000001 opened 16:56:42.938Z and ACKed"
+ },
+ "not_exercised": "No MCP activity occurred between the return to the dashboard (16:56:32.8) and the operator stop (16:56:42.5); the next wsl_mcp activity (16:56:58) landed under Runtime 005. The returned page is the unchanged LiveActivityRenderer, which kept collecting throughout (offline-proven), and stale-pulse clearing is offline-tested, but a pulse inside the paginated run is not physical evidence. The id is consumed; proving it needs a fresh 002 id and grant.",
+ "result": {
+  "command": "pagination-run",
+  "device_io": true,
+  "ended_at": "2026-09-10T16:56:42.487488Z",
+  "experiment_id": "OPENDITOO-PAGINATION-ACCEPTANCE-001",
+  "final_page": "dashboard",
+  "ignored_inputs": [],
+  "input_epochs": 1,
+  "input_gaps": 0,
+  "input_rejected_lines": 0,
+  "ok": true,
+  "runtime": {
+   "connected_sessions": 1,
+   "current_experiment_id": null,
+   "current_session_frames_acked": 0,
+   "current_session_opened_at": null,
+   "last_error": "supervisor stop requested",
+   "last_frame_acked_at": "2026-09-10T16:56:33.017101Z",
+   "last_outcome": "stopped_clean",
+   "last_terminal_reason": "operator_stop",
+   "product_id": "OPENDITOO-MCP-DASHBOARD-V1",
+   "reclaims": 0,
+   "reconnects": 0,
+   "retry_in_seconds": null,
+   "run_nonce": "b220b369",
+   "session_sequence": 1,
+   "started_at": "2026-09-10T16:56:16.364091Z",
+   "status": "stopped",
+   "updated_at": "2026-09-10T16:56:42.485141Z",
+   "version": 1
+  },
+  "started_at": "2026-09-10T16:56:16.364018Z",
+  "transitions": [
+   {
+    "applied_at_monotonic": 28582.022856277,
+    "applied_at_utc": "2026-09-10T16:56:28.869472Z",
+    "at_utc": "2026-09-10T16:56:28.8199815Z",
+    "epoch": "527a3611e7d2",
+    "first_ack_ms": 59.4,
+    "from": "dashboard",
+    "raw_button": "Next",
+    "seq": 2,
+    "to": "animation",
+    "type": "nav_right"
+   },
+   {
+    "applied_at_monotonic": 28585.97454239,
+    "applied_at_utc": "2026-09-10T16:56:32.821158Z",
+    "at_utc": "2026-09-10T16:56:32.7331400Z",
+    "epoch": "527a3611e7d2",
+    "first_ack_ms": 196.2,
+    "from": "animation",
+    "raw_button": "Previous",
+    "seq": 3,
+    "to": "dashboard",
+    "type": "nav_left"
+   }
+  ]
+ },
+ "probe_records": [
+  {
+   "epoch": "527a3611e7d2",
+   "seq": 1,
+   "at_monotonic_ms": 28586814.312,
+   "at_utc": "2026-09-10T16:56:16.1615643Z",
+   "type": "probe_started",
+   "pid": 2268,
+   "seconds": 420,
+   "smtc": {
+    "acquired": true,
+    "playback_status": "Playing"
+   },
+   "rawinput_registered": true,
+   "merging": "none; every source logged separately"
+  },
+  {
+   "epoch": "527a3611e7d2",
+   "seq": 2,
+   "at_monotonic_ms": 28599472.872,
+   "at_utc": "2026-09-10T16:56:28.8199815Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Next",
+   "normalized_candidate": "nav_right"
+  },
+  {
+   "epoch": "527a3611e7d2",
+   "seq": 3,
+   "at_monotonic_ms": 28603386.033,
+   "at_utc": "2026-09-10T16:56:32.7331400Z",
+   "type": "event",
+   "source": "smtc",
+   "raw_button": "Previous",
+   "normalized_candidate": "nav_left"
+  }
+ ],
+ "host_ledger": [
+  {
+   "kind": "open",
+   "atUtc": "2026-09-10T16:56:16.3909332+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-b220b369-000001",
+   "sessionId": "558bb9a51f08",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 150,
+    "frameBudget": 500,
+    "txByteBudget": 101500,
+    "sessionProfile": "activity",
+    "sendSpacingMs": 10
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-10T16:56:42.4676170+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-b220b369-000001",
+   "sessionId": "558bb9a51f08",
+   "detail": {
+    "reason": "operator_stop",
+    "outcome": "stopped_clean",
+    "detail": "",
+    "framesSent": 18,
+    "packetsSent": 54,
+    "txBytesSent": 2740,
+    "displayState": "ours_last_acked"
+   }
+  }
+ ],
+ "device_io": true
+}
