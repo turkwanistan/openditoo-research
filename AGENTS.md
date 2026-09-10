@@ -52,7 +52,7 @@ Any new command family, protocol semantic, persistence behavior, streaming mode,
 
 The current Day-1 plan is not transmission authority. Tivoo authority, target identity, pairing, channel, credentials, commands, response geometry and persistence conclusions never transfer automatically.
 
-**On-demand webcam authority is a second, separate product policy.** `OPENDITOO-WEBCAM-PRODUCT-004` (committed template unauthorized; granted only through the local mode-0600 `.openditoo-local/webcam-product-policy.json`) lets the owner-launched desktop shortcut (`scripts/webcam_on_demand.sh`) suspend the dashboard, run ONE bounded `streaming_ack_clock` session (≤30 min / 36001 frames, fresh one-use id, no retry/reconnect/reclaim) through the W10 Studio, and restore the dashboard. It never starts by itself, never widens the dashboard policy, and any Host or Studio change invalidates it by hash and needs a fresh reviewed revision and grant. Revoke with `python3 host/webcam_studio.py policy-revoke`.
+**On-demand webcam authority is a second, separate product policy.** `OPENDITOO-WEBCAM-PRODUCT-005` (committed template unauthorized; granted only through the local mode-0600 `.openditoo-local/webcam-product-policy.json`) lets the owner-launched desktop shortcut (`scripts/webcam_on_demand.sh`) suspend the dashboard, run ONE bounded `streaming_ack_clock` session (≤30 min / 36001 frames, fresh one-use id, no retry/reconnect/reclaim) through the W10 Studio, and restore the dashboard. It never starts by itself, never widens the dashboard policy, and any Host or Studio change invalidates it by hash and needs a fresh reviewed revision and grant. Revoke with `python3 host/webcam_studio.py policy-revoke`.
 
 ## Day-1 prohibitions
 

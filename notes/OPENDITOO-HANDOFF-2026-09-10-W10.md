@@ -8,7 +8,7 @@ Read this first. Repository state outranks this note. Detail and every run: `not
 - **Dashboard:** Runtime **005** live (Host `f7bd60d4…`), `connected`, `last_error=null`.
   Rollbacks: `.openditoo-local/rollback-runtime-004/` (Host `4a735bab…` + 004 policy),
   `rollback-runtime-003/` (Host `0da3a18b…` + 003 policy).
-- **On-demand webcam:** policy `OPENDITOO-WEBCAM-PRODUCT-004` granted (local mode-0600 only). Desktop
+- **On-demand webcam:** policy `OPENDITOO-WEBCAM-PRODUCT-005` granted (local mode-0600 only). Desktop
   shortcut **OpenDitoo Webcam** → `scripts/webcam_on_demand.sh`: policy check before touching anything,
   stop dashboard, idle + 8 s settle, one Studio session (≤30 min), always restore the dashboard.
   Close the window / Stop / a Ditoo button press all end it. Logs: `.openditoo-local/webcam-product-log/`.
@@ -87,3 +87,6 @@ Fix (Studio only, **webcam policy 005**): the next send also waits ≥ 45 ms aft
 machine's high-resolution clock. Selftest reproduces the refusal under the old rule and stays clean
 under the new one (3/3 runs). Normal cadence unaffected (typical Host start is ~1 ms after dispatch).
 Policy 005 prepared against the deployed Host; awaiting `Grant OPENDITOO-WEBCAM-PRODUCT-005`.
+
+**Webcam 005 granted 2026-09-10** (`Grant OPENDITOO-WEBCAM-PRODUCT-005`): 004 revoked, 005 local policy materialized,
+`policy-check` PASS, dashboard `connected`. A >5 min launch is the evidence that closes the pacing issue.
