@@ -8,7 +8,10 @@ from host import activity_session, frame_stream
 ACTIVE=ROOT/'experiments/DAY1-WEBCAM-N980P-005.json'; PREV=ROOT/'experiments/DAY1-WEBCAM-N980P-004.json'
 def main():
   try:
-    m,_,s=frame_stream.load_stream_manifest(ACTIVE,require_authority=False); d=m.raw
+    completed=json.loads(ACTIVE.read_text()).get('status')=='completed_pass_authority_consumed'
+    # A consumed manifest's producer hashes record what physically ran; live source moves on
+    # afterwards. Verify them while 005 is still armable, read them as history once it is not.
+    m,_,s=frame_stream.load_stream_manifest(ACTIVE,require_authority=False,verify_code_hashes=not completed); d=m.raw
     if m.experiment_id!='OPENDITOO-WEBCAM-N980P-005': raise ValueError('W8_005_ID_DRIFT')
     if (m.lifetime_seconds,m.min_frame_interval_ms,m.max_frames,m.max_application_packets,m.max_tx_bytes)!=(10,40,201,603,211854): raise ValueError('W8_005_BUDGET_DRIFT')
     if (s.get('source_kind'),s.get('session_profile'),s.get('playback_interval_ms'))!=('live','streaming_ack_clock',50): raise ValueError('W8_005_PACING_DRIFT')
@@ -19,9 +22,10 @@ def main():
     hashes=s['live_source']['producer_code_sha256']
     for rel,expected in hashes.items():
       p=ROOT/rel
-      if not p.is_file() or activity_session.sha256_file(p)!=expected: raise ValueError('W8_005_PRODUCER_HASH_DRIFT:'+rel)
+      if not p.is_file(): raise ValueError('W8_005_PRODUCER_MISSING:'+rel)
+      if not completed and activity_session.sha256_file(p)!=expected: raise ValueError('W8_005_PRODUCER_HASH_DRIFT:'+rel)
     if activity_session.sha256_file(activity_session.HOST_BUILD_DLL)!=m.host_build_sha256: raise ValueError('W8_005_HOST_HASH_DRIFT')
-    r=d['readiness']; completed=d.get('status')=='completed_pass_authority_consumed'; pending={'WINDOWS_W8_005_RUNNER_BUILD_NOT_FROZEN','WINDOWS_W8_005_OFFLINE_SELFTEST_NOT_VERIFIED'}
+    r=d['readiness']; pending={'WINDOWS_W8_005_RUNNER_BUILD_NOT_FROZEN','WINDOWS_W8_005_OFFLINE_SELFTEST_NOT_VERIFIED'}
     if completed:
       if r.get('grant_ready') or r.get('blockers')!=['AUTHORITY_ALREADY_CONSUMED']: raise ValueError('W8_005_COMPLETED_STATE_INVALID')
     elif r.get('grant_ready'):

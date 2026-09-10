@@ -129,6 +129,7 @@ internal static class Sender
         var quarterFrames = new int[4];
         var sourceAgesByQuarter = Enumerable.Range(0, 4).Select(_ => new Samples()).ToArray();
         var duplicateSourceFrames = 0;
+        var identity = new SourceIdentityLedger();
         double? lastSourceTimestamp = null;
         double? previousDispatch = null;
         var started = WebcamFrames.NowMs;
@@ -158,6 +159,9 @@ internal static class Sender
                 if (lastSourceTimestamp is { } priorSource && frame.CapturedQpcMs == priorSource)
                     duplicateSourceFrames++;
                 lastSourceTimestamp = frame.CapturedQpcMs;
+                // Recorded at selection, before the send, so a frame that fails in transport is
+                // still attributable to the exact acquisition the scheduler chose.
+                identity.Select(frame.SourceId);
                 var quarter = Math.Max(0, Math.Min(3,
                     (int)Math.Floor((dispatch - started) / (trial.Seconds * 1000.0 / 4.0))));
                 sourceAges.Add(age);
@@ -191,6 +195,7 @@ internal static class Sender
             dispatchIntervalMs = dispatchIntervals.Snapshot(), duplicateSourceFrames,
             ackMs = session.AckMs.Snapshot(), hostFrameMs = session.HostFrameMs.Snapshot(),
             clientMinusHostElapsedMs = session.ClientMinusHostElapsedMs.Snapshot(),
+            sourceIdentity = identity.Snapshot(source.LastAcquiredSourceId),
             retry = false, reconnect = false, reclaim = false };
     }
 }

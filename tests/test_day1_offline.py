@@ -3099,7 +3099,7 @@ class W3LiveSourceTests(unittest.TestCase):
 
     MANIFEST = ROOT / "experiments/DAY1-S1-STREAM-SWEEP-001.json"
 
-    def _live(self, mutate=None):
+    def _live(self, mutate=None, *, verify_code_hashes: bool = False):
         data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
         for key in ("frame_set_file", "frame_set_sha256", "frame_count", "loop"):
             data["stream"].pop(key, None)
@@ -3123,7 +3123,7 @@ class W3LiveSourceTests(unittest.TestCase):
             path = Path(tmp) / "s.json"
             path.write_text(json.dumps(data), encoding="utf-8")
             return frame_stream.load_stream_manifest(path, require_authority=False,
-                                                     verify_code_hashes=False)
+                                                     verify_code_hashes=verify_code_hashes)
 
     def test_a_live_manifest_freezes_the_producer_instead_of_a_frame_set(self) -> None:
         manifest, frame_set, stream = self._live()
@@ -3142,10 +3142,19 @@ class W3LiveSourceTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, "STREAM_LIVE_CANNOT_LOOP")
 
     def test_producer_code_drift_invalidates_a_live_manifest(self) -> None:
+        drift = lambda d: d["stream"]["live_source"]["producer_code_sha256"].__setitem__(
+            "host/frame_stream.py", "0" * 64)
         with self.assertRaises(frame_stream.SessionError) as caught:
-            self._live(lambda d: d["stream"]["live_source"]["producer_code_sha256"].__setitem__(
-                "host/frame_stream.py", "0" * 64))
+            self._live(drift, verify_code_hashes=True)
         self.assertEqual(caught.exception.code, "STREAM_LIVE_PRODUCER_HASH_DRIFT")
+        # verify_code_hashes=False is for reading back a manifest whose run is already over.
+        # It must skip the comparison rather than quietly still enforce it, and it must not
+        # weaken any other structural check.
+        self._live(drift, verify_code_hashes=False)
+        with self.assertRaises(frame_stream.SessionError) as caught:
+            self._live(lambda d: d["stream"]["live_source"].__setitem__("producer_code_sha256", {}),
+                       verify_code_hashes=False)
+        self.assertEqual(caught.exception.code, "STREAM_LIVE_PRODUCER_UNHASHED")
         for mutate, code in (
             (lambda d: d["stream"]["live_source"].__setitem__("producer_code_sha256", {}),
              "STREAM_LIVE_PRODUCER_UNHASHED"),
@@ -3830,7 +3839,13 @@ class W8WebcamCrossClockTelemetryRerunTests(unittest.TestCase):
     PREVIOUS = ROOT / "experiments/DAY1-WEBCAM-N980P-004.json"
 
     def test_w8_005_is_strict_50ms_candidate_with_same_transport_envelope(self) -> None:
-        manifest, frames, stream = frame_stream.load_stream_manifest(self.MANIFEST, require_authority=False)
+        # Hash verification is off because 005 is consumed. Its recorded producer hashes are
+        # evidence of what physically ran, and live source legitimately moves on afterwards --
+        # exactly as it already has for consumed 002, 003 and 004. This loosens no gate: a
+        # consumed manifest can never run again, because the authority is spent and the
+        # one-use claim on disk cannot be released.
+        manifest, frames, stream = frame_stream.load_stream_manifest(
+            self.MANIFEST, require_authority=False, verify_code_hashes=False)
         self.assertIsNone(frames)
         self.assertEqual(manifest.experiment_id, "OPENDITOO-WEBCAM-N980P-005")
         self.assertEqual((manifest.lifetime_seconds, manifest.min_frame_interval_ms), (10, 40))
@@ -3928,3 +3943,89 @@ class W8WebcamCrossClockTelemetryRerunTests(unittest.TestCase):
         self.assertIn("W8T_QUEUE_DEPTH_BROKEN", shell)
         self.assertIn("OPENDITOO-WEBCAM-N980P-005", windows)
         self.assertNotIn("OPENDITOO-WEBCAM-N980P-004", shell)
+
+
+class W9ASourceIdentityTests(unittest.TestCase):
+    """W9A: identity is carried from acquisition, not inferred from timing."""
+
+    PROBE = ROOT / "runtime/windows/OpenDitoo.Webcam.Probe"
+    RUNNER = ROOT / "runtime/windows/OpenDitoo.Webcam.Runner"
+
+    def test_source_id_is_assigned_at_acquisition_and_propagated_unchanged(self) -> None:
+        slot = (self.PROBE / "LatestFrameSlot.cs").read_text(encoding="utf-8")
+        frames = (self.PROBE / "WebcamFrames.cs").read_text(encoding="utf-8")
+        self.assertIn("long SourceId", slot)
+        # Assigned exactly once, at the successful acquisition, under Interlocked.
+        self.assertIn("Interlocked.Increment(ref sourceSequence)", frames)
+        self.assertEqual(frames.count("Interlocked.Increment(ref sourceSequence)"), 1)
+        # The transform worker forwards the same id rather than minting a new one.
+        self.assertIn("ready.Put(new(pixels, 16, 16, frame.CapturedQpcMs, frame.SourceId))", frames)
+        self.assertIn("long LastAcquiredSourceId", frames)
+
+    def test_sender_records_selection_identity_without_touching_transport(self) -> None:
+        sender = (self.RUNNER / "TypedSession.cs").read_text(encoding="utf-8")
+        self.assertIn("identity.Select(frame.SourceId)", sender)
+        self.assertIn("sourceIdentity = identity.Snapshot(source.LastAcquiredSourceId)", sender)
+        # Transport shape is untouched by W9A: still one in flight, no retry/reconnect/reclaim.
+        self.assertIn("retry = false, reconnect = false, reclaim = false", sender)
+        self.assertIn("await session.Frame(frame); // one request in flight, never resend", sender)
+
+    def test_identity_ledger_is_bounded_and_counts_gaps_duplicates_and_disorder(self) -> None:
+        slot = (self.PROBE / "LatestFrameSlot.cs").read_text(encoding="utf-8")
+        for required in ("class SourceIdentityLedger", "DuplicateSelections", "OutOfOrderSelections",
+                         "skippedBetweenSelections", "firstSelectedSourceId", "lastSelectedSourceId",
+                         "lastAcquiredSourceId", "selectedSourceIds"):
+            self.assertIn(required, slot)
+        # Bounded: a ring, so a long soak cannot turn this telemetry into the leak it measures.
+        self.assertIn("private const int Capacity = 512", slot)
+        self.assertIn("selected[count++ % Capacity]", slot)
+
+    def test_adapter_selftest_covers_the_identity_control(self) -> None:
+        offline = (self.RUNNER / "OfflineTests.cs").read_text(encoding="utf-8")
+        self.assertIn("ADAPTER_W9A_SOURCE_IDENTITY_", offline)
+        self.assertIn('fault == "identity" ? 2 : 1', offline)
+        self.assertIn('"OFFLINE-W9A-IDENTITY"', offline)
+
+
+class W9AMotionTruthStimulusTests(unittest.TestCase):
+    """W9A: a stimulus whose counter is still decodable after the 16x16 transform."""
+
+    STIMULUS = ROOT / "tools/w9a_motion_truth_stimulus.html"
+
+    def test_counter_survives_the_real_production_transform_across_its_whole_range(self) -> None:
+        from host import motion_truth
+        # Every value, not a sample: a stimulus that decodes for most counters is useless,
+        # because the ones it drops are exactly the transitions W9B needs to count.
+        self.assertEqual([c for c in range(motion_truth.COUNTER_MODULUS)
+                          if motion_truth.round_trip(c) != c], [])
+
+    def test_sync_corners_reject_a_frame_decoded_with_the_wrong_mirror(self) -> None:
+        from host import frame_transform, motion_truth
+        frame = frame_transform.transform(motion_truth.render_source(1234), frame_transform.DEFAULT)
+        self.assertEqual(motion_truth.decode(frame, mirrored=True), 1234)
+        # Forgetting the preset's mirror must fail loudly, not return a plausible wrong number.
+        self.assertIsNone(motion_truth.decode(frame, mirrored=False))
+
+    def test_non_stimulus_frames_decode_to_none_rather_than_a_guess(self) -> None:
+        from host import motion_truth
+        for frame in (bytes(768), bytes([255]) * 768, bytes(range(256)) * 3):
+            self.assertIsNone(motion_truth.decode(frame))
+
+    def test_grid_divides_the_panel_and_the_roi_without_partial_cells(self) -> None:
+        from host import motion_truth
+        self.assertEqual(motion_truth.SIZE, 16)
+        self.assertEqual(motion_truth.GRID * motion_truth.CELL_PIXELS, motion_truth.SIZE)
+        self.assertEqual(len(motion_truth.DATA_CELLS), motion_truth.COUNTER_BITS)
+        self.assertEqual(len(motion_truth.SYNC_CELLS), 4)
+        self.assertEqual(motion_truth.render_source(0, 480).shape, (480, 480, 3))
+        self.assertEqual(480 % motion_truth.GRID, 0)
+
+    def test_displayed_stimulus_matches_the_python_layout(self) -> None:
+        from host import motion_truth
+        html = self.STIMULUS.read_text(encoding="utf-8")
+        self.assertIn(f"const GRID = {motion_truth.GRID}, COUNTER_BITS = {motion_truth.COUNTER_BITS}", html)
+        for (row, col), lit in motion_truth.SYNC_CELLS.items():
+            self.assertIn(f'"{row},{col}": {str(lit).lower()}', html)
+        # The stimulus displays; it must never acquire authority or touch the device.
+        for forbidden in ("session", "8796", "fetch(", "Grant "):
+            self.assertNotIn(forbidden, html)

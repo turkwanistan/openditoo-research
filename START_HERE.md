@@ -43,7 +43,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | W6 trial freeze | **PASS**: Windows-local selftests, camera-ready handshake negative control, 300.12 s soak, and final hash freeze complete |
 | W7 first webcam acceptance | **PASS / consumed**: attempt 002 streamed 108 frames in 10.0145 s (~10.78 fps), clean lifetime expiry, owner visual PASS |
 | W8 near-ceiling webcam rate | **PASS / consumed**: 005 completed its full 10 s lifetime — 163 frames / 489 packets / 170,737 bytes, **16.285 fps** (quarters 15.6/16.4/16.4/16.8), source age at send p95 51.86 ms, ACK p50 42.31 / p95 69.58 ms, 0 duplicate source frames, `lifetime_expired` / `stopped_clean`, Host ledger in exact agreement, no retry/reconnect/reclaim, Runtime 003 restored `connected`. owner visual PASS. **W8 closed PASS.** 003 and 004 remain consumed failures; all three are replay-forbidden |
-| W9A source identity + motion truth | after W8; add monotonic capture/source identity and deterministic temporal-marker stimulus without changing transport |
+| W9A source identity + motion truth | **implemented offline**: `SourceId` assigned once at acquisition, propagated unchanged through raw slot → transform → ready slot → sender selection; bounded `sourceIdentity` telemetry; offline control `ADAPTER_W9A_SOURCE_IDENTITY_PASS`; `host/motion_truth.py` + `tools/w9a_motion_truth_stimulus.html` decode all 4096 counters through the real production transform. Transport untouched. See route §27 |
 | W9B optical unique-frame/latency trial | after W9A; film stimulus + Ditoo together to separate camera/source, scheduler, transport and visible panel behavior |
 | W10 webcam productization | after experimental acceptance; fixed-rate modes use monotonic absolute deadlines/no catch-up; separate standing-authority decision |
 | Post-v1 >ACK-ceiling research | **deferred/conditional**; only if W9 shows visible benefit. Do not infer Tivoo's 30/54 fps results apply to Ditoo or reopen R1-R5 |
@@ -65,7 +65,7 @@ webcam transmission requires its own reviewed manifest and fresh named grant.
 The historical Runtime 002 cutover used `Grant OPENDITOO-PRODUCT-RUNTIME-002`; that revision
 is superseded, and its grant must not be reused for the webcam.
 
-### Current objective — W9A source identity + deterministic motion truth
+### Current objective — W9B combined unique-frame + optical latency
 
 The MCP dashboard is already the owner's working everyday baseline. Do not reopen durability, firmware, MassBoot, ACK decoding, command enumeration, or speculative UI work as release blockers.
 

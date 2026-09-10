@@ -75,12 +75,20 @@ internal static class OfflineTests
 
     private sealed class GeneratedFrames(FakeHandler handler, string fault) : IFrameSource
     {
+        private long acquired;
         public string? Fault => fault == "camera_before" || (fault == "camera_mid" && handler.Frames == 1)
             ? "camera_disconnected" : null;
+        public long LastAcquiredSourceId => Interlocked.Read(ref acquired);
         public bool TryTake(out TimedFrame frame)
         {
+            // The identity case models a camera genuinely faster than the sender: two
+            // acquisitions happen between selections, so exactly one is skipped each time.
+            // That is the freshest-frame policy working, and it must be visible as a gap
+            // rather than inferred from a rate.
+            var step = fault == "identity" ? 2 : 1;
+            var id = Interlocked.Add(ref acquired, step);
             var rgb = Enumerable.Repeat((byte)(handler.Frames % 255), 768).ToArray();
-            frame = new(rgb, 16, 16, WebcamFrames.NowMs - (fault == "stale" ? 1000 : 0));
+            frame = new(rgb, 16, 16, WebcamFrames.NowMs - (fault == "stale" ? 1000 : 0), id);
             return fault != "silent";
         }
         public void Wait(CancellationToken token) => token.WaitHandle.WaitOne(20);
@@ -161,6 +169,34 @@ internal static class OfflineTests
                 safeResult["duplicateSourceFrames"]!.GetValue<int>() == 0;
             if (!safe) failures++;
             Console.WriteLine($"ADAPTER_W8_50MS_ARRIVAL_JITTER_{(safe ? "PASS" : "FAIL")} frames={safeResult["frames"]} client_interval_ms={safeResult["clientIntervalMs"]} outcome={safeResult["outcome"]}");
+        }
+        // W9A: source identity must be carried, not inferred. Transport is unchanged, so this
+        // asserts only the identity evidence: monotonic ids, deliberate skips counted as gaps,
+        // and no duplicate or out-of-order selection. Without this a duplicate scene sample and
+        // a genuinely new one are indistinguishable at 16 fps.
+        var identityHandler = new FakeHandler("none");
+        using (var identitySession = new TypedSession(new HttpClient(identityHandler)))
+        {
+            var identityResult = JsonSerializer.SerializeToNode(await Sender.Run(
+                new("OFFLINE-W9A-IDENTITY", 1, 12, 12 * Trial.WorstCaseFrameTxBytes, Trial.W8SafeClientInterval),
+                new GeneratedFrames(identityHandler, "identity"), identitySession, CancellationToken.None))!;
+            var evidence = identityResult["sourceIdentity"]!;
+            var selectedCount = evidence["selectedCount"]!.GetValue<int>();
+            var first = evidence["firstSelectedSourceId"]!.GetValue<long>();
+            var last = evidence["lastSelectedSourceId"]!.GetValue<long>();
+            var ids = evidence["selectedSourceIds"]!.AsArray().Select(node => node!.GetValue<long>()).ToArray();
+            var identityPass = identityResult["outcome"]!.GetValue<string>() == "stopped_clean" &&
+                selectedCount >= 5 && selectedCount == ids.Length &&
+                evidence["duplicateSelections"]!.GetValue<long>() == 0 &&
+                evidence["outOfOrderSelections"]!.GetValue<long>() == 0 &&
+                // Every selection advanced by exactly the simulated step of 2.
+                ids.Zip(ids.Skip(1), (a, b) => b - a).All(delta => delta == 2) &&
+                // One acquisition skipped per selection interval, and nothing else.
+                evidence["skippedBetweenSelections"]!.GetValue<long>() == selectedCount - 1 &&
+                last - first == 2 * (selectedCount - 1) &&
+                evidence["lastAcquiredSourceId"]!.GetValue<long>() >= last;
+            if (!identityPass) failures++;
+            Console.WriteLine($"ADAPTER_W9A_SOURCE_IDENTITY_{(identityPass ? "PASS" : "FAIL")} selected={selectedCount} first={first} last={last} skipped={evidence["skippedBetweenSelections"]} duplicates={evidence["duplicateSelections"]}");
         }
         Console.WriteLine($"ADAPTER_SELFTEST_{(failures == 0 ? "PASS" : "FAIL")} failures={failures} device_io=false camera_io=false");
         return failures == 0 ? 0 : 2;

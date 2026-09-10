@@ -1,0 +1,70 @@
+<title>OpenDitoo W9A motion-truth stimulus</title>
+<!--
+  Display this full-screen on a monitor inside the N980P's field of view for W9B.
+
+  Every displayed frame advances a 12-bit counter drawn as a 4x4 grid of black/white cells.
+  That grid is the only thing on screen that matters: it is chosen because a 4x4 grid of solid
+  blocks is one of the very few patterns that survives 640x480 -> centred 480x480 crop -> 16x16
+  area average intact. The corners are fixed sync markers, asymmetric under a horizontal flip,
+  so the production transform's mirror cannot silently produce a plausible wrong number.
+
+  The layout here MUST match host/motion_truth.py; tests/test_day1_offline.py pins them together.
+
+  The counter advances once per requestAnimationFrame callback, so it advances at the monitor's
+  refresh rate, NOT at the camera's rate and certainly not at the Ditoo's. Keeping those three
+  apart is the entire point of W9A. The on-screen readout below the grid is for the operator
+  only -- it sits outside the square and is never expected to survive the transform.
+-->
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; height: 100vh; display: grid; place-items: center; gap: 1rem;
+         background: #6b6b6b; font: 14px ui-monospace, SFMono-Regular, Menlo, monospace; color: #111; }
+  #grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr);
+          width: min(88vh, 88vw); height: min(88vh, 88vw); background: #000; }
+  #grid div { width: 100%; height: 100%; }
+  #readout { letter-spacing: .04em; }
+  /* A thin outside frame the operator can align the camera to. It is outside the sampled
+     square, so it cannot contaminate a cell. */
+  #grid { outline: 2px solid #d33; outline-offset: 6px; }
+</style>
+<div id="grid"></div>
+<div id="readout">press F11 for full screen &mdash; counter 0</div>
+<script>
+  const GRID = 4, COUNTER_BITS = 12, COUNTER_MODULUS = 1 << COUNTER_BITS;
+  // (row, col) -> fixed value. Reading TL, TR, BL, BR: white, black, white, black.
+  const SYNC = { "0,0": true, "0,3": false, "3,0": true, "3,3": false };
+  const DATA = [];
+  for (let row = 0; row < GRID; row++)
+    for (let col = 0; col < GRID; col++)
+      if (!(`${row},${col}` in SYNC)) DATA.push([row, col]);
+
+  const grid = document.getElementById("grid");
+  const readout = document.getElementById("readout");
+  const cells = [];
+  for (let row = 0; row < GRID; row++)
+    for (let col = 0; col < GRID; col++) {
+      const cell = document.createElement("div");
+      cells[row * GRID + col] = cell;
+      grid.appendChild(cell);
+    }
+
+  const paint = (row, col, lit) => {
+    cells[row * GRID + col].style.background = lit ? "#fff" : "#000";
+  };
+
+  let counter = 0;
+  function draw() {
+    const value = counter % COUNTER_MODULUS;
+    for (const [key, lit] of Object.entries(SYNC)) {
+      const [row, col] = key.split(",").map(Number);
+      paint(row, col, lit);
+    }
+    DATA.forEach(([row, col], index) => {
+      paint(row, col, ((value >> (COUNTER_BITS - 1 - index)) & 1) === 1);
+    });
+    readout.textContent = `counter ${value}  bits ${value.toString(2).padStart(COUNTER_BITS, "0")}`;
+    counter++;
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+</script>

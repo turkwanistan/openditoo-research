@@ -116,4 +116,67 @@ internal static class PreciseDelay
     }
 }
 
-internal readonly record struct TimedFrame(byte[] Pixels, int Width, int Height, double CapturedQpcMs);
+/// <summary>
+/// One frame plus the identity it was born with.
+///
+/// <paramref name="SourceId"/> is assigned once, at successful acquisition from the camera, and
+/// is never re-derived downstream. That is the whole point: timestamps and nominal FPS cannot
+/// tell a genuinely new scene sample apart from the same sample selected twice, so W9A carries
+/// an identity instead of inferring one. It survives the raw slot, the transform and the ready
+/// slot unchanged, which makes replacement, skipping and duplicate selection directly countable.
+/// </summary>
+internal readonly record struct TimedFrame(byte[] Pixels, int Width, int Height, double CapturedQpcMs,
+                                           long SourceId = 0);
+
+/// <summary>
+/// Bounded evidence about WHICH source frames the sender actually selected.
+///
+/// This answers a question the W8 telemetry could not: 16.285 fps of ACKed transport says
+/// nothing about how many distinct scene samples reached the panel. Gaps here are frames the
+/// freshest-frame policy deliberately dropped; a duplicate is the same acquisition selected
+/// twice, which is a scheduler defect rather than a transport one. Kept deliberately small --
+/// identities only, no pixels -- so it stays honest evidence and not a frame recorder.
+/// </summary>
+internal sealed class SourceIdentityLedger
+{
+    // A 10 s trial is capped at 201 frames by the manifest, so this ring never wraps in a real
+    // run. It is a ring anyway, because unbounded growth in a long soak is how telemetry turns
+    // into the leak it was meant to measure.
+    private const int Capacity = 512;
+    private readonly long[] selected = new long[Capacity];
+    private long count;
+
+    internal long First { get; private set; }
+    internal long Last { get; private set; }
+    /// <summary>Acquisitions that existed but were never selected, summed across gaps.</summary>
+    internal long Skipped { get; private set; }
+    /// <summary>The same acquisition selected more than once. Should always be zero.</summary>
+    internal long DuplicateSelections { get; private set; }
+    /// <summary>An identity that went backwards: a monotonicity violation, never expected.</summary>
+    internal long OutOfOrderSelections { get; private set; }
+
+    internal void Select(long sourceId)
+    {
+        if (count == 0) First = sourceId;
+        else if (sourceId == Last) DuplicateSelections++;
+        else if (sourceId < Last) OutOfOrderSelections++;
+        else Skipped += sourceId - Last - 1;
+        Last = sourceId;
+        selected[count++ % Capacity] = sourceId;
+    }
+
+    internal object Snapshot(long lastAcquiredId) => new
+    {
+        selectedCount = count,
+        firstSelectedSourceId = count == 0 ? 0 : First,
+        lastSelectedSourceId = count == 0 ? 0 : Last,
+        lastAcquiredSourceId = lastAcquiredId,
+        // Acquired-but-unselected between the first and last selection. Distinct from
+        // acquisitions that arrived after the final send, which are not skips.
+        skippedBetweenSelections = Skipped,
+        duplicateSelections = DuplicateSelections,
+        outOfOrderSelections = OutOfOrderSelections,
+        selectedSourceIds = selected.Take((int)Math.Min(count, Capacity)).ToArray(),
+        selectedSourceIdWindow = Math.Min(count, Capacity),
+    };
+}

@@ -8,6 +8,8 @@ namespace OpenDitoo.Webcam.Probe;
 internal interface IFrameSource
 {
     string? Fault { get; }
+    /// <summary>Highest identity handed out by the camera so far; 0 before the first frame.</summary>
+    long LastAcquiredSourceId { get; }
     bool TryTake(out TimedFrame frame);
     void Wait(CancellationToken token);
 }
@@ -22,6 +24,9 @@ internal sealed class WebcamFrames : IFrameSource, IAsyncDisposable
     private readonly LatestFrameSlot<TimedFrame> ready = new();
     private Task? processor;
     private string? fault;
+    // Assigned at acquisition and never re-derived. Interlocked because FrameArrived runs on the
+    // reader's thread while the sender reads the high-water mark from its own.
+    private long sourceSequence;
     internal readonly Samples TransformMs = new();
     internal long Captured => raw.Offered;
     internal long RawReplaced => raw.Replaced;
@@ -31,6 +36,7 @@ internal sealed class WebcamFrames : IFrameSource, IAsyncDisposable
     internal int RawMaxDepth => raw.MaxDepthObserved;
     internal int ReadyMaxDepth => ready.MaxDepthObserved;
     public string? Fault => Volatile.Read(ref fault);
+    public long LastAcquiredSourceId => Interlocked.Read(ref sourceSequence);
     internal static double NowMs => Stopwatch.GetTimestamp() * 1000d / Stopwatch.Frequency;
 
     private void Fail(string reason)
@@ -84,7 +90,11 @@ internal sealed class WebcamFrames : IFrameSource, IAsyncDisposable
                 var buffer = new Windows.Storage.Streams.Buffer((uint)pixels.Length);
                 copy.CopyToBuffer(buffer);
                 using (var data = Windows.Storage.Streams.DataReader.FromBuffer(buffer)) data.ReadBytes(pixels);
-                raw.Put(new(pixels, copy.PixelWidth, copy.PixelHeight, captured.TotalMilliseconds));
+                // Identity is assigned here and only here: the moment a real N980P frame was
+                // successfully acquired. A frame that failed to arrive never gets an id, so a
+                // gap downstream always means "acquired but not selected", never "never existed".
+                raw.Put(new(pixels, copy.PixelWidth, copy.PixelHeight, captured.TotalMilliseconds,
+                    Interlocked.Increment(ref sourceSequence)));
             }
             catch { Fail("camera_disconnected"); }
         };
@@ -99,7 +109,7 @@ internal sealed class WebcamFrames : IFrameSource, IAsyncDisposable
                     var pixels = FrameTransform.Transform(frame.Pixels, frame.Width, frame.Height,
                         FrameTransform.Default, FrameTransform.SourceFormat.Bgra32);
                     TransformMs.Add(NowMs - started);
-                    ready.Put(new(pixels, 16, 16, frame.CapturedQpcMs));
+                    ready.Put(new(pixels, 16, 16, frame.CapturedQpcMs, frame.SourceId));
                 }
             }
             catch { Fail("transform_fault"); }

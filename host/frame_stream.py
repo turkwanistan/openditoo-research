@@ -364,7 +364,13 @@ def load_stream_manifest(path: Path, *, verify_code_hashes: bool = True,
             # A producer inside this repository is verified now. One outside it (the Windows
             # sidecar's own build) is verified by whoever deploys it; the manifest still
             # records the hash it was reviewed against.
-            if candidate.is_file():
+            #
+            # `verify_code_hashes=False` is for reviewing a manifest whose run is already over.
+            # A consumed manifest's hashes are evidence of what physically ran, and live source
+            # legitimately moves on afterwards; refusing to parse the record of a finished
+            # experiment would make its own evidence unreadable. It gates nothing, because
+            # arming still requires unspent authority and an unclaimed one-use experiment id.
+            if verify_code_hashes and candidate.is_file():
                 require(_session.sha256_file(candidate) == expected,
                         "STREAM_LIVE_PRODUCER_HASH_DRIFT", name)
         frame_set = None

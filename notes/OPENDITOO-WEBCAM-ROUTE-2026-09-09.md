@@ -947,3 +947,87 @@ measurement of panel refresh, visible unique-frame cadence or scene-to-visible l
 
 **W8 is closed PASS** on transport, rate, freshness, timing and owner visual observation.
 Attempt 005 is consumed and must never be replayed. W9A is next.
+
+## 27. W9A source identity + deterministic motion truth — offline, transport unchanged — 2026-09-09
+
+W9A is implemented. It is entirely offline: no manifest, no claim, no grant, no device I/O,
+and **no transport change**. The 005 producer is frozen and consumed; nothing here is
+retrofitted into it.
+
+### Why identity had to be carried rather than inferred
+
+W8-005 reported 16.285 fps and `duplicateSourceFrames=0`, but that count compared capture
+*timestamps*. Timestamps and nominal FPS cannot separate four different things that all look
+like "a frame happened":
+
+`source duplicate → scheduler replacement/skip → transport result → visible display repeat`
+
+So a frame now carries an identity assigned at the moment of successful acquisition, and the
+sender records which identities it actually selected.
+
+### Source identity
+
+- `TimedFrame` gains `long SourceId`.
+- `WebcamFrames` assigns it with a single `Interlocked.Increment(ref sourceSequence)` inside
+  `FrameArrived`, **only** after a real N980P frame has been successfully acquired and copied.
+  A frame that never arrived never gets an id, so a downstream gap always means
+  "acquired but not selected" and never "never existed".
+- The transform worker forwards the same id into the ready slot; it never mints a new one.
+  Identity therefore survives raw slot → transform → ready slot unchanged.
+- `IFrameSource` exposes `LastAcquiredSourceId` so the sender can compare what it selected
+  against what the camera actually produced.
+
+### Bounded selection evidence
+
+`SourceIdentityLedger` records, at selection time and before the send, so a frame that later
+fails in transport is still attributable to the exact acquisition the scheduler chose:
+
+`selectedCount`, `firstSelectedSourceId`, `lastSelectedSourceId`, `lastAcquiredSourceId`,
+`skippedBetweenSelections`, `duplicateSelections`, `outOfOrderSelections`,
+`selectedSourceIds` (a 512-entry ring; a 10 s trial is capped at 201 frames so it never wraps
+in a real run, but it stays a ring so a long soak cannot turn telemetry into the leak it was
+added to measure). It emits under `sourceIdentity` in the trial result. Identities only — no
+pixels — so this stays evidence and does not become a frame recorder.
+
+Offline control `ADAPTER_W9A_SOURCE_IDENTITY_PASS` models a camera genuinely faster than the
+sender (two acquisitions per selection) and asserts monotonic ids, every delta exactly the
+simulated step, one skip counted per interval, and zero duplicate or out-of-order selections.
+Observed: `selected=12 first=2 last=24 skipped=11 duplicates=0`. All pre-existing adapter
+controls — including both W8 arrival-jitter controls and the cross-clock control — still pass.
+
+### Deterministic motion-truth stimulus
+
+`host/motion_truth.py` plus `tools/w9a_motion_truth_stimulus.html`.
+
+Almost nothing survives 640×480 → centred 480×480 crop → 16×16 area average. Digits do not;
+thin lines do not. Large solid blocks do, **exactly**, because a 4×4 grid over a 480 px square
+is 120 px per cell = 4 output pixels per cell with no partial coverage at any boundary. So the
+counter is a 4×4 grid of black/white cells: four fixed sync corners (white, black, white, black
+reading TL, TR, BL, BR) and twelve counter bits, MSB first, row-major.
+
+The corner pattern is deliberately asymmetric under a horizontal flip, so a decode that forgets
+the production preset's mirror fails loudly instead of returning a plausible wrong number.
+12 bits wraps at 4096 — 68 s at 60 Hz, far longer than a 10 s trial.
+
+Verified: **all 4096 counter values round-trip** through the real `host/frame_transform.py`
+production transform, not a model of it. A frame decoded with the wrong mirror returns `None`,
+as do blank, saturated and non-stimulus frames — W9B must count undecodable frames rather than
+guess through them. The decoder samples each cell's interior and drops its outer ring, so it
+tolerates the monitor/camera misalignment W9B will actually have.
+
+The HTML advances the counter once per `requestAnimationFrame`, i.e. at the **monitor's**
+refresh rate — not the camera's and not the Ditoo's. Keeping those three apart is the point.
+
+### One deliberate loosening, and why it is not a gate
+
+`load_stream_manifest` ignored its own `verify_code_hashes=False` argument on the live-producer
+branch. Now it honours it, and the W8-005 checker passes `verify_code_hashes=False` once the
+manifest is `completed_pass_authority_consumed`.
+
+A consumed manifest's producer hashes are **evidence of what physically ran**; live source
+legitimately moves on afterwards, exactly as it already had for consumed 002, 003 and 004.
+Refusing to parse a finished experiment's own record would make its evidence unreadable. This
+gates nothing: arming still requires unspent authority and an unclaimed one-use experiment id,
+and the on-disk claim can never be released. A regression test pins both directions — drift
+still raises `STREAM_LIVE_PRODUCER_HASH_DRIFT` with verification on, and skipping the hash
+comparison does not weaken any other structural check.
