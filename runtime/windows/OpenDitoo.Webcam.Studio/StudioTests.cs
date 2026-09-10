@@ -37,6 +37,17 @@ internal static class StudioTests
         }
     }
 
+    /// <summary>Delays one frame request before the Host sees it: a client-side stall after our dispatch timestamp.</summary>
+    private sealed class StallHandler(HttpMessageHandler inner, int stallAtFrame, int stallMs) : DelegatingHandler(inner)
+    {
+        private int frames;
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        {
+            if (request.RequestUri!.AbsolutePath == "/v1/session/frame" && ++frames == stallAtFrame) await Task.Delay(stallMs, token);
+            return await base.SendAsync(request, token);
+        }
+    }
+
     /// <summary>A camera whose behaviour each case scripts. Ids always come from acquisition.</summary>
     private sealed class ScriptedSource(string mode) : IFrameSource
     {
@@ -217,6 +228,23 @@ internal static class StudioTests
         var (other, _, _) = await Session("none", new ScriptedSource("moving"), 100, 5, yieldAtFrame: 4, yieldedId: "SOMETHING-ELSE");
         Check("SENDER_STOCK_YIELD_UNCONFIRMED_IS_UNKNOWN", Str(other, "outcome") == "unknown",
             $"outcome={Str(other, "outcome")} reason={Str(other, "terminalReason")}");
+
+        // Run 365520cc: a stall between our dispatch stamp and the Host's frame start, with a fast ACK, puts the
+        // next arrival under the Host floor. The old dispatch-only rule must reproduce the refusal...
+        async Task<JsonObject> Stalled(bool anchor)
+        {
+            var host = new OfflineTests.FakeHandler("fast_ack");
+            var client = new HttpClient(new StallHandler(new HeartbeatHandler(host), stallAtFrame: 3, stallMs: 25));
+            return await StudioSender.Run(new Trial("OFFLINE-W10-STALL", 1, 12, 12 * Trial.WorstCaseFrameTxBytes, 50),
+                new ScriptedSource("moving"), client, CancellationToken.None, anchorToHost: anchor);
+        }
+        var unanchored = await Stalled(false);
+        Check("SENDER_DISPATCH_ONLY_FLOOR_REPRO", Str(unanchored, "terminalReason") == "PACING_VIOLATION",
+            $"reason={Str(unanchored, "terminalReason")}");
+        // ...and anchoring to the Host's own frame start must keep the same stall clean.
+        var anchored = await Stalled(true);
+        Check("SENDER_HOST_ANCHORED_FLOOR", Str(anchored, "outcome") == "stopped_clean" && Long(anchored, "frames") >= 8,
+            $"outcome={Str(anchored, "outcome")} reason={Str(anchored, "terminalReason")} frames={Long(anchored, "frames")}");
 
         // Frame budget ends the session cleanly.
         var (budget, budgetHost, _) = await Session("none", new ScriptedSource("moving"), 100, 5, maxFrames: 4);

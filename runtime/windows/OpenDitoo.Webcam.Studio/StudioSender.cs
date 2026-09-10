@@ -17,11 +17,25 @@ internal sealed class DeadlineClock(double start, double interval)
 {
     /// <summary>The proven W8-005 client floor: 40 ms Host backstop plus 10 ms arrival margin.</summary>
     internal const double MinGapMs = Trial.W8SafeClientInterval;
+    /// <summary>Margin kept over the Host's 40 ms floor, measured from the Host's own frame start.</summary>
+    internal const double HostMarginMs = 5;
     private long nextSlot;
     private double lastSent = double.NegativeInfinity;
+    private double hostStarted = double.NegativeInfinity;
     internal long SkippedSlots { get; private set; }
     internal long Sent { get; private set; }
-    internal double EarliestSend => Math.Max(start + nextSlot * interval, lastSent + MinGapMs);
+    internal double EarliestSend => Math.Max(Math.Max(start + nextSlot * interval, lastSent + MinGapMs),
+                                             hostStarted + Trial.HostFloor + HostMarginMs);
+
+    /// <summary>
+    /// Anchor the floor to when the Host really started the last frame. Our dispatch timestamp is taken
+    /// before encoding/serialization/HTTP; a stall there makes the Host start late while the next
+    /// dispatch stays on our schedule, so the Host sees a short gap (run 365520cc: PACING_VIOLATION after
+    /// 3,513 frames). `receivedAt - hostFrameMs` can only be later than the true start (return transit
+    /// is positive), so it is a safe bound. Valid because Host and Studio share this machine's
+    /// high-resolution clock since Runtime 005; with the old TickCount64 Host it would be off by a tick.
+    /// </summary>
+    internal void MarkHostStart(double estimatedStart) => hostStarted = Math.Max(hostStarted, estimatedStart);
 
     internal void MarkSent(double at)
     {
@@ -52,7 +66,7 @@ internal static class StudioSender
     /// reconnect. `client` must already carry the Host bearer token; the heartbeat shares it.
     /// </summary>
     internal static async Task<JsonObject> Run(Trial trial, IFrameSource source, HttpClient client,
-        CancellationToken stop, Action<string>? progress = null, int heartbeatMs = 10_000)
+        CancellationToken stop, Action<string>? progress = null, int heartbeatMs = 10_000, bool anchorToHost = true)
     {
         using var session = new TypedSession(client);
         var reason = "lifetime_expired";
@@ -122,7 +136,9 @@ internal static class StudioSender
                 previousDispatch = dispatch;
                 identity.Select(frame.SourceId);
                 sourceAges.Add(dispatch - frame.CapturedQpcMs);
+                var hostTotalBefore = Total(session.HostFrameMs);
                 await session.Frame(frame); // one request in flight, never resend
+                if (anchorToHost) clock.MarkHostStart(WebcamFrames.NowMs - (Total(session.HostFrameMs) - hostTotalBefore));
                 lastPixels = frame.Pixels;
                 lastContact = WebcamFrames.NowMs;
                 // Display only: a closing window must never turn a clean session into `unknown`.
@@ -161,10 +177,22 @@ internal static class StudioSender
             skippedSlots = clock.SkippedSlots, unchangedFrames, duplicateSelections, heartbeats,
             dispatchIntervalMs = dispatchIntervals.Snapshot(), sourceAgeAtSendMs = sourceAges.Snapshot(),
             ackMs = session.AckMs.Snapshot(), hostFrameMs = session.HostFrameMs.Snapshot(),
+            clientMinusHostElapsedMs = session.ClientMinusHostElapsedMs.Snapshot(), anchorToHost,
             sourceIdentity = identity.Snapshot(source.LastAcquiredSourceId),
             retry = false, reconnect = false, reclaim = false,
         };
         return JsonSerializer.SerializeToNode(result)!.AsObject();
+    }
+
+    /// <summary>
+    /// Running total of a frozen Samples. TypedSession (hash-frozen by 007) exposes hostFrameElapsedMs only
+    /// as cumulative samples, so the last value is the change in the total (mean * count).
+    /// ponytail: read the value directly once TypedSession can be edited.
+    /// </summary>
+    private static double Total(Samples samples)
+    {
+        var snapshot = JsonSerializer.SerializeToElement(samples.Snapshot());
+        return snapshot.GetProperty("mean").GetDouble() * snapshot.GetProperty("count").GetInt64();
     }
 
     private static async Task<bool> HostConfirmsYield(HttpClient client, string experimentId)

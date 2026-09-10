@@ -76,3 +76,14 @@ W9B-006 (1-frame, seconds-old predecessor). Every clean launch followed a dashbo
 Mitigation (launcher only, not policy-bound): wait until the dashboard's current connection is ≥ 30 s
 old before suspending it. Confidence in the young-link mechanism: moderate — two matching cases, still
 not demonstrated; the webcam-product-001 session-4 reopen failure had a 30 s-old predecessor instead.
+
+**Launch `365520cc` (15:07:55Z) — 3,513 frames, then `SESSION_PACING_VIOLATION` again, on the Runtime 005
+Host.** The Host floor was now precise (hostFrameMs p50 36, no 15.6 ms steps), so the TickCount64 fix was
+real but incomplete. Remaining cause: the Studio's 50 ms gap is measured from its dispatch stamp, taken
+before encode/serialize/HTTP, while the Host's 40 ms is measured from its own frame start. A client stall
+in between (dispatch gaps reached 116 ms) delays frame N's Host start while N+1 stays on schedule.
+Fix (Studio only, **webcam policy 005**): the next send also waits ≥ 45 ms after
+`receivedAt − hostFrameElapsedMs`, a safe upper bound on the Host's start now that both share the
+machine's high-resolution clock. Selftest reproduces the refusal under the old rule and stays clean
+under the new one (3/3 runs). Normal cadence unaffected (typical Host start is ~1 ms after dispatch).
+Policy 005 prepared against the deployed Host; awaiting `Grant OPENDITOO-WEBCAM-PRODUCT-005`.

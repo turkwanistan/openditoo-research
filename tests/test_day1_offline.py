@@ -4421,7 +4421,7 @@ class Runtime005PacingClockTests(unittest.TestCase):
         self.assertEqual(old["build"]["code_sha256"], new["build"]["code_sha256"])
         self.assertFalse(new["authority"]["persistent_runtime_authorized"])
         self.assertEqual(new["authority"]["supersedes"], "OPENDITOO-PRODUCT-RUNTIME-004")
-        webcam = json.loads((ROOT / "product/OPENDITOO-WEBCAM-PRODUCT-004.json").read_text(encoding="utf-8"))
+        webcam = json.loads((ROOT / "product/OPENDITOO-WEBCAM-PRODUCT-005.json").read_text(encoding="utf-8"))
         self.assertEqual(webcam["build"]["host_dll_sha256"], new["build"]["host_dll_sha256"])
         self.assertFalse(webcam["authority"]["webcam_product_authorized"])
 
