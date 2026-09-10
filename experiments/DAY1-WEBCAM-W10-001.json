@@ -3,13 +3,15 @@
   "kind": "frame_stream",
   "experiment_id": "OPENDITOO-WEBCAM-W10-001",
   "milestone": "W10B first live webcam Studio session",
-  "status": "authorized_awaiting_execution",
+  "status": "completed_transport_pass_operator_observation_pending",
   "objective": "One bounded live session driven from the W10 Studio window: the operator frames the shot live (zoom/pan/mirror/rotate) while the exact 16x16 matrix streams, and ends it with the Stop button. Proves the product path end to end: absolute-deadline scheduler, unchanged/duplicate suppression with heartbeat, and a clean operator stop. Not a rate measurement and not a panel-refresh claim.",
   "readiness": {
-    "execution_ready": true,
-    "grant_ready": true,
-    "blockers": [],
-    "required_followup": "Execute only bash scripts/run_webcam_w10_once.sh, once. Never replay after any outcome."
+    "execution_ready": false,
+    "grant_ready": false,
+    "blockers": [
+      "AUTHORITY_ALREADY_CONSUMED"
+    ],
+    "required_followup": "W10-001 is consumed. Never replay it. Record the owner visual/operator observation; any further live webcam session needs a fresh manifest and a fresh named grant."
   },
   "target": {
     "exact_unit_id": "11:75:58:CE:DE:C7",
@@ -166,8 +168,8 @@
   },
   "authority": {
     "experiment_id": "OPENDITOO-WEBCAM-W10-001",
-    "transmission_authorized": true,
-    "authorization_consumed": false,
+    "transmission_authorized": false,
+    "authorization_consumed": true,
     "granted_by": "operator, in-session, 2026-09-10",
     "grant_text": "Grant OPENDITOO-WEBCAM-W10-001",
     "expires_at": "2026-09-10T14:00:51Z",
@@ -187,5 +189,57 @@
     ],
     "claim_handshake": "Studio must produce one fresh valid 16x16 frame and show its window before emitting camera_ready + nonce; WSL creates the durable one-use claim only then, and only execute:<nonce> crosses the claim boundary.",
     "deployment_state": "PASS preparation at f647ca4bd6e36ea3c7e087164370efecdcd22b9a: Studio built, staged to C:\\temp\\openditoo-webcam-studio-w10, selftest + transform/encoder parity passed from the staged copy, Host identity checked read-only. No claim, session or device I/O."
+  },
+  "w10_attempt": {
+    "executed_at_utc": "2026-09-10T12:02:57Z",
+    "claim": "finished/stopped_clean",
+    "client": {
+      "frames": 500,
+      "packets": 1500,
+      "bytes": 501200,
+      "terminalReason": "budget_exhausted",
+      "outcome": "stopped_clean",
+      "elapsedMs": 30380.1,
+      "ackedTransportFps": 16.458,
+      "skippedSlots": 107,
+      "unchangedFrames": 0,
+      "duplicateSelections": 0,
+      "heartbeats": 0,
+      "ackMs_p50_p95": [
+        35.66,
+        68.48
+      ],
+      "sourceAgeAtSendMs_p50_p95": [
+        44.92,
+        67.47
+      ],
+      "dispatchIntervalMs_p50_p95": [
+        60.62,
+        68.54
+      ],
+      "sourceIdentity": {
+        "duplicates": 0,
+        "outOfOrder": 0,
+        "skippedBetweenSelections": 106,
+        "first": 30,
+        "last": 635
+      },
+      "framingChangedDuringSession": false
+    },
+    "host_ledger": {
+      "framesSent": 500,
+      "packetsSent": 1500,
+      "txBytesSent": 501200,
+      "reason": "budget_exhausted",
+      "outcome": "stopped_clean",
+      "displayState": "ours_last_acked",
+      "agrees_with_client": true
+    },
+    "retry": false,
+    "reconnect": false,
+    "reclaim": false,
+    "runtime_003_restored": "connected, last_error null, run_nonce 78fa2a4d",
+    "not_exercised": "Stop button (session ended on the frame budget) and live framing change (framingAtStart == framingAtEnd).",
+    "separation": "16.458 fps is ACKed transport. Panel refresh and visible cadence remain UNMEASURED."
   }
 }

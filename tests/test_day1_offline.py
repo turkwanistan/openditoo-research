@@ -4206,10 +4206,17 @@ class W10WebcamStudioTests(unittest.TestCase):
     MANIFEST = ROOT / "experiments/DAY1-WEBCAM-W10-001.json"
     STUDIO = ROOT / "runtime/windows/OpenDitoo.Webcam.Studio"
 
-    def test_w10_001_is_grant_ready_or_exactly_granted_and_unconsumed(self) -> None:
+    def test_w10_001_authority_lifecycle(self) -> None:
         data = json.loads(self.MANIFEST.read_text(encoding="utf-8"))
         authority = data["authority"]
-        self.assertFalse(authority["authorization_consumed"])
+        if authority["authorization_consumed"]:
+            # Run once; never replayable. The claim on disk is what makes that true.
+            self.assertFalse(authority["transmission_authorized"])
+            self.assertEqual(data["readiness"]["blockers"], ["AUTHORITY_ALREADY_CONSUMED"])
+            claim = activity_session.SessionClaim("OPENDITOO-WEBCAM-W10-001").read()
+            self.assertEqual(claim["state"], "finished")
+            self.assertTrue(data["w10_attempt"]["host_ledger"]["agrees_with_client"])
+            return
         if authority["transmission_authorized"]:
             # Granted but not yet run: only the exact named grant, attributed and expiring.
             self.assertEqual(authority["grant_text"], "Grant OPENDITOO-WEBCAM-W10-001")
