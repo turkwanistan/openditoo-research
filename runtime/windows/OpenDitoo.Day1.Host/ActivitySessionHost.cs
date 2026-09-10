@@ -267,13 +267,7 @@ static class ActivitySessionHost
             DitooReport ack;
             try
             {
-                // HF-3/ledger evidence (2026-09-10): the FIRST frame after connect failed with
-                // IMAGE_RX_RECV_TIMEOUT in 5 of 19 streaming_ack_clock sessions (0 ms spacing) and in
-                // 0 of 195 activity sessions (10 ms spacing); once one frame is ACKed, 0 ms spacing
-                // ran thousands of frames cleanly. So every session's first frame uses the proven
-                // 10 ms spacing and only later frames use the profile's spacing.
-                link.SendFrameGroup(packets, null, framesSent,
-                    framesSent == 0 ? ActivitySendSpacingMs : SpacingFor(profile));
+                link.SendFrameGroup(packets, null, framesSent, SpacingFor(profile));
                 ack = link.ReadOneAck(DitooStaticImageProtocol.AckBudgetMs);
             }
             catch (DitooTakeoverException takeover)

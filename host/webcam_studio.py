@@ -147,8 +147,8 @@ def run(path: Path) -> dict:
 # one-use id claimed against the Studio's nonce. The next session starts only after a clean budget
 # or lifetime end; anything else ends the launch with no retry. Runtime 003 is not widened.
 
-POLICY_ID = "OPENDITOO-WEBCAM-PRODUCT-006"
-POLICY_TEMPLATE = ROOT / "product/OPENDITOO-WEBCAM-PRODUCT-006.json"
+POLICY_ID = "OPENDITOO-WEBCAM-PRODUCT-005"
+POLICY_TEMPLATE = ROOT / "product/OPENDITOO-WEBCAM-PRODUCT-005.json"
 LOCAL_POLICY = ROOT / ".openditoo-local/webcam-product-policy.json"
 # 002: one connection per launch. 001 rolled 60 s / 500-frame sessions over and the fourth reopen
 # hit IMAGE_RX_RECV_TIMEOUT (run 8f36a6d3); the Runtime 004 Host gives streaming its own 1800 s /
