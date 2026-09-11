@@ -20,6 +20,9 @@ TEST_MODULES = (
     "tests.test_activity_lightning",
     "tests.test_interactive_acceptance",
     "tests.test_product_runtime_v3",
+    "tests.test_pixel_lab",
+    "tests.test_moss_page",
+    "tests.test_product_runtime_v4",
 )
 
 
@@ -36,6 +39,9 @@ def main() -> int:
     print("HF2_PROFILE_ORCHESTRATOR=PASS")
     print("HF3_ACCEPTANCE_ENVELOPE_OFFLINE=PASS")
     print("HF4_RUNTIME_008_OFFLINE=PASS")
+    print("PIXEL_ANIMATION_LAB_OFFLINE=PASS")
+    print("POCKET_MOSS_OFFLINE=PASS")
+    print("RUNTIME_010_SUCCESSOR_OFFLINE=PASS")
     print(f"INTERACTIVE_PAGES_OFFLINE=PASS tests={result.testsRun}")
     return 0
 
