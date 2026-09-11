@@ -1,4 +1,4 @@
-# OpenDitoo Pocket Moss v4 / Runtime 013 handoff — 2026-09-11
+# OpenDitoo Pocket Moss v4 / Runtime 013 handoff — 2026-09-11 (LIVE, accepted)
 
 ## Why v4
 
@@ -29,6 +29,12 @@ Branch `feat/pocket-moss-v4-polish` (worktree `.openditoo-local/worktrees/moss-v
 - R013 template precheck (same as the cutover's `template_ok`): PASS; `MossPage` renders `moss.v4.idle`.
 - `verify_day1_offline.py` cannot pass inside a linked worktree: 13 failures identical to the untouched v3 worktree (missing git-ignored Release DLL); with main's build outputs symlinked in, 6 remain, all consumed-claim ledger checks for W8/W9B/W10 that read main's local claim state. The cutover runs both gates in main after the fast-forward and rolls back on failure.
 
-## Physical review
+## Live acceptance
 
-Keep it short: page to Moss, judge idle, then run Pet / Dance / Kisses once. No transport/product re-acceptance unless a systems symptom appears. Runtime 012 is the rollback.
+Owner granted exactly `Grant OPENDITOO-PRODUCT-RUNTIME-013`; `scripts/cutover_runtime_013.sh` fast-forwarded main to `b14ef9f` and reported `R013_TEMPLATE_AND_INSTALLED_BINARIES_PASS`, `R013_ROLLBACK_SAVED pre=48293440686e`, `R013_HOST_IDLE`, `R013_MAIN_OFFLINE_PASS` (both full gates, in main), `R013_LOCAL_POLICY_WRITTEN`, `R013_PRODUCT_CHECK_PASS`, `R013_DASHBOARD_CONNECTED`, `R013_WEBCAM_006_POLICY_CHECK_PASS`, `R013_CUTOVER_PASS main=b14ef9f host=3faf520f46ce rollback=.openditoo-local/rollback-runtime-012`. Post-cutover `product-status`: connected, `last_error=null`, revision 8; live policy id `OPENDITOO-PRODUCT-RUNTIME-013`.
+
+Physical review on the panel: owner verdict **“i love it.”** Runtime 013 / Moss v4 is the accepted live baseline; Runtime 012 is the exact rollback (`bash scripts/cutover_runtime_013.sh --rollback`). No transport/product re-acceptance was needed (art-only change).
+
+## Next session
+
+Start from Runtime 013 as accepted truth. Moss work, if any, is optional incremental polish via `tools/moss_v4_art.py` → new `assets/pocket_moss/vN` → fresh runtime successor. Do not reopen transport, Bluetooth, pagination, pacing or broad device acceptance without a new symptom. The exact-pixel frames matched the owner's expectation on the panel; the LED-dot simulation (scratch tooling, not committed) was only a review aid.
