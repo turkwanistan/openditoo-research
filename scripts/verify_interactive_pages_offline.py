@@ -27,6 +27,8 @@ TEST_MODULES = (
     "tests.test_product_runtime_v5",
     "tests.test_moss_v3_art",
     "tests.test_product_runtime_v6",
+    "tests.test_moss_v4_art",
+    "tests.test_product_runtime_v7",
 )
 
 
@@ -50,6 +52,8 @@ def main() -> int:
     print("RUNTIME_011_SUCCESSOR_OFFLINE=PASS")
     print("POCKET_MOSS_V3_POLISH_OFFLINE=PASS")
     print("RUNTIME_012_SUCCESSOR_OFFLINE=PASS")
+    print("POCKET_MOSS_V4_ART_OFFLINE=PASS")
+    print("RUNTIME_013_SUCCESSOR_OFFLINE=PASS")
     print(f"INTERACTIVE_PAGES_OFFLINE=PASS tests={result.testsRun}")
     return 0
 

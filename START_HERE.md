@@ -4,6 +4,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## ▶ CURRENT STATE — read this first (2026-09-11)
 
+- **Successor prepared: Runtime 013 / Pocket Moss v4** — `notes/OPENDITOO-HANDOFF-2026-09-11-POCKET-MOSS-V4.md`. Art/animation-only pass (front-facing body, centred face, directional shading, teal collar, richer actions) on `feat/pocket-moss-v4-polish`; offline PASS; cutover needs the exact `Grant OPENDITOO-PRODUCT-RUNTIME-013`. Until then Runtime 012 below remains live.
+
 - **Handoff: `notes/OPENDITOO-HANDOFF-2026-09-11-POCKET-MOSS-V3.md`** — Runtime 012 / Pocket Moss v3 is now the accepted live baseline. v1 failed recognition (“brown blob”); v2 fixed identity; v3 polished depth/anatomy and made the authored actions substantially richer. Final owner acceptance after the v3 physical pass: **“okay this is good for now.”**
 - **Live product: Runtime 012** (`runtime_revision=7`, policy `OPENDITOO-PRODUCT-RUNTIME-012`, main cutover `5de631e`): Dashboard + Slots + Moss remain in one `streaming_ack_clock` Host session; exact Ditoo target, Host `3faf520f…`, ButtonProbe, pacing, selector semantics, reconnect/reclaim behavior and **webcam policy 006** are unchanged. Runtime 011 is preserved as the exact rollback baseline in `.openditoo-local/rollback-runtime-011`.
 - **Pocket Moss v3:** preserves the successful floppy-ear / cream-muzzle dog identity, adds an amber depth/shadow plane and cleaner consistent body anatomy, and expands authored motion: Dance 8 unique frames, Pet 6, Kisses 5. Physical review accepted this as the current stopping point; future Moss work should be incremental polish, not another identity redesign unless new panel evidence justifies it.

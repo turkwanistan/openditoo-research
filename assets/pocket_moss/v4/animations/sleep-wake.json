@@ -1,0 +1,46 @@
+{
+  "schema": "openditoo.pixel-animation.v1",
+  "id": "moss.v4.sleep-wake",
+  "canvas": [
+    16,
+    16
+  ],
+  "loop": false,
+  "sequence": [
+    {
+      "sprite": "../sprites/loaf.json",
+      "hold_acks": 5,
+      "phase": "settle"
+    },
+    {
+      "sprite": "../sprites/sleep_a.json",
+      "hold_acks": 12,
+      "phase": "sleep"
+    },
+    {
+      "sprite": "../sprites/sleep_b.json",
+      "hold_acks": 12,
+      "phase": "sleep"
+    },
+    {
+      "sprite": "../sprites/sleep_a.json",
+      "hold_acks": 12,
+      "phase": "sleep"
+    },
+    {
+      "sprite": "../sprites/yawn.json",
+      "hold_acks": 6,
+      "phase": "wake"
+    },
+    {
+      "sprite": "../sprites/blink.json",
+      "hold_acks": 2,
+      "phase": "wake"
+    },
+    {
+      "sprite": "../sprites/idle.json",
+      "hold_acks": 5,
+      "phase": "settle"
+    }
+  ]
+}

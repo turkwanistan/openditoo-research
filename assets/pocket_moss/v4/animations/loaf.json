@@ -1,0 +1,36 @@
+{
+  "schema": "openditoo.pixel-animation.v1",
+  "id": "moss.v4.loaf",
+  "canvas": [
+    16,
+    16
+  ],
+  "loop": false,
+  "sequence": [
+    {
+      "sprite": "../sprites/perk.json",
+      "hold_acks": 3,
+      "phase": "notice"
+    },
+    {
+      "sprite": "../sprites/loaf.json",
+      "hold_acks": 12,
+      "phase": "rest"
+    },
+    {
+      "sprite": "../sprites/loaf_blink.json",
+      "hold_acks": 2,
+      "phase": "rest"
+    },
+    {
+      "sprite": "../sprites/loaf.json",
+      "hold_acks": 12,
+      "phase": "rest"
+    },
+    {
+      "sprite": "../sprites/idle.json",
+      "hold_acks": 4,
+      "phase": "settle"
+    }
+  ]
+}

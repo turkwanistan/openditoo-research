@@ -1,0 +1,51 @@
+{
+  "schema": "openditoo.pixel-animation.v1",
+  "id": "moss.v4.pet",
+  "canvas": [
+    16,
+    16
+  ],
+  "loop": false,
+  "sequence": [
+    {
+      "sprite": "../sprites/perk.json",
+      "hold_acks": 3,
+      "phase": "notice"
+    },
+    {
+      "sprite": "../sprites/pet_lean.json",
+      "hold_acks": 4,
+      "phase": "lean"
+    },
+    {
+      "sprite": "../sprites/pet_squish.json",
+      "hold_acks": 7,
+      "phase": "squish"
+    },
+    {
+      "sprite": "../sprites/wag_high.json",
+      "hold_acks": 3,
+      "phase": "wag_high"
+    },
+    {
+      "sprite": "../sprites/wag_low.json",
+      "hold_acks": 3,
+      "phase": "wag_low"
+    },
+    {
+      "sprite": "../sprites/wag_high.json",
+      "hold_acks": 3,
+      "phase": "wag_high"
+    },
+    {
+      "sprite": "../sprites/wag_low.json",
+      "hold_acks": 3,
+      "phase": "wag_low"
+    },
+    {
+      "sprite": "../sprites/idle.json",
+      "hold_acks": 5,
+      "phase": "settle"
+    }
+  ]
+}

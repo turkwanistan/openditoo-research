@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -9,7 +10,7 @@ import unittest
 
 from cli import openditoo
 from host import product_runtime_v6 as v6
-from host.moss_page import MODE_SELECTOR, MossPage
+from host.moss_page import ASSET_ROOT, MODE_SELECTOR, MossPage
 from host.slots_page import SlotsPage
 from scripts.interactive_hf3 import FakeClock, FakeHost, PacedEvents
 from tests.test_product_runtime_v3 import DryDashboard
@@ -38,14 +39,21 @@ class Runtime012PolicyTests(unittest.TestCase):
         self.assertEqual((p.session_lifetime_seconds, p.max_frames_per_session), (600, 15000))
 
     def test_policy_hashes_pin_v3_assets_and_not_v2_assets(self):
-        expected = v6.code_hashes()
-        self.assertEqual(self.template["build"]["code_sha256"], expected)
-        self.assertIn("product_runtime_v6_sha256", expected)
-        self.assertIn("moss_page_sha256", expected)
+        stored = self.template["build"]["code_sha256"]
+        self.assertIn("product_runtime_v6_sha256", stored)
+        self.assertIn("moss_page_sha256", stored)
+        self.assertEqual(stored["product_runtime_v6_sha256"], hashlib.sha256(Path("host/product_runtime_v6.py").read_bytes()).hexdigest())
         asset_files = sorted(Path("assets/pocket_moss/v3").rglob("*.json"))
-        asset_keys = [k for k in expected if k.startswith("moss_v3_asset_")]
+        asset_keys = [k for k in stored if k.startswith("moss_v3_asset_")]
         self.assertEqual(len(asset_keys), len(asset_files))
-        self.assertFalse(any(k.startswith("moss_asset_") for k in expected))
+        for key, path in v6.HASHED_MODULES.items():
+            if key.startswith("moss_v3_asset_"):
+                self.assertEqual(stored[key], hashlib.sha256(path.read_bytes()).hexdigest(), key)
+        self.assertFalse(any(k.startswith("moss_asset_") for k in stored))
+        if ASSET_ROOT.name == "v3":
+            self.assertEqual(stored, v6.code_hashes())
+        else:
+            self.assertNotEqual(stored, v6.code_hashes())
 
     def test_cli_routes_revision_7_to_runtime_v6(self):
         self.assertIs(openditoo._product_runtime_module(v6.TEMPLATE), v6)

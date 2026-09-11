@@ -1,0 +1,78 @@
+{
+  "schema": "openditoo.pixel-sprite.v1",
+  "id": "moss.v4.sleep_b",
+  "width": 16,
+  "height": 16,
+  "palette": {
+    ".": [
+      0,
+      0,
+      0
+    ],
+    "b": [
+      150,
+      70,
+      35
+    ],
+    "c": [
+      255,
+      240,
+      205
+    ],
+    "e": [
+      0,
+      0,
+      0
+    ],
+    "h": [
+      245,
+      155,
+      65
+    ],
+    "l": [
+      255,
+      200,
+      120
+    ],
+    "s": [
+      200,
+      100,
+      35
+    ],
+    "z": [
+      120,
+      175,
+      255
+    ]
+  },
+  "rows": [
+    "...........zzzz.",
+    ".............z..",
+    "............z...",
+    "...........zzzz.",
+    ".....hhhhhh.....",
+    "...hllllhhhhs...",
+    "....hlllhhhs....",
+    "..bbheehheesbb..",
+    ".bbbhhhhhhhsbbb.",
+    ".bbbhhcccchsbbb.",
+    ".bbbhcceeccsbbb.",
+    ".hbbshcccchsbbs.",
+    ".hhhhhhcchhssss.",
+    "..hccch..hcccs..",
+    "................",
+    "................"
+  ],
+  "meta": {
+    "anchor": [
+      8,
+      14
+    ],
+    "mirroring": null,
+    "tags": [
+      "moss",
+      "v4",
+      "sleep_b"
+    ]
+  }
+}

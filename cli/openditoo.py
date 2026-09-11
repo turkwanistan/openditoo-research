@@ -852,6 +852,9 @@ def _product_runtime_module(path: Path):
         raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return product_runtime
+    if raw.get("runtime_revision") == 8:
+        from host import product_runtime_v7
+        return product_runtime_v7
     if raw.get("runtime_revision") == 7:
         from host import product_runtime_v6
         return product_runtime_v6
