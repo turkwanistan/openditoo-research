@@ -1,6 +1,6 @@
 # OpenDitoo media-contention / raw-AVRCP input route — 2026-09-11
 
-Status: **root cause proven; raw input route proven; Runtime 017 successor implemented offline and unauthorized; live Runtime 016 source unchanged (service intentionally stopped during diagnostics).**
+Status: **root cause proven; raw input route proven; Runtime 017 successor implemented offline and unauthorized; live Runtime 016 source unchanged and currently stopped after diagnostics. Dynamic exact-Ditoo attribution is the remaining technical gate.**
 
 ## Problem
 
@@ -107,3 +107,32 @@ This proves current-handle separation is clean but exact-address attribution is 
 
 Selected next route: identify the Ditoo ACL handle from OpenDitoo's own validated RFCOMM traffic on that same ACL link, then accept AVRCP only on that learned handle. The existing product's RFCOMM traffic is uniquely attributable because OpenDitoo owns the typed Ditoo session and sends framed candidate packets/ACKs. This avoids dependence on historical HCI connection-complete events.
 
+## Current handoff checkpoint — 2026-09-11 16:36 EDT
+
+This section supersedes stale implementation-status wording above; keep earlier material as experiment history.
+
+### What is now proven
+
+- Runtime 017 is fully authored side-by-side as runtime revision 12 and remains deliberately unauthorized. Exact required grant remains `Grant OPENDITOO-PRODUCT-RUNTIME-017`; **do not grant/cut over yet**.
+- Broker/BTVS/tshark binary identities are frozen in the Runtime 017 policy; there are no remaining pending hash placeholders.
+- Focused successor tests are **17/17 PASS** after the latest diagnostic fixes; the previously-run interactive product verifier is **136/136 PASS**.
+- Fixed-Playing ButtonProbe works as the ownership sink: in the earlier active-media acceptance attempt the operator reported **NO browser/media reaction** and helper cleanup was clean. That run produced 0 raw input events only because the exact-address tshark filter could not attribute an already-established ACL link.
+- A receive-only attribution diagnostic without the ownership sink captured exactly the expected actions: Ditoo Left, Right and four lever pulls all used one HCI ACL handle; the Tivoo negative control used a different handle. Source/destination address fields were all zero because BTVS attached after the links already existed. The media changed/paused during that diagnostic because the ownership sink was intentionally absent.
+- Therefore handle separation is real, but **never hard-code the observed handle**; reconnects may reassign it.
+- BTVS itself requires an elevated Windows token on this host. Elevated acceptance is valid for research, but production Runtime 017 must use a narrowly-scoped elevated capture mechanism/task or another design that does not elevate the whole OpenDitoo runtime.
+
+### What the empty handle/frame diagnostics mean
+
+Two follow-up diagnostics printed empty result sets. Do not treat those as evidence against raw-handle learning. Runtime 016 telemetry proves a frame was sent and ACKed inside the frame-attribution capture window. The newer diagnostics also contained a concrete tshark output bug: they passed `separator=\\t` instead of the working `separator=\t`. Commit `c11ca8d` fixes the affected diagnostics, adds guards, and leaves the focused suite 17/17 PASS.
+
+### Immediate next action
+
+From **Administrator PowerShell**, with media paused/off, rerun only the corrected low-level ACL diagnostic:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "\\wsl.localhost\Ubuntu\home\wan\Projects\openditoo-research\.openditoo-local\worktrees\media-avrcp\scripts\diagnose_runtime_017_raw_acl_attribution.ps1"
+```
+
+Expected output begins under `===== RAW-ACL ATTRIBUTION RESULT =====`. If it shows OpenDitoo's fixed frame preambles on the same handle that carries Ditoo AVRCP, implement dynamic handle binding below tshark's stale higher-level conversation state: broker starts unbound, observes known OpenDitoo traffic, binds the current Ditoo ACL handle, and only then emits `0x4C/0x4B/0x44/0x46` events from that handle. If it still emits no rows, use the now-visible tshark stderr/raw rows to repair the low-level field extraction before changing architecture again.
+
+After dynamic attribution is implemented, repeat active-media acceptance with the fixed-Playing ownership sink: Left 5/5, Right 5/5, lever 20/20, total 30, Tivoo negative control excluded, zero media reaction, zero helper orphans. Only then revisit production elevation plumbing and the exact Runtime 017 grant/cutover.
