@@ -70,6 +70,9 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertIn('$psi.Arguments =', src)
         self.assertNotIn('ArgumentList.Add', src)
         self.assertNotIn('Start-Process -FilePath $exe -ArgumentList $args', src)
+        self.assertIn('$psi.RedirectStandardError = $true', src)
+        self.assertIn('BROKER_STDERR=', src)
+        self.assertIn('R017_ACCEPT_PREEXISTING_HELPERS', src)
 
     def test_cutover_is_exact_grant_gated_hash_pinned_and_rolls_back_to_016(self):
         shell = (ROOT / 'scripts/cutover_runtime_017.sh').read_text(encoding='utf-8')

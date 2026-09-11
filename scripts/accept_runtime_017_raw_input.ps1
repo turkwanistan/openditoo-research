@@ -48,6 +48,9 @@ $before = @{}
 foreach ($name in @('OpenDitoo.RawAvrcpBroker','OpenDitoo.ButtonProbe','btvs','tshark')) {
     $before[$name] = @((Get-Process -Name $name -ErrorAction SilentlyContinue | ForEach-Object { $_.Id }))
 }
+$existing = @()
+foreach ($name in $before.Keys) { foreach ($pid in @($before[$name])) { $existing += "$name`:$pid" } }
+Step 'R017_ACCEPT_PREEXISTING_HELPERS' ($(if ($existing.Count -eq 0) { '0' } else { $existing -join ',' }))
 
 Read-Host 'Start media playing through the EDIFIER now. Press ENTER when it is definitely playing' | Out-Null
 
@@ -93,13 +96,25 @@ $psi = New-Object System.Diagnostics.ProcessStartInfo
 $psi.FileName = $exe
 $psi.UseShellExecute = $false
 $psi.CreateNoWindow = $true
+$brokerStdout = Join-Path $env:TEMP "openditoo-r017-broker-$stamp.stdout.log"
+$brokerStderr = Join-Path $env:TEMP "openditoo-r017-broker-$stamp.stderr.log"
+$psi.RedirectStandardOutput = $true
+$psi.RedirectStandardError = $true
 $psi.Arguments = (($args | ForEach-Object { Quote-WindowsArg ([string]$_) }) -join ' ')
 $proc = [System.Diagnostics.Process]::Start($psi)
 Need ($null -ne $proc) 'failed to start raw AVRCP broker process'
 try {
     $ready = $false
     foreach ($i in 1..30) {
-        if ($proc.HasExited) { throw "broker exited during startup: $($proc.ExitCode)" }
+        if ($proc.HasExited) {
+            $stdoutText = $proc.StandardOutput.ReadToEnd()
+            $stderrText = $proc.StandardError.ReadToEnd()
+            if ($stdoutText) { $stdoutText | Set-Content -LiteralPath $brokerStdout -Encoding UTF8; Write-Host "BROKER_STDOUT=$stdoutText" }
+            if ($stderrText) { $stderrText | Set-Content -LiteralPath $brokerStderr -Encoding UTF8; Write-Host "BROKER_STDERR=$stderrText" }
+            Write-Host "R017_ACCEPT_BROKER_STDOUT_FILE=$brokerStdout"
+            Write-Host "R017_ACCEPT_BROKER_STDERR_FILE=$brokerStderr"
+            throw "broker exited during startup: $($proc.ExitCode)"
+        }
         if (Test-Path -LiteralPath $events) {
             $first = Get-Content -LiteralPath $events -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($first -match 'broker_started') { $ready = $true; break }
