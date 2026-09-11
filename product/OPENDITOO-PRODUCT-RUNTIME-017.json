@@ -43,8 +43,8 @@
       "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
       "product_runtime_sha256": "85b6ca70a1340bd53cc69441034c780d39d62db985cf6d61a10c1bccb0483e0d",
       "product_runtime_v11_sha256": "68f69637f4f486200adeb93547bbee4a4e10b38264f9021a33df7a0cf4b21f1d",
-      "raw_avrcp_input_sha256": "d3871228e9644b28c48d32299be89ff9ae79ddda2a45860497ff380f1fc108a6",
-      "raw_avrcp_broker_program_sha256": "f7184d4c14771b7747505f1edaaee4c9ed5dbc7fa894750edeced529e8e5dc0c",
+      "raw_avrcp_input_sha256": "6674db3337f3d1cd594157a9087acf19bba17a5b5671fcee5c6b9327e129fbc2",
+      "raw_avrcp_broker_program_sha256": "f2bfec50c0a9665421f7cc3be01a867506a4219fd6ca848a8606014933b8ea89",
       "raw_avrcp_broker_csproj_sha256": "419f978b05c83015dba37dec7906b4013bec42e829d4d2bfe0e0a8305ab63a38",
       "raw_avrcp_stage_script_sha256": "8a0a80d039ab2669899153dd9e34bdcc650f204f0e7a5ef5d829fce6ad4994a4",
       "runtime_017_cutover_sha256": "ee3d7dd14a6019e9d51150ff9941e6623fdad0e5da356595e7cf1f79b61bb05f",
@@ -95,7 +95,7 @@
     "host_note": "Unchanged Runtime 009 Host; Runtime 012 changes WSL Moss page default + hash-bound v3 art/choreography only.",
     "raw_avrcp_broker_sha256": {
       "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.exe": "ba95755b2c424380fdb29b47260fe660ef9b006b836fb54c95a7a895a29e8fc2",
-      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.dll": "d49769a0cd9a49a6188ed6120d6f0fe28339c2e50600d5216108afb4580f21d6",
+      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.dll": "530755e173329b05165b2bb2c56e650c5efa849d3466e7a835b5c85b64f8b6fb",
       "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.deps.json": "384fb4aa56d643d30f155567fca8f607e1f4f8bd3ab0cbe33b897371d8fc6218",
       "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.runtimeconfig.json": "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2"
     },
@@ -146,7 +146,7 @@
       "tshark_exe": "C:\\Program Files\\Wireshark\\tshark.exe",
       "port": 24353,
       "sink_status": "playing",
-      "device_attribution": "bthci_acl.src.bd_addr == exact target; no handle/CID persistence",
+      "device_attribution": "ACL handle learned at runtime from OpenDitoo outbound image preamble A->B; unbound on HCI disconnect; no handle/CID persistence",
       "operations": {
         "0x44": "lever_candidate",
         "0x46": "lever_candidate",
@@ -154,7 +154,7 @@
         "0x4C": "nav_left"
       },
       "lifetime": "one Windows sidecar child of product runtime; Job Object kills ButtonProbe/BTVS/tshark when broker exits; WSL supervisor restart limited to once/5s",
-      "media_keys": "SMTC Playing is ownership sink only; page/game input comes exclusively from exact-target raw AVRCP presses"
+      "media_keys": "SMTC Playing is ownership sink only; page/game input comes exclusively from inbound raw AVRCP presses on the learned Ditoo handle"
     },
     "evidence": [
       "captures/OPENDITOO-BTN2-WINDOWS-RECEIVE-2026-09-10.json",

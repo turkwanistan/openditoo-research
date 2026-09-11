@@ -55,6 +55,52 @@ internal static class Program
         return null;
     }
 
+    // tshark columns: epoch, ACL handle, ACL pb_flag, disconnected handle (HCI event 0x05), raw L2CAP payload.
+    internal sealed record Observation(InputEvent? Input, string? Change, string? Handle);
+
+    /// <summary>
+    /// Learns the exact Ditoo ACL handle from OpenDitoo's own outbound image transaction (Pixel Coloring
+    /// preamble A immediately followed by preamble B on the same handle), because BTVS attached mid-connection
+    /// has no address mapping. Nothing is persisted: a disconnect of the bound handle unbinds, and the next
+    /// OpenDitoo frame rebinds. Only inbound AVRCP presses on the bound handle become input.
+    /// </summary>
+    internal sealed class HandleBinder
+    {
+        private const string PreambleA = "0103009fa20002";
+        private const string PreambleB = "010400bd31f20002";
+        private string? pendingA;
+        internal string? Bound { get; private set; }
+
+        internal Observation Observe(string[] c)
+        {
+            string Col(int i) => i < c.Length ? c[i].Trim() : string.Empty;
+            string handle = Col(1), pb = Col(2), disconnected = Col(3);
+            if (handle.Length == 0)
+            {
+                if (disconnected.Length == 0) return new(null, null, null);
+                if (disconnected == pendingA) pendingA = null;
+                if (disconnected != Bound) return new(null, null, disconnected);
+                Bound = null;
+                return new(null, "handle_unbound", disconnected);
+            }
+            var hex = new string(Col(4).Where(Uri.IsHexDigit).ToArray()).ToLowerInvariant();
+            if (pb == "0") // host -> controller (spec: controller never sends pb 00 on BR/EDR)
+            {
+                if (hex.Contains(PreambleA, StringComparison.Ordinal)) { pendingA = handle; return new(null, null, handle); }
+                if (!hex.Contains(PreambleB, StringComparison.Ordinal) || pendingA != handle) return new(null, null, handle);
+                pendingA = null;
+                if (Bound == handle) return new(null, null, handle);
+                Bound = handle;
+                return new(null, "handle_bound", handle);
+            }
+            if (pb != "2") return new(null, null, handle); // AVRCP presses arrive controller -> host, first fragment
+            var input = DecodePayload(hex);
+            if (input is null) return new(null, null, handle);
+            return handle == Bound ? new(input, null, handle)
+                 : new(null, Bound is null ? "ignored_unbound" : "ignored_foreign_handle", handle);
+        }
+    }
+
     private sealed record Options(string Target, string Events, string SinkLog, string SinkExe,
                                   string BtvsExe, string TsharkExe, int Port, int Seconds)
     {
@@ -101,7 +147,8 @@ internal static class Program
             using var writer = new StreamWriter(options.Events, append: true) { AutoFlush = true };
             Write(writer, "broker_started", new Dictionary<string, object?>
             {
-                ["source"] = "avrcp_raw", ["ownership_sink"] = "playing", ["device_attribution"] = "acl_source_address",
+                ["source"] = "avrcp_raw", ["ownership_sink"] = "playing", ["device_attribution"] = "learned_acl_handle_openditoo_preamble",
+                ["target"] = options.Target,
                 ["btvs_port"] = options.Port,
             });
 
@@ -109,16 +156,20 @@ internal static class Program
             var btvs = Start(options.BtvsExe, ["-Mode", "Wireshark", "-Remote", "on", "-Port", options.Port.ToString(CultureInfo.InvariantCulture)]);
             Thread.Sleep(800);
 
-            var filter = $"bthci_acl.src.bd_addr == {options.Target} && (" +
-                         "btl2cap.payload contains 11:0e:00:48:7c:4b:00 || " +
-                         "btl2cap.payload contains 11:0e:00:48:7c:4c:00 || " +
-                         "btl2cap.payload contains 11:0e:00:48:7c:44:00 || " +
-                         "btl2cap.payload contains 11:0e:00:48:7c:46:00)";
+            // RFCOMM/AVCTP dissection is disabled so every channel stays raw btl2cap.payload whether BTVS saw
+            // the L2CAP connect (fresh link/reconnect) or attached mid-connection (no PSM/address state).
+            const string filter = "bthci_evt.code == 0x05 || " +
+                "(bthci_acl.pb_flag == 0 && (btl2cap.payload contains 01:03:00:9f:a2:00:02 || " +
+                "btl2cap.payload contains 01:04:00:bd:31:f2:00:02)) || " +
+                "(bthci_acl.pb_flag == 2 && btl2cap.payload contains 11:0e:00:48:7c)";
             var tshark = Start(options.TsharkExe,
             [
-                "-i", $"TCP@127.0.0.1:{options.Port}", "-l", "-Y", filter,
-                "-T", "fields", "-E", "separator=\\t", "-e", "frame.time_epoch", "-e", "btl2cap.payload"
+                "-i", $"TCP@127.0.0.1:{options.Port}", "-l",
+                "--disable-protocol", "btrfcomm", "--disable-protocol", "btavctp", "-Y", filter,
+                "-T", "fields", "-E", "separator=/t", "-e", "frame.time_epoch", "-e", "bthci_acl.chandle",
+                "-e", "bthci_acl.pb_flag", "-e", "bthci_evt.connection_handle", "-e", "btl2cap.payload"
             ], redirect: true);
+            var binder = new HandleBinder();
 
             var deadline = options.Seconds == 0 ? DateTimeOffset.MaxValue : DateTimeOffset.UtcNow.AddSeconds(options.Seconds);
             var stderr = tshark.StandardError.ReadToEndAsync();
@@ -139,13 +190,21 @@ internal static class Program
                 pendingLine = tshark.StandardOutput.ReadLineAsync();
 
                 var columns = line.Split('\t');
-                var decoded = DecodePayload(columns.Length > 1 ? columns[^1] : columns[0]);
+                var seen = binder.Observe(columns);
+                if (seen.Change is not null)
+                    // Runtime-only diagnostic in the private event log; never persisted into policy or code.
+                    Write(writer, seen.Change, new Dictionary<string, object?>
+                    {
+                        ["source"] = "avrcp_raw_attribution", ["acl_handle"] = seen.Handle,
+                        ["capture_time_epoch"] = columns[0],
+                    });
+                var decoded = seen.Input;
                 if (decoded is null) continue;
                 Write(writer, "event", new Dictionary<string, object?>
                 {
                     ["source"] = "avrcp_raw", ["raw_button"] = decoded.RawButton,
                     ["operation"] = $"0x{decoded.Operation:X2}", ["normalized_candidate"] = decoded.Candidate,
-                    ["capture_time_epoch"] = columns.Length > 1 ? columns[0] : null,
+                    ["capture_time_epoch"] = columns[0],
                 });
             }
             Write(writer, "broker_stopped", new Dictionary<string, object?> { ["reason"] = "lifetime_complete" });
@@ -268,6 +327,30 @@ internal static class Selftest
         Need(Program.DecodePayload("92110e09487c4600") is null, "response_rejected");
         Need(Program.DecodePayload("90110100487c4600") is null, "foreign_profile_rejected");
         Need(Program.DecodePayload("garbage") is null, "garbage_rejected");
+
+        // Handle binding over real tshark rows (RFCOMM UIH-wrapped preambles, raw AVCTP presses).
+        var b = new Program.HandleBinder();
+        Program.Observation See(string row) => b.Observe(row.Split('\t'));
+        const string left = "90110e00487c4c00", a = "0bff0f010103009fa2000286", bb = "0bff1100010400bd31f2000286";
+        Need(See($"1\t0x0100\t2\t\t{left}").Change == "ignored_unbound", "unbound_press_ignored");
+        Need(See($"2\t0x0100\t0\t\t{bb}").Change is null && b.Bound is null, "b_without_a_not_bound");
+        Need(See($"3\t0x0100\t2\t\t{a}").Change is null, "inbound_a_ignored");
+        Need(See($"4\t0x0100\t0\t\t{bb}").Change is null && b.Bound is null, "inbound_a_does_not_arm");
+        See($"5\t0x0200\t0\t\t{a}");
+        Need(See($"6\t0x0100\t0\t\t{bb}").Change is null && b.Bound is null, "cross_handle_ab_rejected");
+        See($"7\t0x0100\t0\t\t{a}");
+        Need(See($"8\t0x0100\t0\t\t{bb}").Change == "handle_bound" && b.Bound == "0x0100", "bound");
+        See($"9\t0x0100\t0\t\t{a}");
+        Need(See($"10\t0x0100\t0\t\t{bb}").Change is null, "rebind_same_handle_silent");
+        Need(See($"11\t0x0100\t2\t\t{left}").Input?.Candidate == "nav_left", "bound_press_accepted");
+        Need(See($"12\t0x0100\t0\t\t{left}").Input is null, "outbound_press_rejected");
+        Need(See($"13\t0x0100\t2\t\t90110e00487ccc00").Input is null, "bound_release_rejected");
+        Need(See($"14\t0x0200\t2\t\td0110e00487c4400").Change == "ignored_foreign_handle", "foreign_press_ignored");
+        Need(See("15\t\t\t0x0200\t").Change is null && b.Bound == "0x0100", "foreign_disconnect_ignored");
+        Need(See("16\t\t\t0x0100\t").Change == "handle_unbound" && b.Bound is null, "disconnect_unbinds");
+        Need(See($"17\t0x0100\t2\t\t{left}").Input is null, "stale_handle_after_disconnect_rejected");
+        See($"18\t0x0300\t0\t\t{a}");
+        Need(See($"19\t0x0300\t0\t\t{bb}").Change == "handle_bound" && b.Bound == "0x0300", "rebind_after_reconnect");
         Console.WriteLine("RAW_AVRCP_BROKER_SELFTEST=PASS");
         return 0;
     }

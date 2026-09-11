@@ -73,6 +73,18 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertIn('$psi.RedirectStandardError = $true', src)
         self.assertIn('BROKER_STDERR=', src)
         self.assertIn('R017_ACCEPT_PREEXISTING_HELPERS', src)
+        for auto in ('$pid ', '$input ', '$args '):
+            self.assertNotIn(auto, src)
+
+    def test_acceptance_learns_handle_before_cues_and_requires_negative_control(self):
+        src = (ROOT / 'scripts/accept_runtime_017_raw_input.ps1').read_text(encoding='utf-8')
+        start = src.index("systemctl --user start openditoo-product.service")
+        stop = src.index("systemctl --user stop openditoo-product.service")
+        self.assertLess(src.index('R017_ACCEPT_BROKER_READY'), start)
+        self.assertLess(start, src.index('"type":"handle_bound"'))
+        self.assertLess(stop, src.index('R017_ACCEPT_HANDLE_BOUND'))
+        self.assertLess(src.index('R017_ACCEPT_HANDLE_BOUND'), src.index('DITOO LEFT'))
+        self.assertIn('$foreign -ge 1 -and $unbound -eq 0', src)
 
     def test_acceptance_harness_requires_elevation_before_media_prompt(self):
         src = (ROOT / 'scripts/accept_runtime_017_raw_input.ps1').read_text(encoding='utf-8')
@@ -106,31 +118,14 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertIn("'-e','bthci_acl.pb_flag'", src)
         self.assertIn("'-e','btl2cap.payload'", src)
         self.assertIn("'-e','data.data'", src)
-        self.assertIn("'separator=\\t'", src)
-        self.assertNotIn("'separator=\\\\t'", src)
+        self.assertIn("'separator=/t'", src)  # tshark's tab escape; '\\t' prints a literal backslash
+        self.assertNotIn('separator=\\', src)
+        self.assertIn("'--disable-protocol','btrfcomm','--disable-protocol','btavctp'", src)
         self.assertIn("0103009fa20002", src)
         self.assertIn("010400bd31f20002", src)
         self.assertIn("systemctl --user start openditoo-product.service", src)
         self.assertIn("systemctl --user stop openditoo-product.service", src)
 
-    def test_frame_attribution_diagnostic_uses_exact_openditoo_preambles(self):
-        src = (ROOT / 'scripts/diagnose_runtime_017_frame_attribution.ps1').read_text(encoding='utf-8')
-        self.assertIn('01:03:00:9f:a2:00:02', src)
-        self.assertIn('01:04:00:bd:31:f2:00:02', src)
-        self.assertIn("'-e','bthci_acl.chandle'", src)
-        self.assertIn("systemctl --user start openditoo-product.service", src)
-        self.assertIn("systemctl --user stop openditoo-product.service", src)
-
-    def test_handle_learning_diagnostic_captures_fresh_rfcomm_open(self):
-        src = (ROOT / 'scripts/diagnose_runtime_017_handle_learning.ps1').read_text(encoding='utf-8')
-        self.assertIn("btl2cap.cid == 0x0001", src)
-        self.assertIn("systemctl --user start openditoo-product.service", src)
-        self.assertIn("systemctl --user stop openditoo-product.service", src)
-        self.assertIn("duration:20", src)
-        self.assertIn('$psi.Arguments=', src)
-        self.assertNotIn('Start-Process -FilePath $tshark -ArgumentList $args', src)
-        self.assertNotIn("image-show", src)
-        self.assertNotIn("raw-send", src)
     def test_attribution_diagnostic_is_receive_only_and_outputs_handle_and_both_addresses(self):
         src = (ROOT / 'scripts/diagnose_runtime_017_attribution.ps1').read_text(encoding='utf-8')
         self.assertIn("'bthci_acl.chandle'", src)
@@ -142,7 +137,14 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
 
     def test_windows_sidecar_is_receive_only_exact_peer_and_health_bounded(self):
         src = (ROOT / 'runtime/windows/OpenDitoo.RawAvrcpBroker/Program.cs').read_text(encoding='utf-8')
-        self.assertIn('bthci_acl.src.bd_addr == {options.Target}', src)
+        self.assertNotIn('bd_addr', src)  # mid-connection BTVS has zeroed addresses
+        self.assertIn('class HandleBinder', src)
+        self.assertIn('"--disable-protocol", "btrfcomm", "--disable-protocol", "btavctp"', src)
+        self.assertIn('"separator=/t"', src)
+        self.assertIn('bthci_evt.code == 0x05', src)
+        self.assertIn('bthci_acl.pb_flag == 0 && (btl2cap.payload contains 01:03:00:9f:a2:00:02', src)
+        self.assertIn('bthci_acl.pb_flag == 2 && btl2cap.payload contains 11:0e:00:48:7c', src)
+        self.assertNotIn('0x0100', src[:src.index('internal static class Selftest')])  # no hard-coded handle
         self.assertIn('"--status", "playing"', src)
         for op in ('0x4C', '0x4B', '0x44', '0x46'):
             self.assertIn(op, src)

@@ -3,11 +3,12 @@
 The Windows sidecar owns three receive-only helper processes:
 - OpenDitoo.ButtonProbe in fixed ``playing`` mode, solely to keep Windows media-session ownership;
 - Microsoft BTVS on a dedicated local TCP port;
-- tshark, display-filtered to AVRCP pass-through PRESS commands whose ACL source is the exact Ditoo.
+- tshark, reading raw L2CAP bytes; the Ditoo ACL handle is learned at runtime from OpenDitoo's own outbound
+  image preambles (never persisted), and only inbound AVRCP pass-through PRESS commands on it become input.
 
 Only normalized input NDJSON crosses back into WSL. No Bluetooth write, Host call, RFCOMM controller,
-media injection, or device target selection exists here. The target is supplied by the hash-bound product
-policy and is used only as a capture attribution filter.
+media injection, or device target selection exists here. The hash-bound policy target is passed only as the
+audit label for the learned handle.
 """
 from __future__ import annotations
 

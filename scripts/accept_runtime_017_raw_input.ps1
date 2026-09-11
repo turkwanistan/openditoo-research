@@ -54,7 +54,7 @@ foreach ($name in @('OpenDitoo.RawAvrcpBroker','OpenDitoo.ButtonProbe','btvs','t
     $before[$name] = @((Get-Process -Name $name -ErrorAction SilentlyContinue | ForEach-Object { $_.Id }))
 }
 $existing = @()
-foreach ($name in $before.Keys) { foreach ($pid in @($before[$name])) { $existing += "$name`:$pid" } }
+foreach ($name in $before.Keys) { foreach ($procId in @($before[$name])) { $existing += "$name`:$procId" } }
 Step 'R017_ACCEPT_PREEXISTING_HELPERS' ($(if ($existing.Count -eq 0) { '0' } else { $existing -join ',' }))
 
 Read-Host 'Start media playing through the EDIFIER now. Press ENTER when it is definitely playing' | Out-Null
@@ -64,8 +64,8 @@ $events = Join-Path $env:TEMP "openditoo-r017-raw-input-$stamp.ndjson"
 $sinkLog = Join-Path $env:TEMP "openditoo-r017-sink-$stamp.ndjson"
 Remove-Item -LiteralPath $events,$sinkLog -Force -ErrorAction SilentlyContinue
 
-$args = @(
-    '--seconds','90',
+$brokerArgs = @(
+    '--seconds','150',
     '--target',[string]$policy.target.exact_unit_id,
     '--events',$events,
     '--sink-log',$sinkLog,
@@ -83,17 +83,17 @@ function Quote-WindowsArg([string]$Value) {
     [void]$sb.Append('"')
     $slashes = 0
     foreach ($ch in $Value.ToCharArray()) {
-        if ($ch -eq '\\') { $slashes++; continue }
+        if ($ch -eq '\') { $slashes++; continue }
         if ($ch -eq '"') {
-            [void]$sb.Append(('\\' * ($slashes * 2 + 1)))
+            [void]$sb.Append(('\' * ($slashes * 2 + 1)))
             [void]$sb.Append('"')
             $slashes = 0
             continue
         }
-        if ($slashes -gt 0) { [void]$sb.Append(('\\' * $slashes)); $slashes = 0 }
+        if ($slashes -gt 0) { [void]$sb.Append(('\' * $slashes)); $slashes = 0 }
         [void]$sb.Append($ch)
     }
-    if ($slashes -gt 0) { [void]$sb.Append(('\\' * ($slashes * 2))) }
+    if ($slashes -gt 0) { [void]$sb.Append(('\' * ($slashes * 2))) }
     [void]$sb.Append('"')
     return $sb.ToString()
 }
@@ -105,7 +105,7 @@ $brokerStdout = Join-Path $env:TEMP "openditoo-r017-broker-$stamp.stdout.log"
 $brokerStderr = Join-Path $env:TEMP "openditoo-r017-broker-$stamp.stderr.log"
 $psi.RedirectStandardOutput = $true
 $psi.RedirectStandardError = $true
-$psi.Arguments = (($args | ForEach-Object { Quote-WindowsArg ([string]$_) }) -join ' ')
+$psi.Arguments = (($brokerArgs | ForEach-Object { Quote-WindowsArg ([string]$_) }) -join ' ')
 $proc = [System.Diagnostics.Process]::Start($psi)
 Need ($null -ne $proc) 'failed to start raw AVRCP broker process'
 try {
@@ -128,6 +128,21 @@ try {
     }
     Need $ready 'broker did not become ready'
     Step 'R017_ACCEPT_BROKER_READY' 'PASS'
+
+    # The broker learns the Ditoo ACL handle only from OpenDitoo's own image frames. Standalone acceptance has
+    # no product running, so briefly run the accepted Runtime 016 (hands off) to send frames, then stop it so its
+    # mirror-mode ButtonProbe cannot compete during the cues. RFCOMM closes; the ACL link and binding remain.
+    Write-Host '*** HANDS OFF: RUNTIME 016 BRIEFLY SENDS FRAMES SO THE BROKER CAN LEARN THE DITOO LINK ***' -ForegroundColor Cyan
+    & wsl.exe -d Ubuntu -- bash -lc 'systemctl --user start openditoo-product.service'
+    $bound = $false
+    foreach ($i in 1..60) {
+        if (@(Get-Content -LiteralPath $events -ErrorAction SilentlyContinue | Where-Object { $_ -match '"type":"handle_bound"' }).Count -gt 0) { $bound = $true; break }
+        Start-Sleep -Milliseconds 250
+    }
+    Start-Sleep -Seconds 2
+    & wsl.exe -d Ubuntu -- bash -lc 'systemctl --user stop openditoo-product.service'
+    Need $bound 'broker did not learn the Ditoo ACL handle from Runtime 016 frames'
+    Step 'R017_ACCEPT_HANDLE_BOUND' 'PASS'
 
     function Cue([string]$Text) {
         Write-Host "*** $Text ***" -ForegroundColor Yellow
@@ -153,12 +168,14 @@ $rows = @()
 if (Test-Path -LiteralPath $events) {
     $rows = @(Get-Content -LiteralPath $events | ForEach-Object { if ($_){ $_ | ConvertFrom-Json } })
 }
-$input = @($rows | Where-Object { $_.type -eq 'event' -and $_.source -eq 'avrcp_raw' })
-$left = @($input | Where-Object { $_.normalized_candidate -eq 'nav_left' }).Count
-$right = @($input | Where-Object { $_.normalized_candidate -eq 'nav_right' }).Count
-$lever = @($input | Where-Object { $_.normalized_candidate -eq 'lever_candidate' }).Count
-$play = @($input | Where-Object { $_.operation -eq '0x44' }).Count
-$pause = @($input | Where-Object { $_.operation -eq '0x46' }).Count
+$inputs = @($rows | Where-Object { $_.type -eq 'event' -and $_.source -eq 'avrcp_raw' })
+$left = @($inputs | Where-Object { $_.normalized_candidate -eq 'nav_left' }).Count
+$right = @($inputs | Where-Object { $_.normalized_candidate -eq 'nav_right' }).Count
+$lever = @($inputs | Where-Object { $_.normalized_candidate -eq 'lever_candidate' }).Count
+$play = @($inputs | Where-Object { $_.operation -eq '0x44' }).Count
+$pause = @($inputs | Where-Object { $_.operation -eq '0x46' }).Count
+$foreign = @($rows | Where-Object { $_.type -eq 'ignored_foreign_handle' }).Count
+$unbound = @($rows | Where-Object { $_.type -eq 'ignored_unbound' -or $_.type -eq 'handle_unbound' }).Count
 
 $orphans = @()
 foreach ($name in @('OpenDitoo.RawAvrcpBroker','OpenDitoo.ButtonProbe','btvs','tshark')) {
@@ -173,12 +190,14 @@ Step 'R017_ACCEPT_RIGHT' "$right/5"
 Step 'R017_ACCEPT_LEVER' "$lever/20"
 Step 'R017_ACCEPT_LEVER_PLAY' "$play"
 Step 'R017_ACCEPT_LEVER_PAUSE' "$pause"
-Step 'R017_ACCEPT_TOTAL_INPUT' ([string]$input.Count)
+Step 'R017_ACCEPT_TOTAL_INPUT' ([string]$inputs.Count)
+Step 'R017_ACCEPT_FOREIGN_HANDLE_IGNORED' "$foreign"
+Step 'R017_ACCEPT_UNBOUND_OR_UNBIND' "$unbound"
 Step 'R017_ACCEPT_NEW_HELPER_ORPHANS' ($(if ($orphans.Count -eq 0) { '0' } else { $orphans -join ',' }))
 Step 'R017_ACCEPT_EVENTS_FILE' $events
 Step 'R017_ACCEPT_SINK_FILE' $sinkLog
 $media = Read-Host 'Did the browser/media skip, pause, or otherwise react to ANY of those Ditoo controls? Enter YES or NO'
 Step 'R017_ACCEPT_MEDIA_REACTION' $media.Trim().ToUpperInvariant()
 
-$pass = ($left -eq 5 -and $right -eq 5 -and $lever -eq 20 -and $input.Count -eq 30 -and $orphans.Count -eq 0 -and $media.Trim().ToUpperInvariant() -eq 'NO')
+$pass = ($left -eq 5 -and $right -eq 5 -and $lever -eq 20 -and $inputs.Count -eq 30 -and $foreign -ge 1 -and $unbound -eq 0 -and $orphans.Count -eq 0 -and $media.Trim().ToUpperInvariant() -eq 'NO')
 Step 'R017_ACCEPT_RESULT' ($(if ($pass) { 'PASS' } else { 'FAIL_OR_OPERATOR_REVIEW' }))

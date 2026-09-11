@@ -37,13 +37,14 @@ $out=Join-Path $env:TEMP "openditoo-r017-raw-acl-$stamp.tsv"
 $err=Join-Path $env:TEMP "openditoo-r017-raw-acl-$stamp.err"
 $btvsProc=Start-Process -FilePath $btvs -ArgumentList @('-Mode','Wireshark','-Remote','on','-Port',[string]$port) -PassThru
 Start-Sleep -Seconds 1
-$args=@('-i',"TCP@127.0.0.1:$port",'-a','duration:18','-l','-Y','bthci_acl','-T','fields','-E','separator=\t',
+$tsArgs=@('-i',"TCP@127.0.0.1:$port",'-a','duration:18','-l','--disable-protocol','btrfcomm','--disable-protocol','btavctp',
+        '-Y','bthci_acl','-T','fields','-E','separator=/t',
         '-e','frame.time_relative','-e','bthci_acl.chandle','-e','bthci_acl.pb_flag','-e','bthci_acl.length',
         '-e','btl2cap.cid','-e','btl2cap.payload','-e','data.data')
 $psi=New-Object System.Diagnostics.ProcessStartInfo
 $psi.FileName=$tshark; $psi.UseShellExecute=$false; $psi.CreateNoWindow=$true
 $psi.RedirectStandardOutput=$true; $psi.RedirectStandardError=$true
-$psi.Arguments=(($args | ForEach-Object { Quote-WindowsArg ([string]$_) }) -join ' ')
+$psi.Arguments=(($tsArgs | ForEach-Object { Quote-WindowsArg ([string]$_) }) -join ' ')
 $ts=[System.Diagnostics.Process]::Start($psi)
 Need ($null -ne $ts) 'failed to start tshark'
 $outTask=$ts.StandardOutput.ReadToEndAsync(); $errTask=$ts.StandardError.ReadToEndAsync()
