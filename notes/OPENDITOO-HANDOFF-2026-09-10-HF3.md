@@ -1,5 +1,21 @@
 # OpenDitoo handoff — HF-3 interactive acceptance — 2026-09-10
 
+## TL;DR for the next session
+
+- **Live:** Runtime 007 + webcam 006 on Host `3faf520f…`, `connected`. Rollback: `bash scripts/cutover_runtime_007.sh --rollback` (from main).
+- **HF-3 PASS** = `OPENDITOO-INTERACTIVE-HF3-008` (`captures/OPENDITOO-INTERACTIVE-HF3-008-LIVE-2026-09-10.json`). 001–007 are consumed; their failures and fixes are below, in order.
+- **Next:** HF-4 / Runtime 008 per `notes/OPENDITOO-HF4-STANDING-SUCCESSOR-PLAN-2026-09-10.md`. It is an offline build; going live needs `Grant OPENDITOO-PRODUCT-RUNTIME-008`.
+- **Open:** the lightning-strike visual has never been owner-observed. Trigger it with the Dashboard visible.
+- **Traps learned today (all evidenced below):**
+  - streaming first-frame timeouts on the old Host;
+  - never Host-close/reopen to change pages;
+  - fast ACKs need the 50 ms client floor **and** the Host-anchored 45 ms gap;
+  - lever `0xBD` mid-send surfaces as 409 `SESSION_CANVAS_INVALIDATED` **or** `SESSION_NOT_ACTIVE`, and counts as a yield only when the Host confirms;
+  - start runs on the owner's first press (two ids were lost to a missed start cue);
+  - the headless Host task orphans the Host on task stop;
+  - the Ditoo battery can die mid-session.
+- **Run pattern for any live experiment:** start `scripts/hf3_operator_assist.py` in the background, then `grant` → `check` → `bash scripts/run_interactive_hf3.sh`.
+
 
 Feature worktree: `feat/high-fps-interactive-pages`. Runtime 006 on `main` remains the live rollback baseline.
 
