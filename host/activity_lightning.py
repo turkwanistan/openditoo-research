@@ -22,18 +22,21 @@ STAGE_COUNT = 10
 _BOLT = ((2, 0), (1, 1), (2, 2), (1, 3), (2, 4), (2, 5))
 
 # Stage plan: (bolt prefix length, role/accent colour or None, impact pixels, bolt colour).
-# Stages 0-3 are descent, 4 is impact, 5-9 are ACK-gated flare/aftershock frames.
+# Stages 0-3 are descent, 4 is impact, 5-9 are ACK-gated glow frames. The glow is the icon's own
+# pixels only: Runtime 008 owner review found the lone above-icon pixels the earlier aftershock
+# drew at 5/7/9 read as a stray spark. Consecutive stages must differ (an unchanged frame is never
+# sent, so it would never be ACKed and the pulse would not advance).
 _PROGRAM = (
     (1, None, (), CYAN),
     (2, None, (), CYAN),
     (4, None, (), BLUE),
     (5, None, (), LIGHT_BLUE),
     (6, CYAN, ((0, 5), (4, 5), (1, 4), (3, 4)), WHITE),
-    (0, CYAN, ((1, 4), (3, 4)), CYAN),
-    (0, BLUE, (), BLUE),
-    (0, LIGHT_BLUE, ((2, 4),), LIGHT_BLUE),
     (0, CYAN, (), CYAN),
-    (0, BLUE, ((2, 4),), BLUE),
+    (0, BLUE, (), BLUE),
+    (0, LIGHT_BLUE, (), LIGHT_BLUE),
+    (0, CYAN, (), CYAN),
+    (0, BLUE, (), BLUE),
 )
 
 

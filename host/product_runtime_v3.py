@@ -1,4 +1,7 @@
-"""Runtime 008 (HF-4): the standing interactive-pages product in ONE streaming session.
+"""Runtime 009 (HF-4): the standing interactive-pages product in ONE streaming session.
+
+Runtime 009 is exactly Runtime 008 (live 2026-09-11) plus two owner-review fixes: the lightning glow
+no longer draws lone above-icon "spark" pixels, and a session's first ACK is always persisted.
 
 Supervisor semantics are Runtime 007's (``product_runtime_v2.run_product``): every Host session is
 a fresh, uniquely identified, bounded session; an aged session renews; a Host-confirmed stock yield
@@ -40,9 +43,9 @@ from host.slots_page import SlotsPage
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_REVISION = 4
 EXACT_UNIT_ID = activity_session.EXACT_UNIT_ID
-TEMPLATE = ROOT / "product" / "OPENDITOO-PRODUCT-RUNTIME-008.json"
+TEMPLATE = ROOT / "product" / "OPENDITOO-PRODUCT-RUNTIME-009.json"
 R007_TEMPLATE = ROOT / "product" / "OPENDITOO-PRODUCT-RUNTIME-007.json"
-GRANT_TEXT = "Grant OPENDITOO-PRODUCT-RUNTIME-008"
+GRANT_TEXT = "Grant OPENDITOO-PRODUCT-RUNTIME-009"
 STATE_FILE = product_runtime_v2.STATE_FILE
 PAGES_STATE_FILE = pagination.PAGES_STATE_FILE  # product-status already reads this path
 
@@ -303,7 +306,9 @@ def run_product(policy: StandingPolicy, transport_factory, *, stop_requested: Ca
         if fresh:
             runtime_state["last_input_to_first_ack_ms"] = fresh[-1]["first_ack_ms"]
             publish()
-        if fresh or now - last_persist[0] >= TELEMETRY_PERSIST_SECONDS:
+        # count == 1: a session's first ACK often lands < 1 s after the open's persist (Runtime 008
+        # live: frames_acked stayed 0 on a quiet dashboard until the next change).
+        if fresh or count == 1 or now - last_persist[0] >= TELEMETRY_PERSIST_SECONDS:
             persist(status="connected", last_error=None)
 
     persist(status="running")

@@ -1981,7 +1981,7 @@ class ProductRuntimeTests(unittest.TestCase):
 # The newest committed product template. Older revisions stay in the repository as records of
 # what was reviewed against a superseded Host build, and are deliberately NOT hash-valid any
 # more -- re-validating them would mean pretending an old policy still describes this binary.
-CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-008.json"
+CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-009.json"
 # The last revision-2 (product_runtime_v2) template: the v2 loader tests build their policies from
 # it, patching in this tree's code and Host hashes, since it no longer names the current Host.
 V2_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-005.json"
@@ -4882,8 +4882,10 @@ class PaginationTests(unittest.TestCase):
 
     @unittest.skipUnless(Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.dll").is_file(),
                          "the staged Windows ButtonProbe is only on the owner's machine")
-    def test_008_template_hashes_match_this_tree_and_007_006_are_superseded_records(self) -> None:
-        product_runtime_v3.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-008.json", require_authority=False)
+    def test_009_template_hashes_match_this_tree_and_older_revisions_are_superseded_records(self) -> None:
+        product_runtime_v3.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-009.json", require_authority=False)
+        with self.assertRaises(product_runtime_v2.ProductPolicyError):
+            product_runtime_v3.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-008.json", require_authority=False)
         for old in ("OPENDITOO-PRODUCT-RUNTIME-007.json", "OPENDITOO-PRODUCT-RUNTIME-006.json"):
             with self.assertRaises(product_runtime_v2.ProductPolicyError):
                 pagination.load_policy(ROOT / "product" / old, require_authority=False)

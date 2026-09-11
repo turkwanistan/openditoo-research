@@ -11,11 +11,20 @@ class ActivityLightningTests(unittest.TestCase):
     def setUp(self):
         self.base = bytes(SIZE * SIZE * 3)
 
-    def test_all_ten_stages_are_distinct(self):
-        frames = [activity_lightning.apply_stage(self.base, "wsl_mcp", stage)
-                  for stage in range(activity_lightning.STAGE_COUNT)]
-        hashes = {hashlib.sha256(frame).hexdigest() for frame in frames}
-        self.assertEqual(len(hashes), activity_lightning.STAGE_COUNT)
+    def test_consecutive_stages_differ_so_every_stage_is_sent_and_acked(self):
+        frames = [self.base] + [activity_lightning.apply_stage(self.base, "wsl_mcp", stage)
+                                for stage in range(activity_lightning.STAGE_COUNT)] + [self.base]
+        for stage, (before, after) in enumerate(zip(frames, frames[1:])):
+            self.assertNotEqual(before, after, stage)
+
+    def test_glow_after_impact_draws_nothing_above_the_icon(self):
+        # Runtime 008 owner review: lone above-icon pixels after the hit read as a stray spark.
+        base_x = SLOTS["wsl_mcp"]
+        for stage in range(5, activity_lightning.STAGE_COUNT):
+            changed = activity_lightning.changed_pixels(
+                self.base, activity_lightning.apply_stage(self.base, "wsl_mcp", stage))
+            self.assertTrue(changed, stage)
+            self.assertFalse({(x - base_x, y) for x, y in changed if y < 5}, stage)
 
     def test_animation_never_leaves_active_five_pixel_column(self):
         source = "optiplex_mcp"
@@ -117,7 +126,7 @@ class LightningRendererTests(unittest.TestCase):
             renderer.frame_sent()
         self.assertIsNone(renderer.pulse_step)
         self.assertFalse(renderer.pulse_sources)
-        self.assertEqual(len({hashlib.sha256(f).digest() for f in frames}), activity_lightning.STAGE_COUNT)
+        self.assertTrue(all(a != b for a, b in zip(frames, frames[1:])))
 
 class DashboardBackgroundCollectionTests(unittest.TestCase):
     class Inner:

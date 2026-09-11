@@ -184,6 +184,17 @@ class SupervisorTests(unittest.TestCase):
         self.assertEqual(state["last_input_to_first_ack_ms"], seen["last_input"]["first_ack_ms"])
         self.assertIn("realized_fps_5s", json.loads((self.tmp / "state.json").read_text()))
 
+    def test_a_sessions_first_ack_is_persisted_even_within_the_throttle(self):
+        h = Harness(self.tmp)
+        seen = {}
+        def stop():
+            if h.clock() >= 400 and not seen:
+                seen.update(json.loads((self.tmp / "state.json").read_text()))
+            return h.clock() >= 600
+        h.run([DryDashboard(), SlotsPage()], stop)  # static dashboard: exactly one frame is sent
+        self.assertEqual(sum(host.sends for host in h.hosts), 1)
+        self.assertEqual(seen["current_session_frames_acked"], 1)
+
     def test_pulse_in_flight_at_an_outage_is_dropped_not_replayed(self):
         class PulseInner:
             def __init__(self): self.pulse_step = None; self.pulse_sources = set(); self.next_collect_ms = 0; self.n = 0
@@ -264,7 +275,7 @@ class PolicyTests(unittest.TestCase):
         self.assertIsNone(self.template["authority"]["grant_text"])
         r007 = json.loads(v3.R007_TEMPLATE.read_text(encoding="utf-8"))
         self.assertEqual(self.template["build"]["host_dll_sha256"], r007["build"]["host_dll_sha256"])
-        self.assertEqual(self.template["authority"]["supersedes"], "OPENDITOO-PRODUCT-RUNTIME-007")
+        self.assertEqual(self.template["authority"]["supersedes"], "OPENDITOO-PRODUCT-RUNTIME-008")
         self.assertNotIn("spiral", json.dumps(self.template["pages"]))
 
     def test_loader_refuses_drift_even_in_an_edited_template(self):
@@ -296,23 +307,36 @@ class PolicyTests(unittest.TestCase):
         from cli import openditoo
         self.assertIs(openditoo._product_runtime_module(v3.TEMPLATE), v3)
 
-    def test_cutover_008_gates_before_restart_and_rolls_back_exactly(self):
-        shell = (ROOT / "scripts/cutover_runtime_008.sh").read_text(encoding="utf-8")
-        self.assertIn('"${1:-}" == "Grant OPENDITOO-PRODUCT-RUNTIME-008"', shell)
-        order = [shell.index(m) for m in ("R008_EXACT_GRANT_REQUIRED", "R008_ROLLBACK_SAVED", "R008_HOST_IDLE",
-                                           "R008_MAIN_FAST_FORWARDED", "R008_MAIN_OFFLINE_PASS",
-                                           "R008_LOCAL_POLICY_WRITTEN", "start_and_confirm ||")]
-        self.assertEqual(order, sorted(order))
-        self.assertIn("offline-gate.log", shell)
-        # The merged range has merge commits, which `git revert A..B` refuses; the rollback restores
-        # the exact Runtime 007 tree as a forward commit and proves the tree hash.
-        self.assertIn('git read-tree -u --reset "$pre"', shell)
-        self.assertIn("R008_ROLLBACK_TREE_MISMATCH", shell)
-        self.assertLess(shell.index("R008_ROLLBACK_TREE_MISMATCH"), shell.index("R008_ROLLED_BACK_TO_RUNTIME_007"))
-        for forbidden in ("--force", "reset --hard", "Copy-Item", "refresh_openditoo_day1_host", "policy-grant"):
-            self.assertNotIn(forbidden, shell, forbidden)
-        proc = subprocess.run(["bash", "-n", str(ROOT / "scripts/cutover_runtime_008.sh")], capture_output=True)
-        self.assertEqual(proc.returncode, 0, proc.stderr)
+    def test_cutovers_gate_before_restart_and_roll_back_exactly(self):
+        for rev, prev, prev_rev in (("008", "007", 3), ("009", "008", 4)):
+            path = ROOT / f"scripts/cutover_runtime_{rev}.sh"
+            shell = path.read_text(encoding="utf-8")
+            r = f"R{rev}_"
+            self.assertIn(f'"${{1:-}}" == "Grant OPENDITOO-PRODUCT-RUNTIME-{rev}"', shell)
+            self.assertIn(f'== OPENDITOO-PRODUCT-RUNTIME-{prev} ]]', shell)
+            self.assertIn(f"rollback-runtime-{prev}", shell)
+            self.assertIn(f"product_check {prev_rev} && echo {r}ROLLBACK_PRODUCT_CHECK_PASS", shell)
+            order = [shell.index(r + m) for m in ("EXACT_GRANT_REQUIRED", "ROLLBACK_SAVED", "HOST_IDLE",
+                                                   "MAIN_FAST_FORWARDED", "MAIN_OFFLINE_PASS", "LOCAL_POLICY_WRITTEN")]
+            order.append(shell.index("start_and_confirm ||"))
+            self.assertEqual(order, sorted(order), rev)
+            self.assertIn("offline-gate.log", shell)
+            # A merged range can hold merge commits, which `git revert A..B` refuses; the rollback
+            # restores the exact previous tree as a forward commit and proves the tree hash.
+            self.assertIn('git read-tree -u --reset "$pre"', shell)
+            self.assertLess(shell.index(r + "ROLLBACK_TREE_MISMATCH"), shell.index(f"{r}ROLLED_BACK_TO_RUNTIME_{prev}"))
+            for forbidden in ("--force", "reset --hard", "Copy-Item", "refresh_openditoo_day1_host", "policy-grant"):
+                self.assertNotIn(forbidden, shell, forbidden)
+            proc = subprocess.run(["bash", "-n", str(path)], capture_output=True)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+
+    def test_runtime_009_is_runtime_008_plus_the_two_owner_review_fixes_only(self):
+        old = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-008.json").read_text(encoding="utf-8"))
+        new = self.template
+        self.assertEqual({k for k in new if new[k] != old.get(k)}, {"authority", "build", "description"})
+        self.assertEqual({k for k in new["build"] if new["build"][k] != old["build"][k]}, {"code_sha256"})
+        self.assertEqual({k for k, v in new["build"]["code_sha256"].items() if v != old["build"]["code_sha256"][k]},
+                         {"activity_lightning_sha256", "product_runtime_v3_sha256"})
 
 
 if __name__ == "__main__":
