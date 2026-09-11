@@ -13,6 +13,10 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 - **Standing product acceptance (unchanged):** Dashboard↔Slots + lever reclaims, lightning on all three sources, 600 s rollover, power cycle on Dashboard and Slots, webcam suspend → restore (×2). Evidence `captures/OPENDITOO-RUNTIME-008-009-STANDING-ACCEPTANCE-2026-09-11.json`.
 - **Environment:** live cutovers run from normal local WSL with `/mnt/c` + `powershell.exe`, not WSL_MCP. Worktrees are created with `git worktree add --relative-paths` so metadata is mount-independent (`moss-v4` already is).
 
+### Active input successor — Runtime 017 candidate (2026-09-11)
+
+Bluetooth-media contention is now localized and a receive-only successor is implemented on `feat/media-avrcp-input`. With active media on a separate Bluetooth speaker, Runtime 016's SMTC `mirror` broker lets Windows route Ditoo Prev/Next/Play/Pause to the media session. Exact-unit testing proved raw AVRCP itself is complete: 10 physical lever pulls produced exactly 10 raw pass-through presses, alternating Play (`0x44`) / Pause (`0x46`), while fixed-Playing SMTC retains media-key ownership but drops callbacks. Runtime 017 therefore uses the accepted ButtonProbe only as a fixed-Playing ownership sink and a new exact-peer BTVS/tshark raw-AVRCP sidecar as authoritative input (`0x4C` left, `0x4B` right, `0x44|0x46` lever). The sidecar/build/dependency identities are hash-frozen; focused tests 10/10 PASS and the existing interactive product suite 136/136 PASS. **Runtime 017 is NOT live and has no grant.** Next gate is a receive-only live broker acceptance under active Bluetooth media; only after that may `Grant OPENDITOO-PRODUCT-RUNTIME-017` be considered. See `notes/OPENDITOO-MEDIA-CONTENTION-RAW-AVRCP-2026-09-11.md`.
+
 ## Earlier session routes (history)
 
 **Host re-bind (Runtime 007 + webcam 006):** the first-frame-spacing Host fix (streaming first-frame `IMAGE_RX_RECV_TIMEOUT` 5/19 vs activity 0/199). Status, grants and the cutover/rollback are in `notes/OPENDITOO-HOST-FIRST-FRAME-REBIND-2026-09-10.md`; `product-status` / the local policy id says which runtime is live.

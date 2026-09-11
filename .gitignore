@@ -28,3 +28,7 @@ bugreport-*.zip
 runtime/windows/OpenDitoo.Day1.Host/bin/Streaming/
 runtime/windows/OpenDitoo.Webcam.Probe/bin/
 runtime/windows/OpenDitoo.Webcam.Probe/obj/
+
+# Runtime 017 raw AVRCP broker local Windows build outputs
+runtime/windows/OpenDitoo.RawAvrcpBroker/bin/
+runtime/windows/OpenDitoo.RawAvrcpBroker/obj/

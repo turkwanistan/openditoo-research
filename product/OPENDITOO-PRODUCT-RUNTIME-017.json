@@ -1,0 +1,194 @@
+{
+  "authority": {
+    "grant_scope": null,
+    "grant_scope_requested": "Standing Runtime 017: Runtime 016's exact Ditoo target, Host, streaming_ack_clock envelope, Dashboard/Slots/Moss pixels, reconnect/reclaim and webcam policy unchanged. Input only changes to exact-target raw AVRCP press decoding via the hash-pinned OpenDitoo.RawAvrcpBroker + Microsoft BTVS + tshark; existing ButtonProbe runs fixed Playing only as Windows media-session ownership sink. 0x4C=Left, 0x4B=Right, and both 0x44 Play / 0x46 Pause are one short lever action. No raw Bluetooth writes, target override, second RFCOMM owner, firmware/persistence change, long-lever mapping, or display/session widening.",
+    "grant_text": null,
+    "granted_by": null,
+    "persistent_runtime_authorized": false,
+    "policy_id": "OPENDITOO-PRODUCT-RUNTIME-017",
+    "required_grant_text": "Grant OPENDITOO-PRODUCT-RUNTIME-017",
+    "revocation": "scripts/cutover_runtime_017.sh --rollback restores Runtime 016 source tree/local policy and removes the staged raw-AVRCP broker",
+    "revoked": false,
+    "supersedes": "OPENDITOO-PRODUCT-RUNTIME-016"
+  },
+  "behavior": {
+    "automatic_reconnect": true,
+    "collector_ownership": "product runtime collects while connected and while backing off; standalone collector timer is transactionally disabled and restored on uninstall",
+    "raw_send_enabled": false,
+    "reclaim_on_canvas_invalidated": true,
+    "reclaim_storm_guard": {
+      "cooldown_seconds": 1,
+      "max_immediate_reclaims": 8,
+      "window_seconds": 10
+    },
+    "reconnect_backoff_seconds": [
+      1,
+      2,
+      5,
+      10,
+      30
+    ],
+    "start_at_windows_logon": true,
+    "target_override_enabled": false
+  },
+  "build": {
+    "button_probe_sha256": {
+      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.dll": "d85c12982f94893362c10faecae789f7421d4125663f2b9ce17b0eb1afa3a4b8",
+      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.exe": "79521fba144fac4f4922b95236e4a3bedd62a49f1a5ede22f2b71d9909471252"
+    },
+    "code_sha256": {
+      "renderer_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+      "ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb",
+      "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+      "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+      "product_runtime_sha256": "85b6ca70a1340bd53cc69441034c780d39d62db985cf6d61a10c1bccb0483e0d",
+      "product_runtime_v11_sha256": "68f69637f4f486200adeb93547bbee4a4e10b38264f9021a33df7a0cf4b21f1d",
+      "raw_avrcp_input_sha256": "d3871228e9644b28c48d32299be89ff9ae79ddda2a45860497ff380f1fc108a6",
+      "raw_avrcp_broker_program_sha256": "f7184d4c14771b7747505f1edaaee4c9ed5dbc7fa894750edeced529e8e5dc0c",
+      "raw_avrcp_broker_csproj_sha256": "419f978b05c83015dba37dec7906b4013bec42e829d4d2bfe0e0a8305ab63a38",
+      "raw_avrcp_stage_script_sha256": "8a0a80d039ab2669899153dd9e34bdcc650f204f0e7a5ef5d829fce6ad4994a4",
+      "runtime_017_cutover_sha256": "ee3d7dd14a6019e9d51150ff9941e6623fdad0e5da356595e7cf1f79b61bb05f",
+      "pagination_sha256": "b2e31de5399dd8bf8bf83a37ff4f20d0b9201de1a82fd5c6d7736326d775db91",
+      "cli_sha256": "b69b7c722bd5d0061eb2f92f75e9ec19c2c83be2cf77390b42e4ce888d22ed20",
+      "frame_stream_sha256": "880970a6d494197b78adfeac0309cb2d86ce447dd6bb826c7ae5b0c270af7fa6",
+      "interactive_pages_sha256": "c52a12c822cef4c4e93d85752098fef118438da2f78c55869e961581971ae26d",
+      "interactive_stream_sha256": "acc9e908e0d7aa99efcc70cbd2cd108a6045ae66035ce54819db23abebb07394",
+      "dashboard_page_sha256": "3c240db56308ddfbc0e197fb1d018310763a862b08ace43905103fde59a21bf5",
+      "slots_page_sha256": "c2c79e147a36f4455f560aaeddb25ff8644eebbae1fd4e09cbd310949e89a4fa",
+      "activity_lightning_sha256": "684970ca78c321739d937ead6d08b435a750c63782c12064ed201d7fbffc536a",
+      "activity_lightning_renderer_sha256": "74389183ca694d46822eefe41ac941783bbd0ac70a5067d410dc827fc7c3f436",
+      "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+      "moss_page_sha256": "4d1f12ffcd6380a1e7622db6dc703e7de8a283289a81faa174e0e80b9e36979a",
+      "pixel_art_sha256": "c0e1522960b0f38cfc486ce8d7068d8380a6b04c97d8a4c632544d22af5eb965",
+      "pixel_animation_sha256": "b7e6ccf874df46adf9c2ae2d934797b138b6f48ccc67c0039c724374db96c12c",
+      "moss_v4_asset_animations_dance_sha256": "8d2e517f0bf16145b0d71774456f38cae4139789eec1a44f76fadde31b7be726",
+      "moss_v4_asset_animations_idle_look_sha256": "342f9dde5faaa963b1cb51528f3e67f361cf4ab7dba261d16203261f4ba25b3b",
+      "moss_v4_asset_animations_kisses_sha256": "4d312c98d882937ec8f27bf86acf6b32918a034b0695e432fffd20ebad37e045",
+      "moss_v4_asset_animations_loaf_sha256": "b424d9154c4a3be59f54ecf0c787fe6ce3ab4758a789544c80cc81c2d9b69763",
+      "moss_v4_asset_animations_look_sha256": "b26b5bb2d7fae3a5d2a99c492174235f421137d150ce74412b97c22f66248d41",
+      "moss_v4_asset_animations_pet_sha256": "350d55618d47371650eda9df43e9e92b79d6941ee1d560f09ffc3da39957e65a",
+      "moss_v4_asset_animations_sleep_wake_sha256": "1bfa0e9d668d8f425930039fb3d4024dd4ff2d48bf89bcc447a729df89d4fe38",
+      "moss_v4_asset_sprites_blink_sha256": "5e6e59d91b04ae74eb1f1cb479a6d516332bceb6ee9c74220b93bee48ff2bddf",
+      "moss_v4_asset_sprites_dance_crouch_sha256": "85f3ea7dbabf652d806f3455cee35685df251990e6ad7ab5734ffade8a4684d1",
+      "moss_v4_asset_sprites_dance_hop_sha256": "b3f331319c6002a84955a27c2bd09ecef92190241fdb529aa1341d9256102758",
+      "moss_v4_asset_sprites_dance_land_sha256": "cab091110b362f33af6315c39a79ed4c104e6ee8dcc250cec7e39533235c11de",
+      "moss_v4_asset_sprites_dance_left_sha256": "fedfc276adeb254fd5a9920fdf5ae6047d2f17ab3b3fcceb9eb8f7b1946d8abb",
+      "moss_v4_asset_sprites_dance_right_sha256": "dbfeaf6e127f10f8fbc3a901df94e15b7f4f835d5f40544d2f4a426baa6f5212",
+      "moss_v4_asset_sprites_idle_sha256": "b930519806606dc3c670d864bce2d682b4439e047ef5656ebc89b27d29d425f2",
+      "moss_v4_asset_sprites_kiss_big_sha256": "bed8440ef164a72f468e8aa645e2d35695b92d9a427ce0452d690f1c0908c248",
+      "moss_v4_asset_sprites_kiss_lean_sha256": "ff267680e219619b67b11dcf586581feb6bd8510fbb87ca539ef4a0eb146d268",
+      "moss_v4_asset_sprites_kiss_pop_sha256": "7e8d5c793fec9c6168c87606165b1249929b8693333a0150955c2777e952a95a",
+      "moss_v4_asset_sprites_loaf_sha256": "9d614ac24c8c43a35a2fe60b0e00a212205c31f64cabd5336979081920173850",
+      "moss_v4_asset_sprites_loaf_blink_sha256": "acccacb7d27aefe28f585528999309369431d8fd7a887ada401597fbcd734c33",
+      "moss_v4_asset_sprites_look_left_sha256": "79ecb9a21b5a661b3270f70bed7d1170a2f7bb1b7977005181a8851812394fa3",
+      "moss_v4_asset_sprites_look_right_sha256": "caa5421b23662ae0bfa44f77c500fbb0edbe5bf5714c36facd324661f0f55f33",
+      "moss_v4_asset_sprites_perk_sha256": "62d249996769e97a455d56f4803eb45e4bb4171410a83f80cca61bc5c5799264",
+      "moss_v4_asset_sprites_pet_lean_sha256": "7379ec4cee7d9635bc868373d7d8418de30ae35a114e3dcbfb472b4a72c58fee",
+      "moss_v4_asset_sprites_pet_squish_sha256": "a6353264dc89badb450ff138daf1fd72e58ab627fbd5433ba8d2e98ec7e5fd52",
+      "moss_v4_asset_sprites_sleep_a_sha256": "efcc2282c1f4b78f6881b712b6660e5544deccdc40b227103592704bea0d086d",
+      "moss_v4_asset_sprites_sleep_b_sha256": "a8d9d20d1398d0a959e5e5f499bad7c991676867d3f4325e9e58c80e759990b9",
+      "moss_v4_asset_sprites_wag_high_sha256": "df947738604be4afc442b54649a07d1f17a84f41be665c7791a27bf9892c72cc",
+      "moss_v4_asset_sprites_wag_low_sha256": "f5c1cd2e0ba7ec972d7978f927de8d76ac63ecafa7b3802df616222d90f93fa5",
+      "moss_v4_asset_sprites_yawn_sha256": "125c1fdd14c8ad2c5559fa07a6b1ee56b37ec1ee7a06b6882f6c8595f88cf136"
+    },
+    "host_dll_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+    "host_note": "Unchanged Runtime 009 Host; Runtime 012 changes WSL Moss page default + hash-bound v3 art/choreography only.",
+    "raw_avrcp_broker_sha256": {
+      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.exe": "ba95755b2c424380fdb29b47260fe660ef9b006b836fb54c95a7a895a29e8fc2",
+      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.dll": "d49769a0cd9a49a6188ed6120d6f0fe28339c2e50600d5216108afb4580f21d6",
+      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.deps.json": "384fb4aa56d643d30f155567fca8f607e1f4f8bd3ab0cbe33b897371d8fc6218",
+      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.runtimeconfig.json": "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2"
+    },
+    "raw_avrcp_dependencies_sha256": {
+      "C:\\BTP\\v1.14.0\\x86\\btvs.exe": "ea4973f205420d46c2d7dd29bbdb131720982fbbe15dd952c67b15cc6316f519",
+      "C:\\Program Files\\Wireshark\\tshark.exe": "16fcc57d76fe2e7ce006aad2cbe204ad7cd62837d105b7c619e64e2aa492d229"
+    }
+  },
+  "description": "Persistent plug-and-play MCP activity dashboard for the owner's exact Ditoo Plus; Runtime 002 adds telemetry-only live session observability. Runtime 003 re-binds the policy to the session-profile Host build. Runtime 004 re-binds the policy to the Host build with a separate streaming-profile ceiling. Runtime 006 adds physical-button pagination: the Ditoo's left/right arrows page through a wrap-around list (dashboard first), a short lever pull runs the current page's own action, input from the receive-only ButtonProbe (SMTC, mirror status) run as a child of the product. Runtime 007: Host re-bind only: the candidate Host sends every session's FIRST frame with the proven 10 ms packet spacing (first-frame IMAGE_RX_RECV_TIMEOUT: 5/19 streaming_ack_clock opens vs 0/199 activity opens, captures/OPENDITOO-STREAMING-FIRST-FRAME-TIMEOUT-ANALYSIS-2026-09-10.json); later frames keep the profile spacing. Build is path-independent (PathMap). Runtime 008 (HF-4): every page (dashboard with the UI-1 lightning pulse, three-reel slots) in ONE streaming_ack_clock Host session (PageCarousel); Left/Right change pixels only; InteractiveTransport pacing (50 ms client floor + 45 ms Host-anchored gap); Host-confirmed stock yield reclaims the same page; hidden-page collection on a joined worker. Accepted as OPENDITOO-INTERACTIVE-HF3-008 (11 cycles, 66/66 inputs, 0 faults). Runtime 009: exactly Runtime 008 plus owner-review fixes: the lightning glow draws only the icon's own pixels (no lone above-icon 'spark' after the hit), and a session's first ACK is always persisted to telemetry. Runtime 010 successor adds Pocket Moss as the third single-session page plus generic page-first modal Left/Right capture; all Moss art/animation sources and the Pixel Animation Lab compiler are hash-bound. Runtime 010 was subsequently cut over and is the live rollback baseline for Runtime 011. Runtime 011 is an art-readability-only successor: Moss v2 replaces the physically ambiguous v1 brown silhouette; transport and interaction semantics are unchanged. Runtime 012 is a polish-only successor: Moss v3 keeps the successful v2 identity while adding depth shading and richer authored Dance/Pet/Kisses choreography; product-control semantics remain unchanged. Runtime 013 is an art/animation-only successor: Moss v4 keeps the v2/v3 face identity with a front-facing seated body, directional shading, a teal collar and richer authored motion; product-control semantics remain unchanged. Runtime 014 is a Slots-only polish successor: Slots v2 snaps every lever stop to the next symbol on the payline (bounded ACK-paced brake + 1 px bounce), adds reachable win rules (left+middle pair, three of a kind, 7-7-7 jackpot) with bounded outcome animations, and redraws the reels with shaded symbols, a dimmed off-payline window and a gold payline marker; product-control semantics remain unchanged. Runtime 015 is a Slots aim-tuning successor: a lever stop lands on the symbol nearest the payline (slipping back up to 3 px to absorb input lag) instead of always the next one, and the middle/right reels slow from 2 to an average 1.5 px/frame; odds under random timing are unchanged. Runtime 016 is a Slots motion-smoothing successor: every reel moves a steady 1 px per ACKed frame (Runtime 015's alternating 1/2 px middle/right steps juddered when an ACK arrived late), and aim difficulty moves to a per-reel slip-back window (3 px left, 2 px middle/right); odds under random timing are unchanged.",
+  "install": {
+    "host_task": "OpenDitoo Day1 Host (preserved)",
+    "local_policy": ".openditoo-local/product-runtime-policy.json",
+    "opentivoo_task": "OpenTivoo Product Runtime (preserved)",
+    "startup_boundary": "Windows user logon / StartWhenAvailable; WSL is user-scoped, so this is the reliable Windows startup boundary",
+    "windows_task": "OpenDitoo Product Runtime",
+    "wsl_service": "openditoo-product.service"
+  },
+  "pages": [
+    {
+      "kind": "live_mcp_dashboard_lightning",
+      "lever": "none",
+      "name": "dashboard",
+      "rate_mode": "activity"
+    },
+    {
+      "kind": "slots_three_reel",
+      "lever": "stop the next reel; after the third, start a new round",
+      "name": "slots",
+      "rate_mode": "streaming_ack_clock"
+    },
+    {
+      "kind": "pocket_moss_v1",
+      "lever": "normal: enter selector; selector: execute Pet/Dance/Kisses/Back",
+      "name": "moss",
+      "rate_mode": "streaming_ack_clock"
+    }
+  ],
+  "pagination": {
+    "broker": {
+      "kind": "raw_avrcp_v1",
+      "exe": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.exe",
+      "events_file": ".openditoo-local/raw-avrcp-events.ndjson",
+      "events_windows_path": "\\\\wsl.localhost\\Ubuntu\\home\\wan\\Projects\\openditoo-research\\.openditoo-local\\raw-avrcp-events.ndjson",
+      "sink_exe": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.exe",
+      "sink_log_file": ".openditoo-local/raw-avrcp-sink.ndjson",
+      "sink_log_windows_path": "\\\\wsl.localhost\\Ubuntu\\home\\wan\\Projects\\openditoo-research\\.openditoo-local\\raw-avrcp-sink.ndjson",
+      "btvs_exe": "C:\\BTP\\v1.14.0\\x86\\btvs.exe",
+      "tshark_exe": "C:\\Program Files\\Wireshark\\tshark.exe",
+      "port": 24353,
+      "sink_status": "playing",
+      "device_attribution": "bthci_acl.src.bd_addr == exact target; no handle/CID persistence",
+      "operations": {
+        "0x44": "lever_candidate",
+        "0x46": "lever_candidate",
+        "0x4B": "nav_right",
+        "0x4C": "nav_left"
+      },
+      "lifetime": "one Windows sidecar child of product runtime; Job Object kills ButtonProbe/BTVS/tshark when broker exits; WSL supervisor restart limited to once/5s",
+      "media_keys": "SMTC Playing is ownership sink only; page/game input comes exclusively from exact-target raw AVRCP presses"
+    },
+    "evidence": [
+      "captures/OPENDITOO-BTN2-WINDOWS-RECEIVE-2026-09-10.json",
+      "captures/OPENDITOO-BTN5-PAGINATION-ACCEPTANCE-2026-09-10.json",
+      "captures/OPENDITOO-BTN7-LEVER-CHARACTERIZATION-2026-09-10.json",
+      "captures/OPENDITOO-BTN8-MEDIA-CONTENTION-2026-09-10.json",
+      "captures/OPENDITOO-INTERACTIVE-HF3-008-LIVE-2026-09-10.json"
+    ],
+    "navigation": {
+      "lever_candidate": "current page's lever action; long holds are never mapped (BTN-7)",
+      "nav_left": "previous page, wrapping, pixels only (same Host session)",
+      "nav_right": "next page, wrapping, pixels only (same Host session)"
+    }
+  },
+  "product_id": "OPENDITOO-MCP-DASHBOARD-V1",
+  "runtime_revision": 12,
+  "schema_version": 1,
+  "session": {
+    "ack_timeout_ms_per_frame": 5000,
+    "client_min_dispatch_ms": 50,
+    "host_anchored_gap_ms": 45,
+    "host_floor_ms": 40,
+    "idle_poll_interval_ms": 50,
+    "lifetime_seconds": 600,
+    "low_rate_interval_ms": 200,
+    "max_frames": 15000,
+    "max_tx_bytes": 15810000,
+    "pulse_freshness_seconds": 30,
+    "session_profile": "streaming_ack_clock"
+  },
+  "target": {
+    "exact_unit_id": "11:75:58:CE:DE:C7",
+    "installed_firmware": "v42012",
+    "rfcomm_channel": 1,
+    "target_override_enabled": false
+  }
+}
