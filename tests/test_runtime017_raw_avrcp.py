@@ -98,6 +98,15 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertNotIn('--force', shell)
         self.assertNotIn('reset --hard', shell)
 
+    def test_attribution_diagnostic_is_receive_only_and_outputs_handle_and_both_addresses(self):
+        src = (ROOT / 'scripts/diagnose_runtime_017_attribution.ps1').read_text(encoding='utf-8')
+        self.assertIn("'bthci_acl.chandle'", src)
+        self.assertIn("'bthci_acl.src.bd_addr'", src)
+        self.assertIn("'bthci_acl.dst.bd_addr'", src)
+        self.assertIn("btl2cap.payload contains 11:0e:00:48:7c:44:00", src)
+        self.assertNotIn('product-runtime', src)
+        self.assertNotIn('/v1/session', src)
+
     def test_windows_sidecar_is_receive_only_exact_peer_and_health_bounded(self):
         src = (ROOT / 'runtime/windows/OpenDitoo.RawAvrcpBroker/Program.cs').read_text(encoding='utf-8')
         self.assertIn('bthci_acl.src.bd_addr == {options.Target}', src)
