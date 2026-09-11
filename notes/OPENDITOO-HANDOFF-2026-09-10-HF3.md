@@ -182,3 +182,24 @@ Pre-build state was verified live: Runtime 007 `connected` with `last_error` nul
   - **Rehearsed on a scratch clone of main ff'd to this branch** with main's local state (no token): both gates PASS. Rehearsed `--rollback` tree restore: exact tree, and the live 007 policy `execution_ready` again.
 
 **Next (owner):** grant `Grant OPENDITOO-PRODUCT-RUNTIME-008` → run the cutover → verify `connected` → owner-present standing acceptance: lightning visual (MCP event with the Dashboard visible), lever reclaims, power cycle on Dashboard and on Slots, webcam shortcut suspend → restore. Spotify contention and Windows-logon startup stay optional.
+
+## Runtime 008 LIVE (2026-09-11 00:45Z) → Runtime 009 prepared, grant-ready, UNAUTHORIZED
+
+**Runtime 008 cutover:** the owner granted `Grant OPENDITOO-PRODUCT-RUNTIME-008`, and `cutover_runtime_008.sh` passed. Main was fast-forwarded to `08dd8fa`, the in-main gates passed (log in `.openditoo-local/rollback-runtime-007/offline-gate.log`), and the service came back `connected` on `OPENDITOO-PRODUCT-313fa9a4-000001` (`streaming_ack_clock`, 600 s / 15 000). Webcam 006 `policy-check` passed.
+
+**Standing acceptance so far:**
+- **Step 1 (Dashboard↔Slots + lever reclaims): PASS.**
+  - Owner: "looked great".
+  - Every input was applied exactly once; one full slots cycle ran (reels 1/2/3 stopped, then a new round).
+  - 4 Host-confirmed reclaims, 0 reconnects.
+  - `first_ack_ms` filled on every input (21–185 ms), so the publish fix is confirmed live.
+- **Step 2 (lightning): PASS with one defect.** The owner tested all 3 sources: "all the animations look good". The defect: a lone pixel in row 4, above the icon, flickered after the hit (the stage 5 horns and the stage 7/9 single pixel), and read as a stray spark.
+- **Telemetry defect:** a session's first ACK was not persisted when it landed less than 1 s after the open (`current_session_frames_acked: 0`, while the Host showed `framesSent: 1`).
+
+**Runtime 009** (`product/OPENDITOO-PRODUCT-RUNTIME-009.json`) is exactly Runtime 008 except the `activity_lightning` and `product_runtime_v3` hashes (test-pinned):
+- Glow stages 5–9 draw only the icon's own pixels. Descent, impact, colours and timing are unchanged, and consecutive stages still differ.
+- A session's first ACK is always persisted.
+
+`scripts/cutover_runtime_009.sh` mirrors 008's, with an exact-tree rollback to Runtime 008. Gates: legacy 326 and successor 59 PASS; the rehearsed in-main gate and the rollback (008 `execution_ready`) PASS. It needs `Grant OPENDITOO-PRODUCT-RUNTIME-009`.
+
+**Remaining standing acceptance** (run it on 009 after cutover): re-check the lightning, power-cycle on the Dashboard and on Slots, and webcam suspend → restore.
