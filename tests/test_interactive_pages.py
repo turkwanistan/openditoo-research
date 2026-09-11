@@ -189,10 +189,11 @@ class SlotsPageTests(unittest.TestCase):
     def test_every_stop_snaps_to_the_payline_with_a_bounded_brake(self):
         for start in range(slots_page.STRIP_HEIGHT):
             for reel, speed in enumerate(slots_page.REEL_SPEEDS):
-                steps = slots_page.brake_steps(start, speed)
+                slip = slots_page.SLIP_BACK[reel]
+                steps = slots_page.brake_steps(start, speed, slip)
                 self.assertLessEqual(len(steps), 8)
-                if start % slots_page.SYMBOL_PITCH <= slots_page.SLIP_BACK_MAX:  # nearest symbol wins
-                    self.assertLessEqual(-sum(steps), slots_page.SLIP_BACK_MAX)
+                if start % slots_page.SYMBOL_PITCH <= slip:  # just-passed symbol wins
+                    self.assertLessEqual(-sum(steps), slip)
                     self.assertGreaterEqual(-sum(steps), 0)
                 self.assertTrue(all(abs(step) <= speed for step in steps), steps)  # no catch-up burst
                 self.assertEqual((start + sum(steps)) % slots_page.SYMBOL_PITCH, 0)
@@ -203,6 +204,16 @@ class SlotsPageTests(unittest.TestCase):
         self.settle(page)
         self.assertEqual([p % slots_page.SYMBOL_PITCH for p in page.positions], [0, 0, 0])
         self.assertEqual(tuple(slots_page.symbol_at(r, page.positions[r]) for r in range(3)), result)
+
+    def test_every_reel_spins_a_steady_1px_per_frame(self):
+        # Alternating 1/2 px steps juddered on the panel when an ACK arrived late (Runtime 015).
+        self.assertEqual(slots_page.REEL_SPEEDS, (1, 1, 1))
+        page = SlotsPage(seed=4)
+        page.delays = [0, 0, 0]
+        for _ in range(60):
+            before = list(page.positions)
+            page.frame_sent()
+            self.assertEqual([(a - b) % slots_page.STRIP_HEIGHT for a, b in zip(page.positions, before)], [1, 1, 1])
 
     def test_aimed_pull_lands_the_symbol_seen_on_the_payline_despite_input_lag(self):
         # The owner sees a symbol centred on the payline and pulls; the pull lands 1-3 ACKs later.
@@ -287,7 +298,7 @@ class SlotsPageTests(unittest.TestCase):
 
     def test_specific_lever_timings_win_and_lose(self):
         # Deterministic from seed 7: frames of spin before each of the three pulls.
-        for gaps, want in (([36, 5, 7], "jackpot"), ([29, 24, 10], "big"), ([34, 7, 23], "small"),
+        for gaps, want in (([32, 29, 23], "jackpot"), ([22, 29, 13], "big"), ([38, 10, 20], "small"),
                            ([37, 16, 28], "lose")):
             page = SlotsPage(seed=7)
             self.play(page, gaps)

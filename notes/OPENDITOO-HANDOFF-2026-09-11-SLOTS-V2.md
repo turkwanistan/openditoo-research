@@ -43,3 +43,16 @@ Runtime 015 (`feat/slots-v2-aim`, `host/product_runtime_v9.py`, `runtime_revisio
 - Middle and right reels use `REEL_STEPS=(1, 2)`, averaging 1.5 px/frame (was 2). Left stays at 1.
 - Aimed hit rate (pull when centred, landing 1–3 frames late): left 100%, middle and right 67%, pinned by `test_aimed_pull_lands_the_symbol_seen_on_the_payline_despite_input_lag`. Random-timing odds are unchanged: any win ~25%, jackpot ~1.6%.
 - Offline: `verify_interactive_pages_offline.py` PASS, 129 tests (`SLOTS_V2_AIM_OFFLINE`, `RUNTIME_015_SUCCESSOR_OFFLINE`). Day-1 in the worktree: 13 failures, identical to a clean Runtime 014 `main` baseline.
+
+## Runtime 015 live, then Runtime 016 smooth reels
+
+Owner granted exactly `Grant OPENDITOO-PRODUCT-RUNTIME-015`: `R015_CUTOVER_PASS main=55d882c host=3faf520f46ce rollback=.openditoo-local/rollback-runtime-014`, connected, revision 10.
+
+Panel feedback: middle/right reels "pretty smooth but sometimes it will slow down then jump aheadish". Transport is ACK-clocked with a 50 ms client floor and no other cap; HF3-008 recorded client ACK p50 48 ms / p95 83 ms and 12–19 transport fps per session (panel FPS unmeasured). Cause: Runtime 015's alternating 1/2 px middle/right steps. A late ACK pauses the reel, and the following 2 px step reads as a jump. The left reel (steady 1 px) was fine.
+
+Runtime 016 (`feat/slots-v2-smooth`, `host/product_runtime_v10.py`, `runtime_revision=11`, `cutover_runtime_016.sh` requiring live 015, rollback to `.openditoo-local/rollback-runtime-015`):
+
+- `REEL_SPEEDS=(1, 1, 1)`, pinned by `test_every_reel_spins_a_steady_1px_per_frame`. Aim difficulty moves to `SLIP_BACK=(3, 2, 2)`.
+- Aimed hit rate (pull when centred, 1–3 frames late): left 100%, middle/right 67%, same as 015. Random-timing odds unchanged: any win ~25%, jackpot ~1.6%.
+- Offline: interactive gate PASS, 136 tests (`SLOTS_V2_SMOOTH_OFFLINE`, `RUNTIME_016_SUCCESSOR_OFFLINE`). Day-1 in the worktree: 13 failures, identical to a clean Runtime 015 `main` baseline.
+- The successor clone is now scripted (scratch `gen_successor.py`). The cutover script is still authored by hand with the Write tool.

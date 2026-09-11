@@ -2,7 +2,7 @@
 
 Every symbol is a literal 5x5 pixel matrix with its own shaded palette. Motion advances only
 after an ACKed frame. A short lever pull locks the next reel (left, middle, right) onto the symbol
-nearest the payline (slipping back up to 3 px for input lag, otherwise running on to the next
+nearest the payline (slipping back up to 2-3 px for input lag, otherwise running on to the next
 one); the reel brakes over a few frames, bounces 1 px and rests centred, so all three reels always
 end aligned. The result is fixed at the pull, so the
 state machine/telemetry are synchronous; the bounded outcome animation plays once every reel has
@@ -22,11 +22,12 @@ SPARE_X = 15
 SYMBOL_HEIGHT = 5
 SYMBOL_PITCH = 6  # one blank scanline between symbols
 PAYLINE_TOP = 6   # payline symbol occupies y6..y10, centred on scanline 8
-# Per-frame spin steps, cycled. Left 1 px/frame is easy to aim; middle/right average 1.5 px/frame
-# (owner: 2 px/frame was too hard) so aiming them works about two times in three.
-REEL_STEPS = ((1,), (1, 2), (1, 2))
-REEL_SPEEDS = tuple(max(steps) for steps in REEL_STEPS)
-SLIP_BACK_MAX = 3  # a pull lands 1-3 ACKs late; slip back so the symbol the player saw still counts
+# Every reel moves a steady 1 px per ACKed frame: alternating 1/2 px steps judder visibly when an
+# ACK arrives late (owner, Runtime 015). Difficulty lives in SLIP_BACK instead: a pull lands 1-3
+# ACKs after the player sees a symbol centred, and a reel may slip back this many px to still land
+# it -- always on the left reel, about two times in three on the middle/right.
+REEL_SPEEDS = (1, 1, 1)
+SLIP_BACK = (3, 2, 2)
 START_STAGGER = (0, 2, 4)
 DIM_OFF_PAYLINE = 0.45
 
@@ -113,15 +114,15 @@ def outcome(symbols) -> str:
     return "small" if a == b else "lose"
 
 
-def brake_steps(position: int, speed: int) -> list[int]:
+def brake_steps(position: int, speed: int, slip_back: int = 3) -> list[int]:
     """Bounded ACK-paced stop plan onto the symbol nearest the payline, then a 1 px bounce.
 
     Input lags the panel by a few frames, so a symbol that has just passed alignment (by at most
-    SLIP_BACK_MAX px) is the one the player aimed at: the reel slips back 1 px per frame onto it.
+    ``slip_back`` px) is the one the player aimed at: the reel slips back 1 px per frame onto it.
     Otherwise the reel runs on to the next alignment, easing to 1 px steps.
     """
     past = position % SYMBOL_PITCH
-    if 0 < past <= SLIP_BACK_MAX:
+    if 0 < past <= slip_back:
         return [-1] * past + [1, -1]
     remaining = (-position) % SYMBOL_PITCH
     steps = []
@@ -186,7 +187,7 @@ class SlotsPage:
             if active:
                 self.spinning[index] = False
                 self.delays[index] = 0
-                self.plans[index] = brake_steps(self.positions[index], REEL_SPEEDS[index])
+                self.plans[index] = brake_steps(self.positions[index], REEL_SPEEDS[index], SLIP_BACK[index])
                 if not any(self.spinning):
                     self._resolve()
                 return f"stopped_reel_{index + 1}"
@@ -215,8 +216,7 @@ class SlotsPage:
                 if self.delays[reel]:
                     self.delays[reel] -= 1
                 else:
-                    steps = REEL_STEPS[reel]
-                    self.positions[reel] += steps[self.frames_acked % len(steps)]
+                    self.positions[reel] += REEL_SPEEDS[reel]
             elif self.plans[reel]:
                 self.positions[reel] += self.plans[reel].pop(0)
             self.positions[reel] %= STRIP_HEIGHT

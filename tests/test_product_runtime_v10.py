@@ -1,4 +1,4 @@
-"""Runtime 015 Slots v2 aim-tuning successor offline gates. No Host/device I/O."""
+"""Runtime 016 Slots successor offline gates. No Host/device I/O."""
 from __future__ import annotations
 
 import copy
@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 from cli import openditoo
-from host import product_runtime_v9 as v9
+from host import product_runtime_v10 as v10
 from host.moss_page import MODE_SELECTOR, MossPage
 from host.slots_page import SlotsPage
 from scripts.interactive_hf3 import FakeClock, FakeHost, PacedEvents
@@ -16,35 +16,31 @@ from tests.test_product_runtime_v3 import DryDashboard
 
 
 def ev(seq, kind, raw):
-    return {"epoch":"r015", "seq":seq, "type":kind, "raw_button":raw, "at_utc":None}
+    return {"epoch":"r016", "seq":seq, "type":kind, "raw_button":raw, "at_utc":None}
 
 
-class Runtime015PolicyTests(unittest.TestCase):
+class Runtime016PolicyTests(unittest.TestCase):
     def setUp(self):
-        self.template = json.loads(v9.TEMPLATE.read_text(encoding="utf-8"))
-        self.old = json.loads(v9.R014_TEMPLATE.read_text(encoding="utf-8"))
+        self.template = json.loads(v10.TEMPLATE.read_text(encoding="utf-8"))
+        self.old = json.loads(v10.R015_TEMPLATE.read_text(encoding="utf-8"))
 
     def test_template_is_unauthorized_slots_only_successor(self):
-        p = v9.load_policy(v9.TEMPLATE, require_authority=False, verify_hashes=False)
-        self.assertEqual(v9.RUNTIME_REVISION, 10)
+        p = v10.load_policy(v10.TEMPLATE, require_authority=False, verify_hashes=False)
+        self.assertEqual(v10.RUNTIME_REVISION, 11)
         for key in ("pages", "session", "target", "behavior", "product_id", "install"):
             self.assertEqual(self.template[key], self.old[key], key)
         self.assertEqual(self.template["build"]["host_dll_sha256"], self.old["build"]["host_dll_sha256"])
         self.assertEqual(self.template["build"]["button_probe_sha256"], self.old["build"]["button_probe_sha256"])
-        self.assertEqual(v9.authority_blockers(v9.TEMPLATE),
+        self.assertEqual(v10.authority_blockers(v10.TEMPLATE),
                          ["PRODUCT_AUTHORITY_MISSING", "PRODUCT_AUTHORITY_UNATTRIBUTED", "PRODUCT_AUTHORITY_SCOPE_MISMATCH"])
-        self.assertEqual(self.template["authority"]["required_grant_text"], v9.GRANT_TEXT)
-        self.assertEqual(self.template["authority"]["supersedes"], "OPENDITOO-PRODUCT-RUNTIME-014")
+        self.assertEqual(self.template["authority"]["required_grant_text"], v10.GRANT_TEXT)
+        self.assertEqual(self.template["authority"]["supersedes"], "OPENDITOO-PRODUCT-RUNTIME-015")
         self.assertEqual((p.session_lifetime_seconds, p.max_frames_per_session), (600, 15000))
 
     def test_policy_hashes_pin_v4_assets_and_not_v3_assets(self):
-        # Runtime 015 is a historical record once Runtime 016 changes host/slots_page.py (and the CLI
-        # gains the revision-11 route): every other stored hash still equals this tree.
-        expected = self.template["build"]["code_sha256"]
-        current = v9.code_hashes()
-        self.assertEqual({k: v for k, v in expected.items() if k not in ("slots_page_sha256", "cli_sha256")},
-                         {k: v for k, v in current.items() if k not in ("slots_page_sha256", "cli_sha256")})
-        self.assertIn("product_runtime_v9_sha256", expected)
+        expected = v10.code_hashes()
+        self.assertEqual(self.template["build"]["code_sha256"], expected)
+        self.assertIn("product_runtime_v10_sha256", expected)
         self.assertIn("slots_page_sha256", expected)
         self.assertNotEqual(expected["slots_page_sha256"], self.old["build"]["code_sha256"]["slots_page_sha256"])
         self.assertIn("moss_page_sha256", expected)
@@ -53,40 +49,40 @@ class Runtime015PolicyTests(unittest.TestCase):
         self.assertEqual(len(asset_keys), len(asset_files))
         self.assertFalse(any(k.startswith("moss_asset_") for k in expected))
 
-    def test_cli_routes_revision_10_to_runtime_v9(self):
-        self.assertIs(openditoo._product_runtime_module(v9.TEMPLATE), v9)
+    def test_cli_routes_revision_11_to_runtime_v10(self):
+        self.assertIs(openditoo._product_runtime_module(v10.TEMPLATE), v10)
 
-    def test_cutover_is_exact_grant_gated_and_rolls_back_to_runtime_014(self):
+    def test_cutover_is_exact_grant_gated_and_rolls_back_to_runtime_015(self):
         import subprocess
-        shell = Path("scripts/cutover_runtime_015.sh").read_text(encoding="utf-8")
-        self.assertIn('BRANCH=feat/slots-v2-aim\n', shell)
-        self.assertIn('Grant OPENDITOO-PRODUCT-RUNTIME-015', shell)
-        self.assertIn('OPENDITOO-PRODUCT-RUNTIME-014', shell)
-        self.assertIn('rollback-runtime-014', shell)
+        shell = Path("scripts/cutover_runtime_016.sh").read_text(encoding="utf-8")
+        self.assertIn('BRANCH=feat/slots-v2-smooth\n', shell)
+        self.assertIn('Grant OPENDITOO-PRODUCT-RUNTIME-016', shell)
+        self.assertIn('OPENDITOO-PRODUCT-RUNTIME-015', shell)
+        self.assertIn('rollback-runtime-015', shell)
+        self.assertIn('product_check 11', shell)
         self.assertIn('product_check 10', shell)
-        self.assertIn('product_check 9', shell)
-        self.assertIn('R015_ROLLED_BACK_TO_RUNTIME_014', shell)
-        self.assertIn('product_runtime_v9 as v9', shell)
-        self.assertIn('assert raw[\"runtime_revision\"] == 10', shell)
-        self.assertNotIn('assert raw[\"runtime_revision\"] == 9', shell)
-        proc = subprocess.run(["bash", "-n", "scripts/cutover_runtime_015.sh"], capture_output=True)
+        self.assertIn('R016_ROLLED_BACK_TO_RUNTIME_015', shell)
+        self.assertIn('product_runtime_v10 as v10', shell)
+        self.assertIn('assert raw[\"runtime_revision\"] == 11', shell)
+        self.assertNotIn('assert raw[\"runtime_revision\"] == 10', shell)
+        proc = subprocess.run(["bash", "-n", "scripts/cutover_runtime_016.sh"], capture_output=True)
         self.assertEqual(proc.returncode, 0, proc.stderr.decode())
 
-    def test_granted_copy_requires_exact_runtime_015_grant_text(self):
+    def test_granted_copy_requires_exact_runtime_016_grant_text(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "policy.json"
             doc = copy.deepcopy(self.template); a = doc["authority"]
-            a.update(persistent_runtime_authorized=True, grant_text=v9.GRANT_TEXT,
+            a.update(persistent_runtime_authorized=True, grant_text=v10.GRANT_TEXT,
                      granted_by="owner, in-session", grant_scope=a["grant_scope_requested"])
             path.write_text(json.dumps(doc))
-            self.assertEqual(v9.authority_blockers(path), [])
-            v9.load_policy(path, require_authority=True, verify_hashes=False)
-            a["grant_text"] = "Grant OPENDITOO-PRODUCT-RUNTIME-014"
+            self.assertEqual(v10.authority_blockers(path), [])
+            v10.load_policy(path, require_authority=True, verify_hashes=False)
+            a["grant_text"] = "Grant OPENDITOO-PRODUCT-RUNTIME-015"
             path.write_text(json.dumps(doc))
-            self.assertIn("PRODUCT_AUTHORITY_UNATTRIBUTED", v9.authority_blockers(path))
+            self.assertIn("PRODUCT_AUTHORITY_UNATTRIBUTED", v10.authority_blockers(path))
 
 
-class Runtime015SupervisorTests(unittest.TestCase):
+class Runtime016SupervisorTests(unittest.TestCase):
     def test_three_page_runtime_v2_moss_executes_dance_in_one_session(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp); clock = FakeClock(); invalidations = []
@@ -101,8 +97,8 @@ class Runtime015SupervisorTests(unittest.TestCase):
             def factory():
                 host = FakeHost(clock, invalidations); hosts.append(host); return host
             moss = MossPage(seed=3, asset_root=Path("assets/pocket_moss/v4"))
-            policy = v9.load_policy(v9.TEMPLATE, require_authority=False, verify_hashes=False)
-            state = v9.run_product(policy, factory, stop_requested=lambda: clock.ms >= 7000,
+            policy = v10.load_policy(v10.TEMPLATE, require_authority=False, verify_hashes=False)
+            state = v10.run_product(policy, factory, stop_requested=lambda: clock.ms >= 7000,
                 monotonic=lambda: clock.ms / 1000.0, sleep=lambda s: clock.sleep(s * 1000),
                 config={}, activity_state={}, events=events,
                 pages=[DryDashboard(), SlotsPage(seed=2), moss], waiting_collector=lambda: None,

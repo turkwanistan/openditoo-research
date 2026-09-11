@@ -31,6 +31,7 @@ TEST_MODULES = (
     "tests.test_product_runtime_v7",
     "tests.test_product_runtime_v8",
     "tests.test_product_runtime_v9",
+    "tests.test_product_runtime_v10",
 )
 
 
@@ -60,6 +61,8 @@ def main() -> int:
     print("RUNTIME_014_SUCCESSOR_OFFLINE=PASS")
     print("SLOTS_V2_AIM_OFFLINE=PASS")
     print("RUNTIME_015_SUCCESSOR_OFFLINE=PASS")
+    print("SLOTS_V2_SMOOTH_OFFLINE=PASS")
+    print("RUNTIME_016_SUCCESSOR_OFFLINE=PASS")
     print(f"INTERACTIVE_PAGES_OFFLINE=PASS tests={result.testsRun}")
     return 0
 
