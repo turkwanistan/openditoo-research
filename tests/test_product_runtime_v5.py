@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -35,18 +36,24 @@ class Runtime011PolicyTests(unittest.TestCase):
                          ["PRODUCT_AUTHORITY_MISSING", "PRODUCT_AUTHORITY_UNATTRIBUTED", "PRODUCT_AUTHORITY_SCOPE_MISMATCH"])
         self.assertEqual(self.template["authority"]["required_grant_text"], v5.GRANT_TEXT)
         self.assertEqual(self.template["authority"]["supersedes"], "OPENDITOO-PRODUCT-RUNTIME-010")
-        self.assertEqual(ASSET_ROOT.parts[-2:], ("pocket_moss", "v2"))
         self.assertEqual((p.session_lifetime_seconds, p.max_frames_per_session), (600, 15000))
 
     def test_policy_hashes_pin_v2_assets_and_not_v1_assets(self):
-        expected = v5.code_hashes()
-        self.assertEqual(self.template["build"]["code_sha256"], expected)
-        self.assertIn("product_runtime_v5_sha256", expected)
-        self.assertIn("moss_page_sha256", expected)
+        stored = self.template["build"]["code_sha256"]
+        self.assertIn("product_runtime_v5_sha256", stored)
+        self.assertIn("moss_page_sha256", stored)
+        self.assertEqual(stored["product_runtime_v5_sha256"], hashlib.sha256(Path("host/product_runtime_v5.py").read_bytes()).hexdigest())
         asset_files = sorted(Path("assets/pocket_moss/v2").rglob("*.json"))
-        asset_keys = [k for k in expected if k.startswith("moss_v2_asset_")]
+        asset_keys = [k for k in stored if k.startswith("moss_v2_asset_")]
         self.assertEqual(len(asset_keys), len(asset_files))
-        self.assertFalse(any(k.startswith("moss_asset_") for k in expected))
+        for key, path in v5.HASHED_MODULES.items():
+            if key.startswith("moss_v2_asset_"):
+                self.assertEqual(stored[key], hashlib.sha256(path.read_bytes()).hexdigest(), key)
+        self.assertFalse(any(k.startswith("moss_asset_") for k in stored))
+        if ASSET_ROOT.name == "v2":
+            self.assertEqual(stored, v5.code_hashes())
+        else:
+            self.assertNotEqual(stored, v5.code_hashes())
 
     def test_cli_routes_revision_6_to_runtime_v5(self):
         self.assertIs(openditoo._product_runtime_module(v5.TEMPLATE), v5)
@@ -93,7 +100,7 @@ class Runtime011SupervisorTests(unittest.TestCase):
             events = PacedEvents(schedule, clock, invalidations); hosts = []
             def factory():
                 host = FakeHost(clock, invalidations); hosts.append(host); return host
-            moss = MossPage(seed=3)
+            moss = MossPage(seed=3, asset_root=Path("assets/pocket_moss/v2"))
             policy = v5.load_policy(v5.TEMPLATE, require_authority=False, verify_hashes=False)
             state = v5.run_product(policy, factory, stop_requested=lambda: clock.ms >= 7000,
                 monotonic=lambda: clock.ms / 1000.0, sleep=lambda s: clock.sleep(s * 1000),

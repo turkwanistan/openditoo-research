@@ -4,15 +4,16 @@ import json
 from pathlib import Path
 import unittest
 
-from host.moss_page import ASSET_ROOT
 from host.pixel_animation import animation_quality, load_animation
 from host.pixel_art import geometry, load_sprite
 
 
+V2_ROOT = Path("assets/pocket_moss/v2")
+
+
 class MossV2ArtTests(unittest.TestCase):
-    def test_default_asset_root_is_v2_and_idle_has_high_contrast_dog_cues(self):
-        self.assertEqual(ASSET_ROOT.name, "v2")
-        path = ASSET_ROOT / "sprites" / "idle.json"
+    def test_v2_idle_has_high_contrast_dog_cues(self):
+        path = V2_ROOT / "sprites" / "idle.json"
         raw = json.loads(path.read_text(encoding="utf-8"))
         sprite = load_sprite(path)
         rows, palette = raw["rows"], raw["palette"]
@@ -33,7 +34,7 @@ class MossV2ArtTests(unittest.TestCase):
     def test_active_v2_animations_are_warning_free_and_keep_face_vocabulary(self):
         for name in ("look", "loaf", "sleep-wake", "pet", "dance", "kisses"):
             with self.subTest(name=name):
-                animation = load_animation(ASSET_ROOT / "animations" / f"{name}.json")
+                animation = load_animation(V2_ROOT / "animations" / f"{name}.json")
                 self.assertEqual(animation_quality(animation)["warnings"], [])
                 for sprite in animation.unique_frames():
                     raw = json.loads(sprite.source_path.read_text(encoding="utf-8"))

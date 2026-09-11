@@ -1,0 +1,74 @@
+{
+  "schema": "openditoo.pixel-sprite.v1",
+  "id": "moss.v3.kiss_big",
+  "width": 16,
+  "height": 16,
+  "palette": {
+    ".": [
+      0,
+      0,
+      0
+    ],
+    "b": [
+      120,
+      60,
+      35
+    ],
+    "s": [
+      185,
+      95,
+      40
+    ],
+    "h": [
+      240,
+      150,
+      70
+    ],
+    "c": [
+      255,
+      235,
+      185
+    ],
+    "e": [
+      0,
+      0,
+      0
+    ],
+    "p": [
+      255,
+      75,
+      150
+    ]
+  },
+  "rows": [
+    "............p.p.",
+    ".....hhhh...ppp.",
+    "...hhhhhhhh..p..",
+    "..bbhhhhhhhsbb..",
+    ".bbbhhehhhehsbb.",
+    ".bbbhhhhhhhhssb.",
+    ".bbhhccccchhssb.",
+    "..bhhcceccchhsb.",
+    "...hhhcpcchhs...",
+    ".....hhhh.......",
+    "....hhhhhh......",
+    "...hhhccshhh....",
+    "..hhhcccsshhh...",
+    "..hh..ccsshhh...",
+    "...h....shh.....",
+    "................"
+  ],
+  "meta": {
+    "anchor": [
+      8,
+      14
+    ],
+    "mirroring": null,
+    "tags": [
+      "moss",
+      "v3",
+      "polish",
+      "kiss_big"
+    ]
+  }
+}

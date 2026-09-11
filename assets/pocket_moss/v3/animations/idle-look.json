@@ -1,0 +1,26 @@
+{
+  "schema": "openditoo.pixel-animation.v1",
+  "id": "moss.v3.idle-look",
+  "canvas": [
+    16,
+    16
+  ],
+  "loop": true,
+  "sequence": [
+    {
+      "sprite": "../sprites/idle.json",
+      "hold_acks": 20,
+      "phase": "idle"
+    },
+    {
+      "sprite": "../sprites/look.json",
+      "hold_acks": 4,
+      "phase": "look"
+    },
+    {
+      "sprite": "../sprites/idle.json",
+      "hold_acks": 20,
+      "phase": "settle"
+    }
+  ]
+}

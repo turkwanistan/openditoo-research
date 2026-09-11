@@ -1591,6 +1591,7 @@ from host import product_runtime_v2  # noqa: E402
 from host import product_runtime_v3  # noqa: E402
 from host import product_runtime_v4  # noqa: E402
 from host import product_runtime_v5  # noqa: E402
+from host import product_runtime_v6  # noqa: E402
 from host import frame_stream  # noqa: E402
 
 HOST_DIR = ROOT / "runtime/windows/OpenDitoo.Day1.Host"
@@ -1984,7 +1985,7 @@ class ProductRuntimeTests(unittest.TestCase):
 # The newest committed product template. Older revisions stay in the repository as records of
 # what was reviewed against a superseded Host build, and are deliberately NOT hash-valid any
 # more -- re-validating them would mean pretending an old policy still describes this binary.
-CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-011.json"
+CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-012.json"
 # The last revision-2 (product_runtime_v2) template: the v2 loader tests build their policies from
 # it, patching in this tree's code and Host hashes, since it no longer names the current Host.
 V2_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-005.json"
@@ -2013,15 +2014,15 @@ class ProductRuntimeV2Tests(unittest.TestCase):
     def test_the_current_committed_policy_is_disabled_and_hash_complete(self) -> None:
         path = CURRENT_PRODUCT_TEMPLATE
         raw = json.loads(path.read_text(encoding="utf-8"))
-        reviewed = product_runtime_v5.load_policy(path, require_authority=False, verify_hashes=False)
+        reviewed = product_runtime_v6.load_policy(path, require_authority=False, verify_hashes=False)
         self.assertEqual(reviewed.product_id, product_runtime_v2.PRODUCT_ID)
-        self.assertEqual(raw["build"]["code_sha256"], product_runtime_v5.code_hashes())
+        self.assertEqual(raw["build"]["code_sha256"], product_runtime_v6.code_hashes())
         r010 = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-010.json").read_text(encoding="utf-8"))
         self.assertEqual(raw["build"]["host_dll_sha256"], r010["build"]["host_dll_sha256"])
         self.assertEqual(raw["build"]["button_probe_sha256"], r010["build"]["button_probe_sha256"])
-        self.assertIn("PRODUCT_AUTHORITY_MISSING", product_runtime_v5.authority_blockers(path))
+        self.assertIn("PRODUCT_AUTHORITY_MISSING", product_runtime_v6.authority_blockers(path))
         with self.assertRaises(product_runtime_v2.ProductPolicyError) as blocked:
-            product_runtime_v5.load_policy(path, require_authority=True, verify_hashes=False)
+            product_runtime_v6.load_policy(path, require_authority=True, verify_hashes=False)
         self.assertEqual(blocked.exception.code, "PRODUCT_AUTHORITY_MISSING")
 
     def test_observed_transport_reports_open_and_acks_without_changing_transport(self) -> None:
@@ -2109,11 +2110,11 @@ class ProductInstallationBoundaryTests(unittest.TestCase):
     def test_the_current_committed_template_is_disabled_and_hash_complete(self) -> None:
         path = CURRENT_PRODUCT_TEMPLATE
         raw = json.loads(path.read_text(encoding="utf-8"))
-        self.assertEqual(raw["runtime_revision"], 6)
+        self.assertEqual(raw["runtime_revision"], 7)
         self.assertFalse(raw["authority"]["persistent_runtime_authorized"])
         self.assertIsNone(raw["authority"]["grant_scope"])
-        reviewed = product_runtime_v5.load_policy(path, require_authority=False, verify_hashes=False)
-        self.assertEqual(raw["build"]["code_sha256"], product_runtime_v5.code_hashes())
+        reviewed = product_runtime_v6.load_policy(path, require_authority=False, verify_hashes=False)
+        self.assertEqual(raw["build"]["code_sha256"], product_runtime_v6.code_hashes())
         self.assertTrue(reviewed.automatic_reconnect)
         self.assertTrue(reviewed.reclaim_on_canvas_invalidated)
 
@@ -4889,11 +4890,13 @@ class PaginationTests(unittest.TestCase):
         self.assertNotIn("write", reader)
         self.assertEqual(src.count("subprocess.Popen"), 1, msg="the only process started is the probe")
 
-    def test_011_template_hashes_match_this_tree_and_older_revisions_are_superseded_records(self) -> None:
-        path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-011.json"
+    def test_012_template_hashes_match_this_tree_and_older_revisions_are_superseded_records(self) -> None:
+        path = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-012.json"
         raw = json.loads(path.read_text(encoding="utf-8"))
-        product_runtime_v5.load_policy(path, require_authority=False, verify_hashes=False)
-        self.assertEqual(raw["build"]["code_sha256"], product_runtime_v5.code_hashes())
+        product_runtime_v6.load_policy(path, require_authority=False, verify_hashes=False)
+        self.assertEqual(raw["build"]["code_sha256"], product_runtime_v6.code_hashes())
+        old011 = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-011.json").read_text(encoding="utf-8"))
+        self.assertNotEqual(old011["build"]["code_sha256"], product_runtime_v5.code_hashes())
         old010 = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-010.json").read_text(encoding="utf-8"))
         self.assertNotEqual(old010["build"]["code_sha256"], product_runtime_v4.code_hashes())
         old009 = json.loads((ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-009.json").read_text(encoding="utf-8"))
@@ -4903,6 +4906,7 @@ class PaginationTests(unittest.TestCase):
         for name in ("OPENDITOO-PRODUCT-RUNTIME-007.json", "OPENDITOO-PRODUCT-RUNTIME-006.json"):
             old = json.loads((ROOT / "product" / name).read_text(encoding="utf-8"))
             self.assertNotEqual(old["build"]["code_sha256"], pagination.code_hashes())
+
 
 
 class HostFirstFrameRebindTests(unittest.TestCase):

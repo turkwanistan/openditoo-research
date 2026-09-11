@@ -14,7 +14,7 @@ from host.pixel_animation import PixelAnimation, load_animation
 from host.pixel_art import load_sprite
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSET_ROOT = ROOT / "assets/pocket_moss/v2"
+ASSET_ROOT = ROOT / "assets/pocket_moss/v3"
 NOMINAL_ACK_MS = 62  # timing display/hold floor only; physical panel FPS remains unmeasured
 MODE_NORMAL = "normal"
 MODE_SELECTOR = "selector"

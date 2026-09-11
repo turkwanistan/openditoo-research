@@ -1,0 +1,36 @@
+{
+  "schema": "openditoo.pixel-animation.v1",
+  "id": "moss.v3.kisses",
+  "canvas": [
+    16,
+    16
+  ],
+  "loop": false,
+  "sequence": [
+    {
+      "sprite": "../sprites/look.json",
+      "hold_acks": 3,
+      "phase": "notice"
+    },
+    {
+      "sprite": "../sprites/kiss_small.json",
+      "hold_acks": 4,
+      "phase": "kiss_small"
+    },
+    {
+      "sprite": "../sprites/kiss_big.json",
+      "hold_acks": 7,
+      "phase": "kiss_big"
+    },
+    {
+      "sprite": "../sprites/happy_wag_high.json",
+      "hold_acks": 4,
+      "phase": "happy"
+    },
+    {
+      "sprite": "../sprites/idle.json",
+      "hold_acks": 4,
+      "phase": "settle"
+    }
+  ]
+}
