@@ -1,6 +1,6 @@
 # OpenDitoo media-contention / raw-AVRCP input route — 2026-09-11
 
-Status: **root cause proven; raw input route proven; Runtime 017 successor implemented offline and unauthorized; live Runtime 016 source unchanged and currently stopped after diagnostics. Dynamic exact-Ditoo attribution is the remaining technical gate.**
+Status: **root cause proven; raw input route proven; dynamic Ditoo-handle attribution implemented and receive-only active-media acceptance PASS (2026-09-11 21:16Z); Runtime 017 unauthorized and NOT grant-ready until the broker has narrow elevated launch plumbing. Runtime 016 is unchanged and currently stopped.**
 
 ## Problem
 
@@ -136,3 +136,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "\\wsl.localhost\Ubuntu\
 Expected output begins under `===== RAW-ACL ATTRIBUTION RESULT =====`. If it shows OpenDitoo's fixed frame preambles on the same handle that carries Ditoo AVRCP, implement dynamic handle binding below tshark's stale higher-level conversation state: broker starts unbound, observes known OpenDitoo traffic, binds the current Ditoo ACL handle, and only then emits `0x4C/0x4B/0x44/0x46` events from that handle. If it still emits no rows, use the now-visible tshark stderr/raw rows to repair the low-level field extraction before changing architecture again.
 
 After dynamic attribution is implemented, repeat active-media acceptance with the fixed-Playing ownership sink: Left 5/5, Right 5/5, lever 20/20, total 30, Tivoo negative control excluded, zero media reaction, zero helper orphans. Only then revisit production elevation plumbing and the exact Runtime 017 grant/cutover.
+
+## Attribution closed / acceptance PASS — 2026-09-11 21:17Z
+
+Superseded the checkpoint above. Dynamic handle binding from OpenDitoo's own outbound image preambles, the raw-L2CAP extraction fixes, the ETW backlog drop, the 50 ms ETW flush and the sink-after-bind are all recorded in `notes/OPENDITOO-HANDOFF-2026-09-11-R017-MEDIA-AVRCP.md`. Evidence: `captures/OPENDITOO-R017-RAW-AVRCP-ACCEPTANCE-2026-09-11.json` (PASS: 14/14 reduced run, Tivoo excluded, latency p50 104 / max 142 ms, media reaction NO, 0 orphans). Remaining gate before the grant: a narrowly elevated broker launch for the product runtime.

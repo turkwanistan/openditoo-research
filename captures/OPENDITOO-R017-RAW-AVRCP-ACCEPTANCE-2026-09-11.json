@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "capture_id": "OPENDITOO-R017-RAW-AVRCP-ACCEPTANCE-2026-09-11",
+  "status": "PASS",
+  "gate": "Runtime 017 receive-only raw-AVRCP sidecar acceptance under active Bluetooth media (pre-grant; Runtime 017 NOT live)",
+  "privacy": "Derived counts only. Raw HCI rows, Bluetooth addresses, ACL handles and CIDs stay in private Windows %TEMP% logs.",
+  "method": {
+    "harness": "scripts/accept_runtime_017_raw_input.ps1 (Administrator PowerShell; BTVS requires elevation)",
+    "broker": "OpenDitoo.RawAvrcpBroker at b4d536e/14ff03f: BTVS -> tshark (btrfcomm/btavctp disabled, raw btl2cap.payload); Ditoo ACL handle learned from OpenDitoo outbound preamble A->B; inbound AVRCP presses on that handle only; ETW backlog before broker start dropped; BTETWRTSession flush-only every 50 ms; Playing SMTC sink starts on first bind",
+    "binding_traffic": "accepted Runtime 016 started hands-off for a few seconds after broker start, then stopped",
+    "media": "started through the EDIFIER after the sink was up (product order)"
+  },
+  "runs": [
+    {
+      "at_utc": "2026-09-11T21:01:55Z",
+      "broker_commit": "02a7055",
+      "result": "FAIL",
+      "counts": {"left": "5/5", "right": "5/5", "lever": "20/20", "lever_play": 9, "lever_pause": 11, "total": 30, "helper_orphans": 0},
+      "failures": [
+        "30 AVRCP presses captured at 20:41Z (ETW backlog) were delivered on BTVS connect; dropped only because no preamble preceded them",
+        "capture->broker latency p50 1.77 s, max 2.14 s (ETW real-time buffering; tshark alone ~0.1 s on a synthetic TCP feed)",
+        "operator media reaction YES; Runtime 016 blip registered its mirror SMTC session after the Playing sink, and the sink saw only 13/30 presses",
+        "Tivoo negative control not recorded (non-decodable foreign ops were not logged)"
+      ]
+    },
+    {
+      "at_utc": "2026-09-11T21:16:42Z",
+      "broker_commit": "14ff03f",
+      "result": "PASS",
+      "reduced_counts_reason": "owner asked for fewer trials; full 5/5/20 counting already passed in the 21:01Z run",
+      "counts": {"left": "3/3", "right": "3/3", "lever": "8/8", "lever_play": 4, "lever_pause": 4, "total": 14},
+      "foreign_handle_ignored_rows": 2,
+      "unbind_after_bind": 0,
+      "stale_backlog_rows_dropped": 0,
+      "etw_flush": "PASS",
+      "latency_ms": {"p50": 104, "max": 142},
+      "helper_orphans": 0,
+      "sink_smtc_events": 11,
+      "operator_media_reaction": "NO"
+    }
+  ],
+  "untested": [
+    "stale-backlog drop is implemented but saw 0 stale rows in the PASS run",
+    "Ditoo power-cycle unbind/rebind live (selftest only)",
+    "product-supervised broker (Runtime 017 runtime) and production narrow-elevation plumbing",
+    "BTETWRTSession outlives killed BTVS and keeps buffering HCI; not cleaned up by the broker"
+  ]
+}

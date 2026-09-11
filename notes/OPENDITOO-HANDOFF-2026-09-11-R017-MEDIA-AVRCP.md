@@ -24,19 +24,33 @@ Do not use proprietary RFCOMM reports as authoritative input; they were incomple
 - BTVS requires Administrator elevation on this Windows host. Do not solve that by elevating the whole OpenDitoo product; final production plumbing needs a narrow elevated helper/task or equivalent.
 - Attempts to learn the handle from fresh L2CAP/RFCOMM open and known frame preambles initially printed no rows. Runtime telemetry proved a frame was sent+ACKed during the latter window, and review found the newer diagnostics were passing an invalid tshark field separator (`separator=\\t`). Commit `c11ca8d` corrected it and added better failure visibility.
 
-## Immediate next step — do this first
+## Update — dynamic attribution and receive-only acceptance PASS (2026-09-11 21:17Z)
 
-From **Administrator PowerShell**, media paused/off:
+The raw-ACL gate is closed. The pre-fix 20:34Z capture already held 410 rows (tshark printed a literal `\` separator; its tab escape is `/t`, so `c11ca8d` was still wrong). Those rows show OpenDitoo's outbound Pixel Coloring preambles A→B (`pb_flag 0`, RFCOMM UIH) only on the Ditoo's ACL handle, the same handle that carries its AVRCP. The Tivoo handle never carries them.
 
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "\\wsl.localhost\Ubuntu\home\wan\Projects\openditoo-research\.openditoo-local\worktrees\media-avrcp\scripts\diagnose_runtime_017_raw_acl_attribution.ps1"
-```
+Broker now (`02a7055`, `b4d536e`, `14ff03f`):
+- tshark runs with `--disable-protocol btrfcomm --disable-protocol btavctp`, so every channel stays raw `btl2cap.payload`. Without that, a freshly connected link (any reconnect) is dissected and the payload field vanishes (proven on a synthetic HCI pcap).
+- `HandleBinder`: starts unbound, binds on an outbound A-then-B pair on one handle, unbinds on HCI Disconnection Complete for that handle, and accepts only inbound (`pb_flag 2`) presses on the bound handle. Any pass-through on another handle is logged `ignored_foreign_handle`. No handle or CID is persisted.
+- Rows captured before broker start are dropped. `BTETWRTSession` keeps buffering while no consumer is attached and replayed 20-minute-old presses on connect.
+- A flush-only `ControlTrace(FLUSH)` on `BTETWRTSession` runs every 50 ms. Without it, ETW real-time buffering added 1.1–2.1 s of input lag.
+- The Playing ownership sink starts on the first bind.
 
-Analyze `===== RAW-ACL ATTRIBUTION RESULT =====` and any printed tshark stderr. Goal: prove low-level per-handle ACL visibility and find OpenDitoo's fixed frame preambles without relying on tshark's stale address/RFCOMM conversation state. If proven, update `OpenDitoo.RawAvrcpBroker` to dynamically bind the Ditoo handle from known OpenDitoo traffic, never a hard-coded handle. If still empty, repair the raw ACL field extraction using the diagnostic output before exploring another architecture.
+Acceptance (`captures/OPENDITOO-R017-RAW-AVRCP-ACCEPTANCE-2026-09-11.json`):
+- **21:01Z FAIL** — raw counts 5/5, 5/5, 20/20 = 30 but stale backlog, 1.77 s lag and media reaction YES. The Runtime 016 binding blip's mirror SMTC session competed with the sink.
+- **21:16Z PASS** — reduced by owner request to 3/3, 3/3, 8/8 = 14. Tivoo excluded (2 rows), 0 unbinds, ETW flush OK, latency p50 104 / max 142 ms, 0 orphans, media reaction NO.
+- Focused tests 16/16, broker selftest PASS, interactive verifier 136/136. Broker DLL + program hash refrozen in the Runtime 017 policy.
 
-## Then
+## Immediate next step — production elevation plumbing (blocks the grant)
 
-Rebuild/freeze broker identities if broker source changes; keep policy hash checks exact. Re-run focused tests and the interactive successor verifier. Then rerun receive-only active-media acceptance with the ownership sink: Left 5/5, Right 5/5, Lever 20/20, total 30, Tivoo negative control excluded, media reaction NO, helper orphans 0. Only after that should production elevation plumbing and the exact grant/cutover be considered.
+Runtime 017 is **not grant-ready**. `product_runtime_v11` launches the broker from WSL with a normal token, and `btvs.exe` refuses without elevation (Win32 740). A cut-over 017 would therefore get zero input, and the broker would restart every 5 s. Needed:
+
+1. A narrowly elevated launch for **only** `OpenDitoo.RawAvrcpBroker.exe`. Candidate: a scheduled task registered once from Administrator PowerShell with *Run with highest privileges*, hash-pinned exe/args, on-demand only. The WSL supervisor starts and stops it (`schtasks /run` / `/end`) and keeps reading the same NDJSON.
+2. Liveness/stop semantics equivalent to today's child-process supervision, plus the Job Object helper cleanup.
+3. Tests and policy/cutover updates for the task identity, then a short product-supervised live check: bind from the product's own frames, a few presses under media, a Ditoo power-cycle rebind.
+
+Only then request `Grant OPENDITOO-PRODUCT-RUNTIME-017`.
+
+Open follow-ups: `BTETWRTSession` outlives a killed BTVS and keeps buffering HCI (privacy/perf; consider stopping it on broker exit). The stale-drop path saw 0 rows in the PASS run.
 
 ## Guardrails
 
