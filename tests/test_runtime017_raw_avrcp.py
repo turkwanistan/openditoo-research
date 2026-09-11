@@ -99,6 +99,14 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertNotIn('reset --hard', shell)
 
 
+    def test_frame_attribution_diagnostic_uses_exact_openditoo_preambles(self):
+        src = (ROOT / 'scripts/diagnose_runtime_017_frame_attribution.ps1').read_text(encoding='utf-8')
+        self.assertIn('01:03:00:9f:a2:00:02', src)
+        self.assertIn('01:04:00:bd:31:f2:00:02', src)
+        self.assertIn("'-e','bthci_acl.chandle'", src)
+        self.assertIn("systemctl --user start openditoo-product.service", src)
+        self.assertIn("systemctl --user stop openditoo-product.service", src)
+
     def test_handle_learning_diagnostic_captures_fresh_rfcomm_open(self):
         src = (ROOT / 'scripts/diagnose_runtime_017_handle_learning.ps1').read_text(encoding='utf-8')
         self.assertIn("btl2cap.cid == 0x0001", src)
