@@ -1,0 +1,31 @@
+{
+  "schema": "openditoo.pixel-animation.v1",
+  "id": "moss.v2.kisses",
+  "canvas": [
+    16,
+    16
+  ],
+  "loop": false,
+  "sequence": [
+    {
+      "sprite": "../sprites/look.json",
+      "hold_acks": 3,
+      "phase": "notice"
+    },
+    {
+      "sprite": "../sprites/kiss.json",
+      "hold_acks": 9,
+      "phase": "kiss"
+    },
+    {
+      "sprite": "../sprites/happy.json",
+      "hold_acks": 6,
+      "phase": "happy"
+    },
+    {
+      "sprite": "../sprites/idle.json",
+      "hold_acks": 4,
+      "phase": "settle"
+    }
+  ]
+}

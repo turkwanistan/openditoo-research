@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -9,7 +10,7 @@ import unittest
 
 from cli import openditoo
 from host import product_runtime_v4 as v4
-from host.moss_page import MODE_SELECTOR, MossPage
+from host.moss_page import ASSET_ROOT, MODE_SELECTOR, MossPage
 from host.slots_page import SlotsPage
 from scripts.interactive_hf3 import FakeClock, FakeHost, PacedEvents
 from tests.test_product_runtime_v3 import DryDashboard
@@ -36,15 +37,24 @@ class Runtime010PolicyTests(unittest.TestCase):
         self.assertEqual((p.session_lifetime_seconds, p.max_frames_per_session), (600, 15000))
 
     def test_policy_hashes_pin_runtime_lab_moss_code_and_every_v1_json_asset(self):
-        expected = v4.code_hashes()
-        self.assertEqual(self.template["build"]["code_sha256"], expected)
-        self.assertIn("product_runtime_v4_sha256", expected)
-        self.assertIn("moss_page_sha256", expected)
-        self.assertIn("pixel_art_sha256", expected)
-        self.assertIn("pixel_animation_sha256", expected)
+        stored = self.template["build"]["code_sha256"]
+        self.assertIn("product_runtime_v4_sha256", stored)
+        self.assertIn("moss_page_sha256", stored)
+        self.assertIn("pixel_art_sha256", stored)
+        self.assertIn("pixel_animation_sha256", stored)
+        # Runtime 010 is an exact-tree rollback once a successor changes shared CLI/MossPage bytes.
+        # Its frozen v1 assets and v4 runtime file must remain byte-identical even on successor branches.
+        self.assertEqual(stored["product_runtime_v4_sha256"], hashlib.sha256(Path("host/product_runtime_v4.py").read_bytes()).hexdigest())
         asset_files = sorted(Path("assets/pocket_moss/v1").rglob("*.json"))
-        asset_keys = [k for k in expected if k.startswith("moss_asset_")]
+        asset_keys = [k for k in stored if k.startswith("moss_asset_")]
         self.assertEqual(len(asset_keys), len(asset_files))
+        for key, path in v4.HASHED_MODULES.items():
+            if key.startswith("moss_asset_"):
+                self.assertEqual(stored[key], hashlib.sha256(path.read_bytes()).hexdigest(), key)
+        if ASSET_ROOT.name == "v1":
+            self.assertEqual(stored, v4.code_hashes())
+        else:
+            self.assertNotEqual(stored, v4.code_hashes())
 
     def test_cli_routes_revision_5_to_runtime_v4(self):
         self.assertIs(openditoo._product_runtime_module(v4.TEMPLATE), v4)
@@ -102,7 +112,7 @@ class Runtime010SupervisorTests(unittest.TestCase):
             hosts = []
             def factory():
                 host = FakeHost(clock, invalidations); hosts.append(host); return host
-            moss = MossPage(seed=3)
+            moss = MossPage(seed=3, asset_root=Path("assets/pocket_moss/v1"))
             policy = v4.load_policy(v4.TEMPLATE, require_authority=False, verify_hashes=False)
             state = v4.run_product(
                 policy, factory,

@@ -1,0 +1,153 @@
+{
+ "authority": {
+  "grant_scope": null,
+  "grant_scope_requested": "Standing Runtime 011: Runtime 010's exact target/Host/session/reconnect/reclaim/ButtonProbe/webcam and Dashboard/Slots/Moss interaction semantics, with Pocket Moss visual assets changed only to the hash-frozen v2 readability revision (floppy ears, brighter tan silhouette, cream muzzle/chest, black eyes/nose, pink tongue/heart). No raw-send, target override, second Bluetooth owner, Windows DLL change, pacing change, input change, persistence, Terrarium dependency or long-lever mapping.",
+  "grant_text": null,
+  "granted_by": null,
+  "persistent_runtime_authorized": false,
+  "policy_id": "OPENDITOO-PRODUCT-RUNTIME-011",
+  "required_grant_text": "Grant OPENDITOO-PRODUCT-RUNTIME-011",
+  "revocation": "scripts/cutover_runtime_011.sh --rollback restores Runtime 010 source tree and local policy exactly, then restarts the service",
+  "revoked": false,
+  "supersedes": "OPENDITOO-PRODUCT-RUNTIME-010"
+ },
+ "behavior": {
+  "automatic_reconnect": true,
+  "collector_ownership": "product runtime collects while connected and while backing off; standalone collector timer is transactionally disabled and restored on uninstall",
+  "raw_send_enabled": false,
+  "reclaim_on_canvas_invalidated": true,
+  "reclaim_storm_guard": {
+   "cooldown_seconds": 1,
+   "max_immediate_reclaims": 8,
+   "window_seconds": 10
+  },
+  "reconnect_backoff_seconds": [
+   1,
+   2,
+   5,
+   10,
+   30
+  ],
+  "start_at_windows_logon": true,
+  "target_override_enabled": false
+ },
+ "build": {
+  "button_probe_sha256": {
+   "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.dll": "d85c12982f94893362c10faecae789f7421d4125663f2b9ce17b0eb1afa3a4b8",
+   "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.exe": "79521fba144fac4f4922b95236e4a3bedd62a49f1a5ede22f2b71d9909471252"
+  },
+  "code_sha256": {
+   "activity_lightning_renderer_sha256": "74389183ca694d46822eefe41ac941783bbd0ac70a5067d410dc827fc7c3f436",
+   "activity_lightning_sha256": "684970ca78c321739d937ead6d08b435a750c63782c12064ed201d7fbffc536a",
+   "cli_sha256": "3b0f2c1ea610a4c2273b3af45c9877a07c28f9b6defe53574141a4dc910731f6",
+   "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+   "dashboard_page_sha256": "3c240db56308ddfbc0e197fb1d018310763a862b08ace43905103fde59a21bf5",
+   "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+   "frame_stream_sha256": "880970a6d494197b78adfeac0309cb2d86ce447dd6bb826c7ae5b0c270af7fa6",
+   "interactive_pages_sha256": "c52a12c822cef4c4e93d85752098fef118438da2f78c55869e961581971ae26d",
+   "interactive_stream_sha256": "acc9e908e0d7aa99efcc70cbd2cd108a6045ae66035ce54819db23abebb07394",
+   "moss_page_sha256": "bcdb42b4cd123c0b6f772744d27648aaf235bd0f94c158c218945d6a63df3532",
+   "moss_v2_asset_animations_dance_sha256": "425f4fe85f6533ce474acd2fdd2fbe42addb289c15e56203d7c75ffbc64e956c",
+   "moss_v2_asset_animations_idle_look_sha256": "87ca55c0fdd17f4e6352e630105fe79baa8991c4b314bab38f9104f859b513c7",
+   "moss_v2_asset_animations_kisses_sha256": "ac82458edbf5d0719fece62f20d37968eb7574a8f628fa64a2b7e5fab33c080f",
+   "moss_v2_asset_animations_loaf_sha256": "0a7f6bbc770c34d8f5903caad247aa26e5085063b8baa258cd69d7c73784fbc6",
+   "moss_v2_asset_animations_look_sha256": "c081dcfd747acdf4a2a00983b535e142620838981523cff04a921b99f3750cbe",
+   "moss_v2_asset_animations_pet_sha256": "6db898a1361548732536c962d8b88879befec5b4a3c3d45f9fad1d1d1ff3c3f7",
+   "moss_v2_asset_animations_sleep_wake_sha256": "0223879a09c6ef4e2e8a05554f777082383931b42035e40d2974ef6e6e9c94c8",
+   "moss_v2_asset_sprites_dance_left_sha256": "89499217101c7447b231bd78a902d16b88fa89be437591979c1463603d87571d",
+   "moss_v2_asset_sprites_dance_right_sha256": "9383551b1068990591c37528754dcc6fbf3fd4cdbdf0835a69217686991ca2c9",
+   "moss_v2_asset_sprites_happy_sha256": "b956de745430907d975edd842d26e4625cacf156f9e743d99d337aa5529b46bc",
+   "moss_v2_asset_sprites_idle_sha256": "ea28c8480e7dfa25d431e6e00341aef094cc43e4da2f7cb81a72c2e754122693",
+   "moss_v2_asset_sprites_kiss_sha256": "bae057f5f19d5464c9c1ba0d93394db57ce0ce7316a7709b504991efc60dd821",
+   "moss_v2_asset_sprites_loaf_sha256": "7bd3f0ca2ac6bdc7e3d8c073a3fa23f30fd7111d4433643aeb272e77a3482290",
+   "moss_v2_asset_sprites_look_sha256": "9b0be1424736ed50984d87398681c41a5c3e849afded04d63e33eff7f1183c43",
+   "moss_v2_asset_sprites_pet_lean_sha256": "47daf6be297aab882b018e89804a271afa2495e8d590363e8e2daf94455822c3",
+   "moss_v2_asset_sprites_sleep_sha256": "d1fc55f606b365afa655b0cb5a55c33fbb63727881454757f16644200bed677f",
+   "moss_v2_asset_sprites_wake_sha256": "c1447f57a76bc7e70b4aca6ed44f0ea34881167c03b032ca4e4e1dd71ade64b6",
+   "pagination_sha256": "b2e31de5399dd8bf8bf83a37ff4f20d0b9201de1a82fd5c6d7736326d775db91",
+   "pixel_animation_sha256": "b7e6ccf874df46adf9c2ae2d934797b138b6f48ccc67c0039c724374db96c12c",
+   "pixel_art_sha256": "c0e1522960b0f38cfc486ce8d7068d8380a6b04c97d8a4c632544d22af5eb965",
+   "product_runtime_sha256": "85b6ca70a1340bd53cc69441034c780d39d62db985cf6d61a10c1bccb0483e0d",
+   "product_runtime_v5_sha256": "d1426351e60ed0af88ee4eccd472dd0b663852e9404026d88b7921e96ebae244",
+   "renderer_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+   "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+   "slots_page_sha256": "0f6116af8b56ad74295c1637f88dd6a857b80a3855e1f61dfef3558f48dc158b",
+   "ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb"
+  },
+  "host_dll_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+  "host_note": "Unchanged Runtime 009 Host; Runtime 010 changes WSL page/runtime code and hash-bound Moss assets only."
+ },
+ "description": "Persistent plug-and-play MCP activity dashboard for the owner's exact Ditoo Plus; Runtime 002 adds telemetry-only live session observability. Runtime 003 re-binds the policy to the session-profile Host build. Runtime 004 re-binds the policy to the Host build with a separate streaming-profile ceiling. Runtime 006 adds physical-button pagination: the Ditoo's left/right arrows page through a wrap-around list (dashboard first), a short lever pull runs the current page's own action, input from the receive-only ButtonProbe (SMTC, mirror status) run as a child of the product. Runtime 007: Host re-bind only: the candidate Host sends every session's FIRST frame with the proven 10 ms packet spacing (first-frame IMAGE_RX_RECV_TIMEOUT: 5/19 streaming_ack_clock opens vs 0/199 activity opens, captures/OPENDITOO-STREAMING-FIRST-FRAME-TIMEOUT-ANALYSIS-2026-09-10.json); later frames keep the profile spacing. Build is path-independent (PathMap). Runtime 008 (HF-4): every page (dashboard with the UI-1 lightning pulse, three-reel slots) in ONE streaming_ack_clock Host session (PageCarousel); Left/Right change pixels only; InteractiveTransport pacing (50 ms client floor + 45 ms Host-anchored gap); Host-confirmed stock yield reclaims the same page; hidden-page collection on a joined worker. Accepted as OPENDITOO-INTERACTIVE-HF3-008 (11 cycles, 66/66 inputs, 0 faults). Runtime 009: exactly Runtime 008 plus owner-review fixes: the lightning glow draws only the icon's own pixels (no lone above-icon 'spark' after the hit), and a session's first ACK is always persisted to telemetry. Runtime 010 successor adds Pocket Moss as the third single-session page plus generic page-first modal Left/Right capture; all Moss art/animation sources and the Pixel Animation Lab compiler are hash-bound. Runtime 010 was subsequently cut over and is the live rollback baseline for Runtime 011. Runtime 011 is an art-readability-only successor: Moss v2 replaces the physically ambiguous v1 brown silhouette; transport and interaction semantics are unchanged.",
+ "install": {
+  "host_task": "OpenDitoo Day1 Host (preserved)",
+  "local_policy": ".openditoo-local/product-runtime-policy.json",
+  "opentivoo_task": "OpenTivoo Product Runtime (preserved)",
+  "startup_boundary": "Windows user logon / StartWhenAvailable; WSL is user-scoped, so this is the reliable Windows startup boundary",
+  "windows_task": "OpenDitoo Product Runtime",
+  "wsl_service": "openditoo-product.service"
+ },
+ "pages": [
+  {
+   "kind": "live_mcp_dashboard_lightning",
+   "lever": "none",
+   "name": "dashboard",
+   "rate_mode": "activity"
+  },
+  {
+   "kind": "slots_three_reel",
+   "lever": "stop the next reel; after the third, start a new round",
+   "name": "slots",
+   "rate_mode": "streaming_ack_clock"
+  },
+  {
+   "kind": "pocket_moss_v1",
+   "lever": "normal: enter selector; selector: execute Pet/Dance/Kisses/Back",
+   "name": "moss",
+   "rate_mode": "streaming_ack_clock"
+  }
+ ],
+ "pagination": {
+  "broker": {
+   "args": "--seconds 0 --status mirror --log <events_windows_path>",
+   "events_file": ".openditoo-local/button-events.ndjson",
+   "events_windows_path": "\\\\wsl.localhost\\Ubuntu\\home\\wan\\Projects\\openditoo-research\\.openditoo-local\\button-events.ndjson",
+   "exe": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.exe",
+   "lifetime": "child of the product runtime; ends with it (webcam suspend, uninstall, stop); restarted at most every 5 s if it dies",
+   "media_keys": "while running, Windows media keys (Prev/Next/Play/Pause) page the Ditoo; YouTube contention PASS (BTN-8a); Spotify untested"
+  },
+  "evidence": [
+   "captures/OPENDITOO-BTN2-WINDOWS-RECEIVE-2026-09-10.json",
+   "captures/OPENDITOO-BTN5-PAGINATION-ACCEPTANCE-2026-09-10.json",
+   "captures/OPENDITOO-BTN7-LEVER-CHARACTERIZATION-2026-09-10.json",
+   "captures/OPENDITOO-BTN8-MEDIA-CONTENTION-2026-09-10.json",
+   "captures/OPENDITOO-INTERACTIVE-HF3-008-LIVE-2026-09-10.json"
+  ],
+  "navigation": {
+   "lever_candidate": "current page's lever action; long holds are never mapped (BTN-7)",
+   "nav_left": "previous page, wrapping, pixels only (same Host session)",
+   "nav_right": "next page, wrapping, pixels only (same Host session)"
+  }
+ },
+ "product_id": "OPENDITOO-MCP-DASHBOARD-V1",
+ "runtime_revision": 6,
+ "schema_version": 1,
+ "session": {
+  "ack_timeout_ms_per_frame": 5000,
+  "client_min_dispatch_ms": 50,
+  "host_anchored_gap_ms": 45,
+  "host_floor_ms": 40,
+  "idle_poll_interval_ms": 50,
+  "lifetime_seconds": 600,
+  "low_rate_interval_ms": 200,
+  "max_frames": 15000,
+  "max_tx_bytes": 15810000,
+  "pulse_freshness_seconds": 30,
+  "session_profile": "streaming_ack_clock"
+ },
+ "target": {
+  "exact_unit_id": "11:75:58:CE:DE:C7",
+  "installed_firmware": "v42012",
+  "rfcomm_channel": 1,
+  "target_override_enabled": false
+ }
+}
