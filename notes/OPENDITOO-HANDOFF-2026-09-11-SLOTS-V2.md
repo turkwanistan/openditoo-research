@@ -1,4 +1,4 @@
-# OpenDitoo Slots v2 / Runtime 014 handoff — 2026-09-11
+# OpenDitoo Slots v2 / Runtimes 014–016 handoff — 2026-09-11 (LIVE, accepted)
 
 ## Why v2
 
@@ -56,3 +56,15 @@ Runtime 016 (`feat/slots-v2-smooth`, `host/product_runtime_v10.py`, `runtime_rev
 - Aimed hit rate (pull when centred, 1–3 frames late): left 100%, middle/right 67%, same as 015. Random-timing odds unchanged: any win ~25%, jackpot ~1.6%.
 - Offline: interactive gate PASS, 136 tests (`SLOTS_V2_SMOOTH_OFFLINE`, `RUNTIME_016_SUCCESSOR_OFFLINE`). Day-1 in the worktree: 13 failures, identical to a clean Runtime 015 `main` baseline.
 - The successor clone is now scripted (scratch `gen_successor.py`). The cutover script is still authored by hand with the Write tool.
+
+## Live acceptance (Runtime 016)
+
+Owner granted exactly `Grant OPENDITOO-PRODUCT-RUNTIME-016`: `R016_CUTOVER_PASS main=2c4177b host=3faf520f46ce rollback=.openditoo-local/rollback-runtime-015`. Post-cutover `product-status`: connected, `last_error=null`, revision 11, policy `OPENDITOO-PRODUCT-RUNTIME-016`.
+
+Owner verdict on the panel: **"okay its winnable now, but hard."** Runtime 016 is the accepted live baseline and Runtime 015 is the exact rollback. No transport/product re-acceptance was needed (Slots-page-only change).
+
+## Next session
+
+- Start from Runtime 016 as accepted truth. If the owner wants Slots easier, the lowest-risk knobs are a wider middle/right `SLIP_BACK` (3 → aimed 100%) or a fourth cherry per strip (raises the pair rate). Ship either as a fresh successor (Runtime 017, `product_runtime_v11`, revision 12).
+- Still open: panel FPS and per-frame ACK timing are unmeasured live. The runtime only keeps `realized_fps_5s`. Occasional late ACKs show as brief reel pauses. Pacing (50 ms floor + 45 ms Host-anchored gap) was deliberately left unchanged. Revisit only if the pauses bother the owner.
+- The review page (scratch tooling, not committed) was `https://claude.ai/code/artifact/27b79e3d-e27f-4acb-aedf-f821360db070`.

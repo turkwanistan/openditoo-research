@@ -108,3 +108,4 @@ Runtime 002 policy hash and requires a reviewed Runtime 003 policy.**
 - Distinguish transport success, semantic success, visual success and persistence confidence.
 - Independently justify drawing entry, paint and exit.
 - Freeze first-frame evidence before expanding to stability/streaming.
+- ACK-advanced page animation must never emit two identical consecutive frames: the stream never sends an unchanged frame, so no ACK arrives and the animation stalls forever (Slots v2 near-miss, 2026-09-11). Test pages with a change-only driver.
