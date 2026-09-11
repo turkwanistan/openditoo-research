@@ -2,14 +2,29 @@
 
 ## Physical result that drives this successor
 
-Runtime 011 / Moss v2 is live on the exact Ditoo Plus and the runtime/input path works normally. Physical panel feedback established two important facts:
+Runtime 011 / Moss v2 was the accepted live baseline immediately before Runtime 012, and the runtime/input path worked normally. Physical panel feedback established two important facts:
 
 - v1 was a visual failure: Moss read as a brown blob rather than a dog.
 - v2 fixed the identity problem. Owner feedback after trying the live v2 character/animations: **“yes this looks much better … it’s looking pretty great already.”** Remaining criticism is polish, not recognition: idle is a little derpy/flat/deformed-looking, likely from the 3/4 body anatomy and small palette; animations need to be more interesting.
 
 Do not regress to low-contrast brown-on-brown silhouette art. Preserve the v2 face vocabulary: floppy ears, bright tan face, cream muzzle/chest, black eyes/nose, pink tongue/heart.
 
-## Runtime 012 candidate
+## Live acceptance / current baseline
+
+Runtime 012 was granted with exact text `Grant OPENDITOO-PRODUCT-RUNTIME-012` and cut over successfully on 2026-09-11. The live main cutover commit is `5de631e` and the installed policy is `OPENDITOO-PRODUCT-RUNTIME-012` (`runtime_revision=7`). The guarded cutover reported:
+
+- `R012_TEMPLATE_AND_INSTALLED_BINARIES_PASS`
+- `R012_MAIN_OFFLINE_PASS`
+- `R012_PRODUCT_CHECK_PASS`
+- `R012_DASHBOARD_CONNECTED`
+- `R012_WEBCAM_006_POLICY_CHECK_PASS`
+- `R012_CUTOVER_PASS main=5de631e host=3faf520f46ce rollback=.openditoo-local/rollback-runtime-011`
+
+Physical v3 review is accepted for the current milestone. The owner’s final disposition was **“okay this is good for now.”** Do not keep iterating Moss merely because further pixel polish is possible. Preserve Runtime 012 as the current accepted baseline and treat future Moss changes as optional incremental polish unless the owner explicitly reopens it.
+
+Runtime 011 remains the exact rollback baseline under `.openditoo-local/rollback-runtime-011`.
+
+## Runtime 012 implementation
 
 Branch: `feat/pocket-moss-v3-polish`
 
@@ -57,26 +72,22 @@ This is intentionally more expressive without becoming rapid/spastic.
 - Canonical successor suite: **100/100 PASS**.
 - `scripts/cutover_runtime_012.sh`: shell syntax PASS; rollback target Runtime 011.
 
-## Authority boundary
+## Authority / rollback state
 
-Do not perform Runtime 012 device I/O without exact fresh grant:
+The exact Runtime 012 grant was consumed for the accepted cutover:
 
 `Grant OPENDITOO-PRODUCT-RUNTIME-012`
 
-The committed policy remains unauthorized. A grant authorizes only the frozen Runtime 012 scope described in `product/OPENDITOO-PRODUCT-RUNTIME-012.json`.
+The committed template remains unauthorized by design; standing authority exists only in the local mode-0600 policy created by the cutover. The grant covered only the frozen Runtime 012 scope described in `product/OPENDITOO-PRODUCT-RUNTIME-012.json`.
 
-After grant, from normal local WSL, run from the v3 worktree:
+If Runtime 012 must be rolled back, use the guarded helper from normal local WSL:
 
 ```bash
-bash scripts/cutover_runtime_012.sh "Grant OPENDITOO-PRODUCT-RUNTIME-012"
+bash scripts/cutover_runtime_012.sh --rollback
 ```
 
-## Minimal physical acceptance
+## Physical acceptance completed
 
-Keep this short. After a clean `R012_CUTOVER_PASS`:
+The v3 live pass was intentionally short because Runtime 012 changes only art/choreography. Idle and the richer actions were physically reviewed and the owner accepted the result as the current stopping point. No broad transport/product re-acceptance is required unless a systems symptom appears.
 
-1. Page to Moss and judge idle anatomy/depth first.
-2. Run Dance once; confirm it is clearly more interesting while Moss stays recognizable throughout.
-3. Run Pet once; confirm lean/squish/tail-wag reads cleanly.
-4. Run Kisses once only if the first two are good.
-5. Stop. Do not repeat broad product acceptance unless a systems symptom appears; Runtime 012 changes art/choreography only.
+For a future session: begin from Runtime 012 as accepted truth. Do **not** reopen the v1/v2 identity problem, redo the transport stack, or repeat broad device testing. If Moss is revisited, prioritize small visual/animation polish while preserving the v2/v3 face vocabulary and Runtime 012 interaction semantics.
