@@ -53,6 +53,8 @@ EXACT_UNIT_ID = activity_session.EXACT_UNIT_ID
 TEMPLATE = ROOT / "product" / "OPENDITOO-PRODUCT-RUNTIME-017.json"
 R016_TEMPLATE = ROOT / "product" / "OPENDITOO-PRODUCT-RUNTIME-016.json"
 GRANT_TEXT = "Grant OPENDITOO-PRODUCT-RUNTIME-017"
+RAW_AVRCP_TASK = "OpenDitoo Raw AVRCP Broker"
+RAW_AVRCP_INSTALL_ROOT = r"C:\Program Files\OpenDitoo\RawAvrcpBroker"  # inherits admin-only ACL
 STATE_FILE = product_runtime_v2.STATE_FILE
 PAGES_STATE_FILE = pagination.PAGES_STATE_FILE  # product-status already reads this path
 
@@ -86,6 +88,7 @@ HASHED_MODULES = {
     "raw_avrcp_broker_program_sha256": ROOT / "runtime/windows/OpenDitoo.RawAvrcpBroker/Program.cs",
     "raw_avrcp_broker_csproj_sha256": ROOT / "runtime/windows/OpenDitoo.RawAvrcpBroker/OpenDitoo.RawAvrcpBroker.csproj",
     "raw_avrcp_stage_script_sha256": ROOT / "runtime/windows/stage_openditoo_raw_avrcp_broker.ps1",
+    "raw_avrcp_install_task_script_sha256": ROOT / "runtime/windows/install_openditoo_raw_avrcp_task.ps1",
     "runtime_017_cutover_sha256": ROOT / "scripts/cutover_runtime_017.sh",
     "pagination_sha256": ROOT / "host/pagination.py",
     "cli_sha256": ROOT / "cli/openditoo.py",
@@ -201,6 +204,14 @@ def load_policy(path: Path, *, require_authority: bool = True, verify_hashes: bo
                  "0x44": "lever_candidate", "0x46": "lever_candidate",
                  "0x4B": "nav_right", "0x4C": "nav_left"},
              "PRODUCT_017_INPUT_CONTRACT_MISMATCH")
+    # The elevated task may only launch admin-only copies; user-writable paths would be silent elevation.
+    launch = broker_spec.get("launch") or {}
+    _require(launch.get("kind") == "scheduled_task_highest_on_demand" and launch.get("task_name") == RAW_AVRCP_TASK
+             and all(str(broker_spec.get(k, "")).startswith(RAW_AVRCP_INSTALL_ROOT + "\\")
+                     for k in ("exe", "sink_exe", "btvs_exe"))
+             and all(name.startswith(RAW_AVRCP_INSTALL_ROOT + "\\")
+                     for name in (raw.get("build") or {}).get("raw_avrcp_broker_sha256") or {}),
+             "PRODUCT_017_ELEVATED_LAUNCH_MISMATCH")
     _require((raw.get("build") or {}).get("button_probe_sha256") == r016["build"]["button_probe_sha256"]
              and (raw.get("build") or {}).get("host_dll_sha256") == r016["build"]["host_dll_sha256"],
              "PRODUCT_017_CHANGES_HOST_OR_SINK")
@@ -284,12 +295,7 @@ def run_product(policy: StandingPolicy, transport_factory, *, stop_requested: Ca
     probe = policy.raw["pagination"]["broker"]
     if broker is None and events is None:
         broker = raw_avrcp_input.RawAvrcpBroker(
-            pagination.windows_path(probe["exe"]), target=policy.raw["target"]["exact_unit_id"],
-            events_windows_path=probe["events_windows_path"], events_file=ROOT / probe["events_file"],
-            sink_exe=pagination.windows_path(probe["sink_exe"]),
-            sink_log_windows_path=probe["sink_log_windows_path"], sink_log_file=ROOT / probe["sink_log_file"],
-            btvs_exe=pagination.windows_path(probe["btvs_exe"]), tshark_exe=pagination.windows_path(probe["tshark_exe"]),
-            port=probe["port"], monotonic=monotonic)
+            probe["launch"]["task_name"], Path(probe["launch"]["lease_file"]), monotonic=monotonic)
     if broker is not None:
         broker.ensure()
     events = events if events is not None else raw_avrcp_input.RawAvrcpEvents(ROOT / probe["events_file"])

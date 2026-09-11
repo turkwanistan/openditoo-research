@@ -42,12 +42,13 @@
       "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
       "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
       "product_runtime_sha256": "85b6ca70a1340bd53cc69441034c780d39d62db985cf6d61a10c1bccb0483e0d",
-      "product_runtime_v11_sha256": "68f69637f4f486200adeb93547bbee4a4e10b38264f9021a33df7a0cf4b21f1d",
-      "raw_avrcp_input_sha256": "6674db3337f3d1cd594157a9087acf19bba17a5b5671fcee5c6b9327e129fbc2",
-      "raw_avrcp_broker_program_sha256": "7de26351b4618e4e53c799259bff15f86d6bd0f33fc91e4746adab6c50e11ae9",
-      "raw_avrcp_broker_csproj_sha256": "419f978b05c83015dba37dec7906b4013bec42e829d4d2bfe0e0a8305ab63a38",
-      "raw_avrcp_stage_script_sha256": "8a0a80d039ab2669899153dd9e34bdcc650f204f0e7a5ef5d829fce6ad4994a4",
-      "runtime_017_cutover_sha256": "ee3d7dd14a6019e9d51150ff9941e6623fdad0e5da356595e7cf1f79b61bb05f",
+      "product_runtime_v11_sha256": "412b0a4f9ece1f7a8a7c108d01bafd77bdb6202f80a07bfed9064759bc9dded3",
+      "raw_avrcp_input_sha256": "35e6ea365390926abeaba2dde4de3dc87aa6ab470ec6e7432f2bdbb7bffe6267",
+      "raw_avrcp_broker_program_sha256": "30c770f938ff6e421ba3f378121c1de7921d9994c776a4c3e02b98859a69306b",
+      "raw_avrcp_broker_csproj_sha256": "bc09ad50c67535b3016650c092ec39f3945ccbaed4114e64b447cae4d49a55c4",
+      "raw_avrcp_stage_script_sha256": "83a3e91c011407bb28bec4e6284d1844018507db55a2c708a29a59a890fafba7",
+      "raw_avrcp_install_task_script_sha256": "9b4d8338960c7d6a8892cb985c55d706382d9c56aed080d0403ed5290949edb5",
+      "runtime_017_cutover_sha256": "836b849afad95f30d2c3ae8dcca57877d2421774c17254180494fd172aa30943",
       "pagination_sha256": "b2e31de5399dd8bf8bf83a37ff4f20d0b9201de1a82fd5c6d7736326d775db91",
       "cli_sha256": "b69b7c722bd5d0061eb2f92f75e9ec19c2c83be2cf77390b42e4ce888d22ed20",
       "frame_stream_sha256": "880970a6d494197b78adfeac0309cb2d86ce447dd6bb826c7ae5b0c270af7fa6",
@@ -94,13 +95,19 @@
     "host_dll_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
     "host_note": "Unchanged Runtime 009 Host; Runtime 012 changes WSL Moss page default + hash-bound v3 art/choreography only.",
     "raw_avrcp_broker_sha256": {
-      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.exe": "ba95755b2c424380fdb29b47260fe660ef9b006b836fb54c95a7a895a29e8fc2",
-      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.dll": "d500f6bc6b8db9bcb9309a1dbe95a96efbf761d8a4078388f336cb4840d26207",
-      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.deps.json": "384fb4aa56d643d30f155567fca8f607e1f4f8bd3ab0cbe33b897371d8fc6218",
-      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.runtimeconfig.json": "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2"
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.exe": "b05e9f2c5f4d287ab2f1fa3421931437e79efffe71430fa0a7930d898b61eaa0",
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.dll": "888f9ae2ab2c988f1a0b840d625afc773353aea20fa6ed24dac290450074b91a",
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.deps.json": "384fb4aa56d643d30f155567fca8f607e1f4f8bd3ab0cbe33b897371d8fc6218",
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.runtimeconfig.json": "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2",
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\sink\\OpenDitoo.ButtonProbe.exe": "79521fba144fac4f4922b95236e4a3bedd62a49f1a5ede22f2b71d9909471252",
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\sink\\OpenDitoo.ButtonProbe.dll": "d85c12982f94893362c10faecae789f7421d4125663f2b9ce17b0eb1afa3a4b8",
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\sink\\OpenDitoo.ButtonProbe.deps.json": "b5928dba19a674fbbbacdd0e8d620465321991d60b034e4783165cc879d5f179",
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\sink\\OpenDitoo.ButtonProbe.runtimeconfig.json": "05e2c41d6487512bdd7b09d280bb0c247e31ef20e2be58779bf742a9ac7bcd92",
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\sink\\Microsoft.Windows.SDK.NET.dll": "0ec371d93798852e36461c8adddbeadce0f963a04752f0b64e54fe19c1c834a7",
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\sink\\WinRT.Runtime.dll": "bcf3a14e8712a90837fc5c0d8c8a24696af2bd7f74e9767597ec81ededfb23db"
     },
     "raw_avrcp_dependencies_sha256": {
-      "C:\\BTP\\v1.14.0\\x86\\btvs.exe": "ea4973f205420d46c2d7dd29bbdb131720982fbbe15dd952c67b15cc6316f519",
+      "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\btvs\\btvs.exe": "ea4973f205420d46c2d7dd29bbdb131720982fbbe15dd952c67b15cc6316f519",
       "C:\\Program Files\\Wireshark\\tshark.exe": "16fcc57d76fe2e7ce006aad2cbe204ad7cd62837d105b7c619e64e2aa492d229"
     }
   },
@@ -136,13 +143,13 @@
   "pagination": {
     "broker": {
       "kind": "raw_avrcp_v1",
-      "exe": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.exe",
-      "events_file": ".openditoo-local/raw-avrcp-events.ndjson",
-      "events_windows_path": "\\\\wsl.localhost\\Ubuntu\\home\\wan\\Projects\\openditoo-research\\.openditoo-local\\raw-avrcp-events.ndjson",
-      "sink_exe": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.exe",
-      "sink_log_file": ".openditoo-local/raw-avrcp-sink.ndjson",
-      "sink_log_windows_path": "\\\\wsl.localhost\\Ubuntu\\home\\wan\\Projects\\openditoo-research\\.openditoo-local\\raw-avrcp-sink.ndjson",
-      "btvs_exe": "C:\\BTP\\v1.14.0\\x86\\btvs.exe",
+      "exe": "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.exe",
+      "events_file": "/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/RawAvrcp/events.ndjson",
+      "events_windows_path": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcp\\events.ndjson",
+      "sink_exe": "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\sink\\OpenDitoo.ButtonProbe.exe",
+      "sink_log_file": "/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/RawAvrcp/sink.ndjson",
+      "sink_log_windows_path": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcp\\sink.ndjson",
+      "btvs_exe": "C:\\Program Files\\OpenDitoo\\RawAvrcpBroker\\btvs\\btvs.exe",
       "tshark_exe": "C:\\Program Files\\Wireshark\\tshark.exe",
       "port": 24353,
       "sink_status": "playing",
@@ -153,8 +160,21 @@
         "0x4B": "nav_right",
         "0x4C": "nav_left"
       },
-      "lifetime": "one Windows sidecar child of product runtime; Job Object kills ButtonProbe/BTVS/tshark when broker exits; WSL supervisor restart limited to once/5s; Playing sink starts on first handle bind; ETW backlog captured before broker start is dropped; BTETWRTSession flush-only every 50 ms",
-      "media_keys": "SMTC Playing is ownership sink only; page/game input comes exclusively from inbound raw AVRCP presses on the learned Ditoo handle"
+      "lifetime": "one elevated sidecar per product run via the on-demand scheduled task (MultipleInstances IgnoreNew); Job Object kills ButtonProbe/BTVS/tshark when the broker exits; broker exits 15 s after the WSL lease stops changing; WSL run request at most once/5s; Playing sink starts on first handle bind; ETW backlog captured before broker start is dropped; BTETWRTSession flush-only every 50 ms",
+      "media_keys": "SMTC Playing is ownership sink only; page/game input comes exclusively from inbound raw AVRCP presses on the learned Ditoo handle",
+      "launch": {
+        "kind": "scheduled_task_highest_on_demand",
+        "task_name": "OpenDitoo Raw AVRCP Broker",
+        "install_script": "runtime/windows/install_openditoo_raw_avrcp_task.ps1",
+        "lease_file": "/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/RawAvrcp/lease",
+        "lease_windows_path": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcp\\lease",
+        "lease_timeout_seconds": 15,
+        "sources": {
+          "sink": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe",
+          "btvs": "C:\\BTP\\v1.14.0\\x86\\btvs.exe"
+        },
+        "why": "BTVS requires elevation; only this sidecar is elevated, from admin-only copies with fixed policy-derived arguments. The WSL runtime stays unelevated and can only run the task and refresh its lease."
+      }
     },
     "evidence": [
       "captures/OPENDITOO-BTN2-WINDOWS-RECEIVE-2026-09-10.json",

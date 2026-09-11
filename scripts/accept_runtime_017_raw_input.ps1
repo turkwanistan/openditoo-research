@@ -1,6 +1,8 @@
 param(
     [string]$Repository = '\\wsl.localhost\Ubuntu\home\wan\Projects\openditoo-research\.openditoo-local\worktrees\media-avrcp'
 )
+# Receive-only Runtime 017 acceptance through the production launch path: a NORMAL (unelevated) caller runs the
+# elevated on-demand task and keeps its lease alive, exactly as the WSL product runtime will.
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -13,120 +15,59 @@ Need (Test-Path -LiteralPath $policyPath -PathType Leaf) "Runtime 017 policy mis
 $policy = Get-Content -LiteralPath $policyPath -Raw -Encoding UTF8 | ConvertFrom-Json
 Need ($policy.runtime_revision -eq 12) 'Runtime 017 revision mismatch'
 Need ($policy.authority.persistent_runtime_authorized -eq $false) 'Committed Runtime 017 template must remain unauthorized'
-
 $broker = $policy.pagination.broker
-$out = Join-Path $Repository 'runtime\windows\OpenDitoo.RawAvrcpBroker\bin\Release\net8.0-windows10.0.19041.0'
-$exe = Join-Path $out 'OpenDitoo.RawAvrcpBroker.exe'
-Need (Test-Path -LiteralPath $exe -PathType Leaf) 'Raw AVRCP broker Release build missing; build it first'
+$task = [string]$broker.launch.task_name
+$lease = [string]$broker.launch.lease_windows_path
+$events = [string]$broker.events_windows_path
+$sinkLog = [string]$broker.sink_log_windows_path
 
-# Freeze-check the exact built broker by leaf name against the policy's staged-destination map.
-$expectedBroker = @{}
-foreach ($prop in $policy.build.raw_avrcp_broker_sha256.PSObject.Properties) {
-    $expectedBroker[[IO.Path]::GetFileName($prop.Name)] = [string]$prop.Value
-}
-foreach ($name in $expectedBroker.Keys) {
-    $path = Join-Path $out $name
-    Need (Test-Path -LiteralPath $path -PathType Leaf) "broker output missing: $path"
-    Need ((Hash $path) -eq $expectedBroker[$name]) "broker hash mismatch: $name"
-}
+$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+Need (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) `
+    'Run from a NORMAL (non-Administrator) PowerShell: this acceptance proves the unelevated product path'
+Step 'R017_ACCEPT_UNELEVATED_CALLER' 'PASS'
 
-# Freeze-check capture dependencies and the accepted ButtonProbe ownership sink.
-foreach ($prop in $policy.build.raw_avrcp_dependencies_sha256.PSObject.Properties) {
-    Need (Test-Path -LiteralPath $prop.Name -PathType Leaf) "dependency missing: $($prop.Name)"
-    Need ((Hash $prop.Name) -eq [string]$prop.Value) "dependency hash mismatch: $($prop.Name)"
+# Installed admin-only bytes and the registered task must match the policy exactly.
+foreach ($group in 'raw_avrcp_broker_sha256', 'raw_avrcp_dependencies_sha256', 'button_probe_sha256') {
+    foreach ($prop in $policy.build.$group.PSObject.Properties) {
+        Need (Test-Path -LiteralPath $prop.Name -PathType Leaf) "missing: $($prop.Name) (run install_openditoo_raw_avrcp_task.ps1 elevated)"
+        Need ((Hash $prop.Name) -eq [string]$prop.Value) "hash mismatch: $($prop.Name) (re-run the elevated installer)"
+    }
 }
-foreach ($prop in $policy.build.button_probe_sha256.PSObject.Properties) {
-    Need (Test-Path -LiteralPath $prop.Name -PathType Leaf) "ButtonProbe missing: $($prop.Name)"
-    Need ((Hash $prop.Name) -eq [string]$prop.Value) "ButtonProbe hash mismatch: $($prop.Name)"
-}
-
-& $exe --selftest
-Need ($LASTEXITCODE -eq 0) 'Raw AVRCP broker selftest failed'
+$wslRepo = '/' + (($Repository -replace '^\\\\wsl(\.localhost|\$)\\[^\\]+\\', '') -replace '\\', '/')
+& wsl.exe -d Ubuntu -- bash -lc "cd '$wslRepo' && python3 -m host.raw_avrcp_input verify-task product/OPENDITOO-PRODUCT-RUNTIME-017.json"
+Need ($LASTEXITCODE -eq 0) 'registered task does not match the policy (re-run the elevated installer)'
 Step 'R017_ACCEPT_PREFLIGHT' 'PASS'
-$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-$principal = New-Object Security.Principal.WindowsPrincipal($identity)
-$isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-Need $isAdmin 'BTVS requires elevation on this machine; reopen PowerShell as Administrator and rerun this harness'
-Step 'R017_ACCEPT_ELEVATED' 'PASS'
 
+$names = @('OpenDitoo.RawAvrcpBroker', 'OpenDitoo.ButtonProbe', 'btvs', 'tshark')
 $before = @{}
-foreach ($name in @('OpenDitoo.RawAvrcpBroker','OpenDitoo.ButtonProbe','btvs','tshark')) {
-    $before[$name] = @((Get-Process -Name $name -ErrorAction SilentlyContinue | ForEach-Object { $_.Id }))
-}
+foreach ($name in $names) { $before[$name] = @((Get-Process -Name $name -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })) }
 $existing = @()
 foreach ($name in $before.Keys) { foreach ($procId in @($before[$name])) { $existing += "$name`:$procId" } }
 Step 'R017_ACCEPT_PREEXISTING_HELPERS' ($(if ($existing.Count -eq 0) { '0' } else { $existing -join ',' }))
+Need (@($before['OpenDitoo.RawAvrcpBroker']).Count -eq 0) 'a raw AVRCP broker is already running; stop it first'
 
 Read-Host 'Media must be PAUSED/OFF for now (you will start it after the broker owns media keys). Press ENTER' | Out-Null
 
-$stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmssZ')
-$events = Join-Path $env:TEMP "openditoo-r017-raw-input-$stamp.ndjson"
-$sinkLog = Join-Path $env:TEMP "openditoo-r017-sink-$stamp.ndjson"
-Remove-Item -LiteralPath $events,$sinkLog -Force -ErrorAction SilentlyContinue
-
-$brokerArgs = @(
-    '--seconds','0',  # unbounded: the harness stops the broker in finally
-    '--target',[string]$policy.target.exact_unit_id,
-    '--events',$events,
-    '--sink-log',$sinkLog,
-    '--sink-exe',[string]$broker.sink_exe,
-    '--btvs',[string]$broker.btvs_exe,
-    '--tshark',[string]$broker.tshark_exe,
-    '--port',[string]$broker.port
-)
-# Windows PowerShell 5.1 lacks ProcessStartInfo.ArgumentList. Build one
-# CreateProcess-safe command line instead; every argument is quoted and embedded
-# backslashes/quotes are escaped with the standard Windows argv rules.
-function Quote-WindowsArg([string]$Value) {
-    if ($Value.Length -eq 0) { return '""' }
-    $sb = New-Object System.Text.StringBuilder
-    [void]$sb.Append('"')
-    $slashes = 0
-    foreach ($ch in $Value.ToCharArray()) {
-        if ($ch -eq '\') { $slashes++; continue }
-        if ($ch -eq '"') {
-            [void]$sb.Append(('\' * ($slashes * 2 + 1)))
-            [void]$sb.Append('"')
-            $slashes = 0
-            continue
-        }
-        if ($slashes -gt 0) { [void]$sb.Append(('\' * $slashes)); $slashes = 0 }
-        [void]$sb.Append($ch)
-    }
-    if ($slashes -gt 0) { [void]$sb.Append(('\' * ($slashes * 2))) }
-    [void]$sb.Append('"')
-    return $sb.ToString()
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $lease) | Out-Null
+Remove-Item -LiteralPath $events, $sinkLog -Force -ErrorAction SilentlyContinue
+# Lease writer: a changing counter every second, like host/raw_avrcp_input.RawAvrcpBroker.ensure().
+$leaseJob = Start-Job -ArgumentList $lease -ScriptBlock {
+    param($Path) $i = 0
+    while ($true) { $i++; [IO.File]::WriteAllText($Path, "$i`n"); Start-Sleep -Seconds 1 }
 }
-$psi = New-Object System.Diagnostics.ProcessStartInfo
-$psi.FileName = $exe
-$psi.UseShellExecute = $false
-$psi.CreateNoWindow = $true
-$brokerStdout = Join-Path $env:TEMP "openditoo-r017-broker-$stamp.stdout.log"
-$brokerStderr = Join-Path $env:TEMP "openditoo-r017-broker-$stamp.stderr.log"
-$psi.RedirectStandardOutput = $true
-$psi.RedirectStandardError = $true
-$psi.Arguments = (($brokerArgs | ForEach-Object { Quote-WindowsArg ([string]$_) }) -join ' ')
-$proc = [System.Diagnostics.Process]::Start($psi)
-Need ($null -ne $proc) 'failed to start raw AVRCP broker process'
+Start-Sleep -Seconds 2
+& schtasks.exe /run /tn $task | Out-Null
+Need ($LASTEXITCODE -eq 0) "unelevated caller could not run the task ($LASTEXITCODE)"
+Step 'R017_ACCEPT_TASK_RUN_UNELEVATED' 'PASS'
+$leaseStopped = $false
 try {
     $ready = $false
-    foreach ($i in 1..30) {
-        if ($proc.HasExited) {
-            $stdoutText = $proc.StandardOutput.ReadToEnd()
-            $stderrText = $proc.StandardError.ReadToEnd()
-            if ($stdoutText) { $stdoutText | Set-Content -LiteralPath $brokerStdout -Encoding UTF8; Write-Host "BROKER_STDOUT=$stdoutText" }
-            if ($stderrText) { $stderrText | Set-Content -LiteralPath $brokerStderr -Encoding UTF8; Write-Host "BROKER_STDERR=$stderrText" }
-            Write-Host "R017_ACCEPT_BROKER_STDOUT_FILE=$brokerStdout"
-            Write-Host "R017_ACCEPT_BROKER_STDERR_FILE=$brokerStderr"
-            throw "broker exited during startup: $($proc.ExitCode)"
-        }
-        if (Test-Path -LiteralPath $events) {
-            $first = Get-Content -LiteralPath $events -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($first -match 'broker_started') { $ready = $true; break }
-        }
+    foreach ($i in 1..50) {
+        if (@(Get-Content -LiteralPath $events -ErrorAction SilentlyContinue | Where-Object { $_ -match '"type":"broker_started"' }).Count -gt 0) { $ready = $true; break }
         Start-Sleep -Milliseconds 200
     }
-    Need $ready 'broker did not become ready'
+    Need $ready 'elevated broker did not start (check Task Scheduler history for the task)'
+    $elevated = @(Get-Process -Name btvs -ErrorAction SilentlyContinue).Count -gt 0
     Step 'R017_ACCEPT_BROKER_READY' 'PASS'
 
     # The broker learns the Ditoo ACL handle only from OpenDitoo's own image frames. Standalone acceptance has
@@ -162,20 +103,29 @@ try {
     foreach ($i in 1..3) { Cue "DITOO RIGHT $i/3 -- press once" }
     foreach ($i in 1..8) { Cue "DITOO LEVER $i/8 -- pull once" }
     Cue 'TIVOO VOLUME-KNOB SHORT PRESS ONCE -- negative-control; must NOT become OpenDitoo input'
-    Write-Host '*** HANDS OFF ***' -ForegroundColor Green
+    Write-Host '*** HANDS OFF (the sidecar now exits by itself once the lease stops; ~15 s) ***' -ForegroundColor Green
     Start-Sleep -Seconds 2
-}
-finally {
-    if ($proc -and -not $proc.HasExited) {
-        Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
-        try { $proc.WaitForExit(5000) | Out-Null } catch {}
+
+    # Production safety property: with no lease updates the elevated sidecar must exit on its own.
+    Stop-Job $leaseJob; $leaseStopped = $true
+    $expired = $false
+    foreach ($i in 1..100) {
+        if (@(Get-Content -LiteralPath $events -ErrorAction SilentlyContinue | Where-Object { $_ -match 'lease_expired' }).Count -gt 0 -and
+            @(Get-Process -Name OpenDitoo.RawAvrcpBroker -ErrorAction SilentlyContinue).Count -eq 0) { $expired = $true; break }
+        Start-Sleep -Milliseconds 250
     }
 }
-
+finally {
+    if (-not $leaseStopped) { Stop-Job $leaseJob -ErrorAction SilentlyContinue }
+    Remove-Job $leaseJob -Force -ErrorAction SilentlyContinue
+    if (@(Get-Process -Name OpenDitoo.RawAvrcpBroker -ErrorAction SilentlyContinue).Count -gt 0) { & schtasks.exe /end /tn $task | Out-Null }
+    & wsl.exe -d Ubuntu -- bash -lc 'systemctl --user stop openditoo-product.service'
+}
 Start-Sleep -Seconds 1
+
 $rows = @()
 if (Test-Path -LiteralPath $events) {
-    $rows = @(Get-Content -LiteralPath $events | ForEach-Object { if ($_){ $_ | ConvertFrom-Json } })
+    $rows = @(Get-Content -LiteralPath $events | ForEach-Object { if ($_) { $_ | ConvertFrom-Json } })
 }
 $inputs = @($rows | Where-Object { $_.type -eq 'event' -and $_.source -eq 'avrcp_raw' })
 $left = @($inputs | Where-Object { $_.normalized_candidate -eq 'nav_left' }).Count
@@ -195,13 +145,14 @@ $latP50 = if ($latency.Count) { [int]$latency[[int][Math]::Floor(($latency.Count
 $latMax = if ($latency.Count) { [int]$latency[-1] } else { -1 }
 
 $orphans = @()
-foreach ($name in @('OpenDitoo.RawAvrcpBroker','OpenDitoo.ButtonProbe','btvs','tshark')) {
+foreach ($name in $names) {
     $old = @($before[$name])
     foreach ($p in @(Get-Process -Name $name -ErrorAction SilentlyContinue)) {
         if ($old -notcontains $p.Id) { $orphans += "$name`:$($p.Id)" }
     }
 }
 
+Step 'R017_ACCEPT_ELEVATED_BTVS_RAN' "$elevated"
 Step 'R017_ACCEPT_LEFT' "$left/3"
 Step 'R017_ACCEPT_RIGHT' "$right/3"
 Step 'R017_ACCEPT_LEVER' "$lever/8"
@@ -214,14 +165,15 @@ Step 'R017_ACCEPT_STALE_BACKLOG_DROPPED' "$staleRows"
 Step 'R017_ACCEPT_ETW_FLUSH' ($(if ($flushOk) { 'PASS' } else { 'MISSING' }))
 Step 'R017_ACCEPT_LATENCY_MS_P50' "$latP50"
 Step 'R017_ACCEPT_LATENCY_MS_MAX' "$latMax"
+Step 'R017_ACCEPT_LEASE_EXPIRY_EXIT' ($(if ($expired) { 'PASS' } else { 'FAIL' }))
 Step 'R017_ACCEPT_NEW_HELPER_ORPHANS' ($(if ($orphans.Count -eq 0) { '0' } else { $orphans -join ',' }))
-Step 'R017_ACCEPT_EVENTS_FILE' $events
-Step 'R017_ACCEPT_SINK_FILE' $sinkLog
 $media = Read-Host 'Did the browser/media skip, pause, or otherwise react to ANY of those Ditoo controls? Enter YES or NO'
 Step 'R017_ACCEPT_MEDIA_REACTION' $media.Trim().ToUpperInvariant()
 if ($media.Trim().ToUpperInvariant() -ne 'NO') {
     Step 'R017_ACCEPT_MEDIA_REACTION_DETAIL' (Read-Host 'Which controls did media react to (Left/Right/Lever/Tivoo), and how?')
 }
 
-$pass = ($left -eq 3 -and $right -eq 3 -and $lever -eq 8 -and $inputs.Count -eq 14 -and $foreign -ge 1 -and $unbound -eq 0 -and $flushOk -and $latMax -ge 0 -and $latMax -le 500 -and $orphans.Count -eq 0 -and $media.Trim().ToUpperInvariant() -eq 'NO')
+$pass = ($left -eq 3 -and $right -eq 3 -and $lever -eq 8 -and $inputs.Count -eq 14 -and $foreign -ge 1 -and $unbound -eq 0 -and
+         $flushOk -and $latMax -ge 0 -and $latMax -le 500 -and $expired -and $orphans.Count -eq 0 -and
+         $media.Trim().ToUpperInvariant() -eq 'NO')
 Step 'R017_ACCEPT_RESULT' ($(if ($pass) { 'PASS' } else { 'FAIL_OR_OPERATOR_REVIEW' }))

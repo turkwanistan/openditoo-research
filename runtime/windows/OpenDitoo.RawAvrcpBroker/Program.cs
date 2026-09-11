@@ -104,7 +104,7 @@ internal static class Program
     }
 
     private sealed record Options(string Target, string Events, string SinkLog, string SinkExe,
-                                  string BtvsExe, string TsharkExe, int Port, int Seconds)
+                                  string BtvsExe, string TsharkExe, int Port, int Seconds, string? Lease)
     {
         internal static Options Parse(string[] args)
         {
@@ -124,8 +124,9 @@ internal static class Program
             var seconds = OptionalInt("--seconds", 0);
             if (port is < 1024 or > 65535) throw new ArgumentOutOfRangeException("--port");
             if (seconds < 0) throw new ArgumentOutOfRangeException("--seconds");
+            var lease = Array.IndexOf(args, "--lease") is var li and >= 0 && li + 1 < args.Length ? args[li + 1] : null;
             return new(Need("--target"), Need("--events"), Need("--sink-log"), Need("--sink-exe"),
-                       Need("--btvs"), Need("--tshark"), port, seconds);
+                       Need("--btvs"), Need("--tshark"), port, seconds, lease);
         }
     }
 
@@ -146,13 +147,15 @@ internal static class Program
                 if (!File.Exists(path)) throw new FileNotFoundException("required executable missing", path);
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(options.Events))!);
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(options.SinkLog))!);
-            using var writer = new StreamWriter(options.Events, append: true) { AutoFlush = true };
+            // Truncate: under the scheduled task only this (elevated) process can safely reset its own log;
+            // the WSL cursor resets on a shrink and treats the new epoch as a fresh baseline.
+            using var writer = new StreamWriter(options.Events, append: false) { AutoFlush = true };
             Write(writer, "broker_started", new Dictionary<string, object?>
             {
                 ["source"] = "avrcp_raw", ["ownership_sink"] = "playing_after_first_bind",
                 ["device_attribution"] = "learned_acl_handle_openditoo_preamble",
                 ["target"] = options.Target,
-                ["btvs_port"] = options.Port,
+                ["btvs_port"] = options.Port, ["lease"] = options.Lease is not null,
             });
 
             // BTVS's ETW session keeps buffering HCI while no consumer is attached and replays that backlog on
@@ -189,8 +192,25 @@ internal static class Program
             var deadline = options.Seconds == 0 ? DateTimeOffset.MaxValue : DateTimeOffset.UtcNow.AddSeconds(options.Seconds);
             var stderr = tshark.StandardError.ReadToEndAsync();
             var pendingLine = tshark.StandardOutput.ReadLineAsync();
+            // Lease: the unelevated WSL supervisor rewrites this file with a changing counter every second. Content
+            // (not mtime, WSL/Windows clocks can drift) unchanged for LeaseTimeout means the product is gone, so the
+            // elevated sidecar must not linger holding media keys and BTVS.
+            string? leaseSeen = ReadLease();
+            var leaseChanged = DateTimeOffset.UtcNow;
+            var leaseChecked = DateTimeOffset.UtcNow;
             while (DateTimeOffset.UtcNow < deadline)
             {
+                if (options.Lease is not null && DateTimeOffset.UtcNow - leaseChecked >= TimeSpan.FromSeconds(1))
+                {
+                    leaseChecked = DateTimeOffset.UtcNow;
+                    var now = ReadLease();
+                    if (now is not null && now != leaseSeen) { leaseSeen = now; leaseChanged = leaseChecked; }
+                    else if (leaseChecked - leaseChanged > LeaseTimeout)
+                    {
+                        Write(writer, "broker_stopped", new Dictionary<string, object?> { ["reason"] = "lease_expired" });
+                        return 0;
+                    }
+                }
                 if (sink is { HasExited: true }) throw new IOException($"SMTC sink exited {sink.ExitCode}");
                 if (!flushOkLogged && Volatile.Read(ref flushOk) > 0)
                 {
@@ -247,6 +267,16 @@ internal static class Program
             }
             Write(writer, "broker_stopped", new Dictionary<string, object?> { ["reason"] = "lifetime_complete" });
             return 0;
+        }
+
+        private static readonly TimeSpan LeaseTimeout = TimeSpan.FromSeconds(15);
+
+        private string? ReadLease()
+        {
+            if (options.Lease is null) return null;
+            try { return File.ReadAllText(options.Lease); }
+            catch (IOException) { return null; }
+            catch (UnauthorizedAccessException) { return null; }
         }
 
         private Process Start(string file, IReadOnlyList<string> args, bool redirect = false)

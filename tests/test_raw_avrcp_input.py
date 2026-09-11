@@ -56,34 +56,76 @@ class RawAvrcpInputTests(unittest.TestCase):
         self.assertEqual(cursor.epochs, 2)
         self.assertEqual(cursor.rejected_lines, 1)
 
-    def test_broker_starts_one_sidecar_truncates_private_files_and_rate_limits_restart(self):
-        launched = []
+    def test_broker_runs_elevated_task_keeps_lease_changing_and_never_blocks(self):
+        calls = []
         def popen(args, **kwargs):
-            launched.append((args, kwargs))
+            calls.append(args)
             return _Proc()
-        self.events.write_text("stale\n")
-        self.sink.write_text("stale\n")
-        broker = raw_avrcp_input.RawAvrcpBroker(
-            Path("C:/broker.exe"), target="AA:BB:CC:DD:EE:FF",
-            events_windows_path=r"\\wsl\events.ndjson", events_file=self.events,
-            sink_exe=Path("C:/sink.exe"), sink_log_windows_path=r"\\wsl\sink.ndjson", sink_log_file=self.sink,
-            btvs_exe=Path("C:/btvs.exe"), tshark_exe=Path("C:/tshark.exe"),
-            popen=popen, monotonic=lambda: self.clock)
+        lease = self.root / "raw" / "lease"
+        broker = raw_avrcp_input.RawAvrcpBroker("OpenDitoo Raw AVRCP Broker", lease, popen=popen,
+                                                monotonic=lambda: self.clock)
         broker.ensure()
-        self.assertEqual(self.events.read_bytes(), b"")
-        self.assertEqual(self.sink.read_bytes(), b"")
-        args = launched[0][0]
-        self.assertIn("--target", args)
-        self.assertIn("--sink-exe", args)
-        self.assertIn("--btvs", args)
-        self.assertIn("--tshark", args)
-        broker.process.rc = 2
+        self.assertEqual(calls, [["schtasks.exe", "/run", "/tn", "OpenDitoo Raw AVRCP Broker"]])
+        first = lease.read_text()
+        broker.request.rc = 0
+        self.clock += 1.0
         broker.ensure()
-        self.assertEqual(len(launched), 1)
+        self.assertNotEqual(lease.read_text(), first)       # lease content changes every second
+        self.assertTrue(broker.alive)
+        self.assertEqual(len(calls), 1)                     # run request rate-limited to once/5 s
+        self.clock += 4.0
+        broker.ensure()
+        self.assertEqual(len(calls), 2)
+        self.clock += 5.0
+        broker.ensure()                                     # previous request still pending: no pile-up
+        self.assertEqual(len(calls), 2)
+        broker.request.rc = 1
         self.clock += 5.0
         broker.ensure()
-        self.assertEqual(len(launched), 2)
+        self.assertFalse(broker.alive)                      # missing/unrunnable task is visible
         broker.stop()
+        self.assertFalse(lease.exists())
+        self.assertEqual(calls[-1], ["schtasks.exe", "/end", "/tn", "OpenDitoo Raw AVRCP Broker"])
+
+    def _policy_broker(self):
+        raw = json.loads((Path(__file__).resolve().parents[1] / "product/OPENDITOO-PRODUCT-RUNTIME-017.json")
+                         .read_text(encoding="utf-8"))
+        return raw["pagination"]["broker"], raw["target"]["exact_unit_id"]
+
+    def _task_xml(self, broker, target, **over):
+        f = dict(command=broker["exe"], arguments=raw_avrcp_input.task_arguments(broker, target),
+                 run_level="HighestAvailable", logon="InteractiveToken", instances="IgnoreNew", triggers="")
+        f.update(over)
+        esc = lambda v: v.replace("&", "&amp;").replace('"', "&quot;")
+        return ('<Task xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">'
+                f'<Triggers>{f["triggers"]}</Triggers><Principals><Principal id="Author">'
+                f'<LogonType>{f["logon"]}</LogonType><RunLevel>{f["run_level"]}</RunLevel></Principal></Principals>'
+                f'<Settings><MultipleInstancesPolicy>{f["instances"]}</MultipleInstancesPolicy></Settings>'
+                f'<Actions Context="Author"><Exec><Command>{esc(f["command"])}</Command>'
+                f'<Arguments>{esc(f["arguments"])}</Arguments></Exec></Actions></Task>')
+
+    def test_task_xml_must_match_policy_exactly(self):
+        broker, target = self._policy_broker()
+        self.assertEqual(raw_avrcp_input.task_problems(self._task_xml(broker, target), broker, target), [])
+        bad = {
+            "command": dict(command=r"C:\Users\x\AppData\Local\evil.exe"),
+            "arguments": dict(arguments=raw_avrcp_input.task_arguments(broker, target).replace("24353", "24354")),
+            "privilege": dict(run_level="LeastPrivilege"),
+            "session": dict(logon="Password"),
+            "instances": dict(instances="Parallel"),
+            "trigger": dict(triggers="<LogonTrigger/>"),
+        }
+        for name, over in bad.items():
+            self.assertTrue(raw_avrcp_input.task_problems(self._task_xml(broker, target, **over), broker, target), name)
+
+    def test_task_arguments_are_fixed_quoted_and_reject_injection(self):
+        broker, target = self._policy_broker()
+        line = raw_avrcp_input.task_arguments(broker, target)
+        self.assertTrue(line.startswith('"--seconds" "0" "--target"'))
+        self.assertIn('"--lease" "' + broker["launch"]["lease_windows_path"] + '"', line)
+        for evil in ('C:\\x" --btvs "C:\\evil.exe', 'C:\\dir\\'):
+            with self.assertRaises(ValueError):
+                raw_avrcp_input.task_arguments(dict(broker, sink_exe=evil), target)
 
     def test_module_has_no_device_transport_or_network_client(self):
         src = Path(raw_avrcp_input.__file__).read_text(encoding="utf-8")

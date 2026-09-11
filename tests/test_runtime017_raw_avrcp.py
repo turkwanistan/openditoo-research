@@ -64,17 +64,19 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
                 r17.load_policy(p, require_authority=False, verify_hashes=False, template_path=p)
             self.assertEqual(getattr(ctx.exception, 'code', None), 'PRODUCT_017_INPUT_CONTRACT_MISMATCH')
 
-    def test_acceptance_harness_preserves_paths_with_spaces(self):
+    def test_acceptance_harness_uses_task_from_unelevated_caller(self):
         src = (ROOT / 'scripts/accept_runtime_017_raw_input.ps1').read_text(encoding='utf-8')
-        self.assertIn('function Quote-WindowsArg', src)
-        self.assertIn('$psi.Arguments =', src)
-        self.assertNotIn('ArgumentList.Add', src)
-        self.assertNotIn('Start-Process -FilePath $exe -ArgumentList $args', src)
-        self.assertIn('$psi.RedirectStandardError = $true', src)
-        self.assertIn('BROKER_STDERR=', src)
+        self.assertIn("Need (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))", src)
+        self.assertIn('python3 -m host.raw_avrcp_input verify-task', src)
+        self.assertIn('& schtasks.exe /run /tn $task', src)
+        self.assertNotIn('Process]::Start', src)  # never launches the broker directly
         self.assertIn('R017_ACCEPT_PREEXISTING_HELPERS', src)
         for auto in ('$pid ', '$input ', '$args '):
             self.assertNotIn(auto, src)
+        # Lease expiry is proven before the orphan scan and gates PASS.
+        self.assertLess(src.index('Stop-Job $leaseJob; $leaseStopped = $true'), src.index("'lease_expired'"))
+        self.assertLess(src.index('R017_ACCEPT_LEASE_EXPIRY_EXIT'), src.index('$pass ='))
+        self.assertIn('$expired -and $orphans.Count -eq 0', src)
 
     def test_acceptance_learns_handle_before_cues_and_requires_negative_control(self):
         src = (ROOT / 'scripts/accept_runtime_017_raw_input.ps1').read_text(encoding='utf-8')
@@ -86,16 +88,37 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertLess(src.index('R017_ACCEPT_HANDLE_BOUND'), src.index('DITOO LEFT'))
         self.assertLess(src.index('R017_ACCEPT_SINK_AFTER_BIND'), src.index('Now start media playing'))
         self.assertLess(src.index('Now start media playing'), src.index('DITOO LEFT'))
-        self.assertIn('$foreign -ge 1 -and $unbound -eq 0 -and $flushOk -and $latMax -ge 0 -and $latMax -le 500', src)
-        self.assertIn("'--seconds','0'", src)
+        self.assertIn('$foreign -ge 1 -and $unbound -eq 0', src)
+        self.assertIn('$latMax -ge 0 -and $latMax -le 500', src)
 
-    def test_acceptance_harness_requires_elevation_before_media_prompt(self):
-        src = (ROOT / 'scripts/accept_runtime_017_raw_input.ps1').read_text(encoding='utf-8')
-        admin = src.index('R017_ACCEPT_ELEVATED')
-        prompt = src.index('Now start media playing through the EDIFIER')
-        self.assertLess(admin, prompt)
-        self.assertIn('WindowsBuiltInRole]::Administrator', src)
-        self.assertIn('BTVS requires elevation on this machine', src)
+    def test_installer_is_elevated_hash_verified_admin_only_and_on_demand(self):
+        src = (ROOT / 'runtime/windows/install_openditoo_raw_avrcp_task.ps1').read_text(encoding='utf-8')
+        self.assertIn("Need ($principalNow.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))", src)
+        self.assertLess(src.index('R017_TASK_SOURCES_VERIFIED'), src.index('Copy-Item'))  # verify before writing
+        self.assertIn('installed hash mismatch', src)
+        self.assertLess(src.index('R017_TASK_INSTALL_ROOT_ADMIN_ONLY'), src.index('Register-ScheduledTask'))
+        self.assertIn("$root = 'C:\\Program Files\\OpenDitoo\\RawAvrcpBroker'", src)
+        for needle in ('-RunLevel Highest', '-LogonType Interactive', '-MultipleInstances IgnoreNew',
+                       'Must match host/raw_avrcp_input.task_arguments exactly'):
+            self.assertIn(needle, src)
+        self.assertNotIn('New-ScheduledTaskTrigger', src)
+
+    def test_policy_elevated_launch_is_admin_only(self):
+        raw = self.load('OPENDITOO-PRODUCT-RUNTIME-017.json')
+        broker = raw['pagination']['broker']
+        root = r17.RAW_AVRCP_INSTALL_ROOT + '\\'
+        for key in ('exe', 'sink_exe', 'btvs_exe'):
+            self.assertTrue(broker[key].startswith(root), key)
+        self.assertTrue(all(k.startswith(root) for k in raw['build']['raw_avrcp_broker_sha256']))
+        for path, digest in raw['build']['button_probe_sha256'].items():  # sink copies = exact 016 ButtonProbe
+            self.assertEqual(raw['build']['raw_avrcp_broker_sha256'][root + 'sink\\' + path.rsplit('\\', 1)[1]], digest)
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / 'policy.json'
+            raw['pagination']['broker']['btvs_exe'] = 'C:\\BTP\\v1.14.0\\x86\\btvs.exe'
+            p.write_text(json.dumps(raw), encoding='utf-8')
+            with self.assertRaises(Exception) as ctx:
+                r17.load_policy(p, require_authority=False, verify_hashes=False, template_path=p)
+            self.assertEqual(getattr(ctx.exception, 'code', None), 'PRODUCT_017_ELEVATED_LAUNCH_MISMATCH')
 
     def test_cutover_is_exact_grant_gated_hash_pinned_and_rolls_back_to_016(self):
         shell = (ROOT / 'scripts/cutover_runtime_017.sh').read_text(encoding='utf-8')
@@ -103,7 +126,10 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertIn('Grant OPENDITOO-PRODUCT-RUNTIME-017', shell)
         self.assertIn('OPENDITOO-PRODUCT-RUNTIME-016', shell)
         self.assertIn('rollback-runtime-016', shell)
-        self.assertIn('stage_openditoo_raw_avrcp_broker.ps1', shell)
+        self.assertNotIn('stage_openditoo_raw_avrcp_broker.ps1', shell)  # cutover never writes elevated files
+        self.assertIn('R017_ELEVATED_SIDECAR_NOT_INSTALLED', shell)
+        self.assertIn('python3 -m host.raw_avrcp_input verify-task', shell)
+        self.assertIn('end_raw_task', shell[shell.index('--rollback'):])
         self.assertIn('raw_avrcp_broker_sha256', shell)
         self.assertIn('raw_avrcp_dependencies_sha256', shell)
         self.assertIn("assert '__PENDING_' not in json.dumps(raw)", shell)

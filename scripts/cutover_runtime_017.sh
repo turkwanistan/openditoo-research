@@ -7,7 +7,7 @@ set -euo pipefail
 BRANCH=feat/media-avrcp-input
 SERVICE=openditoo-product.service
 WIN=/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo
-RAW_DEST="$WIN/RawAvrcpBroker"
+RAW_TASK="OpenDitoo Raw AVRCP Broker"  # elevated sidecar; installed once by the owner (see below)
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAIN="$(git -C "$HERE" worktree list --porcelain | awk '/^worktree /{p=$2} /^branch refs\/heads\/main$/{print p; exit}')"
 [[ -n "$MAIN" && -d "$MAIN" ]] || { echo R017_MAIN_NOT_FOUND >&2; exit 2; }
@@ -66,10 +66,7 @@ product_check(){
   python3 cli/openditoo.py product-check --policy "$POLICY" \
     | python3 -c 'import json,sys;d=json.load(sys.stdin);assert d["execution_ready"] and d["runtime_revision"]==int(sys.argv[1]),d' "$1"
 }
-restore_raw_dest(){
-  rm -rf "$RAW_DEST"
-  if [[ -d "$RB/raw-broker-before" ]]; then cp -a "$RB/raw-broker-before" "$RAW_DEST"; fi
-}
+end_raw_task(){ schtasks.exe /end /tn "$RAW_TASK" >/dev/null 2>&1 || true; }
 
 if [[ "${1:-}" == "--rollback" ]]; then
   [[ -f "$RB/pre_commit" && -f "$RB/product-runtime-policy.json" ]] || { echo R017_NO_ROLLBACK_SAVED >&2; exit 2; }
@@ -81,7 +78,7 @@ if [[ "${1:-}" == "--rollback" ]]; then
   fi
   [[ "$(git rev-parse 'HEAD^{tree}')" == "$(git rev-parse "$pre^{tree}")" ]] || { echo R017_ROLLBACK_TREE_MISMATCH >&2; exit 2; }
   install -m 600 "$RB/product-runtime-policy.json" "$POLICY"
-  restore_raw_dest
+  end_raw_task  # the on-demand task stays registered but idle; Runtime 016 never runs it
   host_ok || { echo R017_ROLLBACK_HOST_HASH >&2; exit 2; }
   product_check 11 && echo R017_ROLLBACK_PRODUCT_CHECK_PASS
   start_and_confirm && echo R017_ROLLED_BACK_TO_RUNTIME_016
@@ -96,12 +93,15 @@ template_ready || { echo R017_TEMPLATE_NOT_READY >&2; exit 2; }
 host_ok || { echo R017_INSTALLED_HOST_NOT_RUNTIME_016 >&2; exit 2; }
 verify_windows_group button_probe_sha256 || { echo R017_BUTTON_PROBE_IDENTITY_FAIL >&2; exit 2; }
 verify_windows_group raw_avrcp_dependencies_sha256 || { echo R017_CAPTURE_DEPENDENCY_IDENTITY_FAIL >&2; exit 2; }
+# BTVS needs elevation: the sidecar must already be installed (admin-only bytes + highest-privilege on-demand task)
+# by the owner from Administrator PowerShell with runtime/windows/install_openditoo_raw_avrcp_task.ps1.
+verify_windows_group raw_avrcp_broker_sha256 || { echo R017_ELEVATED_SIDECAR_NOT_INSTALLED >&2; exit 2; }
+(cd "$HERE" && python3 -m host.raw_avrcp_input verify-task "$TEMPLATE") || { echo R017_ELEVATED_TASK_MISMATCH >&2; exit 2; }
 echo R017_TEMPLATE_AND_DEPENDENCIES_PASS
 
 rm -rf "$RB"; mkdir -p -m 700 "$RB"
 git rev-parse HEAD > "$RB/pre_commit"
 cp -p "$POLICY" "$RB/"
-if [[ -d "$RAW_DEST" ]]; then cp -a "$RAW_DEST" "$RB/raw-broker-before"; fi
 echo "R017_ROLLBACK_SAVED pre=$(cut -c1-12 "$RB/pre_commit")"
 
 stop_service
@@ -112,13 +112,10 @@ rollback_now(){ echo "R017_FAILED: $1 -- rolling back" >&2; bash "$HERE/scripts/
 
 git merge --ff-only "$BRANCH" >/dev/null && echo "R017_MAIN_FAST_FORWARDED $(git rev-parse --short HEAD)"
 
-# Build/stage the exact receive-only broker after main contains the reviewed source.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File \
-  "$(wslpath -w "$MAIN/runtime/windows/stage_openditoo_raw_avrcp_broker.ps1")" -Apply \
-  || rollback_now RAW_BROKER_BUILD_STAGE
+# Re-check the installed elevated sidecar against main's (now identical) policy after the fast-forward.
 verify_windows_group raw_avrcp_broker_sha256 || rollback_now RAW_BROKER_HASH
-
-echo R017_RAW_BROKER_STAGE_PASS
+python3 -m host.raw_avrcp_input verify-task product/OPENDITOO-PRODUCT-RUNTIME-017.json || rollback_now RAW_TASK_MISMATCH
+echo R017_ELEVATED_SIDECAR_PASS
 
 { python3 scripts/verify_day1_offline.py && python3 scripts/verify_interactive_pages_offline.py \
   && PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -v tests.test_raw_avrcp_input tests.test_runtime017_raw_avrcp; } \
