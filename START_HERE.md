@@ -80,7 +80,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | Runtime 003 | superseded 2026-09-10 by Runtime 004 (Host re-bind only); no longer hash-valid |
 | Runtime 004 | superseded 2026-09-10 by Runtime 005 (pacing clock); no longer hash-valid |
 | Runtime 005 | superseded 2026-09-10 17:44Z by Runtime 006; saved as rollback in `.openditoo-local/rollback-runtime-005/` (`scripts/cutover_runtime_006.sh --rollback`) |
-| Runtime 007 | **active** (granted 2026-09-10, live 20:42Z): Runtime 006 re-bound to the first-frame-spacing Host `3faf520f…` (+ webcam 006); cutover `scripts/cutover_runtime_007.sh`, rollback `--rollback`. See the re-bind note |
+| Runtime 007 | **active** (granted 2026-09-10, live 20:42Z; unattended reconnect after the Ditoo's battery died PASS 22:58Z): Runtime 006 re-bound to the first-frame-spacing Host `3faf520f…` (+ webcam 006); cutover `scripts/cutover_runtime_007.sh`, rollback `--rollback`. See the re-bind note |
 | Runtime 006 | superseded 2026-09-10 20:42Z by Runtime 007; exact-byte rollback in `.openditoo-local/rollback-runtime-006/` (granted 2026-09-10 17:44Z): Runtime 005 envelope + button pagination, runtime_revision 3, same Host `f7bd60d4…` |
 | P3 product evidence | closed for v1; normal MCP use accepted; forced healthy-Lab outage waived |
 | P4 MCP Dashboard v1 package | prepared in `PRODUCT.md` + release closure note |
