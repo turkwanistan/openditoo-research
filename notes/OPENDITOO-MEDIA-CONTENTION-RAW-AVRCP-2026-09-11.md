@@ -94,3 +94,16 @@ Offline results after successor wiring: dedicated raw-input/runtime tests 10/10 
 - `scripts/verify_interactive_pages_offline.py`: **136/136 PASS**, preserving all existing Dashboard / Slots / Moss gates.
 - Runtime 017 committed template remains unauthorized and reports the expected authority blockers until an explicit `Grant OPENDITOO-PRODUCT-RUNTIME-017`.
 - Runtime 016 source/policy remains the exact rollback baseline; no cutover has occurred.
+## Live attribution diagnostic — 2026-09-11
+
+A receive-only elevated BTVS/tshark diagnostic intentionally omitted the SMTC Playing ownership sink and captured seven AVRCP press commands:
+
+- Ditoo Left, Right and four lever pulls all arrived on HCI handle `0x0100`.
+- Tivoo volume-knob short press arrived on HCI handle `0x0200`.
+- `bthci_acl.src.bd_addr` and `bthci_acl.dst.bd_addr` were `00:00:00:00:00:00` for every captured row because the live capture started after the ACL links already existed.
+- Browser/media did react during this diagnostic (song changed / appeared to pause), as expected because this diagnostic did **not** run the fixed-Playing SMTC ownership sink. This does not contradict the prior sink-isolation result.
+
+This proves current-handle separation is clean but exact-address attribution is unavailable when BTVS attaches mid-connection. Do **not** hard-code `0x0100`; reconnects can reassign handles. Runtime 017 must learn the Ditoo handle dynamically.
+
+Selected next route: identify the Ditoo ACL handle from OpenDitoo's own validated RFCOMM traffic on that same ACL link, then accept AVRCP only on that learned handle. The existing product's RFCOMM traffic is uniquely attributable because OpenDitoo owns the typed Ditoo session and sends framed candidate packets/ACKs. This avoids dependence on historical HCI connection-complete events.
+

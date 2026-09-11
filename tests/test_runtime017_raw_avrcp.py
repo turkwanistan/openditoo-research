@@ -98,6 +98,17 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertNotIn('--force', shell)
         self.assertNotIn('reset --hard', shell)
 
+
+    def test_handle_learning_diagnostic_captures_fresh_rfcomm_open(self):
+        src = (ROOT / 'scripts/diagnose_runtime_017_handle_learning.ps1').read_text(encoding='utf-8')
+        self.assertIn("btl2cap.cid == 0x0001", src)
+        self.assertIn("systemctl --user start openditoo-product.service", src)
+        self.assertIn("systemctl --user stop openditoo-product.service", src)
+        self.assertIn("duration:20", src)
+        self.assertIn('$psi.Arguments=', src)
+        self.assertNotIn('Start-Process -FilePath $tshark -ArgumentList $args', src)
+        self.assertNotIn("image-show", src)
+        self.assertNotIn("raw-send", src)
     def test_attribution_diagnostic_is_receive_only_and_outputs_handle_and_both_addresses(self):
         src = (ROOT / 'scripts/diagnose_runtime_017_attribution.ps1').read_text(encoding='utf-8')
         self.assertIn("'bthci_acl.chandle'", src)
