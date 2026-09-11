@@ -58,6 +58,10 @@ class Runtime010PolicyTests(unittest.TestCase):
         self.assertIn('rollback-runtime-009', shell)
         self.assertIn('product_check 5', shell)
         self.assertIn('product_check 4', shell)
+        self.assertIn('probe_ok || { echo R010_INSTALLED_BUTTON_PROBE_NOT_RUNTIME_009', shell)
+        self.assertIn('template_ok || { echo R010_TEMPLATE_NOT_HASH_VALID', shell)
+        self.assertIn('raw["build"]["code_sha256"] == v4.code_hashes()', shell)
+        self.assertNotIn('"$HERE/cli/openditoo.py" product-check --policy "$HERE/product/OPENDITOO-PRODUCT-RUNTIME-010.json"', shell)
         self.assertIn('R010_ROLLED_BACK_TO_RUNTIME_009', shell)
         self.assertNotIn('restore the Runtime 008 source tree', shell)
         order = [shell.index(marker) for marker in (

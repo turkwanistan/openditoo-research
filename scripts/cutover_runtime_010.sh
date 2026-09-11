@@ -20,6 +20,36 @@ LOCAL=.openditoo-local; POLICY=$LOCAL/product-runtime-policy.json; RB=$LOCAL/rol
 
 policy_id(){ python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["authority"]["policy_id"])' "$1"; }
 host_ok(){ [[ "$(sha256sum "$WIN/Day1Host/OpenDitoo.Day1.Host.dll" | cut -c1-64)" == "$HOST_EXPECTED" ]]; }
+probe_ok(){
+  python3 - "$HERE/product/OPENDITOO-PRODUCT-RUNTIME-010.json" <<'PY'
+import hashlib, json, sys
+from pathlib import Path
+from host.pagination import windows_path
+raw = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+for name, expected in raw["build"]["button_probe_sha256"].items():
+    path = windows_path(name)
+    if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+        raise SystemExit(f"button-probe hash mismatch: {name}")
+PY
+}
+template_ok(){
+  # A linked worktree intentionally does not contain git-ignored Release build outputs.
+  # Validate the exact Runtime 010 source/assets and policy structure here; installed Host/Probe
+  # bytes are checked independently before main is touched. Full product-check runs again in main.
+  (cd "$HERE" && python3 - <<'PY')
+import json
+from host import product_runtime_v4 as v4
+raw = json.loads(v4.TEMPLATE.read_text(encoding="utf-8"))
+v4.load_policy(v4.TEMPLATE, require_authority=False, verify_hashes=False)
+assert raw["runtime_revision"] == 5
+assert raw["build"]["code_sha256"] == v4.code_hashes()
+assert v4.authority_blockers(v4.TEMPLATE) == [
+    "PRODUCT_AUTHORITY_MISSING",
+    "PRODUCT_AUTHORITY_UNATTRIBUTED",
+    "PRODUCT_AUTHORITY_SCOPE_MISMATCH",
+]
+PY
+}
 stop_service(){
   systemctl --user stop "$SERVICE"
   for _ in $(seq 1 40); do [[ "$(systemctl --user is-active "$SERVICE" || true)" == inactive ]] && return 0; sleep 0.25; done
@@ -61,10 +91,12 @@ fi
 git merge-base --is-ancestor HEAD "$BRANCH" || { echo R010_BRANCH_NOT_FAST_FORWARD >&2; exit 2; }
 [[ "$(policy_id "$POLICY")" == OPENDITOO-PRODUCT-RUNTIME-009 ]] || { echo R010_CURRENT_POLICY_IS_NOT_009 >&2; exit 2; }
 host_ok || { echo R010_INSTALLED_HOST_NOT_RUNTIME_009 >&2; exit 2; }
-# The frozen template must already be hash-valid on the branch before main is touched.
-python3 "$HERE/cli/openditoo.py" product-check --policy "$HERE/product/OPENDITOO-PRODUCT-RUNTIME-010.json" \
-  | python3 -c 'import json,sys;d=json.load(sys.stdin);assert d["ok"] and d["runtime_revision"]==5, d' \
-  || { echo R010_TEMPLATE_NOT_HASH_VALID >&2; exit 2; }
+probe_ok || { echo R010_INSTALLED_BUTTON_PROBE_NOT_RUNTIME_009 >&2; exit 2; }
+# The linked feature worktree has no git-ignored Release DLL by design. Prove its exact frozen
+# source/assets/policy without requiring that absent build output; Host/Probe bytes were just
+# proven against their installed Windows copies.
+template_ok || { echo R010_TEMPLATE_NOT_HASH_VALID >&2; exit 2; }
+echo R010_TEMPLATE_AND_INSTALLED_BINARIES_PASS
 
 # Young-link guard (webcam launcher lesson): do not tear down a seconds-old dashboard connection.
 age="$(python3 cli/openditoo.py product-status | python3 -c '
