@@ -106,6 +106,8 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertIn("'-e','bthci_acl.pb_flag'", src)
         self.assertIn("'-e','btl2cap.payload'", src)
         self.assertIn("'-e','data.data'", src)
+        self.assertIn("'separator=\\t'", src)
+        self.assertNotIn("'separator=\\\\t'", src)
         self.assertIn("0103009fa20002", src)
         self.assertIn("010400bd31f20002", src)
         self.assertIn("systemctl --user start openditoo-product.service", src)

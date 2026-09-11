@@ -37,7 +37,7 @@ $out=Join-Path $env:TEMP "openditoo-r017-raw-acl-$stamp.tsv"
 $err=Join-Path $env:TEMP "openditoo-r017-raw-acl-$stamp.err"
 $btvsProc=Start-Process -FilePath $btvs -ArgumentList @('-Mode','Wireshark','-Remote','on','-Port',[string]$port) -PassThru
 Start-Sleep -Seconds 1
-$args=@('-i',"TCP@127.0.0.1:$port",'-a','duration:18','-l','-Y','bthci_acl','-T','fields','-E','separator=\\t',
+$args=@('-i',"TCP@127.0.0.1:$port",'-a','duration:18','-l','-Y','bthci_acl','-T','fields','-E','separator=\t',
         '-e','frame.time_relative','-e','bthci_acl.chandle','-e','bthci_acl.pb_flag','-e','bthci_acl.length',
         '-e','btl2cap.cid','-e','btl2cap.payload','-e','data.data')
 $psi=New-Object System.Diagnostics.ProcessStartInfo
@@ -83,3 +83,7 @@ foreach($h in ($perHandle.Keys | Sort-Object)){
 foreach($hit in $hits){ Write-Host "R017_RAW_ACL_DIRECT_HIT=$hit" }
 Write-Host "R017_RAW_ACL_RESULT_FILE=$out"
 Write-Host "R017_RAW_ACL_TSHARK_ERR=$err"
+if($rows.Count -eq 0 -and (Test-Path -LiteralPath $err)){
+    $errText=(Get-Content -LiteralPath $err -Raw -ErrorAction SilentlyContinue).Trim()
+    if($errText){ Write-Host "R017_RAW_ACL_TSHARK_STDERR=$errText" }
+}

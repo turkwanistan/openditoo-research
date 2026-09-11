@@ -23,7 +23,7 @@ $err=Join-Path $env:TEMP "openditoo-r017-frame-attr-$stamp.err"
 $btvsProc=Start-Process -FilePath $btvs -ArgumentList @('-Mode','Wireshark','-Remote','on','-Port',[string]$port) -PassThru
 Start-Sleep -Seconds 1
 $filter='btl2cap.payload contains 01:03:00:9f:a2:00:02 || btl2cap.payload contains 01:04:00:bd:31:f2:00:02'
-$args=@('-i',"TCP@127.0.0.1:$port",'-a','duration:15','-l','-Y',$filter,'-T','fields','-E','separator=\\t',
+$args=@('-i',"TCP@127.0.0.1:$port",'-a','duration:15','-l','-Y',$filter,'-T','fields','-E','separator=\t',
         '-e','frame.time_relative','-e','bthci_acl.chandle','-e','btl2cap.cid','-e','btl2cap.payload')
 function Quote-WindowsArg([string]$Value) {
     if ($Value.Length -eq 0) { return '\"\"' }
@@ -61,3 +61,7 @@ Write-Host '===== FRAME-ATTRIBUTION RESULT =====' -ForegroundColor Green
 Get-Content -LiteralPath $out
 Write-Host "R017_FRAME_ATTR_RESULT_FILE=$out"
 Write-Host "R017_FRAME_ATTR_TSHARK_ERR=$err"
+if((Get-Item -LiteralPath $out).Length -eq 0 -and (Test-Path -LiteralPath $err)){
+    $errText=(Get-Content -LiteralPath $err -Raw -ErrorAction SilentlyContinue).Trim()
+    if($errText){ Write-Host "R017_FRAME_ATTR_TSHARK_STDERR=$errText" }
+}
