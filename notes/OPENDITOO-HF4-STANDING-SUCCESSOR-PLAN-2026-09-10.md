@@ -1,6 +1,6 @@
 # OpenDitoo — HF-4 standing successor (Runtime 008) plan — 2026-09-10
 
-**Status:** BUILT OFFLINE (2026-09-10): all gates PASS, template frozen and unauthorized. See the last section of `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md`. No authority until `Grant OPENDITOO-PRODUCT-RUNTIME-008`. HF-3 is PASS (`OPENDITOO-INTERACTIVE-HF3-008`, see `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md`). Live product: Runtime 007 + webcam 006 on Host `3faf520f…`. Runtime 007 is the rollback target.
+**Status:** DONE. LIVE as Runtime 009 (2026-09-11) with standing acceptance PASS; see the last sections of `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md`. HF-3 is PASS (`OPENDITOO-INTERACTIVE-HF3-008`, see `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md`). Live product: Runtime 007 + webcam 006 on Host `3faf520f…`. Runtime 007 is the rollback target.
 
 ## Accepted architecture (from HF-3 evidence, not design preference)
 

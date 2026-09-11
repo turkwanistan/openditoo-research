@@ -1,0 +1,1657 @@
+{
+ "schema_version": 1,
+ "kind": "standing_product_acceptance",
+ "product": "Runtime 008 (live 2026-09-11 00:45Z) -> Runtime 009 (live 00:55Z), OPENDITOO-MCP-DASHBOARD-V1",
+ "host_dll_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+ "grants": [
+  "Grant OPENDITOO-PRODUCT-RUNTIME-008",
+  "Grant OPENDITOO-PRODUCT-RUNTIME-009"
+ ],
+ "owner_visual": {
+  "dashboard_slots_and_lever": "looked great (008)",
+  "lightning": "all three sources good; a lone above-icon spark after the hit (008) -> removed in 009; 'lightning looks good' (009)",
+  "optiplex_icon_grey_before_strike": "root cause: Wanstation clock 0.6 s slow (Windows Time service Stopped); OptiPlex audit stamps were in the future -> activity_render grey-for-future-stamp rule. Fixed by the owner: W32Time automatic, hourly, MaxAllowedPhaseOffset 0; WSL chrony followed via PHC0. After: WSL -4 ms vs NTP, OptiPlex +82 ms vs WSL",
+  "power_cycle_dashboard_and_slots": "power cycling worked",
+  "webcam_suspend_restore": "webcam works, dashboard came back"
+ },
+ "derived": {
+  "rollover": "04c11026-000001 lifetime_expired/stopped_clean at 600 s, renewed on the same page",
+  "power_cycles": [
+   "IMAGE_RX_CLOSED -> 2 open_failed -> reconnect in ~18 s",
+   "IMAGE_RX_CLOSED -> 1 open_failed -> reconnect in ~8 s"
+  ],
+  "webcam_launches": {
+   "OPENDITOO-WEBCAM-LIVE-57362876-001": 749,
+   "OPENDITOO-WEBCAM-LIVE-6657fe1a-001": 664
+  },
+  "first_frame_timeouts_on_3faf520f": "1 of 100 streaming opens (04c11026-000018), recovered by 1 s backoff; before the Host fix 5 of 19",
+  "telemetry": "first_ack_ms populated on every input (21-185 ms); 009 persists a session's first ACK (frames_acked 1 at open)",
+  "known_cosmetic": "a service stop is recorded by the Host as close reason page_transition (run_interactive_stream passes that stop_reason to stream_session; result is remapped to operator_stop client-side only)"
+ },
+ "host_ledger_excerpt": [
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T00:45:30.7701937+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-06157ace-000012",
+   "sessionId": "73c0836a8aa0",
+   "detail": {
+    "reason": "operator_stop",
+    "outcome": "stopped_clean",
+    "detail": "",
+    "framesSent": 237,
+    "packetsSent": 711,
+    "txBytesSent": 46462,
+    "displayState": "ours_last_acked"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T00:45:52.6957938+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-313fa9a4-000001",
+   "sessionId": "58ce312341c7",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T00:47:08.1592881+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-313fa9a4-000001",
+   "sessionId": "58ce312341c7",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 70,
+    "packetsSent": 210,
+    "txBytesSent": 12101,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T00:47:08.1914757+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-313fa9a4-000002",
+   "sessionId": "5b943a8694d6",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T00:47:09.8072529+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-313fa9a4-000002",
+   "sessionId": "5b943a8694d6",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 14,
+    "packetsSent": 42,
+    "txBytesSent": 2121,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T00:47:09.8415946+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-313fa9a4-000003",
+   "sessionId": "ecae2e1b4bbf",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T00:47:11.9595608+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-313fa9a4-000003",
+   "sessionId": "ecae2e1b4bbf",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 39,
+    "packetsSent": 117,
+    "txBytesSent": 5895,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T00:47:11.9945274+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-313fa9a4-000004",
+   "sessionId": "1b1a224ec2c1",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T00:47:17.5426173+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-313fa9a4-000004",
+   "sessionId": "1b1a224ec2c1",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 18,
+    "packetsSent": 54,
+    "txBytesSent": 2792,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T00:47:17.6123355+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-313fa9a4-000005",
+   "sessionId": "5a3bf454672f",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T00:55:24.9049855+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-313fa9a4-000005",
+   "sessionId": "5a3bf454672f",
+   "detail": {
+    "reason": "page_transition",
+    "outcome": "stopped_clean",
+    "detail": "",
+    "framesSent": 200,
+    "packetsSent": 600,
+    "txBytesSent": 38195,
+    "displayState": "ours_last_acked"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T00:55:47.1513252+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000001",
+   "sessionId": "901440d4bccd",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:05:47.3370648+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000001",
+   "sessionId": "901440d4bccd",
+   "detail": {
+    "reason": "lifetime_expired",
+    "outcome": "stopped_clean",
+    "detail": "",
+    "framesSent": 244,
+    "packetsSent": 732,
+    "txBytesSent": 46574,
+    "displayState": "ours_last_acked"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:05:47.4154543+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000002",
+   "sessionId": "e617ceae17a8",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:06:11.7906914+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000002",
+   "sessionId": "e617ceae17a8",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0x09 tag=0x55 payloadBytes=1",
+    "framesSent": 1,
+    "packetsSent": 3,
+    "txBytesSent": 191,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:06:11.8381150+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000003",
+   "sessionId": "9a9ae60c0079",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:06:16.8318025+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000003",
+   "sessionId": "9a9ae60c0079",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 92,
+    "packetsSent": 276,
+    "txBytesSent": 13788,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:06:16.8820515+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000004",
+   "sessionId": "8887cd521b6c",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:06:18.8322905+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000004",
+   "sessionId": "8887cd521b6c",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 14,
+    "packetsSent": 42,
+    "txBytesSent": 2121,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:06:18.8659192+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000005",
+   "sessionId": "aafc79c89f2a",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:06:24.8437205+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000005",
+   "sessionId": "aafc79c89f2a",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 85,
+    "packetsSent": 255,
+    "txBytesSent": 12836,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:06:24.8808955+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000006",
+   "sessionId": "d82dd8f9ee82",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:06:27.9603304+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000006",
+   "sessionId": "d82dd8f9ee82",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 28,
+    "packetsSent": 84,
+    "txBytesSent": 4254,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:06:27.9915030+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000007",
+   "sessionId": "27f6b92afc98",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:06:32.6884421+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000007",
+   "sessionId": "27f6b92afc98",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 85,
+    "packetsSent": 255,
+    "txBytesSent": 12771,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:06:32.7184758+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000008",
+   "sessionId": "624184061c6e",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:06:36.8662510+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000008",
+   "sessionId": "624184061c6e",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 25,
+    "packetsSent": 75,
+    "txBytesSent": 3804,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:06:36.9393703+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000009",
+   "sessionId": "2ca49ceb3ae5",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:06:39.7405220+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000009",
+   "sessionId": "2ca49ceb3ae5",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 49,
+    "packetsSent": 147,
+    "txBytesSent": 7410,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:06:39.7851910+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000010",
+   "sessionId": "22596964a342",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:06:45.3167361+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000010",
+   "sessionId": "22596964a342",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 37,
+    "packetsSent": 111,
+    "txBytesSent": 5663,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:06:45.3855713+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000011",
+   "sessionId": "f6cd31b71a5d",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:07:24.1598959+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000011",
+   "sessionId": "f6cd31b71a5d",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0x09 tag=0x55 payloadBytes=1",
+    "framesSent": 12,
+    "packetsSent": 36,
+    "txBytesSent": 2322,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:07:24.2429677+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000012",
+   "sessionId": "e14cc13d6abf",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:07:39.5279301+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000012",
+   "sessionId": "e14cc13d6abf",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 12,
+    "packetsSent": 36,
+    "txBytesSent": 2322,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:07:39.6014676+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000013",
+   "sessionId": "da02255ffcd6",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:07:42.3131834+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000013",
+   "sessionId": "da02255ffcd6",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 2,
+    "packetsSent": 6,
+    "txBytesSent": 341,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:07:42.3435405+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000014",
+   "sessionId": "b370d7e6f8ee",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:07:45.3688858+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000014",
+   "sessionId": "b370d7e6f8ee",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 53,
+    "packetsSent": 159,
+    "txBytesSent": 7986,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:07:45.4430980+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000015",
+   "sessionId": "43fdbfe1d92e",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:07:48.0839321+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000015",
+   "sessionId": "43fdbfe1d92e",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 22,
+    "packetsSent": 66,
+    "txBytesSent": 3342,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:07:48.1164189+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000016",
+   "sessionId": "b864dcb8a180",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:07:51.4231966+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000016",
+   "sessionId": "b864dcb8a180",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 58,
+    "packetsSent": 174,
+    "txBytesSent": 8745,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:07:51.4827653+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000017",
+   "sessionId": "4450b4fc4636",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:07:57.3271404+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000017",
+   "sessionId": "4450b4fc4636",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 28,
+    "packetsSent": 84,
+    "txBytesSent": 4260,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:07:57.3850448+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000018",
+   "sessionId": "a0eeb0894d53",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:02.5114606+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000018",
+   "sessionId": "a0eeb0894d53",
+   "detail": {
+    "reason": "transport_fault",
+    "outcome": "unknown",
+    "detail": "IMAGE_RX_RECV_TIMEOUT; NO_RETRY",
+    "framesSent": 0,
+    "packetsSent": 0,
+    "txBytesSent": 0,
+    "displayState": "unknown_nothing_sent"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:03.5680186+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000019",
+   "sessionId": "915c357b5dd0",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:08.1946333+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000019",
+   "sessionId": "915c357b5dd0",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 86,
+    "packetsSent": 258,
+    "txBytesSent": 12972,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:08.2287607+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000020",
+   "sessionId": "f42162085a41",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:13.4289444+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000020",
+   "sessionId": "f42162085a41",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 42,
+    "packetsSent": 126,
+    "txBytesSent": 6384,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:13.4721621+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000021",
+   "sessionId": "9235f8073777",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:18.0775454+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000021",
+   "sessionId": "9235f8073777",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 79,
+    "packetsSent": 237,
+    "txBytesSent": 11886,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:18.1441641+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000022",
+   "sessionId": "a2256a704f2b",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:22.8245686+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000022",
+   "sessionId": "a2256a704f2b",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 31,
+    "packetsSent": 93,
+    "txBytesSent": 4701,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:22.8642856+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000023",
+   "sessionId": "a7fc3da4f109",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:29.0814995+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000023",
+   "sessionId": "a7fc3da4f109",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 109,
+    "packetsSent": 327,
+    "txBytesSent": 16404,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:29.1291493+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000024",
+   "sessionId": "7b0299ade3df",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:32.9192085+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000024",
+   "sessionId": "7b0299ade3df",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 31,
+    "packetsSent": 93,
+    "txBytesSent": 4701,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:32.9737882+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000025",
+   "sessionId": "e39f22ca306b",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:39.1037569+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000025",
+   "sessionId": "e39f22ca306b",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 107,
+    "packetsSent": 321,
+    "txBytesSent": 16176,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:39.1421499+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000026",
+   "sessionId": "13b0aba06dcc",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:42.8617752+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000026",
+   "sessionId": "13b0aba06dcc",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 43,
+    "packetsSent": 129,
+    "txBytesSent": 6540,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:42.9158660+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000027",
+   "sessionId": "80af48b415a6",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:44.8382929+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000027",
+   "sessionId": "80af48b415a6",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 32,
+    "packetsSent": 96,
+    "txBytesSent": 4827,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:44.8708948+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000028",
+   "sessionId": "d410e9698438",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:45.8102522+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000028",
+   "sessionId": "d410e9698438",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 13,
+    "packetsSent": 39,
+    "txBytesSent": 1986,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:45.8586020+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000029",
+   "sessionId": "70ca364442db",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:46.0658219+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000029",
+   "sessionId": "70ca364442db",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 2,
+    "packetsSent": 6,
+    "txBytesSent": 303,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:46.1004041+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000030",
+   "sessionId": "f41723129b98",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:08:48.1338990+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000030",
+   "sessionId": "f41723129b98",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 28,
+    "packetsSent": 84,
+    "txBytesSent": 4254,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:08:48.2187355+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000031",
+   "sessionId": "dc9d8ef166a9",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:09:09.7578735+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000031",
+   "sessionId": "dc9d8ef166a9",
+   "detail": {
+    "reason": "transport_fault",
+    "outcome": "unknown",
+    "detail": "IMAGE_RX_CLOSED WSA=0; NO_RETRY",
+    "framesSent": 12,
+    "packetsSent": 36,
+    "txBytesSent": 1829,
+    "displayState": "ours_last_acked"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:09:11.0486055+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000032",
+   "sessionId": "ce1759d4905a",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:09:16.1762725+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000032",
+   "sessionId": "ce1759d4905a",
+   "detail": {
+    "reason": "open_failed",
+    "outcome": "unknown",
+    "detail": "",
+    "framesSent": 0,
+    "packetsSent": 0,
+    "txBytesSent": 0,
+    "displayState": "unknown_nothing_sent"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:09:18.2267109+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000033",
+   "sessionId": "d8964a228edf",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:09:22.5083445+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000033",
+   "sessionId": "d8964a228edf",
+   "detail": {
+    "reason": "open_failed",
+    "outcome": "unknown",
+    "detail": "",
+    "framesSent": 0,
+    "packetsSent": 0,
+    "txBytesSent": 0,
+    "displayState": "unknown_nothing_sent"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:09:27.5822879+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000034",
+   "sessionId": "fbb157f3ead7",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:09:29.8052253+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000034",
+   "sessionId": "fbb157f3ead7",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0x09 tag=0x55 payloadBytes=1",
+    "framesSent": 1,
+    "packetsSent": 3,
+    "txBytesSent": 191,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:09:29.8381244+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000035",
+   "sessionId": "6b097df0ae76",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:09:35.4441135+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000035",
+   "sessionId": "6b097df0ae76",
+   "detail": {
+    "reason": "transport_fault",
+    "outcome": "unknown",
+    "detail": "IMAGE_RX_CLOSED WSA=0; NO_RETRY",
+    "framesSent": 93,
+    "packetsSent": 279,
+    "txBytesSent": 14118,
+    "displayState": "ours_last_acked"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:09:36.6719675+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000036",
+   "sessionId": "0fd65323fe39",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:09:41.8022756+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000036",
+   "sessionId": "0fd65323fe39",
+   "detail": {
+    "reason": "open_failed",
+    "outcome": "unknown",
+    "detail": "",
+    "framesSent": 0,
+    "packetsSent": 0,
+    "txBytesSent": 0,
+    "displayState": "unknown_nothing_sent"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:09:43.8882278+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000037",
+   "sessionId": "bd78ec179bff",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:09:46.2344322+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000037",
+   "sessionId": "bd78ec179bff",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0x09 tag=0x55 payloadBytes=1",
+    "framesSent": 37,
+    "packetsSent": 111,
+    "txBytesSent": 5643,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:09:46.3195171+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000038",
+   "sessionId": "5744f7eec1e5",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:09:47.8313729+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000038",
+   "sessionId": "5744f7eec1e5",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 9,
+    "packetsSent": 27,
+    "txBytesSent": 1374,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:09:47.8709288+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000039",
+   "sessionId": "811c61f5ab6e",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:10:01.1904034+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000039",
+   "sessionId": "811c61f5ab6e",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 73,
+    "packetsSent": 219,
+    "txBytesSent": 11045,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:10:01.2238274+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000040",
+   "sessionId": "a76241f1f558",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:10:07.5253621+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000040",
+   "sessionId": "a76241f1f558",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 32,
+    "packetsSent": 96,
+    "txBytesSent": 4866,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:10:07.5820875+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000041",
+   "sessionId": "91c8dcf3fa0e",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:10:32.1478243+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-04c11026-000041",
+   "sessionId": "91c8dcf3fa0e",
+   "detail": {
+    "reason": "page_transition",
+    "outcome": "stopped_clean",
+    "detail": "",
+    "framesSent": 1,
+    "packetsSent": 3,
+    "txBytesSent": 150,
+    "displayState": "ours_last_acked"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:10:44.4785078+00:00",
+   "experimentId": "OPENDITOO-WEBCAM-LIVE-57362876-001",
+   "sessionId": "c41d4e7a165e",
+   "detail": {
+    "lifetimeSeconds": 1800,
+    "minIntervalMs": 40,
+    "frameBudget": 36001,
+    "txByteBudget": 37945054,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:11:29.9412646+00:00",
+   "experimentId": "OPENDITOO-WEBCAM-LIVE-57362876-001",
+   "sessionId": "c41d4e7a165e",
+   "detail": {
+    "reason": "operator_stop",
+    "outcome": "stopped_clean",
+    "detail": "",
+    "framesSent": 749,
+    "packetsSent": 2247,
+    "txBytesSent": 776129,
+    "displayState": "ours_last_acked"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:11:30.6434050+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-7777da2e-000001",
+   "sessionId": "e06dbfb2d109",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:11:35.9708820+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-7777da2e-000001",
+   "sessionId": "e06dbfb2d109",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 49,
+    "packetsSent": 147,
+    "txBytesSent": 7430,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:11:36.0001346+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-7777da2e-000002",
+   "sessionId": "31d4883884cc",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:11:37.9845835+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-7777da2e-000002",
+   "sessionId": "31d4883884cc",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 15,
+    "packetsSent": 45,
+    "txBytesSent": 2292,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:11:38.0135156+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-7777da2e-000003",
+   "sessionId": "8813309798c0",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:12:21.3088933+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-7777da2e-000003",
+   "sessionId": "8813309798c0",
+   "detail": {
+    "reason": "page_transition",
+    "outcome": "stopped_clean",
+    "detail": "",
+    "framesSent": 33,
+    "packetsSent": 99,
+    "txBytesSent": 4964,
+    "displayState": "ours_last_acked"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:12:33.4206705+00:00",
+   "experimentId": "OPENDITOO-WEBCAM-LIVE-6657fe1a-001",
+   "sessionId": "d06de599de42",
+   "detail": {
+    "lifetimeSeconds": 1800,
+    "minIntervalMs": 40,
+    "frameBudget": 36001,
+    "txByteBudget": 37945054,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:13:13.6229732+00:00",
+   "experimentId": "OPENDITOO-WEBCAM-LIVE-6657fe1a-001",
+   "sessionId": "d06de599de42",
+   "detail": {
+    "reason": "operator_stop",
+    "outcome": "stopped_clean",
+    "detail": "",
+    "framesSent": 664,
+    "packetsSent": 1992,
+    "txBytesSent": 694960,
+    "displayState": "ours_last_acked"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:13:14.2631628+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fb65ddbc-000001",
+   "sessionId": "ee8416b8761e",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:13:53.9986061+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fb65ddbc-000001",
+   "sessionId": "ee8416b8761e",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 79,
+    "packetsSent": 237,
+    "txBytesSent": 13162,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:13:54.0524202+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fb65ddbc-000002",
+   "sessionId": "37e4c622acc8",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:13:58.0678958+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fb65ddbc-000002",
+   "sessionId": "37e4c622acc8",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 21,
+    "packetsSent": 63,
+    "txBytesSent": 3162,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:13:58.1002612+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fb65ddbc-000003",
+   "sessionId": "f2662bb862ec",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:14:00.8181880+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fb65ddbc-000003",
+   "sessionId": "f2662bb862ec",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 49,
+    "packetsSent": 147,
+    "txBytesSent": 7383,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:14:00.8884337+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fb65ddbc-000004",
+   "sessionId": "0eb33bd5749b",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  },
+  {
+   "kind": "terminal",
+   "atUtc": "2026-09-11T01:14:06.1916188+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fb65ddbc-000004",
+   "sessionId": "0eb33bd5749b",
+   "detail": {
+    "reason": "canvas_invalidated",
+    "outcome": "stopped_yielded_to_stock",
+    "detail": "outer=0x04 inner=0xBD tag=0x55 payloadBytes=4",
+    "framesSent": 18,
+    "packetsSent": 54,
+    "txBytesSent": 2786,
+    "displayState": "unknown_not_ours"
+   }
+  },
+  {
+   "kind": "open",
+   "atUtc": "2026-09-11T01:14:06.2445505+00:00",
+   "experimentId": "OPENDITOO-PRODUCT-fb65ddbc-000005",
+   "sessionId": "30d0c25b4aba",
+   "detail": {
+    "lifetimeSeconds": 600,
+    "minIntervalMs": 40,
+    "frameBudget": 15000,
+    "txByteBudget": 15810000,
+    "sessionProfile": "streaming_ack_clock",
+    "sendSpacingMs": 0
+   }
+  }
+ ]
+}

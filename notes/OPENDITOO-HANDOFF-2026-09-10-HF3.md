@@ -203,3 +203,20 @@ Pre-build state was verified live: Runtime 007 `connected` with `last_error` nul
 `scripts/cutover_runtime_009.sh` mirrors 008's, with an exact-tree rollback to Runtime 008. Gates: legacy 326 and successor 59 PASS; the rehearsed in-main gate and the rollback (008 `execution_ready`) PASS. It needs `Grant OPENDITOO-PRODUCT-RUNTIME-009`.
 
 **Remaining standing acceptance** (run it on 009 after cutover): re-check the lightning, power-cycle on the Dashboard and on Slots, and webcam suspend → restore.
+
+## Runtime 009 LIVE (2026-09-11 00:55Z) — standing acceptance PASS
+
+The owner granted `Grant OPENDITOO-PRODUCT-RUNTIME-009`, and `cutover_runtime_009.sh` passed: main fast-forwarded to `ce05285`, in-main gates PASS, `connected`, and `current_session_frames_acked: 1` at open, which confirms the telemetry fix. Rollback is saved in `.openditoo-local/rollback-runtime-008/`.
+
+- **Lightning:** the owner reported that the OptiPlex icon "goes grey before it gets struck".
+  - Root cause: this PC's clock, not code. The Windows Time service was **Stopped**, and Windows/WSL ran **0.6 s slow** against NTP (the OptiPlex was +0.08 s).
+  - OptiPlex audit stamps were therefore in the future, and `activity_render` deliberately paints future stamps grey. The old pulse recoloured the icon from its first stage, which hid this; the lightning's descent leaves the base visible.
+  - Owner fix (admin PowerShell): W32Time set to Automatic, `SpecialPollInterval` 3600, peers `time.windows.com`/`pool.ntp.org`, `MaxAllowedPhaseOffset` 0, resync. WSL's chrony (reference `PHC0`, the Hyper-V host clock) then converged: WSL −4 ms vs NTP, OptiPlex +82 ms vs WSL.
+  - Owner after the fix: "lightning looks good".
+- **Power cycles on Dashboard and on Slots:** "power cycling worked". Ledger: `IMAGE_RX_CLOSED` → `open_failed` → reconnect in about 18 s and about 8 s.
+- **Webcam suspend → restore:** "webcam works, dashboard came back". Two launches (749 and 664 frames), each `operator_stop`, with the dashboard reopened within 0.7 s.
+- **Also in the ledger:** one live 600 s rollover; about 35 Host-confirmed lever/arrow reclaims; 1 first-frame `IMAGE_RX_RECV_TIMEOUT` in 100 streaming opens on `3faf520f`, recovered by the 1 s backoff.
+- **Known cosmetic:** on a service stop the Host records close reason `page_transition`, because `run_interactive_stream` passes that `stop_reason`; only the client result is remapped to `operator_stop`. Fix it in a future revision if the ledger wording matters.
+- **Still optional:** Spotify contention and Windows-logon startup.
+
+Evidence: `captures/OPENDITOO-RUNTIME-008-009-STANDING-ACCEPTANCE-2026-09-11.json`.
