@@ -675,3 +675,11 @@ Offline implementation has advanced through the planned architecture and stops a
 - PM-LIVE-1 / PM-LIVE-2 / standing acceptance: **PENDING OWNER GRANT + normal-local-WSL physical UAT**.
 
 Canonical details are in `notes/OPENDITOO-HANDOFF-2026-09-11-POCKET-MOSS.md` and `notes/OPENDITOO-POCKET-MOSS-ART-REVIEW-2026-09-11.md`.
+
+## Physical readability checkpoint — v1 FAIL -> v2 / Runtime 011 prepared
+
+Runtime 010 physical integration works, but the owner rejected v1 Moss art as "mostly a brown blob" and not discernibly a dog/animal. Treat PM visual acceptance as FAIL for v1; do not reopen transport/input/runtime architecture.
+
+The offline animation-lab feedback loop was used exactly as intended: multiple literal 16x16 candidates were rendered and rejected without device I/O, the design moved from low-contrast side-profile shading to high-salience floppy-ear face landmarks, and the entire pose vocabulary was regenerated as `assets/pocket_moss/v2/`. See `notes/OPENDITOO-POCKET-MOSS-V2-ART-REVIEW-2026-09-11.md`.
+
+Runtime 011 (`runtime_revision=6`) is the art-only successor. PM-V2-OFFLINE is PASS (91/91 canonical successor tests); PM-V2-LIVE remains grant-gated and should begin with idle-only literal-panel judgment before any action testing.
