@@ -191,6 +191,9 @@ class SlotsPageTests(unittest.TestCase):
             for reel, speed in enumerate(slots_page.REEL_SPEEDS):
                 steps = slots_page.brake_steps(start, speed)
                 self.assertLessEqual(len(steps), 8)
+                if start % slots_page.SYMBOL_PITCH <= slots_page.SLIP_BACK_MAX:  # nearest symbol wins
+                    self.assertLessEqual(-sum(steps), slots_page.SLIP_BACK_MAX)
+                    self.assertGreaterEqual(-sum(steps), 0)
                 self.assertTrue(all(abs(step) <= speed for step in steps), steps)  # no catch-up burst
                 self.assertEqual((start + sum(steps)) % slots_page.SYMBOL_PITCH, 0)
                 self.assertEqual(steps[-2:], [1, -1])  # 1 px overshoot + settle back
@@ -200,6 +203,25 @@ class SlotsPageTests(unittest.TestCase):
         self.settle(page)
         self.assertEqual([p % slots_page.SYMBOL_PITCH for p in page.positions], [0, 0, 0])
         self.assertEqual(tuple(slots_page.symbol_at(r, page.positions[r]) for r in range(3)), result)
+
+    def test_aimed_pull_lands_the_symbol_seen_on_the_payline_despite_input_lag(self):
+        # The owner sees a symbol centred on the payline and pulls; the pull lands 1-3 ACKs later.
+        # Left reel (1 px/frame) always lands it; the 1.5 px/frame reels mostly do.
+        for reel in range(3):
+            hits = trials = 0
+            for start in range(0, slots_page.STRIP_HEIGHT, slots_page.SYMBOL_PITCH):
+                for lag in (1, 2, 3):
+                    page = SlotsPage(seed=1)
+                    page.positions = [start] * 3
+                    page.delays = [0, 0, 0]
+                    page.spinning = [i >= reel for i in range(3)]
+                    seen = slots_page.symbol_at(reel, start)
+                    for _ in range(lag):
+                        page.frame_sent()
+                    page.handle_input(event(0, "lever_candidate"))
+                    hits += slots_page.symbol_at(reel, page._final_position(reel)) == seen
+                    trials += 1
+            self.assertGreaterEqual(hits / trials, 1.0 if reel == 0 else 0.6, (reel, hits, trials))
 
     def test_stopped_reel_stays_pixel_stable_while_others_move(self):
         page = SlotsPage(seed=11)
@@ -265,8 +287,8 @@ class SlotsPageTests(unittest.TestCase):
 
     def test_specific_lever_timings_win_and_lose(self):
         # Deterministic from seed 7: frames of spin before each of the three pulls.
-        for gaps, want in (([33, 21, 28], "jackpot"), ([15, 23, 10], "big"), ([13, 11, 21], "small"),
-                           ([12, 16, 27], "lose")):
+        for gaps, want in (([36, 5, 7], "jackpot"), ([29, 24, 10], "big"), ([34, 7, 23], "small"),
+                           ([37, 16, 28], "lose")):
             page = SlotsPage(seed=7)
             self.play(page, gaps)
             self.assertEqual(page.outcome, want, gaps)

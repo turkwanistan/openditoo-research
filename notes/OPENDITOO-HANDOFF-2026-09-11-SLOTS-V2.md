@@ -30,3 +30,16 @@ Branch `feat/slots-v2-polish` (worktree `.openditoo-local/worktrees/slots-v2`). 
 - `verify_interactive_pages_offline.py`: PASS, 122 tests, including `SLOTS_V2_OFFLINE` and `RUNTIME_014_SUCCESSOR_OFFLINE`.
 - `verify_day1_offline.py` in the worktree: 13 failures out of 326, identical to a clean `main` baseline worktree (git-ignored Release outputs). The cutover re-runs both full gates in main.
 - R014 template precheck (the cutover's `template_ok`): PASS.
+
+## Runtime 014 live, then Runtime 015 aim tuning
+
+Owner granted exactly `Grant OPENDITOO-PRODUCT-RUNTIME-014`. `scripts/cutover_runtime_014.sh` reported `R014_CUTOVER_PASS main=a43a9a6 host=3faf520f46ce rollback=.openditoo-local/rollback-runtime-013`. Post-cutover `product-status`: connected, `last_error=null`, revision 9.
+
+Panel feedback: "its pretty hard lol, i only managed 1 small win in a lot of rounds, maybe slow down rows 2 and 3 a little". Root cause: the 014 rule stopped on the *next* symbol to reach the payline. A pull lands 1–3 ACKs after the player sees a symbol centred, and by then that symbol has passed alignment, so aiming at what you see hit **0% at any speed**. Slowing the reels alone would not have helped.
+
+Runtime 015 (`feat/slots-v2-aim`, `host/product_runtime_v9.py`, `runtime_revision=10`, `cutover_runtime_015.sh` requiring live 014, rollback to `.openditoo-local/rollback-runtime-014`):
+
+- `brake_steps` stops on the symbol nearest the payline. If it passed alignment by at most `SLIP_BACK_MAX=3` px, the reel slips back 1 px per frame; otherwise it runs on. The 1 px bounce is kept, and every step stays within the spin speed.
+- Middle and right reels use `REEL_STEPS=(1, 2)`, averaging 1.5 px/frame (was 2). Left stays at 1.
+- Aimed hit rate (pull when centred, landing 1–3 frames late): left 100%, middle and right 67%, pinned by `test_aimed_pull_lands_the_symbol_seen_on_the_payline_despite_input_lag`. Random-timing odds are unchanged: any win ~25%, jackpot ~1.6%.
+- Offline: `verify_interactive_pages_offline.py` PASS, 129 tests (`SLOTS_V2_AIM_OFFLINE`, `RUNTIME_015_SUCCESSOR_OFFLINE`). Day-1 in the worktree: 13 failures, identical to a clean Runtime 014 `main` baseline.
