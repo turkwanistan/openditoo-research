@@ -7,7 +7,7 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 - **Live product:** **Runtime 007** (dashboard + physical-button pagination, i.e. exactly Runtime 006 re-bound to the first-frame-spacing Host `3faf520f…`) and **webcam policy 006**. Exact-byte rollback to Runtime 006: `bash scripts/cutover_runtime_007.sh --rollback`. Details: `notes/OPENDITOO-HOST-FIRST-FRAME-REBIND-2026-09-10.md`.
 - **HF-3 is PASS** (`OPENDITOO-INTERACTIVE-HF3-008`: 11 Dashboard↔Slots cycles, 66/66 inputs, 0 faults, owner visual "great"). HF3-001…007 are consumed; never re-arm. The lightning-strike visual is still unaccepted.
 - **Where the work is:** branch `feat/high-fps-interactive-pages`, worktree `.openditoo-local/worktrees/high-fps-interactive-pages` (not merged; its `host/frame_stream.py` change is why the Runtime 007 template fails 3 hash tests there, which is expected).
-- **Next objective: HF-4**, the standing successor Runtime 008. Read, in order: `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` → `notes/OPENDITOO-HF4-STANDING-SUCCESSOR-PLAN-2026-09-10.md` → `AGENTS.md` (these live on the feature branch). Build offline, side by side; going live needs `Grant OPENDITOO-PRODUCT-RUNTIME-008`.
+- **HF-4 / Runtime 008 is built offline, frozen, grant-ready and UNAUTHORIZED** on the feature branch: one streaming session carrying Dashboard (lightning) + Slots, `host/product_runtime_v3.py`, `product/OPENDITOO-PRODUCT-RUNTIME-008.json`, `scripts/cutover_runtime_008.sh` (exact-tree rollback to 007). All offline gates PASS. **Waiting on the owner's `Grant OPENDITOO-PRODUCT-RUNTIME-008`**; then the cutover and owner-present standing acceptance. Read the last section of `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` first.
 - **Environment:** run from normal local WSL with `/mnt/c` + `powershell.exe`, not WSL_MCP. If a worktree's `.git` points at `/run/wsl-mcp/...`, run `git worktree repair` from the main checkout.
 
 ## Earlier session routes (history)
@@ -96,7 +96,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 | HF-1 high-FPS page primitive | **offline PASS** on `feat/high-fps-interactive-pages` (`65723e6`): generic `activity` / `streaming_ack_clock` page contract, buffered physical inputs, ACK-driven state, change-only output, 50 ms idle poll |
 | GAME-1 slots | **offline PASS**: procedural 3-reel 16x16 game; successive short lever pulls stop L/M/R, fourth starts a new round; 1000 deterministic rounds |
 | HF-2 profile orchestrator | **offline PASS**: one-controller activity <-> streaming transitions, 100 transition stress + 1000 mixed inputs; known canvas yield reclaims same page, ambiguity never retries |
-| HF-3 one-use interactive acceptance | **PASS** (`OPENDITOO-INTERACTIVE-HF3-008`, 2026-09-10 22:59Z, on branch `feat/high-fps-interactive-pages`): 11 Dashboard↔Slots cycles, 66/66 inputs, 0 faults, owner visual "great"; evidence and handoff live on that branch. Next: HF-4 standing successor (needs its own reviewed revision + grant) |
+| HF-3 one-use interactive acceptance | **PASS** — `OPENDITOO-INTERACTIVE-HF3-008` (2026-09-10 22:59Z, Runtime 007 Host): 11 Dashboard↔Slots cycles, 66/66 inputs exactly once and in order, 23/23 first frames, 22 Host-confirmed reclaims, 923 frames with the Host ledger in exact agreement, 0 timeouts/pacing faults; owner visual "great". Lightning visual carries to HF-4. 001–007 consumed (see `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md`) |
+| HF-4 standing successor (Runtime 008) | **built offline, frozen, UNAUTHORIZED**: one `streaming_ack_clock` session carries Dashboard (UI-1 lightning) + Slots under Runtime 007 supervisor semantics; FakeHost soak 247 sessions / 11,680 frames / 240 reclaims / 2 rollovers / 4 open failures; legacy 326 + successor 56 PASS, rehearsed in-main gate + rollback PASS. Needs `Grant OPENDITOO-PRODUCT-RUNTIME-008` |
 
 ### Authority state
 
@@ -243,3 +244,4 @@ do not change the shared runner. Details:
 ### MCP Dashboard v1 closed — Runtime 002 accepted
 
 `OPENDITOO-PRODUCT-RUNTIME-002` is now the active local standing product revision. Live cutover is PASS: `runtime_revision=2`, `status=connected`, first frame ACK recorded, session-open/ACK timestamps present, and `last_error=null`. P2/P3/P4 are complete; stop product-hardening work here. Windows reboot/login autostart observation is deferred and non-blocking. **Next objective: streaming and other OpenDitoo capabilities.**
+**HF-3 handoff:** read `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` first. HF3-001/002 consumed; HF3-003 withdrawn; next is an owner decision on a Host re-bind (first-frame spacing fix).
