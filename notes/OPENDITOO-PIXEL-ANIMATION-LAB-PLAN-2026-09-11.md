@@ -462,3 +462,17 @@ The Pixel Animation Lab is successful when a fresh ChatGPT session can, without 
 10. hand the owner a small number of genuinely strong candidates rather than a long trail of rough drafts.
 
 That feedback loop is a reusable OpenDitoo capability, not merely a Pocket Moss development convenience.
+
+## 17. Implementation checkpoint — 2026-09-11
+
+The first implementation pass is now real infrastructure, not only a plan:
+
+- LAB-0 schemas/compiler: **PASS**.
+- LAB-1 review PNG/contact-sheet/exact frame export: **PASS**.
+- LAB-2 deterministic ACK/cadence engine: **PASS**.
+- LAB-3 standalone browser workbench: **PASS** for v1 controls (play/pause, step, cadence, grid, mirror, restart, telemetry).
+- LAB-4 ChatGPT review bundle: **PASS** and exercised on Pocket Moss; a first-consumer issue with WSL_MCP absolute sandbox provenance was found and fixed so manifests now use portable project-relative paths.
+- LAB-5 procedural adapter: **DEFERRED / optional**, not needed for Pocket Moss v1.
+- LAB-6 Pocket Moss consumer: **PASS offline**. A/B/C variants were rendered and independently inspected; weak candidates were eliminated; selected art was revised multiple times from observed visual defects before promotion.
+
+The canonical tool entry point is `tools/pixel_lab.py`; fresh-session usage is in `tools/PIXEL_LAB.md`. Generated bundles remain ignored under `.openditoo-local/pixel-lab/reviews/`.

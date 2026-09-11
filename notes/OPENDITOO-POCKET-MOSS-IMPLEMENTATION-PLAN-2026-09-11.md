@@ -657,3 +657,21 @@ Pocket Moss v1 is successful when:
 - existing OpenDitoo transport/recovery/webcam behavior remains intact.
 
 The strongest v1 is therefore deliberately simple: **Moss the character becomes a polished native OpenDitoo app, while the reusable Pixel Animation Lab makes high-quality 16×16 visual development dramatically faster for everything that comes after it.**
+
+## 22. Implementation checkpoint — 2026-09-11
+
+Offline implementation has advanced through the planned architecture and stops at the physical promotion boundary:
+
+- PM-0 branch/plan: **PASS**.
+- PM-LAB-0 / reusable Lab foundation: **PASS** through LAB-4; LAB-5 procedural adapter remains optional.
+- PM-ART-1 identity exploration: **PASS**; A/B/C were actually rendered/reviewed and revised A2 selected.
+- PM-ART-2 visual freeze: **OFFLINE SELECTED**, pending literal-panel owner UAT rather than additional browser micro-editing.
+- PM-ANIM-1: **PASS offline**, including documented autonomous critique/revision of Look, Dance, Kisses and selector glyphs.
+- PM-BEHAVIOR-1: **PASS offline**.
+- PM-PAGE-1: **PASS offline**.
+- PM-NAV-1: **PASS offline**, generic page-first navigation capture.
+- PM-SELECTOR-1 / PM-ACTION-1: **PASS offline**; implemented earlier than physical PM-LIVE-1 because the full modal path was cheap to prove without widening device authority.
+- Runtime 010 successor boundary: **PREPARED / UNAUTHORIZED** with exact code+asset hashes and rollback to Runtime 009.
+- PM-LIVE-1 / PM-LIVE-2 / standing acceptance: **PENDING OWNER GRANT + normal-local-WSL physical UAT**.
+
+Canonical details are in `notes/OPENDITOO-HANDOFF-2026-09-11-POCKET-MOSS.md` and `notes/OPENDITOO-POCKET-MOSS-ART-REVIEW-2026-09-11.md`.
