@@ -4,7 +4,7 @@
 
 - **Live:** Runtime 007 + webcam 006 on Host `3faf520f…`, `connected`. Rollback: `bash scripts/cutover_runtime_007.sh --rollback` (from main).
 - **HF-3 PASS** = `OPENDITOO-INTERACTIVE-HF3-008` (`captures/OPENDITOO-INTERACTIVE-HF3-008-LIVE-2026-09-10.json`). 001–007 are consumed; their failures and fixes are below, in order.
-- **Next:** HF-4 / Runtime 008 per `notes/OPENDITOO-HF4-STANDING-SUCCESSOR-PLAN-2026-09-10.md`. It is an offline build; going live needs `Grant OPENDITOO-PRODUCT-RUNTIME-008`.
+- **HF-4 / Runtime 008 is BUILT OFFLINE, frozen, grant-ready and UNAUTHORIZED** (see the last section). Going live needs exactly `Grant OPENDITOO-PRODUCT-RUNTIME-008`, then `bash scripts/cutover_runtime_008.sh "Grant OPENDITOO-PRODUCT-RUNTIME-008"` from this worktree.
 - **Open:** the lightning-strike visual has never been owner-observed. Trigger it with the Dashboard visible.
 - **Traps learned today (all evidenced below):**
   - streaming first-frame timeouts on the old Host;
@@ -150,3 +150,35 @@ Evidence: `captures/OPENDITOO-INTERACTIVE-HF3-008-LIVE-2026-09-10.json`.
 **Next session:** HF-4, per `notes/OPENDITOO-HF4-STANDING-SUCCESSOR-PLAN-2026-09-10.md` (build side-by-side offline; Runtime 008 needs its own grant).
 
 WSL trap: this worktree's `.git` link pointed at the WSL_MCP mount (`/run/wsl-mcp/workspace`). `git worktree repair` from the main checkout fixes it.
+
+## HF-4 / Runtime 008 — built offline, frozen, grant-ready, UNAUTHORIZED (2026-09-10)
+
+Pre-build state was verified live: Runtime 007 `connected` with `last_error` null, installed Host `3faf520f…`, webcam 006 `policy-check` ok, and HF3 claims 001/002/004–008 present. `main` was merged into this branch; the START_HERE/AGENTS conflicts were resolved.
+
+- **`host/product_runtime_v3.py`** keeps the Runtime 007 supervisor semantics: fresh `OPENDITOO-PRODUCT-<nonce>-<seq>` bounded sessions, renewal on `lifetime_expired`/`budget_exhausted`, immediate reclaim of a Host-confirmed yield behind the same `ReclaimLimiter`, and `[1, 2, 5, 10, 30]` backoff that resets after a connected session.
+  - Each session is `run_interactive_stream` over one `PageCarousel([dashboard + UI-1 lightning, slots])` on `streaming_ack_clock`, with the unchanged `InteractiveTransport`: 50 ms floor, 45 ms anchored gap and the Host-confirmed yield rule.
+  - The carousel and driver outlive sessions, so page, game and input state survive reclaim, renewal and reconnect.
+  - Hidden-page collection runs on the joined worker, and backoff collection joins it first.
+  - An in-flight pulse is dropped at a genuine outage, and a hidden pulse is dropped, never replayed.
+- **Telemetry (bounded):**
+  - `product-runtime-state.json` adds `runtime_revision`, `session_profile`, `renewals`, `realized_fps_5s` and `last_input_to_first_ack_ms`, and is persisted at most about once a second while streaming.
+  - `pagination-state.json` holds the page, the last 5 inputs with `first_ack_ms`, and the slots round/state/stopped reels.
+  - It is **published at the first ACK after each input**, which fixes the Runtime 006 `first_ack_ms: null` defect.
+- **Policy:** `product/OPENDITOO-PRODUCT-RUNTIME-008.json` (`runtime_revision` 4, unauthorized).
+  - Pages, the full session envelope (600 s / 15 000 frames / 15 810 000 B; floors 40/50/45 ms; low-rate 200 ms; idle poll 50 ms) and 16 code hashes are pinned in code as well as in the template.
+  - Target, behavior, install, broker, probe and Host must equal Runtime 007's.
+  - `cli/openditoo.py` dispatches revision 4 to `product_runtime_v3`. The `spiral` page is dropped.
+- **Cutover:** `scripts/cutover_runtime_008.sh` works like 007's: exact grant → template hash-valid on the branch → young-link guard → rollback saved to `.openditoo-local/rollback-runtime-007/` → service stop → Host idle → ff `main` → **in-main offline gates (both verifiers) with `offline-gate.log` kept** → local policy → `product-check` → start → `connected` → webcam 006 `policy-check`.
+  - The Host and webcam are unchanged, so nothing on Windows is stopped or copied. The installed Host hash is asserted instead, so an owned-Host stop is not needed.
+  - **Rollback:** the merged range contains merge commits, which `git revert A..B` refuses (verified). `--rollback` therefore restores the exact Runtime 007 tree with `git read-tree -u --reset <pre>` plus one forward commit, and proves the tree hash.
+- **Offline gates (all PASS):**
+  - FakeHost soak (hardened `interactive_hf3.FakeHost`: 40 ms floor, 12/0 ms jitter, 20 ms ACKs, alternating mid-send/watchdog yields) at the real 600 s envelope: 120 human-paced cycles around a 25 min idle Dashboard, 41 simulated min.
+    - 247 sessions, 11 680 frames.
+    - 240/240 Host-confirmed reclaims and 2 rollovers.
+    - 4 injected open failures recovered, 0 pacing faults.
+    - Every lever pull was applied once, in order.
+  - Also tested: rollover without page reset, backoff 1/2/5/10/30/30 then reset, storm-guard cooldown after 8, one-batch inputs across a yield, first-ACK publish while running, no pulse replay after an outage, stop → one close + probe released, loader drift refusals, and CLI dispatch.
+  - `verify_interactive_pages_offline.py` 56/56 (`HF4_RUNTIME_008_OFFLINE=PASS`). `verify_day1_offline.py` PASS, 326 tests: the current-template pointer moved to 008, so the 3 former 007 `frame_stream` errors are now superseded-record checks.
+  - **Rehearsed on a scratch clone of main ff'd to this branch** with main's local state (no token): both gates PASS. Rehearsed `--rollback` tree restore: exact tree, and the live 007 policy `execution_ready` again.
+
+**Next (owner):** grant `Grant OPENDITOO-PRODUCT-RUNTIME-008` → run the cutover → verify `connected` → owner-present standing acceptance: lightning visual (MCP event with the Dashboard visible), lever reclaims, power cycle on Dashboard and on Slots, webcam shortcut suspend → restore. Spotify contention and Windows-logon startup stay optional.

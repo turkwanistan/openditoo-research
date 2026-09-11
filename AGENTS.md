@@ -18,7 +18,7 @@ The owner-selected successor work is specified in `notes/OPENDITOO-HIGH-FPS-INTE
 
 Develop this successor side-by-side. Runtime 006 remains the live rollback baseline; do not edit its hash-bound files on `main`. Offline implementation/research may proceed autonomously, but a new live display/session still requires the exact named manifest/policy grant required by this contract.
 
-**Current successor checkpoint (2026-09-10, end of session):** HF-3 is **PASS** (`OPENDITOO-INTERACTIVE-HF3-008`, on branch `feat/high-fps-interactive-pages`; 001–007 consumed, never re-arm). The accepted architecture is ONE `streaming_ack_clock` Host session carrying every page (`PageCarousel`, pixel-only paging), with a client floor + Host-anchored pacing and Host-confirmed yield handling. Never close/reopen the Host session to change pages. Next is HF-4 (standing Runtime 008) per the branch's `notes/OPENDITOO-HF4-STANDING-SUCCESSOR-PLAN-2026-09-10.md`; its cutover needs a fresh reviewed product revision and the exact grant `Grant OPENDITOO-PRODUCT-RUNTIME-008`.
+**Current successor checkpoint (2026-09-10, end of session):** HF-3 is **PASS** (`OPENDITOO-INTERACTIVE-HF3-008`, on branch `feat/high-fps-interactive-pages`; 001–007 consumed, never re-arm). The accepted architecture is ONE `streaming_ack_clock` Host session carrying every page (`PageCarousel`, pixel-only paging), with a client floor + Host-anchored pacing and Host-confirmed yield handling. Never close/reopen the Host session to change pages. HF-4 (standing Runtime 008, `host/product_runtime_v3.py`) is built offline and frozen; its cutover (`scripts/cutover_runtime_008.sh`) needs the exact grant `Grant OPENDITOO-PRODUCT-RUNTIME-008`.
 
 ## Evidence hierarchy
 
