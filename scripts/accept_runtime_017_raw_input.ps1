@@ -66,13 +66,34 @@ $args = @(
     '--tshark',[string]$broker.tshark_exe,
     '--port',[string]$broker.port
 )
-# Use ProcessStartInfo.ArgumentList so paths containing spaces (notably Wireshark)
-# remain one argv element. Start-Process -ArgumentList flattens/re-parses the array.
-$psi = [System.Diagnostics.ProcessStartInfo]::new()
+# Windows PowerShell 5.1 lacks ProcessStartInfo.ArgumentList. Build one
+# CreateProcess-safe command line instead; every argument is quoted and embedded
+# backslashes/quotes are escaped with the standard Windows argv rules.
+function Quote-WindowsArg([string]$Value) {
+    if ($Value.Length -eq 0) { return '""' }
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.Append('"')
+    $slashes = 0
+    foreach ($ch in $Value.ToCharArray()) {
+        if ($ch -eq '\\') { $slashes++; continue }
+        if ($ch -eq '"') {
+            [void]$sb.Append(('\\' * ($slashes * 2 + 1)))
+            [void]$sb.Append('"')
+            $slashes = 0
+            continue
+        }
+        if ($slashes -gt 0) { [void]$sb.Append(('\\' * $slashes)); $slashes = 0 }
+        [void]$sb.Append($ch)
+    }
+    if ($slashes -gt 0) { [void]$sb.Append(('\\' * ($slashes * 2))) }
+    [void]$sb.Append('"')
+    return $sb.ToString()
+}
+$psi = New-Object System.Diagnostics.ProcessStartInfo
 $psi.FileName = $exe
 $psi.UseShellExecute = $false
 $psi.CreateNoWindow = $true
-foreach ($arg in $args) { [void]$psi.ArgumentList.Add([string]$arg) }
+$psi.Arguments = (($args | ForEach-Object { Quote-WindowsArg ([string]$_) }) -join ' ')
 $proc = [System.Diagnostics.Process]::Start($psi)
 Need ($null -ne $proc) 'failed to start raw AVRCP broker process'
 try {
