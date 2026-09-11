@@ -43,6 +43,11 @@ foreach ($prop in $policy.build.button_probe_sha256.PSObject.Properties) {
 & $exe --selftest
 Need ($LASTEXITCODE -eq 0) 'Raw AVRCP broker selftest failed'
 Step 'R017_ACCEPT_PREFLIGHT' 'PASS'
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$principal = New-Object Security.Principal.WindowsPrincipal($identity)
+$isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+Need $isAdmin 'BTVS requires elevation on this machine; reopen PowerShell as Administrator and rerun this harness'
+Step 'R017_ACCEPT_ELEVATED' 'PASS'
 
 $before = @{}
 foreach ($name in @('OpenDitoo.RawAvrcpBroker','OpenDitoo.ButtonProbe','btvs','tshark')) {

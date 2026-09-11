@@ -74,6 +74,14 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertIn('BROKER_STDERR=', src)
         self.assertIn('R017_ACCEPT_PREEXISTING_HELPERS', src)
 
+    def test_acceptance_harness_requires_elevation_before_media_prompt(self):
+        src = (ROOT / 'scripts/accept_runtime_017_raw_input.ps1').read_text(encoding='utf-8')
+        admin = src.index('R017_ACCEPT_ELEVATED')
+        prompt = src.index('Start media playing through the EDIFIER now')
+        self.assertLess(admin, prompt)
+        self.assertIn('WindowsBuiltInRole]::Administrator', src)
+        self.assertIn('BTVS requires elevation on this machine', src)
+
     def test_cutover_is_exact_grant_gated_hash_pinned_and_rolls_back_to_016(self):
         shell = (ROOT / 'scripts/cutover_runtime_017.sh').read_text(encoding='utf-8')
         stage = (ROOT / 'runtime/windows/stage_openditoo_raw_avrcp_broker.ps1').read_text(encoding='utf-8')
