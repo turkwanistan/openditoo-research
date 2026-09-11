@@ -89,7 +89,9 @@ try {
         -Argument ('--headless "' + $InstalledExe + '" --token-file "' + $TokenFile + '"')
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $TaskUserName
     $principal = New-ScheduledTaskPrincipal -UserId $TaskUserName -LogonType Interactive -RunLevel Limited
-    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
+    # No execution limit: the default 72 h would stop an always-on Host (today only its conhost wrapper
+    # dies and the Host is orphaned alive -- an accident, not a design).
+    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero)
     $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings
     Register-ScheduledTask -TaskName $TaskName -InputObject $task -ErrorAction Stop | Out-Null
     Start-ScheduledTask -TaskName $TaskName

@@ -178,6 +178,7 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("[System.Security.Principal.WindowsIdentity]::GetCurrent()", src)
         self.assertIn("$trigger = New-ScheduledTaskTrigger -AtLogOn -User $TaskUserName", src)
         self.assertIn("New-ScheduledTaskPrincipal -UserId $TaskUserName -LogonType Interactive -RunLevel Limited", src)
+        self.assertIn("-ExecutionTimeLimit ([TimeSpan]::Zero)", src, msg="an always-on Host must not hit the 72 h default")
         self.assertNotIn("New-ScheduledTaskPrincipal -UserId $env:USERNAME", src)
         self.assertNotIn("Stop-ScheduledTask -TaskName 'OpenTivoo Product Runtime'", src)
         self.assertNotIn("Unregister-ScheduledTask -TaskName 'OpenTivoo Product Runtime'", src)

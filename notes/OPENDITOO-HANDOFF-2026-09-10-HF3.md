@@ -220,3 +220,11 @@ The owner granted `Grant OPENDITOO-PRODUCT-RUNTIME-009`, and `cutover_runtime_00
 - **Still optional:** Spotify contention and Windows-logon startup.
 
 Evidence: `captures/OPENDITOO-RUNTIME-008-009-STANDING-ACCEPTANCE-2026-09-11.json`.
+
+## Windows-logon startup — PASS by existing evidence (2026-09-11)
+
+The chain is: `OpenDitoo Day1 Host` task (AtLogOn, Interactive/Limited, headless conhost) plus `OpenDitoo Product Runtime` task (AtLogOn → `wsl.exe … install_openditoo_product.sh --start` → `product-check` must be `execution_ready` → `systemctl --user start openditoo-product.service`). The service is enabled, with linger=yes.
+
+- **Real reboot evidence:** the PC booted at 2026-09-10 08:59:50Z and Windows logged a logon at 09:00:01Z. The product task ran at 09:00:01Z (`lastResult 0`). Run `eb4888eb`'s first three attempts failed while the Host started, and **session `-000004` opened on its own at 09:00:19Z**, 18 s after logon. That was Runtime 005.
+- **Runtime 009 on the same path:** the task's exact action (`--start`) accepts the revision-4 policy (`execution_ready: true`, `runtime_revision: 4`), and is a no-op while the service runs.
+- **Defect fixed in source:** the Host task used Windows' default **72 h ExecutionTimeLimit**. Today that limit only kills the conhost wrapper and orphans the Host alive, which is an accident, not a design. `install_openditoo_day1_host.ps1` now registers `-ExecutionTimeLimit ([TimeSpan]::Zero)`, pinned by `test_windows_installer_preserves_opentivoo`. Changing the live task needs admin; the owner command is in the session record: `$s=(Get-ScheduledTask 'OpenDitoo Day1 Host').Settings; $s.ExecutionTimeLimit='PT0S'; Set-ScheduledTask 'OpenDitoo Day1 Host' -Settings $s`.
