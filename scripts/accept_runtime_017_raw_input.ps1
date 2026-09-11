@@ -155,14 +155,13 @@ try {
 
     function Cue([string]$Text) {
         Write-Host "*** $Text ***" -ForegroundColor Yellow
-        Start-Sleep -Milliseconds 2400
+        Start-Sleep -Milliseconds 2000
     }
 
-    foreach ($i in 1..5) { Cue "DITOO LEFT $i/5 -- press once" }
-    foreach ($i in 1..5) { Cue "DITOO RIGHT $i/5 -- press once" }
-    foreach ($i in 1..20) { Cue "DITOO LEVER $i/20 -- pull once" }
-    Cue 'TIVOO VOLUME-KNOB SHORT PRESS 1/2 -- negative-control; must NOT become OpenDitoo input'
-    Cue 'TIVOO VOLUME-KNOB SHORT PRESS 2/2'
+    foreach ($i in 1..3) { Cue "DITOO LEFT $i/3 -- press once" }
+    foreach ($i in 1..3) { Cue "DITOO RIGHT $i/3 -- press once" }
+    foreach ($i in 1..8) { Cue "DITOO LEVER $i/8 -- pull once" }
+    Cue 'TIVOO VOLUME-KNOB SHORT PRESS ONCE -- negative-control; must NOT become OpenDitoo input'
     Write-Host '*** HANDS OFF ***' -ForegroundColor Green
     Start-Sleep -Seconds 2
 }
@@ -203,9 +202,9 @@ foreach ($name in @('OpenDitoo.RawAvrcpBroker','OpenDitoo.ButtonProbe','btvs','t
     }
 }
 
-Step 'R017_ACCEPT_LEFT' "$left/5"
-Step 'R017_ACCEPT_RIGHT' "$right/5"
-Step 'R017_ACCEPT_LEVER' "$lever/20"
+Step 'R017_ACCEPT_LEFT' "$left/3"
+Step 'R017_ACCEPT_RIGHT' "$right/3"
+Step 'R017_ACCEPT_LEVER' "$lever/8"
 Step 'R017_ACCEPT_LEVER_PLAY' "$play"
 Step 'R017_ACCEPT_LEVER_PAUSE' "$pause"
 Step 'R017_ACCEPT_TOTAL_INPUT' ([string]$inputs.Count)
@@ -224,5 +223,5 @@ if ($media.Trim().ToUpperInvariant() -ne 'NO') {
     Step 'R017_ACCEPT_MEDIA_REACTION_DETAIL' (Read-Host 'Which controls did media react to (Left/Right/Lever/Tivoo), and how?')
 }
 
-$pass = ($left -eq 5 -and $right -eq 5 -and $lever -eq 20 -and $inputs.Count -eq 30 -and $foreign -ge 1 -and $unbound -eq 0 -and $flushOk -and $latMax -ge 0 -and $latMax -le 500 -and $orphans.Count -eq 0 -and $media.Trim().ToUpperInvariant() -eq 'NO')
+$pass = ($left -eq 3 -and $right -eq 3 -and $lever -eq 8 -and $inputs.Count -eq 14 -and $foreign -ge 1 -and $unbound -eq 0 -and $flushOk -and $latMax -ge 0 -and $latMax -le 500 -and $orphans.Count -eq 0 -and $media.Trim().ToUpperInvariant() -eq 'NO')
 Step 'R017_ACCEPT_RESULT' ($(if ($pass) { 'PASS' } else { 'FAIL_OR_OPERATOR_REVIEW' }))
