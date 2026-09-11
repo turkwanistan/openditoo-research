@@ -57,7 +57,7 @@ $existing = @()
 foreach ($name in $before.Keys) { foreach ($procId in @($before[$name])) { $existing += "$name`:$procId" } }
 Step 'R017_ACCEPT_PREEXISTING_HELPERS' ($(if ($existing.Count -eq 0) { '0' } else { $existing -join ',' }))
 
-Read-Host 'Start media playing through the EDIFIER now. Press ENTER when it is definitely playing' | Out-Null
+Read-Host 'Media must be PAUSED/OFF for now (you will start it after the broker owns media keys). Press ENTER' | Out-Null
 
 $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmssZ')
 $events = Join-Path $env:TEMP "openditoo-r017-raw-input-$stamp.ndjson"
@@ -65,7 +65,7 @@ $sinkLog = Join-Path $env:TEMP "openditoo-r017-sink-$stamp.ndjson"
 Remove-Item -LiteralPath $events,$sinkLog -Force -ErrorAction SilentlyContinue
 
 $brokerArgs = @(
-    '--seconds','150',
+    '--seconds','0',  # unbounded: the harness stops the broker in finally
     '--target',[string]$policy.target.exact_unit_id,
     '--events',$events,
     '--sink-log',$sinkLog,
@@ -143,6 +143,15 @@ try {
     & wsl.exe -d Ubuntu -- bash -lc 'systemctl --user stop openditoo-product.service'
     Need $bound 'broker did not learn the Ditoo ACL handle from Runtime 016 frames'
     Step 'R017_ACCEPT_HANDLE_BOUND' 'PASS'
+    # The broker starts its Playing ownership sink on first bind; the product order is sink first, media later.
+    $sinkUp = $false
+    foreach ($i in 1..40) {
+        if (@(Get-Content -LiteralPath $sinkLog -ErrorAction SilentlyContinue | Where-Object { $_ -match '"type":"probe_started"' }).Count -gt 0) { $sinkUp = $true; break }
+        Start-Sleep -Milliseconds 250
+    }
+    Need $sinkUp 'ownership sink did not start after bind'
+    Step 'R017_ACCEPT_SINK_AFTER_BIND' 'PASS'
+    Read-Host 'Now start media playing through the EDIFIER. Press ENTER when it is definitely playing' | Out-Null
 
     function Cue([string]$Text) {
         Write-Host "*** $Text ***" -ForegroundColor Yellow
@@ -152,7 +161,8 @@ try {
     foreach ($i in 1..5) { Cue "DITOO LEFT $i/5 -- press once" }
     foreach ($i in 1..5) { Cue "DITOO RIGHT $i/5 -- press once" }
     foreach ($i in 1..20) { Cue "DITOO LEVER $i/20 -- pull once" }
-    Cue 'TIVOO VOLUME-KNOB SHORT PRESS ONCE -- negative-control; this must NOT become OpenDitoo input'
+    Cue 'TIVOO VOLUME-KNOB SHORT PRESS 1/2 -- negative-control; must NOT become OpenDitoo input'
+    Cue 'TIVOO VOLUME-KNOB SHORT PRESS 2/2'
     Write-Host '*** HANDS OFF ***' -ForegroundColor Green
     Start-Sleep -Seconds 2
 }
@@ -175,7 +185,15 @@ $lever = @($inputs | Where-Object { $_.normalized_candidate -eq 'lever_candidate
 $play = @($inputs | Where-Object { $_.operation -eq '0x44' }).Count
 $pause = @($inputs | Where-Object { $_.operation -eq '0x46' }).Count
 $foreign = @($rows | Where-Object { $_.type -eq 'ignored_foreign_handle' }).Count
-$unbound = @($rows | Where-Object { $_.type -eq 'ignored_unbound' -or $_.type -eq 'handle_unbound' }).Count
+$boundSeq = @($rows | Where-Object { $_.type -eq 'handle_bound' } | ForEach-Object { [long]$_.seq } | Select-Object -First 1)
+$unbound = @($rows | Where-Object { $_.type -eq 'handle_unbound' -or ($_.type -eq 'ignored_unbound' -and $boundSeq.Count -gt 0 -and [long]$_.seq -gt $boundSeq[0]) }).Count
+$staleRows = (@($rows | Where-Object { $_.type -eq 'stale_backlog_dropped' } | ForEach-Object { [long]$_.rows }) | Measure-Object -Sum).Sum
+$flushOk = @($rows | Where-Object { $_.type -eq 'etw_flush_ok' }).Count -gt 0
+$latency = @($inputs | ForEach-Object {
+    ([DateTimeOffset]::Parse($_.at_utc).ToUnixTimeMilliseconds() - [double]::Parse($_.capture_time_epoch, [Globalization.CultureInfo]::InvariantCulture) * 1000)
+} | Sort-Object)
+$latP50 = if ($latency.Count) { [int]$latency[[int][Math]::Floor(($latency.Count - 1) / 2)] } else { -1 }
+$latMax = if ($latency.Count) { [int]$latency[-1] } else { -1 }
 
 $orphans = @()
 foreach ($name in @('OpenDitoo.RawAvrcpBroker','OpenDitoo.ButtonProbe','btvs','tshark')) {
@@ -193,11 +211,18 @@ Step 'R017_ACCEPT_LEVER_PAUSE' "$pause"
 Step 'R017_ACCEPT_TOTAL_INPUT' ([string]$inputs.Count)
 Step 'R017_ACCEPT_FOREIGN_HANDLE_IGNORED' "$foreign"
 Step 'R017_ACCEPT_UNBOUND_OR_UNBIND' "$unbound"
+Step 'R017_ACCEPT_STALE_BACKLOG_DROPPED' "$staleRows"
+Step 'R017_ACCEPT_ETW_FLUSH' ($(if ($flushOk) { 'PASS' } else { 'MISSING' }))
+Step 'R017_ACCEPT_LATENCY_MS_P50' "$latP50"
+Step 'R017_ACCEPT_LATENCY_MS_MAX' "$latMax"
 Step 'R017_ACCEPT_NEW_HELPER_ORPHANS' ($(if ($orphans.Count -eq 0) { '0' } else { $orphans -join ',' }))
 Step 'R017_ACCEPT_EVENTS_FILE' $events
 Step 'R017_ACCEPT_SINK_FILE' $sinkLog
 $media = Read-Host 'Did the browser/media skip, pause, or otherwise react to ANY of those Ditoo controls? Enter YES or NO'
 Step 'R017_ACCEPT_MEDIA_REACTION' $media.Trim().ToUpperInvariant()
+if ($media.Trim().ToUpperInvariant() -ne 'NO') {
+    Step 'R017_ACCEPT_MEDIA_REACTION_DETAIL' (Read-Host 'Which controls did media react to (Left/Right/Lever/Tivoo), and how?')
+}
 
-$pass = ($left -eq 5 -and $right -eq 5 -and $lever -eq 20 -and $inputs.Count -eq 30 -and $foreign -ge 1 -and $unbound -eq 0 -and $orphans.Count -eq 0 -and $media.Trim().ToUpperInvariant() -eq 'NO')
+$pass = ($left -eq 5 -and $right -eq 5 -and $lever -eq 20 -and $inputs.Count -eq 30 -and $foreign -ge 1 -and $unbound -eq 0 -and $flushOk -and $latMax -ge 0 -and $latMax -le 500 -and $orphans.Count -eq 0 -and $media.Trim().ToUpperInvariant() -eq 'NO')
 Step 'R017_ACCEPT_RESULT' ($(if ($pass) { 'PASS' } else { 'FAIL_OR_OPERATOR_REVIEW' }))

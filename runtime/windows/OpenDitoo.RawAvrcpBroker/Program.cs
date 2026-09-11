@@ -94,10 +94,12 @@ internal static class Program
                 return new(null, "handle_bound", handle);
             }
             if (pb != "2") return new(null, null, handle); // AVRCP presses arrive controller -> host, first fragment
+            // The display filter only admits pass-through CONTROL commands, so any row on another handle is
+            // another device's button (press or release): record the exclusion as negative-control evidence.
+            if (Bound is not null && handle != Bound) return new(null, "ignored_foreign_handle", handle);
             var input = DecodePayload(hex);
             if (input is null) return new(null, null, handle);
-            return handle == Bound ? new(input, null, handle)
-                 : new(null, Bound is null ? "ignored_unbound" : "ignored_foreign_handle", handle);
+            return Bound is null ? new(null, "ignored_unbound", handle) : new(input, null, handle);
         }
     }
 
@@ -147,13 +149,26 @@ internal static class Program
             using var writer = new StreamWriter(options.Events, append: true) { AutoFlush = true };
             Write(writer, "broker_started", new Dictionary<string, object?>
             {
-                ["source"] = "avrcp_raw", ["ownership_sink"] = "playing", ["device_attribution"] = "learned_acl_handle_openditoo_preamble",
+                ["source"] = "avrcp_raw", ["ownership_sink"] = "playing_after_first_bind",
+                ["device_attribution"] = "learned_acl_handle_openditoo_preamble",
                 ["target"] = options.Target,
                 ["btvs_port"] = options.Port,
             });
 
-            var sink = Start(options.SinkExe, ["--seconds", "0", "--status", "playing", "--log", options.SinkLog]);
+            // BTVS's ETW session keeps buffering HCI while no consumer is attached and replays that backlog on
+            // connect (observed: presses 20 minutes old). Nothing captured before this broker started is live.
+            var startEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+            long stale = 0;
+            Process? sink = null; // SMTC ownership sink starts once the Ditoo link is attributable (first bind)
             var btvs = Start(options.BtvsExe, ["-Mode", "Wireshark", "-Remote", "on", "-Port", options.Port.ToString(CultureInfo.InvariantCulture)]);
+            // ETW real-time buffers otherwise reach BTVS only when full/timer-flushed: ~1.1-2.1 s input lag.
+            int flushCode = -1, flushOk = 0;
+            using var flusher = new Timer(_ =>
+            {
+                var code = EtwFlush.Flush();
+                if (code == 0) Interlocked.Increment(ref flushOk); else Volatile.Write(ref flushCode, code);
+            }, null, 200, 50);
+            bool flushOkLogged = false, flushErrLogged = false;
             Thread.Sleep(800);
 
             // RFCOMM/AVCTP dissection is disabled so every channel stays raw btl2cap.payload whether BTVS saw
@@ -176,7 +191,17 @@ internal static class Program
             var pendingLine = tshark.StandardOutput.ReadLineAsync();
             while (DateTimeOffset.UtcNow < deadline)
             {
-                if (sink.HasExited) throw new IOException($"SMTC sink exited {sink.ExitCode}");
+                if (sink is { HasExited: true }) throw new IOException($"SMTC sink exited {sink.ExitCode}");
+                if (!flushOkLogged && Volatile.Read(ref flushOk) > 0)
+                {
+                    flushOkLogged = true;
+                    Write(writer, "etw_flush_ok", new Dictionary<string, object?> { ["session"] = EtwFlush.Session });
+                }
+                if (!flushErrLogged && Volatile.Read(ref flushOk) == 0 && Volatile.Read(ref flushCode) is > 0 and not 4201)
+                {
+                    flushErrLogged = true; // 4201 = session not created yet by BTVS
+                    Write(writer, "etw_flush_error", new Dictionary<string, object?> { ["win32"] = flushCode });
+                }
                 if (btvs.HasExited) throw new IOException($"BTVS exited {btvs.ExitCode}");
                 if (tshark.HasExited)
                     throw new IOException($"tshark exited {tshark.ExitCode}: {(stderr.IsCompletedSuccessfully ? stderr.Result : string.Empty)}");
@@ -190,7 +215,20 @@ internal static class Program
                 pendingLine = tshark.StandardOutput.ReadLineAsync();
 
                 var columns = line.Split('\t');
+                if (!double.TryParse(columns[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var captured) ||
+                    captured < startEpoch)
+                {
+                    stale++;
+                    continue;
+                }
+                if (stale > 0)
+                {
+                    Write(writer, "stale_backlog_dropped", new Dictionary<string, object?> { ["rows"] = stale });
+                    stale = 0;
+                }
                 var seen = binder.Observe(columns);
+                if (seen.Change == "handle_bound" && sink is null)
+                    sink = Start(options.SinkExe, ["--seconds", "0", "--status", "playing", "--log", options.SinkLog]);
                 if (seen.Change is not null)
                     // Runtime-only diagnostic in the private event log; never persisted into policy or code.
                     Write(writer, seen.Change, new Dictionary<string, object?>
@@ -247,6 +285,31 @@ internal static class Program
             }
             job.Dispose();
         }
+    }
+
+    /// <summary>Flush-only control of BTVS's real-time ETW session (name from btvs.exe); no start/stop/enable.</summary>
+    internal static class EtwFlush
+    {
+        internal const string Session = "BTETWRTSession";
+        private const int PropertiesSize = 120; // EVENT_TRACE_PROPERTIES, 64-bit layout
+
+        internal static int Flush(string session = Session)
+        {
+            var size = PropertiesSize + 2048;
+            var buffer = Marshal.AllocHGlobal(size);
+            try
+            {
+                Marshal.Copy(new byte[size], 0, buffer, size);
+                Marshal.WriteInt32(buffer, 0, size);          // Wnode.BufferSize
+                Marshal.WriteInt32(buffer, 44, 0x00020000);   // Wnode.Flags = WNODE_FLAG_TRACED_GUID
+                Marshal.WriteInt32(buffer, 116, PropertiesSize); // LoggerNameOffset
+                return ControlTraceW(0, session, buffer, 3);  // EVENT_TRACE_CONTROL_FLUSH
+            }
+            finally { Marshal.FreeHGlobal(buffer); }
+        }
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        private static extern int ControlTraceW(ulong traceHandle, string sessionName, IntPtr properties, uint controlCode);
     }
 
     private sealed class Job : IDisposable
@@ -346,11 +409,16 @@ internal static class Selftest
         Need(See($"12\t0x0100\t0\t\t{left}").Input is null, "outbound_press_rejected");
         Need(See($"13\t0x0100\t2\t\t90110e00487ccc00").Input is null, "bound_release_rejected");
         Need(See($"14\t0x0200\t2\t\td0110e00487c4400").Change == "ignored_foreign_handle", "foreign_press_ignored");
+        Need(See($"14\t0x0200\t2\t\td0110e00487cc100").Change == "ignored_foreign_handle", "foreign_other_op_ignored");
         Need(See("15\t\t\t0x0200\t").Change is null && b.Bound == "0x0100", "foreign_disconnect_ignored");
         Need(See("16\t\t\t0x0100\t").Change == "handle_unbound" && b.Bound is null, "disconnect_unbinds");
         Need(See($"17\t0x0100\t2\t\t{left}").Input is null, "stale_handle_after_disconnect_rejected");
         See($"18\t0x0300\t0\t\t{a}");
         Need(See($"19\t0x0300\t0\t\t{bb}").Change == "handle_bound" && b.Bound == "0x0300", "rebind_after_reconnect");
+        // ETW validates the properties layout before the name lookup: 4201 = accepted, missing session
+        // (a broken layout returns 24/ERROR_BAD_LENGTH), independent of elevation.
+        var etw = Program.EtwFlush.Flush("OpenDitooSelftestNoSuchSession");
+        Need(etw == 4201, $"etw_flush_layout_{etw}");
         Console.WriteLine("RAW_AVRCP_BROKER_SELFTEST=PASS");
         return 0;
     }

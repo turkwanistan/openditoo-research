@@ -84,12 +84,15 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertLess(start, src.index('"type":"handle_bound"'))
         self.assertLess(stop, src.index('R017_ACCEPT_HANDLE_BOUND'))
         self.assertLess(src.index('R017_ACCEPT_HANDLE_BOUND'), src.index('DITOO LEFT'))
-        self.assertIn('$foreign -ge 1 -and $unbound -eq 0', src)
+        self.assertLess(src.index('R017_ACCEPT_SINK_AFTER_BIND'), src.index('Now start media playing'))
+        self.assertLess(src.index('Now start media playing'), src.index('DITOO LEFT'))
+        self.assertIn('$foreign -ge 1 -and $unbound -eq 0 -and $flushOk -and $latMax -ge 0 -and $latMax -le 500', src)
+        self.assertIn("'--seconds','0'", src)
 
     def test_acceptance_harness_requires_elevation_before_media_prompt(self):
         src = (ROOT / 'scripts/accept_runtime_017_raw_input.ps1').read_text(encoding='utf-8')
         admin = src.index('R017_ACCEPT_ELEVATED')
-        prompt = src.index('Start media playing through the EDIFIER now')
+        prompt = src.index('Now start media playing through the EDIFIER')
         self.assertLess(admin, prompt)
         self.assertIn('WindowsBuiltInRole]::Administrator', src)
         self.assertIn('BTVS requires elevation on this machine', src)
@@ -145,6 +148,14 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertIn('bthci_acl.pb_flag == 0 && (btl2cap.payload contains 01:03:00:9f:a2:00:02', src)
         self.assertIn('bthci_acl.pb_flag == 2 && btl2cap.payload contains 11:0e:00:48:7c', src)
         self.assertNotIn('0x0100', src[:src.index('internal static class Selftest')])  # no hard-coded handle
+        run = src[src.index('internal int Run()'):]
+        # ETW backlog replay is dropped, the ownership sink waits for the first bind, and ETW is flush-only.
+        self.assertIn('captured < startEpoch', run)
+        self.assertLess(run.index('seen.Change == "handle_bound" && sink is null'), run.index('"--status", "playing"'))
+        self.assertIn('return ControlTraceW(0, session, buffer, 3);', src)
+        self.assertEqual(src.count('ControlTraceW('), 2)  # declaration + the single FLUSH call
+        self.assertNotIn('StartTrace', src)
+        self.assertIn('Need(etw == 4201', src)
         self.assertIn('"--status", "playing"', src)
         for op in ('0x4C', '0x4B', '0x44', '0x46'):
             self.assertIn(op, src)

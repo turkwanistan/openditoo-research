@@ -44,7 +44,7 @@
       "product_runtime_sha256": "85b6ca70a1340bd53cc69441034c780d39d62db985cf6d61a10c1bccb0483e0d",
       "product_runtime_v11_sha256": "68f69637f4f486200adeb93547bbee4a4e10b38264f9021a33df7a0cf4b21f1d",
       "raw_avrcp_input_sha256": "6674db3337f3d1cd594157a9087acf19bba17a5b5671fcee5c6b9327e129fbc2",
-      "raw_avrcp_broker_program_sha256": "f2bfec50c0a9665421f7cc3be01a867506a4219fd6ca848a8606014933b8ea89",
+      "raw_avrcp_broker_program_sha256": "7de26351b4618e4e53c799259bff15f86d6bd0f33fc91e4746adab6c50e11ae9",
       "raw_avrcp_broker_csproj_sha256": "419f978b05c83015dba37dec7906b4013bec42e829d4d2bfe0e0a8305ab63a38",
       "raw_avrcp_stage_script_sha256": "8a0a80d039ab2669899153dd9e34bdcc650f204f0e7a5ef5d829fce6ad4994a4",
       "runtime_017_cutover_sha256": "ee3d7dd14a6019e9d51150ff9941e6623fdad0e5da356595e7cf1f79b61bb05f",
@@ -95,7 +95,7 @@
     "host_note": "Unchanged Runtime 009 Host; Runtime 012 changes WSL Moss page default + hash-bound v3 art/choreography only.",
     "raw_avrcp_broker_sha256": {
       "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.exe": "ba95755b2c424380fdb29b47260fe660ef9b006b836fb54c95a7a895a29e8fc2",
-      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.dll": "530755e173329b05165b2bb2c56e650c5efa849d3466e7a835b5c85b64f8b6fb",
+      "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.dll": "d500f6bc6b8db9bcb9309a1dbe95a96efbf761d8a4078388f336cb4840d26207",
       "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.deps.json": "384fb4aa56d643d30f155567fca8f607e1f4f8bd3ab0cbe33b897371d8fc6218",
       "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\RawAvrcpBroker\\OpenDitoo.RawAvrcpBroker.runtimeconfig.json": "95505548c838f72a6a829fd5332dbc674c715ce26a216e9eb32bec8b5821eae2"
     },
@@ -153,7 +153,7 @@
         "0x4B": "nav_right",
         "0x4C": "nav_left"
       },
-      "lifetime": "one Windows sidecar child of product runtime; Job Object kills ButtonProbe/BTVS/tshark when broker exits; WSL supervisor restart limited to once/5s",
+      "lifetime": "one Windows sidecar child of product runtime; Job Object kills ButtonProbe/BTVS/tshark when broker exits; WSL supervisor restart limited to once/5s; Playing sink starts on first handle bind; ETW backlog captured before broker start is dropped; BTETWRTSession flush-only every 50 ms",
       "media_keys": "SMTC Playing is ownership sink only; page/game input comes exclusively from inbound raw AVRCP presses on the learned Ditoo handle"
     },
     "evidence": [
