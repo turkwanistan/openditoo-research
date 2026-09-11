@@ -4,11 +4,13 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## ▶ CURRENT STATE — read this first (2026-09-11)
 
+- **Handoff: `notes/OPENDITOO-HANDOFF-2026-09-11-HF4.md`** (current state, decisions, verification, open items). HF-4 is closed; no next objective is committed.
+
 - **Live product: Runtime 009** (HF-4 standing interactive pages): one `streaming_ack_clock` Host session carries Dashboard (UI-1 lightning) + Slots; Left/Right page pixels only; lever = page action; Host `3faf520f…`; **webcam policy 006** unchanged. Code `host/product_runtime_v3.py`, policy `product/OPENDITOO-PRODUCT-RUNTIME-009.json` (runtime_revision 4). Exact-tree rollback to Runtime 008: `bash scripts/cutover_runtime_009.sh --rollback` (008's own `--rollback` returns to 007).
 - **Standing acceptance PASS (owner, 2026-09-11):** Dashboard↔Slots + lever reclaims, lightning on all three sources (the 008 after-hit spark removed in 009), 600 s rollover, power cycle on Dashboard and on Slots, webcam suspend → restore (×2). Evidence `captures/OPENDITOO-RUNTIME-008-009-STANDING-ACCEPTANCE-2026-09-11.json`; narrative in the last sections of `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md`.
 - **Clock trap (fixed):** an icon going grey right before its strike was this PC's clock running 0.6 s slow (Windows Time service was Stopped), so OptiPlex audit stamps looked like the future. W32Time is now automatic/hourly/step; WSL chrony follows via PHC0. If it recurs, check `chronyc tracking` and `w32tm /query /status` before touching code.
-- **Open / optional:** Spotify media-key contention and the cosmetic Host close reason `page_transition` on a service stop. Windows-logon startup is PASS (09-10 reboot: dashboard up 18 s after logon unattended); the Host task's 72 h limit is removed in the installer (live task needs one admin command, see handoff). First-frame timeouts: 1/100 streaming opens on this Host, absorbed by backoff.
-- **Branch:** `feat/high-fps-interactive-pages` is fast-forwarded into `main` (the live tree). New product changes still go on a branch with a fresh revision + exact grant.
+- **Open / optional:** Spotify media-key contention and the cosmetic Host close reason `page_transition` on a service stop. Windows-logon startup is PASS (09-10 reboot: dashboard up 18 s after logon unattended); the Host task's 72 h limit is removed in the installer (live task set to `PT0S`, verified). First-frame timeouts: 1/100 streaming opens on this Host, absorbed by backoff.
+- **Branch:** `feat/high-fps-interactive-pages` is fast-forwarded into `main` (the live tree); both pushed to origin. New product changes still go on a branch with a fresh revision + exact grant.
 - **Environment:** run from normal local WSL with `/mnt/c` + `powershell.exe`, not WSL_MCP. If a worktree's `.git` points at `/run/wsl-mcp/...`, run `git worktree repair` from the main checkout.
 
 ## Earlier session routes (history)

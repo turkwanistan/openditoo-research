@@ -2,6 +2,8 @@
 
 ## TL;DR for the next session
 
+- **Superseded:** HF-4 is closed and Runtime 009 is live. Start at `notes/OPENDITOO-HANDOFF-2026-09-11-HF4.md`; the bullets below are the HF-3/HF-4 history.
+
 - **Live:** Runtime 007 + webcam 006 on Host `3faf520f…`, `connected`. Rollback: `bash scripts/cutover_runtime_007.sh --rollback` (from main).
 - **HF-3 PASS** = `OPENDITOO-INTERACTIVE-HF3-008` (`captures/OPENDITOO-INTERACTIVE-HF3-008-LIVE-2026-09-10.json`). 001–007 are consumed; their failures and fixes are below, in order.
 - **HF-4 / Runtime 008 is BUILT OFFLINE, frozen, grant-ready and UNAUTHORIZED** (see the last section). Going live needs exactly `Grant OPENDITOO-PRODUCT-RUNTIME-008`, then `bash scripts/cutover_runtime_008.sh "Grant OPENDITOO-PRODUCT-RUNTIME-008"` from this worktree.
@@ -227,4 +229,4 @@ The chain is: `OpenDitoo Day1 Host` task (AtLogOn, Interactive/Limited, headless
 
 - **Real reboot evidence:** the PC booted at 2026-09-10 08:59:50Z and Windows logged a logon at 09:00:01Z. The product task ran at 09:00:01Z (`lastResult 0`). Run `eb4888eb`'s first three attempts failed while the Host started, and **session `-000004` opened on its own at 09:00:19Z**, 18 s after logon. That was Runtime 005.
 - **Runtime 009 on the same path:** the task's exact action (`--start`) accepts the revision-4 policy (`execution_ready: true`, `runtime_revision: 4`), and is a no-op while the service runs.
-- **Defect fixed in source:** the Host task used Windows' default **72 h ExecutionTimeLimit**. Today that limit only kills the conhost wrapper and orphans the Host alive, which is an accident, not a design. `install_openditoo_day1_host.ps1` now registers `-ExecutionTimeLimit ([TimeSpan]::Zero)`, pinned by `test_windows_installer_preserves_opentivoo`. Changing the live task needs admin; the owner command is in the session record: `$s=(Get-ScheduledTask 'OpenDitoo Day1 Host').Settings; $s.ExecutionTimeLimit='PT0S'; Set-ScheduledTask 'OpenDitoo Day1 Host' -Settings $s`.
+- **Defect fixed in source:** the Host task used Windows' default **72 h ExecutionTimeLimit**. Today that limit only kills the conhost wrapper and orphans the Host alive, which is an accident, not a design. `install_openditoo_day1_host.ps1` now registers `-ExecutionTimeLimit ([TimeSpan]::Zero)`, pinned by `test_windows_installer_preserves_opentivoo`. The owner applied it to the live task (verified `PT0S`): `$s=(Get-ScheduledTask 'OpenDitoo Day1 Host').Settings; $s.ExecutionTimeLimit='PT0S'; Set-ScheduledTask 'OpenDitoo Day1 Host' -Settings $s`.
