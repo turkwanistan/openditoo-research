@@ -38,6 +38,7 @@ class InteractivePage(Protocol):
     def on_exit(self) -> None: ...
     def render(self, now_ms: int) -> bytes: ...
     def handle_input(self, event: dict) -> str | None: ...
+    def handle_navigation(self, direction: int, event: dict) -> bool: ...
     def frame_sent(self) -> None: ...
     def telemetry(self) -> dict: ...
 
@@ -120,8 +121,8 @@ class InteractivePageDriver:
                 handler = getattr(self.page, "handle_navigation", None)
                 if handler is not None:
                     # In-session paging (PageCarousel): pixels change, the Host session stays.
-                    handler(NAVIGATION_TYPES[kind], event)
-                    self._record(event, kind, "navigate")
+                    result = handler(NAVIGATION_TYPES[kind], event)
+                    self._record(event, kind, result if result is not None else "navigate")
                     continue
                 self.navigation = NavigationRequest(
                     NAVIGATION_TYPES[kind], dict(event), self.monotonic())
@@ -261,7 +262,13 @@ class PageCarousel:
             self._worker.join()
             self._worker = None
 
-    def handle_navigation(self, direction: int, _event: dict) -> None:
+    def handle_navigation(self, direction: int, event: dict) -> str:
+        # The current page gets first refusal so modal page-local navigation can coexist
+        # with the global carousel without any page-name special casing.
+        page_handler = getattr(self.page, "handle_navigation", None)
+        if page_handler is not None and bool(page_handler(direction, event)):
+            self._held = None
+            return "page_consumed"
         self._join_worker()
         old = self.page
         old.on_exit()
@@ -271,6 +278,7 @@ class PageCarousel:
             self.profile_transitions += old.rate_mode != self.page.rate_mode
         self.page.on_enter()
         self._held = None  # the new page draws on the very next opportunity
+        return "navigate"
 
     def handle_input(self, event: dict):
         return self.page.handle_input(event)

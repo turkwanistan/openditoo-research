@@ -1,0 +1,31 @@
+{
+  "schema": "openditoo.pixel-animation.v1",
+  "id": "moss.v1.sleep-wake",
+  "canvas": [
+    16,
+    16
+  ],
+  "loop": false,
+  "sequence": [
+    {
+      "sprite": "../sprites/loaf.json",
+      "hold_acks": 5,
+      "phase": "settle"
+    },
+    {
+      "sprite": "../sprites/sleep.json",
+      "hold_acks": 35,
+      "phase": "sleep"
+    },
+    {
+      "sprite": "../sprites/wake.json",
+      "hold_acks": 5,
+      "phase": "wake"
+    },
+    {
+      "sprite": "../sprites/idle.json",
+      "hold_acks": 5,
+      "phase": "settle"
+    }
+  ]
+}

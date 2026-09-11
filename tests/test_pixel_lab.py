@@ -94,6 +94,7 @@ class PixelLabTests(unittest.TestCase):
         self.assertEqual(len(frames["frames"][0]["rows"][0]), 16)
         manifest = json.loads((out / "manifest.json").read_text())
         self.assertEqual(manifest["cadence_profile"], "jitter")
+        self.assertNotIn("/run/wsl-mcp/", json.dumps(manifest))
         self.assertEqual(len(manifest["cadence_intervals_ms"]), 9)
 
 

@@ -25,6 +25,15 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def stable_path(path: Path) -> str:
+    """Project-relative provenance when possible; never bake sandbox mount paths into bundles."""
+    path = Path(path)
+    try:
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def schema(path: Path) -> str:
     try:
         return str(json.loads(path.read_text(encoding="utf-8")).get("schema") or "")
@@ -43,7 +52,7 @@ def load_any(path: Path):
 
 def sprite_record(sprite) -> dict:
     return {
-        "id": sprite.id, "source": str(sprite.source_path) if sprite.source_path else None,
+        "id": sprite.id, "source": stable_path(sprite.source_path) if sprite.source_path else None,
         "canonical_sha256": sprite.canonical_sha256, "rgb888_sha256": sprite.rgb_sha256,
         "palette": {k: list(v) for k, v in sprite.palette.items()}, "rows": list(sprite.rows),
         "anchor": None if sprite.anchor is None else list(sprite.anchor), "geometry": geometry(sprite),
@@ -130,7 +139,7 @@ def build_review(path: Path, out_root: Path = DEFAULT_REVIEW_ROOT, *, profile: s
         total_acks = value.total_acks
     manifest = {
         "schema": "openditoo.pixel-review.v1", "id": value.id, "kind": kind,
-        "source": str(path), "source_files": [{"path": str(p), "sha256": sha(p)} for p in source_files],
+        "source": stable_path(path), "source_files": [{"path": stable_path(p), "sha256": sha(p)} for p in source_files],
         "asset_sha256": value.canonical_sha256, "cadence_profile": profile, "cadence_seed": seed,
         "cadence_intervals_ms": cadence_intervals(profile, max(total_acks, 1), seed=seed),
         "command": f"python3 tools/pixel_lab.py review-bundle {path} --profile {profile} --seed {seed}",
