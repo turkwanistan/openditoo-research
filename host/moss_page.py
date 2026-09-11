@@ -1,4 +1,4 @@
-"""Pocket Moss: a small WSL-owned character page; Runtime 011 uses readability-revised v2 art.
+"""Pocket Moss: a small WSL-owned character page for the Runtime 009 page contract.
 
 All character pixels come from text-authored Pixel Animation Lab assets. The page owns only
 presentation state: passive behavior, selector state, current authored sequence and bounded
@@ -14,7 +14,7 @@ from host.pixel_animation import PixelAnimation, load_animation
 from host.pixel_art import load_sprite
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSET_ROOT = ROOT / "assets/pocket_moss/v2"
+ASSET_ROOT = ROOT / "assets/pocket_moss/v1"
 NOMINAL_ACK_MS = 62  # timing display/hold floor only; physical panel FPS remains unmeasured
 MODE_NORMAL = "normal"
 MODE_SELECTOR = "selector"

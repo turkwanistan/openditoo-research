@@ -476,9 +476,3 @@ The first implementation pass is now real infrastructure, not only a plan:
 - LAB-6 Pocket Moss consumer: **PASS offline**. A/B/C variants were rendered and independently inspected; weak candidates were eliminated; selected art was revised multiple times from observed visual defects before promotion.
 
 The canonical tool entry point is `tools/pixel_lab.py`; fresh-session usage is in `tools/PIXEL_LAB.md`. Generated bundles remain ignored under `.openditoo-local/pixel-lab/reviews/`.
-
-## LAB-7 physical-feedback loop proven — 2026-09-11
-
-The first literal-panel Moss review exposed a failure that structural metrics did not: v1 passed the lab but read as a brown blob on hardware. The lab was then used to produce/reject several exact-pixel alternatives offline, including a programmatic LED-dot/bloom robustness view, before promoting a brighter floppy-ear v2 dog vocabulary. This validates the intended workflow: physical observation -> text-authored iteration -> autonomous offline visual critique -> regression checks -> new hash-frozen runtime, rather than repeated ad-hoc device edits.
-
-New lesson for 16x16 character work: structural cleanliness is necessary but not sufficient. Add explicit high-salience identity cues and brightness/contrast regressions when a character must be recognized instantly on the physical matrix.
