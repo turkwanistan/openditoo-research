@@ -2,13 +2,19 @@
 
 OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit evidence and preserved artifacts outrank family resemblance, plans, and chat history.
 
-**Successor implementation location:** high-FPS interactive-page work is intentionally isolated on branch `feat/high-fps-interactive-pages` (current checkpoint `b2fd0e9`; core code `65723e6`). Do not merge its hash-bound runtime changes into live `main` before HF-3 physical acceptance; use the existing worktree under `.openditoo-local/worktrees/high-fps-interactive-pages` for successor work.
+## ▶ CURRENT STATE — read this first (2026-09-10, end of session)
 
-## Current session route — 2026-09-10
+- **Live product:** **Runtime 007** (dashboard + physical-button pagination, i.e. exactly Runtime 006 re-bound to the first-frame-spacing Host `3faf520f…`) and **webcam policy 006**. Exact-byte rollback to Runtime 006: `bash scripts/cutover_runtime_007.sh --rollback`. Details: `notes/OPENDITOO-HOST-FIRST-FRAME-REBIND-2026-09-10.md`.
+- **HF-3 is PASS** (`OPENDITOO-INTERACTIVE-HF3-008`: 11 Dashboard↔Slots cycles, 66/66 inputs, 0 faults, owner visual "great"). HF3-001…007 are consumed; never re-arm. The lightning-strike visual is still unaccepted.
+- **Where the work is:** branch `feat/high-fps-interactive-pages`, worktree `.openditoo-local/worktrees/high-fps-interactive-pages` (not merged; its `host/frame_stream.py` change is why the Runtime 007 template fails 3 hash tests there, which is expected).
+- **Next objective: HF-4**, the standing successor Runtime 008. Read, in order: `notes/OPENDITOO-HANDOFF-2026-09-10-HF3.md` → `notes/OPENDITOO-HF4-STANDING-SUCCESSOR-PLAN-2026-09-10.md` → `AGENTS.md` (these live on the feature branch). Build offline, side by side; going live needs `Grant OPENDITOO-PRODUCT-RUNTIME-008`.
+- **Environment:** run from normal local WSL with `/mnt/c` + `powershell.exe`, not WSL_MCP. If a worktree's `.git` points at `/run/wsl-mcp/...`, run `git worktree repair` from the main checkout.
+
+## Earlier session routes (history)
 
 **Host re-bind (Runtime 007 + webcam 006):** the first-frame-spacing Host fix (streaming first-frame `IMAGE_RX_RECV_TIMEOUT` 5/19 vs activity 0/199). Status, grants and the cutover/rollback are in `notes/OPENDITOO-HOST-FIRST-FRAME-REBIND-2026-09-10.md`; `product-status` / the local policy id says which runtime is live.
 
-**Current handoff (2026-09-10): physical button pagination is LIVE as Runtime 006.** Read `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md` first, then `notes/OPENDITOO-HIGH-FPS-INTERACTIVE-PAGES-PLAN-2026-09-10.md`. Ditoo Left/Right page a wrap-around list and a short lever pull runs the page's own action; Runtime 006 is the accepted rollback baseline for the next work. The owner has explicitly reframed BTN-9: do **not** optimize the spiral as an end in itself. The active objective is a **general high-FPS interactive page runtime** on the existing `streaming_ack_clock` profile, with a small three-reel slots game as the first meaningful acceptance app. In parallel, prototype a richer MCP activity animation in which a lightning bolt descends into the active icon before the existing blue/cyan flare. Research/plan notes (`…BUTTON-AVRCP-RESEARCH…`, `…PAGINATION-PLAN…`) are history for BTN-0..6.
+**Earlier handoff (2026-09-10, superseded): physical button pagination went LIVE as Runtime 006.** Read `notes/OPENDITOO-HANDOFF-2026-09-10-BUTTONS.md` first, then `notes/OPENDITOO-HIGH-FPS-INTERACTIVE-PAGES-PLAN-2026-09-10.md`. Ditoo Left/Right page a wrap-around list and a short lever pull runs the page's own action; Runtime 006 is the accepted rollback baseline for the next work. The owner has explicitly reframed BTN-9: do **not** optimize the spiral as an end in itself. The active objective is a **general high-FPS interactive page runtime** on the existing `streaming_ack_clock` profile, with a small three-reel slots game as the first meaningful acceptance app. In parallel, prototype a richer MCP activity animation in which a lightning bolt descends into the active icon before the existing blue/cyan flare. Research/plan notes (`…BUTTON-AVRCP-RESEARCH…`, `…PAGINATION-PLAN…`) are history for BTN-0..6.
 
 0. **Prior accepted product baseline:** after the current button handoff/plan, use `notes/OPENDITOO-HANDOFF-2026-09-10-W10.md` selectively — W10 is CLOSED: on-demand webcam (desktop shortcut,
    policy `OPENDITOO-WEBCAM-PRODUCT-005`, proven 6,307-frame run) and dashboard Runtime 005 (headless Host) are live. The W9 handoff below is history.
