@@ -34,9 +34,10 @@ class DryDashboard:
 
 class RecordingSlots(SlotsPage):
     def __init__(self):
-        super().__init__(seed=20260910); self.applied = []
+        super().__init__(seed=20260910); self.applied = []; self.results = []
     def handle_input(self, event):
-        self.applied.append(event["seq"]); return super().handle_input(event)
+        self.applied.append(event["seq"]); self.results.append(super().handle_input(event))
+        return self.results[-1]
 
 
 class Events:
@@ -99,7 +100,9 @@ class SupervisorTests(unittest.TestCase):
         h.failing_sessions = {5, 6, 7, 40}  # 3 consecutive (backoff 1, 2, 5) + one isolated
         slots = RecordingSlots()
         state = h.run([DryDashboard(), slots], lambda: h.clock() >= end_ms + 3000)
-        self.assertGreater(h.frames, 10000, "thousands of ACKed frames")
+        # Slots v2 holds a new-round pull until the result has settled/animated, so ~1.2 s pulls
+        # leave the static result screen up longer (no pixel change, no send) than v1 did.
+        self.assertGreater(h.frames, 5000, "thousands of ACKed frames")
         self.assertEqual(state["reconnects"], 4, "only the injected open failures; no 429 or fault")
         self.assertGreaterEqual(state["renewals"], 2)
         self.assertEqual(state["reclaims"], h.yields)
@@ -107,7 +110,9 @@ class SupervisorTests(unittest.TestCase):
         self.assertEqual(state["status"], "stopped")
         levers = [e["seq"] for e in h.events.delivered if e["type"] == "lever_candidate"]
         self.assertEqual(slots.applied, levers, "every lever applied exactly once, in order")
-        self.assertEqual(slots.round, cycles + 1)
+        self.assertEqual(slots.round, 1 + slots.results.count("new_round"))
+        self.assertGreater(slots.results.count("new_round"), cycles // 2)
+        self.assertLessEqual(set(slots.results), {"stopped_reel_1", "stopped_reel_2", "stopped_reel_3", "new_round", "result_hold"})
         pages = h.pages_state()
         self.assertEqual(pages["current_page"], "dashboard")
         self.assertEqual(pages["page_transitions"], 2 * cycles)
@@ -161,10 +166,10 @@ class SupervisorTests(unittest.TestCase):
         burst = [(1000, _ev(1, "nav_right", "Next"))] + [
             (1500, _ev(seq, "lever_candidate", raw)) for seq, raw in ((2, "Play"), (3, "Pause"), (4, "Play"))] + [
             (1500, _ev(5, "nav_left", "Previous")), (1500, _ev(6, "nav_right", "Next")),
-            (2500, _ev(7, "lever_candidate", "Pause"))]
+            (4500, _ev(7, "lever_candidate", "Pause"))]  # after the Slots v2 result has shown
         h = Harness(self.tmp, burst)
         slots = RecordingSlots()
-        state = h.run([DryDashboard(), slots], lambda: h.clock() >= 5000)
+        state = h.run([DryDashboard(), slots], lambda: h.clock() >= 7000)
         self.assertEqual(slots.applied, [2, 3, 4, 7])
         self.assertEqual(state["reclaims"], 2)
         self.assertEqual(h.pages_state()["inputs_applied"], 7)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -38,14 +39,23 @@ class Runtime013PolicyTests(unittest.TestCase):
         self.assertEqual((p.session_lifetime_seconds, p.max_frames_per_session), (600, 15000))
 
     def test_policy_hashes_pin_v4_assets_and_not_v3_assets(self):
-        expected = v7.code_hashes()
-        self.assertEqual(self.template["build"]["code_sha256"], expected)
-        self.assertIn("product_runtime_v7_sha256", expected)
-        self.assertIn("moss_page_sha256", expected)
+        # Runtime 013 is a historical record once Runtime 014 changes host/slots_page.py: its
+        # stored hashes still pin v7 and the v4 assets, but no longer equal this tree's slots page
+        # or CLI (which gained the revision-9 route).
+        stored = self.template["build"]["code_sha256"]
+        self.assertIn("product_runtime_v7_sha256", stored)
+        self.assertIn("moss_page_sha256", stored)
+        self.assertEqual(stored["product_runtime_v7_sha256"], hashlib.sha256(Path("host/product_runtime_v7.py").read_bytes()).hexdigest())
         asset_files = sorted(Path("assets/pocket_moss/v4").rglob("*.json"))
-        asset_keys = [k for k in expected if k.startswith("moss_v4_asset_")]
+        asset_keys = [k for k in stored if k.startswith("moss_v4_asset_")]
         self.assertEqual(len(asset_keys), len(asset_files))
-        self.assertFalse(any(k.startswith("moss_asset_") for k in expected))
+        for key, path in v7.HASHED_MODULES.items():
+            if key.startswith("moss_v4_asset_"):
+                self.assertEqual(stored[key], hashlib.sha256(path.read_bytes()).hexdigest(), key)
+        self.assertFalse(any(k.startswith("moss_asset_") for k in stored))
+        current = v7.code_hashes()
+        self.assertEqual({k: v for k, v in stored.items() if k not in ("slots_page_sha256", "cli_sha256")},
+                         {k: v for k, v in current.items() if k not in ("slots_page_sha256", "cli_sha256")})
 
     def test_cli_routes_revision_8_to_runtime_v7(self):
         self.assertIs(openditoo._product_runtime_module(v7.TEMPLATE), v7)

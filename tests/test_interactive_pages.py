@@ -6,6 +6,7 @@ import unittest
 from host import activity_session, frame_stream
 from host.interactive_pages import BufferedButtonEvents, InteractivePageDriver
 from host.interactive_stream import run_interactive_stream
+from host import slots_page
 from host.slots_page import SlotsPage
 
 
@@ -120,6 +121,8 @@ class BufferedInputTests(unittest.TestCase):
 
 
 class SlotsPageTests(unittest.TestCase):
+    MAX_BUSY_FRAMES = 8 + max(slots_page.ANIM_FRAMES.values())
+
     @staticmethod
     def reel_slice(rgb: bytes, reel: int) -> bytes:
         out = bytearray()
@@ -130,12 +133,46 @@ class SlotsPageTests(unittest.TestCase):
                 out.extend(rgb[i:i + 3])
         return bytes(out)
 
+    @staticmethod
+    def tick(page, frames=1, last=None):
+        """Drive the page like the stream: an unchanged frame is never sent, so never ACKed."""
+        for _ in range(frames):
+            rgb = page.render(0)
+            if rgb != last:
+                page.frame_sent()
+                last = rgb
+        return last
+
+    def settle(self, page):
+        last = None
+        for n in range(self.MAX_BUSY_FRAMES + 1):
+            if not page.busy():
+                return n
+            last = self.tick(page, 1, last)
+        self.fail("slots result never finished under change-only sending (ACK stall)")
+
+    def play(self, page, gaps):
+        for gap in gaps:
+            for _ in range(gap):
+                page.frame_sent()  # spinning reels change pixels every frame
+            page.handle_input(event(0, "lever_candidate"))
+
     def test_slots_are_true_16x16_and_small_palette(self):
         page = SlotsPage(seed=7)
         rgb = page.render(0)
         self.assertEqual(len(rgb), 16 * 16 * 3)
         colors = {rgb[i:i + 3] for i in range(0, len(rgb), 3)}
         self.assertLessEqual(len(colors), frame_stream.MAX_PALETTE_COLORS)
+
+    def test_symbol_art_is_5x5_shaded_and_never_near_black(self):
+        for name, (palette, rows) in slots_page.SYMBOLS.items():
+            self.assertEqual([len(r) for r in rows], [5] * 5, name)
+            self.assertLessEqual(set("".join(rows)) - {"."}, set(palette), name)
+            self.assertGreaterEqual(len(palette), 3, f"{name} needs highlight/base/shade")
+            for rgb in palette.values():
+                self.assertGreaterEqual(max(rgb), 100, f"{name} {rgb} collapses on the LED panel")
+        for strip in slots_page.STRIPS:
+            self.assertEqual(sorted(strip), sorted(("cherry",) * 3 + ("seven",) * 2 + ("bar", "diamond", "star")))
 
     def test_three_levers_stop_exactly_one_reel_each(self):
         page = SlotsPage(seed=7)
@@ -149,28 +186,47 @@ class SlotsPageTests(unittest.TestCase):
         self.assertEqual(page.telemetry()["state"], "result")
         self.assertIsNotNone(page.telemetry()["result"])
 
+    def test_every_stop_snaps_to_the_payline_with_a_bounded_brake(self):
+        for start in range(slots_page.STRIP_HEIGHT):
+            for reel, speed in enumerate(slots_page.REEL_SPEEDS):
+                steps = slots_page.brake_steps(start, speed)
+                self.assertLessEqual(len(steps), 8)
+                self.assertTrue(all(abs(step) <= speed for step in steps), steps)  # no catch-up burst
+                self.assertEqual((start + sum(steps)) % slots_page.SYMBOL_PITCH, 0)
+                self.assertEqual(steps[-2:], [1, -1])  # 1 px overshoot + settle back
+        page = SlotsPage(seed=11)
+        self.play(page, [9, 5, 4])
+        result = page.last_result
+        self.settle(page)
+        self.assertEqual([p % slots_page.SYMBOL_PITCH for p in page.positions], [0, 0, 0])
+        self.assertEqual(tuple(slots_page.symbol_at(r, page.positions[r]) for r in range(3)), result)
+
     def test_stopped_reel_stays_pixel_stable_while_others_move(self):
         page = SlotsPage(seed=11)
         page.handle_input(event(1, "lever_candidate"))
+        for _ in range(8):
+            page.frame_sent()
+        self.assertFalse(page.plans[0])
         before = self.reel_slice(page.render(0), 0)
         moving_before = self.reel_slice(page.render(0), 1)
         for _ in range(5):
             page.frame_sent()
-        after = self.reel_slice(page.render(100), 0)
-        moving_after = self.reel_slice(page.render(100), 1)
-        self.assertEqual(before, after)
-        self.assertNotEqual(moving_before, moving_after)
+        self.assertEqual(before, self.reel_slice(page.render(100), 0))
+        self.assertNotEqual(moving_before, self.reel_slice(page.render(100), 1))
 
-    def test_result_holds_and_next_lever_starts_fresh_round(self):
+    def test_result_animates_then_holds_and_next_lever_waits_for_it(self):
         page = SlotsPage(seed=3)
         for seq in range(1, 4):
             page.handle_input(event(seq, "lever_candidate"))
+        self.assertTrue(page.busy())
+        self.assertEqual(page.handle_input(event(4, "lever_candidate")), "result_hold")
+        self.settle(page)
         frozen = page.render(0)
         for _ in range(20):
             page.frame_sent()
         self.assertEqual(frozen, page.render(5000))
         old_round = page.round
-        self.assertEqual(page.handle_input(event(4, "lever_candidate")), "new_round")
+        self.assertEqual(page.handle_input(event(5, "lever_candidate")), "new_round")
         self.assertEqual(page.round, old_round + 1)
         self.assertTrue(all(page.spinning))
 
@@ -186,18 +242,53 @@ class SlotsPageTests(unittest.TestCase):
         self.assertEqual(page.spinning, spinning)
         self.assertEqual(page.telemetry()["stopped_reels"], 1)
 
-    def test_1000_rounds_obey_three_stop_state_machine(self):
+    def test_1000_rounds_obey_three_stop_state_machine_under_change_only_sending(self):
+        import random
+        rng = random.Random(1234)
         page = SlotsPage(seed=1234)
         for round_index in range(1000):
             self.assertTrue(any(page.spinning), round_index)
             for reel in range(3):
-                self.assertEqual(
-                    page.handle_input(event(round_index * 4 + reel + 1, "lever_candidate")),
-                    f"stopped_reel_{reel + 1}",
-                )
+                self.tick(page, rng.randrange(0, 12))
+                self.assertEqual(page.handle_input(event(round_index * 4 + reel + 1, "lever_candidate")),
+                                 f"stopped_reel_{reel + 1}")
                 self.assertEqual(page.telemetry()["stopped_reels"], reel + 1)
             self.assertFalse(any(page.spinning))
+            self.settle(page)
             self.assertEqual(page.handle_input(event(round_index * 4 + 4, "lever_candidate")), "new_round")
+
+    def test_outcome_rules(self):
+        self.assertEqual(slots_page.outcome(("seven",) * 3), "jackpot")
+        self.assertEqual(slots_page.outcome(("bar",) * 3), "big")
+        self.assertEqual(slots_page.outcome(("cherry", "cherry", "star")), "small")
+        self.assertEqual(slots_page.outcome(("star", "cherry", "cherry")), "lose")
+
+    def test_specific_lever_timings_win_and_lose(self):
+        # Deterministic from seed 7: frames of spin before each of the three pulls.
+        for gaps, want in (([33, 21, 28], "jackpot"), ([15, 23, 10], "big"), ([13, 11, 21], "small"),
+                           ([12, 16, 27], "lose")):
+            page = SlotsPage(seed=7)
+            self.play(page, gaps)
+            self.assertEqual(page.outcome, want, gaps)
+            self.assertEqual(page.telemetry()["outcome"], want)
+
+    def test_seeded_simulation_win_rates_are_fair(self):
+        import random
+        rng = random.Random(1)
+        page = SlotsPage(seed=1)
+        tally = {"lose": 0, "small": 0, "big": 0, "jackpot": 0}
+        rounds = 20000
+        for _ in range(rounds):
+            self.play(page, [rng.randrange(4, 40) for _ in range(3)])
+            tally[page.outcome] += 1
+            while page.busy():
+                page.frame_sent()
+            page.handle_input(event(0, "lever_candidate"))
+        rate = {k: v / rounds for k, v in tally.items()}
+        # Strip math: small 17.6%, three of a kind 7.4% (jackpot 1.6%), any win ~25%.
+        self.assertTrue(0.22 <= 1 - rate["lose"] <= 0.28, rate)
+        self.assertTrue(0.06 <= rate["big"] + rate["jackpot"] <= 0.09, rate)
+        self.assertTrue(0.010 <= rate["jackpot"] <= 0.022, rate)
 
 
 class InteractiveStreamTests(unittest.TestCase):
@@ -387,8 +478,16 @@ class HF1AcceptanceTests(unittest.TestCase):
         slots = SlotsPage(seed=17)
         for seq in range(1, 4):
             slots.handle_input(event(seq, "lever_candidate"))
-        mailbox = BufferedButtonEvents(SequenceEvents([[]] * 200))
+        # Slots v2: the snap/bounce and outcome animation finish inside the real change-only
+        # stream loop (an unchanged frame is never ACKed, so a stalled animation would hang here).
+        mailbox = BufferedButtonEvents(SequenceEvents([[]] * 400))
         driver = InteractivePageDriver(slots, mailbox, monotonic=lambda: clock.ms / 1000)
+        self.assertTrue(slots.busy())
+        animated = run_interactive_stream(
+            manifest(max_frames=100, lifetime=4), stream_spec(), AckTimedTransport(clock, ack_ms=60),
+            clock, clock.sleep, driver)
+        self.assertFalse(slots.busy())
+        self.assertLessEqual(animated["frames_sent"], 8 + 24 + 1)
         transport = AckTimedTransport(clock, ack_ms=60)
         result = run_interactive_stream(
             manifest(max_frames=50, lifetime=1), stream_spec(), transport, clock, clock.sleep, driver)
