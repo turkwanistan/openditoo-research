@@ -1,0 +1,127 @@
+{
+ "authority": {
+  "grant_scope": null,
+  "grant_scope_requested": "Standing Runtime 008: Runtime 007's target, reconnect backoff, reclaim storm guard, receive-only ButtonProbe and raw-send/target prohibitions, with the pages dashboard (UI-1 lightning) and slots carried in ONE streaming_ack_clock Host session per connection (600 s / 15000 frames, Host floor 40 ms, 50 ms client floor + 45 ms Host-anchored gap, one frame in flight, no pipelining), Host-confirmed yield reclaim and fresh unique bounded sessions. Adding or changing a page changes code hashes and needs a fresh reviewed revision and grant.",
+  "grant_text": null,
+  "granted_by": null,
+  "persistent_runtime_authorized": false,
+  "policy_id": "OPENDITOO-PRODUCT-RUNTIME-008",
+  "required_grant_text": "Grant OPENDITOO-PRODUCT-RUNTIME-008",
+  "revocation": "scripts/cutover_runtime_008.sh --rollback restores Runtime 007's source and local policy exactly, then restarts the service",
+  "revoked": false,
+  "supersedes": "OPENDITOO-PRODUCT-RUNTIME-007"
+ },
+ "behavior": {
+  "automatic_reconnect": true,
+  "collector_ownership": "product runtime collects while connected and while backing off; standalone collector timer is transactionally disabled and restored on uninstall",
+  "raw_send_enabled": false,
+  "reclaim_on_canvas_invalidated": true,
+  "reclaim_storm_guard": {
+   "cooldown_seconds": 1,
+   "max_immediate_reclaims": 8,
+   "window_seconds": 10
+  },
+  "reconnect_backoff_seconds": [
+   1,
+   2,
+   5,
+   10,
+   30
+  ],
+  "start_at_windows_logon": true,
+  "target_override_enabled": false
+ },
+ "build": {
+  "button_probe_sha256": {
+   "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.dll": "d85c12982f94893362c10faecae789f7421d4125663f2b9ce17b0eb1afa3a4b8",
+   "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.exe": "79521fba144fac4f4922b95236e4a3bedd62a49f1a5ede22f2b71d9909471252"
+  },
+  "code_sha256": {
+   "activity_lightning_renderer_sha256": "74389183ca694d46822eefe41ac941783bbd0ac70a5067d410dc827fc7c3f436",
+   "activity_lightning_sha256": "e264db92df9416e2fa004e0101eccb37d0e9bb66b7f86d45c734e01fdebb4714",
+   "cli_sha256": "3b450f088131b8cd964b31c0bf7144abdba282e1c8041e6d4cd2d04855135273",
+   "collector_sha256": "bdd4e18789fafb5377a4503a714211999f1d803ed32a7a10329540657e79ca9f",
+   "dashboard_page_sha256": "3c240db56308ddfbc0e197fb1d018310763a862b08ace43905103fde59a21bf5",
+   "encoder_sha256": "48252dfb571ece48e35d7c113d4b80aeff261e1fc757ebfe1eb6096ed7e62a00",
+   "frame_stream_sha256": "880970a6d494197b78adfeac0309cb2d86ce447dd6bb826c7ae5b0c270af7fa6",
+   "interactive_pages_sha256": "5172a307a5d68d9573f9463430d9217d3866e9e615afe98e56f6aee7e22731e0",
+   "interactive_stream_sha256": "acc9e908e0d7aa99efcc70cbd2cd108a6045ae66035ce54819db23abebb07394",
+   "pagination_sha256": "b2e31de5399dd8bf8bf83a37ff4f20d0b9201de1a82fd5c6d7736326d775db91",
+   "product_runtime_sha256": "85b6ca70a1340bd53cc69441034c780d39d62db985cf6d61a10c1bccb0483e0d",
+   "product_runtime_v3_sha256": "3957b87e3f2c94e1b808d6fda99729f8d37422af790796808550b76dc9cf6336",
+   "renderer_sha256": "1aff211a20e662d3fd38f8685f989888646209a197e967e77d5f779b90a30f8b",
+   "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
+   "slots_page_sha256": "0f6116af8b56ad74295c1637f88dd6a857b80a3855e1f61dfef3558f48dc158b",
+   "ui_data_sha256": "7887c3a6471ed9c2d0fd1060276dceeddd699fa37ae6f08335825694be8501cb"
+  },
+  "host_dll_sha256": "3faf520f46ce824970f583c3d932e0168484b0f6ffa5975e6b38e77330c4900f",
+  "host_note": "Unchanged Runtime 007 Host (first-frame 10 ms spacing); no Host or webcam change in Runtime 008."
+ },
+ "description": "Persistent plug-and-play MCP activity dashboard for the owner's exact Ditoo Plus; Runtime 002 adds telemetry-only live session observability. Runtime 003 re-binds the policy to the session-profile Host build. Runtime 004 re-binds the policy to the Host build with a separate streaming-profile ceiling. Runtime 006 adds physical-button pagination: the Ditoo's left/right arrows page through a wrap-around list (dashboard first), a short lever pull runs the current page's own action, input from the receive-only ButtonProbe (SMTC, mirror status) run as a child of the product. Runtime 007: Host re-bind only: the candidate Host sends every session's FIRST frame with the proven 10 ms packet spacing (first-frame IMAGE_RX_RECV_TIMEOUT: 5/19 streaming_ack_clock opens vs 0/199 activity opens, captures/OPENDITOO-STREAMING-FIRST-FRAME-TIMEOUT-ANALYSIS-2026-09-10.json); later frames keep the profile spacing. Build is path-independent (PathMap). Runtime 008 (HF-4): every page (dashboard with the UI-1 lightning pulse, three-reel slots) in ONE streaming_ack_clock Host session (PageCarousel); Left/Right change pixels only; InteractiveTransport pacing (50 ms client floor + 45 ms Host-anchored gap); Host-confirmed stock yield reclaims the same page; hidden-page collection on a joined worker. Accepted as OPENDITOO-INTERACTIVE-HF3-008 (11 cycles, 66/66 inputs, 0 faults).",
+ "install": {
+  "host_task": "OpenDitoo Day1 Host (preserved)",
+  "local_policy": ".openditoo-local/product-runtime-policy.json",
+  "opentivoo_task": "OpenTivoo Product Runtime (preserved)",
+  "startup_boundary": "Windows user logon / StartWhenAvailable; WSL is user-scoped, so this is the reliable Windows startup boundary",
+  "windows_task": "OpenDitoo Product Runtime",
+  "wsl_service": "openditoo-product.service"
+ },
+ "pages": [
+  {
+   "kind": "live_mcp_dashboard_lightning",
+   "lever": "none",
+   "name": "dashboard",
+   "rate_mode": "activity"
+  },
+  {
+   "kind": "slots_three_reel",
+   "lever": "stop the next reel; after the third, start a new round",
+   "name": "slots",
+   "rate_mode": "streaming_ack_clock"
+  }
+ ],
+ "pagination": {
+  "broker": {
+   "args": "--seconds 0 --status mirror --log <events_windows_path>",
+   "events_file": ".openditoo-local/button-events.ndjson",
+   "events_windows_path": "\\\\wsl.localhost\\Ubuntu\\home\\wan\\Projects\\openditoo-research\\.openditoo-local\\button-events.ndjson",
+   "exe": "C:\\Users\\Wanstation\\AppData\\Local\\OpenDitoo\\ButtonProbe\\OpenDitoo.ButtonProbe.exe",
+   "lifetime": "child of the product runtime; ends with it (webcam suspend, uninstall, stop); restarted at most every 5 s if it dies",
+   "media_keys": "while running, Windows media keys (Prev/Next/Play/Pause) page the Ditoo; YouTube contention PASS (BTN-8a); Spotify untested"
+  },
+  "evidence": [
+   "captures/OPENDITOO-BTN2-WINDOWS-RECEIVE-2026-09-10.json",
+   "captures/OPENDITOO-BTN5-PAGINATION-ACCEPTANCE-2026-09-10.json",
+   "captures/OPENDITOO-BTN7-LEVER-CHARACTERIZATION-2026-09-10.json",
+   "captures/OPENDITOO-BTN8-MEDIA-CONTENTION-2026-09-10.json",
+   "captures/OPENDITOO-INTERACTIVE-HF3-008-LIVE-2026-09-10.json"
+  ],
+  "navigation": {
+   "lever_candidate": "current page's lever action; long holds are never mapped (BTN-7)",
+   "nav_left": "previous page, wrapping, pixels only (same Host session)",
+   "nav_right": "next page, wrapping, pixels only (same Host session)"
+  }
+ },
+ "product_id": "OPENDITOO-MCP-DASHBOARD-V1",
+ "runtime_revision": 4,
+ "schema_version": 1,
+ "session": {
+  "ack_timeout_ms_per_frame": 5000,
+  "client_min_dispatch_ms": 50,
+  "host_anchored_gap_ms": 45,
+  "host_floor_ms": 40,
+  "idle_poll_interval_ms": 50,
+  "lifetime_seconds": 600,
+  "low_rate_interval_ms": 200,
+  "max_frames": 15000,
+  "max_tx_bytes": 15810000,
+  "pulse_freshness_seconds": 30,
+  "session_profile": "streaming_ack_clock"
+ },
+ "target": {
+  "exact_unit_id": "11:75:58:CE:DE:C7",
+  "installed_firmware": "v42012",
+  "rfcomm_channel": 1,
+  "target_override_enabled": false
+ }
+}

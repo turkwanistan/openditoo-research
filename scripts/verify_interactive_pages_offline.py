@@ -19,6 +19,7 @@ TEST_MODULES = (
     "tests.test_interactive_pages",
     "tests.test_activity_lightning",
     "tests.test_interactive_acceptance",
+    "tests.test_product_runtime_v3",
 )
 
 
@@ -34,6 +35,7 @@ def main() -> int:
     print("GAME1_SLOTS_OFFLINE=PASS")
     print("HF2_PROFILE_ORCHESTRATOR=PASS")
     print("HF3_ACCEPTANCE_ENVELOPE_OFFLINE=PASS")
+    print("HF4_RUNTIME_008_OFFLINE=PASS")
     print(f"INTERACTIVE_PAGES_OFFLINE=PASS tests={result.testsRun}")
     return 0
 

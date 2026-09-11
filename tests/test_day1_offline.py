@@ -1587,6 +1587,7 @@ if __name__ == "__main__":
 from host import activity_session  # noqa: E402
 from host import product_runtime  # noqa: E402
 from host import product_runtime_v2  # noqa: E402
+from host import product_runtime_v3  # noqa: E402
 from host import frame_stream  # noqa: E402
 
 HOST_DIR = ROOT / "runtime/windows/OpenDitoo.Day1.Host"
@@ -1980,7 +1981,7 @@ class ProductRuntimeTests(unittest.TestCase):
 # The newest committed product template. Older revisions stay in the repository as records of
 # what was reviewed against a superseded Host build, and are deliberately NOT hash-valid any
 # more -- re-validating them would mean pretending an old policy still describes this binary.
-CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-007.json"
+CURRENT_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-008.json"
 # The last revision-2 (product_runtime_v2) template: the v2 loader tests build their policies from
 # it, patching in this tree's code and Host hashes, since it no longer names the current Host.
 V2_PRODUCT_TEMPLATE = ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-005.json"
@@ -2008,11 +2009,11 @@ class ProductRuntimeV2Tests(unittest.TestCase):
 
     def test_the_current_committed_policy_is_disabled_and_hash_complete(self) -> None:
         path = CURRENT_PRODUCT_TEMPLATE
-        reviewed = pagination.load_policy(path, require_authority=False)
+        reviewed = product_runtime_v3.load_policy(path, require_authority=False)
         self.assertEqual(reviewed.product_id, product_runtime_v2.PRODUCT_ID)
-        self.assertIn("PRODUCT_AUTHORITY_MISSING", pagination.authority_blockers(path))
+        self.assertIn("PRODUCT_AUTHORITY_MISSING", product_runtime_v3.authority_blockers(path))
         with self.assertRaises(product_runtime_v2.ProductPolicyError) as blocked:
-            pagination.load_policy(path, require_authority=True)
+            product_runtime_v3.load_policy(path, require_authority=True)
         self.assertEqual(blocked.exception.code, "PRODUCT_AUTHORITY_MISSING")
 
     def test_observed_transport_reports_open_and_acks_without_changing_transport(self) -> None:
@@ -2100,10 +2101,10 @@ class ProductInstallationBoundaryTests(unittest.TestCase):
     def test_the_current_committed_template_is_disabled_and_hash_complete(self) -> None:
         path = CURRENT_PRODUCT_TEMPLATE
         raw = json.loads(path.read_text(encoding="utf-8"))
-        self.assertEqual(raw["runtime_revision"], 3)
+        self.assertEqual(raw["runtime_revision"], 4)
         self.assertFalse(raw["authority"]["persistent_runtime_authorized"])
         self.assertIsNone(raw["authority"]["grant_scope"])
-        reviewed = pagination.load_policy(path, require_authority=False)
+        reviewed = product_runtime_v3.load_policy(path, require_authority=False)
         self.assertTrue(reviewed.automatic_reconnect)
         self.assertTrue(reviewed.reclaim_on_canvas_invalidated)
 
@@ -3259,9 +3260,11 @@ class ProductRuntime003CutoverTests(unittest.TestCase):
         raw = json.loads(CURRENT_PRODUCT_TEMPLATE.read_text(encoding="utf-8"))
         self.assertEqual(raw["build"]["host_dll_sha256"],
                          activity_session.sha256_file(activity_session.HOST_BUILD_DLL))
-        # The dashboard's own operating numbers must be untouched by the streaming work.
-        self.assertEqual(raw["session"]["min_frame_interval_ms"],
-                         activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
+        # Runtime 008 carries the dashboard inside one streaming session (HF3-008), but the
+        # dashboard itself is still held at or above its accepted low-rate cadence.
+        self.assertEqual(raw["session"]["session_profile"], "streaming_ack_clock")
+        self.assertGreaterEqual(raw["session"]["low_rate_interval_ms"],
+                                activity_session.ACCEPTED_MIN_FRAME_INTERVAL_MS)
 
     def test_the_product_policy_grants_no_streaming_authority(self) -> None:
         raw = json.loads(V2_PRODUCT_TEMPLATE.read_text(encoding="utf-8"))
@@ -4879,10 +4882,11 @@ class PaginationTests(unittest.TestCase):
 
     @unittest.skipUnless(Path("/mnt/c/Users/Wanstation/AppData/Local/OpenDitoo/ButtonProbe/OpenDitoo.ButtonProbe.dll").is_file(),
                          "the staged Windows ButtonProbe is only on the owner's machine")
-    def test_007_template_hashes_match_this_tree_and_006_is_a_superseded_record(self) -> None:
-        pagination.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-007.json", require_authority=False)
-        with self.assertRaises(product_runtime_v2.ProductPolicyError):
-            pagination.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-006.json", require_authority=False)
+    def test_008_template_hashes_match_this_tree_and_007_006_are_superseded_records(self) -> None:
+        product_runtime_v3.load_policy(ROOT / "product/OPENDITOO-PRODUCT-RUNTIME-008.json", require_authority=False)
+        for old in ("OPENDITOO-PRODUCT-RUNTIME-007.json", "OPENDITOO-PRODUCT-RUNTIME-006.json"):
+            with self.assertRaises(product_runtime_v2.ProductPolicyError):
+                pagination.load_policy(ROOT / "product" / old, require_authority=False)
 
 
 class HostFirstFrameRebindTests(unittest.TestCase):

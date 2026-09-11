@@ -31,6 +31,10 @@ class DashboardPage:
         self.exit_count += 1
         # A pulse is an ephemeral visual event, not durable page state. If navigation hides
         # the dashboard mid-pulse, never resume that old animation on a later return.
+        self.drop_pulse()
+
+    def drop_pulse(self) -> None:
+        """Discard an in-flight pulse (hidden page, or a multi-second device outage)."""
         if getattr(self.inner, "pulse_step", None) is not None:
             self.hidden_pulses_dropped += 1
         if hasattr(self.inner, "pulse_step"):
@@ -51,11 +55,7 @@ class DashboardPage:
         _rgb, from_pulse = self.inner(now_ms)
         self.background_polls += 1
         if from_pulse:
-            self.hidden_pulses_dropped += 1
-            if hasattr(self.inner, "pulse_step"):
-                self.inner.pulse_step = None
-            if hasattr(self.inner, "pulse_sources"):
-                self.inner.pulse_sources.clear()
+            self.drop_pulse()
         return bool(from_pulse)
 
     def render(self, now_ms: int) -> bytes:
