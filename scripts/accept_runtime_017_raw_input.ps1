@@ -66,7 +66,15 @@ $args = @(
     '--tshark',[string]$broker.tshark_exe,
     '--port',[string]$broker.port
 )
-$proc = Start-Process -FilePath $exe -ArgumentList $args -PassThru -NoNewWindow
+# Use ProcessStartInfo.ArgumentList so paths containing spaces (notably Wireshark)
+# remain one argv element. Start-Process -ArgumentList flattens/re-parses the array.
+$psi = [System.Diagnostics.ProcessStartInfo]::new()
+$psi.FileName = $exe
+$psi.UseShellExecute = $false
+$psi.CreateNoWindow = $true
+foreach ($arg in $args) { [void]$psi.ArgumentList.Add([string]$arg) }
+$proc = [System.Diagnostics.Process]::Start($psi)
+Need ($null -ne $proc) 'failed to start raw AVRCP broker process'
 try {
     $ready = $false
     foreach ($i in 1..30) {

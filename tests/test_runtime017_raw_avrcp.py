@@ -64,6 +64,12 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
                 r17.load_policy(p, require_authority=False, verify_hashes=False, template_path=p)
             self.assertEqual(getattr(ctx.exception, 'code', None), 'PRODUCT_017_INPUT_CONTRACT_MISMATCH')
 
+    def test_acceptance_harness_preserves_paths_with_spaces(self):
+        src = (ROOT / 'scripts/accept_runtime_017_raw_input.ps1').read_text(encoding='utf-8')
+        self.assertIn('[System.Diagnostics.ProcessStartInfo]::new()', src)
+        self.assertIn('$psi.ArgumentList.Add([string]$arg)', src)
+        self.assertNotIn('Start-Process -FilePath $exe -ArgumentList $args', src)
+
     def test_cutover_is_exact_grant_gated_hash_pinned_and_rolls_back_to_016(self):
         shell = (ROOT / 'scripts/cutover_runtime_017.sh').read_text(encoding='utf-8')
         stage = (ROOT / 'runtime/windows/stage_openditoo_raw_avrcp_broker.ps1').read_text(encoding='utf-8')
