@@ -34,14 +34,14 @@ PY
 }
 template_ok(){
   # A linked worktree intentionally does not contain git-ignored Release build outputs.
-  # Validate the exact Runtime 011 source/assets and policy structure here; installed Host/Probe
+  # Validate the exact Runtime 012 source/assets and policy structure here; installed Host/Probe
   # bytes are checked independently before main is touched. Full product-check runs again in main.
   (cd "$HERE" && python3 - <<'PY')
 import json
 from host import product_runtime_v6 as v6
 raw = json.loads(v6.TEMPLATE.read_text(encoding="utf-8"))
 v6.load_policy(v6.TEMPLATE, require_authority=False, verify_hashes=False)
-assert raw["runtime_revision"] == 6
+assert raw["runtime_revision"] == 7
 assert raw["build"]["code_sha256"] == v6.code_hashes()
 assert v6.authority_blockers(v6.TEMPLATE) == [
     "PRODUCT_AUTHORITY_MISSING",

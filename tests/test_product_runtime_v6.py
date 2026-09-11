@@ -61,6 +61,8 @@ class Runtime012PolicyTests(unittest.TestCase):
         self.assertIn('product_check 6', shell)
         self.assertIn('R012_ROLLED_BACK_TO_RUNTIME_011', shell)
         self.assertIn('product_runtime_v6 as v6', shell)
+        self.assertIn('assert raw[\"runtime_revision\"] == 7', shell)
+        self.assertNotIn('assert raw[\"runtime_revision\"] == 6', shell)
         proc = subprocess.run(["bash", "-n", "scripts/cutover_runtime_012.sh"], capture_output=True)
         self.assertEqual(proc.returncode, 0, proc.stderr.decode())
 
