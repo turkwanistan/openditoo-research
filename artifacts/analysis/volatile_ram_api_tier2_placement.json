@@ -1,6 +1,23 @@
 {
+  "allocator_model": {
+    "allocation_quantum": 16,
+    "heap_end_exclusive": "0x81d000",
+    "heap_start": "0x804000",
+    "policy": "BEST_FIT_LOW_ADDRESS_SPLIT_SEPARATE_DESCRIPTORS_WITH_ADJACENT_FREE_COALESCING",
+    "reviewed_startup_allocations": "The in-image 0x8dea path, once entered, has branch-pinned allocation/free ordering through the display backing and later runtime50 construction."
+  },
   "branches": {
     "flag42_prod_v42016": {
+      "cold_start_backing_allocator": "0x3b714",
+      "cold_start_display_root": "0x374b4",
+      "cold_start_file_cache": "0x4553c",
+      "cold_start_main_init": "0x34c3c",
+      "cold_start_pre_init": "0x184e8",
+      "display_backing_service_app_heap_free_calls": [],
+      "display_root_direct_constructor_callers": [
+        "0x1bb40"
+      ],
+      "display_service_app_heap_free_calls": [],
       "plugin_app_heap_free_calls": [
         "0x207cc",
         "0x207d4"
@@ -10,6 +27,10 @@
       "plugin_descriptor_copy_bytes": 52,
       "plugin_descriptor_destination_offset": "0xc",
       "plugin_destructor": "0x20772",
+      "plugin_direct_constructor_callers": [
+        "0x1975a",
+        "0x1a630"
+      ],
       "plugin_object_request_bytes": 128,
       "plugin_zeroed_on_create": true,
       "runtime50_callback_invoke": "0x1fac4",
@@ -18,6 +39,16 @@
       "runtime50_request_bytes": 80
     },
     "flag42_test_v42017": {
+      "cold_start_backing_allocator": "0x3b728",
+      "cold_start_display_root": "0x374a8",
+      "cold_start_file_cache": "0x45550",
+      "cold_start_main_init": "0x34c30",
+      "cold_start_pre_init": "0x1784a",
+      "display_backing_service_app_heap_free_calls": [],
+      "display_root_direct_constructor_callers": [
+        "0x1bb34"
+      ],
+      "display_service_app_heap_free_calls": [],
       "plugin_app_heap_free_calls": [
         "0x207c0",
         "0x207c8"
@@ -27,6 +58,10 @@
       "plugin_descriptor_copy_bytes": 52,
       "plugin_descriptor_destination_offset": "0xc",
       "plugin_destructor": "0x20766",
+      "plugin_direct_constructor_callers": [
+        "0x1974e",
+        "0x1a624"
+      ],
       "plugin_object_request_bytes": 128,
       "plugin_zeroed_on_create": true,
       "runtime50_callback_invoke": "0x1fab8",
@@ -35,6 +70,16 @@
       "runtime50_request_bytes": 80
     },
     "flag60_prod_v60014": {
+      "cold_start_backing_allocator": "0x3b680",
+      "cold_start_display_root": "0x37420",
+      "cold_start_file_cache": "0x454a8",
+      "cold_start_main_init": "0x34ba8",
+      "cold_start_pre_init": "0x184e8",
+      "display_backing_service_app_heap_free_calls": [],
+      "display_root_direct_constructor_callers": [
+        "0x1bb40"
+      ],
+      "display_service_app_heap_free_calls": [],
       "plugin_app_heap_free_calls": [
         "0x207cc",
         "0x207d4"
@@ -44,6 +89,10 @@
       "plugin_descriptor_copy_bytes": 52,
       "plugin_descriptor_destination_offset": "0xc",
       "plugin_destructor": "0x20772",
+      "plugin_direct_constructor_callers": [
+        "0x1975a",
+        "0x1a630"
+      ],
       "plugin_object_request_bytes": 128,
       "plugin_zeroed_on_create": true,
       "runtime50_callback_invoke": "0x1fac4",
@@ -52,6 +101,16 @@
       "runtime50_request_bytes": 80
     },
     "flag60_test_api60016_internal60017": {
+      "cold_start_backing_allocator": "0x3b714",
+      "cold_start_display_root": "0x374b4",
+      "cold_start_file_cache": "0x4553c",
+      "cold_start_main_init": "0x34c3c",
+      "cold_start_pre_init": "0x184e8",
+      "display_backing_service_app_heap_free_calls": [],
+      "display_root_direct_constructor_callers": [
+        "0x1bb40"
+      ],
+      "display_service_app_heap_free_calls": [],
       "plugin_app_heap_free_calls": [
         "0x207cc",
         "0x207d4"
@@ -61,6 +120,10 @@
       "plugin_descriptor_copy_bytes": 52,
       "plugin_descriptor_destination_offset": "0xc",
       "plugin_destructor": "0x20772",
+      "plugin_direct_constructor_callers": [
+        "0x1975a",
+        "0x1a630"
+      ],
       "plugin_object_request_bytes": 128,
       "plugin_zeroed_on_create": true,
       "runtime50_callback_invoke": "0x1fac4",
@@ -69,30 +132,110 @@
       "runtime50_request_bytes": 80
     }
   },
+  "conditional_pristine_heap_hypothesis": {
+    "assumption": "Fwl_MallocInit resets the 0x00804000..0x0081cfff application heap immediately before the modeled 0x8dea startup sequence, with no intervening app-heap allocations.",
+    "assumption_proven": false,
+    "layout_if_true": {
+      "display_backing_0x708": "0x804470",
+      "display_data_pointer": "0x804778",
+      "display_root_0x318": "0x804150",
+      "file_cache_persistent_0x1a0": "0x804f80",
+      "file_cache_temp_0x400": "0x804b80",
+      "large_persistent_0x584": "0x805120",
+      "post_display_0x54": "0x804030",
+      "pre_persistent_0x14": "0x804130",
+      "pre_persistent_0x24": "0x804000",
+      "pre_temp_0x100": "0x804030",
+      "root_0x80": "0x804090",
+      "runtime50_0x50": "0x804b80",
+      "runtime50_callback": "0x804bb4"
+    },
+    "meaning": "This is a useful candidate geometry only. The addresses 0x00804470/0x00804b80/0x00804bb4 are not promoted as observed or deterministic runtime addresses.",
+    "runtime50_callback_fully_controlled_if_true": true,
+    "runtime50_callback_source_offset_if_true": 1084
+  },
+  "framework_ordering_gate": {
+    "app_link_base": "0x8400000",
+    "branches": {
+      "flag42_prod_v42016": {
+        "direct_bl_xrefs_to_heap_init": [],
+        "direct_bl_xrefs_to_main": [],
+        "framework_main_entry": "0x8dea",
+        "heap_init": "0x3df44",
+        "raw_absolute_app_pointer_xrefs_to_heap_init": [],
+        "raw_absolute_app_pointer_xrefs_to_main": []
+      },
+      "flag42_test_v42017": {
+        "direct_bl_xrefs_to_heap_init": [],
+        "direct_bl_xrefs_to_main": [],
+        "framework_main_entry": "0x8dea",
+        "heap_init": "0x3df58",
+        "raw_absolute_app_pointer_xrefs_to_heap_init": [],
+        "raw_absolute_app_pointer_xrefs_to_main": []
+      },
+      "flag60_prod_v60014": {
+        "direct_bl_xrefs_to_heap_init": [],
+        "direct_bl_xrefs_to_main": [],
+        "framework_main_entry": "0x8dea",
+        "heap_init": "0x3deb0",
+        "raw_absolute_app_pointer_xrefs_to_heap_init": [],
+        "raw_absolute_app_pointer_xrefs_to_main": []
+      },
+      "flag60_test_api60016_internal60017": {
+        "direct_bl_xrefs_to_heap_init": [],
+        "direct_bl_xrefs_to_main": [],
+        "framework_main_entry": "0x8dea",
+        "heap_init": "0x3df44",
+        "raw_absolute_app_pointer_xrefs_to_heap_init": [],
+        "raw_absolute_app_pointer_xrefs_to_main": []
+      }
+    },
+    "heap_reset_before_framework_main_proven": false,
+    "no_intervening_app_heap_users_proven": false,
+    "reason": "Both Fwl_MallocInit and the 0x8dea application main entry have zero direct in-image BL/BLX callers and zero raw absolute application-pointer xrefs across all four preserved branches. Their ordering is therefore mediated by framework/bootstrap state not represented as a directly recoverable call edge in this corpus.",
+    "status": "PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN"
+  },
   "kind": "ditoo_plus_tier2_victim_placement",
   "method_limits": [
-    "This proves stock grooming surfaces, not heap adjacency.",
+    "The in-image startup allocation sequence is real and branch-pinned, but the preserved application blobs do not expose a direct call/pointer edge ordering framework-owned Fwl_MallocInit and 0x8dea.",
+    "The conditional pristine-heap simulation is not a runtime observation and is not sufficient to prove victim placement.",
     "No live heap address, packet, crash probe or device observation was used."
   ],
   "next_bounded_work": [
-    "Reconstruct allocator state only up to the persistent 0x708 display backing allocation and determine whether any pre-existing free hole can satisfy 0x710 physical units.",
-    "If the display allocation is forced into the main extent, account only subsequent allocations/frees within the 1009-byte overwrite reach and test for a uniquely placeable callback object.",
-    "If multiple viable layouts remain, keep live promotion closed rather than using crash behavior as a placement oracle."
+    "Do not promote the pristine cold-start addresses unless new exact framework/bootstrap evidence proves Fwl_MallocInit -> no intervening app-heap users -> 0x8dea.",
+    "Prefer a placement proof independent of hidden pre-main chronology: audit stock teardown/recreate of the persistent display object and adjacent callback-bearing allocations for a uniquely constrained hole.",
+    "If static placement remains non-deterministic, keep live promotion closed rather than using crash behavior as a placement oracle."
   ],
   "ok": true,
   "placement_gate": {
+    "conditional_runtime50_candidate": {
+      "base": "0x804b80",
+      "callback": "0x804bb4",
+      "callback_source_offset": 1084,
+      "candidate_thumb_payload_entry": "0x804779",
+      "minimum_source_length_to_fully_control_callback": 1088
+    },
+    "controlled_callback_field_proven": false,
     "controlled_indirect_branch_proven": false,
     "deterministic_adjacent_victim_proven": false,
     "live_manifest_candidate": null,
-    "prefill_free_space_strategy_closed": true,
-    "recreate_same_size_is_not_adjacency_proof": true,
-    "remaining_offline_question": "EXACT_DISPLAY_BLOCK_ADDRESS_OR_UNIQUE_ADJACENT_HOLE_MODEL",
-    "why_not": [
-      "The application allocator is best-fit/separate-descriptor and the heap is already fragmented before the persistent display backing allocation.",
-      "Plugin creation clears all 0x80 bytes and then repopulates descriptor fields, so pre-seeding a free block cannot preserve a forged callback through creation.",
-      "Free/recreate demonstrates grooming capability but does not prove which equally suitable hole will be selected without an exact allocator-state or uniquely constrained-hole model.",
-      "No runtime address for the Tier-2 display backing block or exact adjacent free-hole topology is statically established yet."
-    ]
+    "remaining_offline_question": "PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN"
+  },
+  "placement_strategy_closures": {
+    "display_teardown_recreate": {
+      "app_heap_free_in_backing_service_window": false,
+      "app_heap_free_in_display_service_window": false,
+      "meaning": "No stock app-heap teardown/recreate path for the persistent display root/backing was found in the audited service families, so moving the vulnerable block by ordinary teardown/recreate is not a supported placement strategy.",
+      "root_constructor_has_one_direct_caller_4_of_4": true,
+      "status": "CLOSED_WITHIN_AUDITED_APP_GRAPH"
+    },
+    "plugin_0x80_spray": {
+      "direct_constructor_sites_per_branch": 2,
+      "meaning": "The 0x80 callback-bearing object is genuinely free/recreate capable, but its only two direct construction sites are singleton subsystem paths rather than an unbounded allocation spray.",
+      "reviewed_as_singleton_subsystem_lifecycles": true,
+      "status": "CLOSED_AS_UNBOUNDED_DIRECT_SPRAY",
+      "unbounded_stock_spray_found": false
+    }
   },
   "safety": {
     "device_io": false,
@@ -102,10 +245,10 @@
     "persistent_mutation": false,
     "runtime_018_touched": false
   },
-  "schema_version": 1,
+  "schema_version": 3,
   "stock_grooming_surface": {
     "exists": true,
-    "meaning": "Stock lifecycle code provides real app-heap allocate/free/recreate behavior for callback-bearing objects.",
+    "meaning": "Stock lifecycle code provides real app-heap allocate/free/recreate behavior for callback-bearing objects, but grooming capability alone does not prove adjacency.",
     "plugin_object": {
       "descriptor_copied_to_offset": "0xc",
       "known_indirect_fields": [
@@ -119,6 +262,9 @@
     },
     "runtime50_object": {
       "callback_offset": "0x34",
+      "conditional_base_if_pristine": "0x804b80",
+      "conditional_callback_if_pristine": "0x804bb4",
+      "conditional_callback_source_offset_if_pristine": 1084,
       "request_bytes": 80
     }
   }

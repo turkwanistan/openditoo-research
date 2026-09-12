@@ -5414,13 +5414,44 @@ class VolatileRamTier2PlacementTests(unittest.TestCase):
         self.assertTrue(r["stock_grooming_surface"]["plugin_object"]["zeroed_on_create"])
         self.assertEqual(r["stock_grooming_surface"]["plugin_object"]["known_indirect_fields"], ["0xc", "0x20", "0x2c"])
 
-    def test_grooming_does_not_promote_deterministic_victim(self) -> None:
-        g = self._mod().build_report()["placement_gate"]
+    def test_pristine_heap_layout_remains_conditional_and_fail_closed(self) -> None:
+        r = self._mod().build_report()
+        g = r["placement_gate"]
+        f = r["framework_ordering_gate"]
+        h = r["conditional_pristine_heap_hypothesis"]
         self.assertFalse(g["deterministic_adjacent_victim_proven"])
+        self.assertFalse(g["controlled_callback_field_proven"])
         self.assertFalse(g["controlled_indirect_branch_proven"])
-        self.assertTrue(g["prefill_free_space_strategy_closed"])
         self.assertIsNone(g["live_manifest_candidate"])
-        self.assertEqual(g["remaining_offline_question"], "EXACT_DISPLAY_BLOCK_ADDRESS_OR_UNIQUE_ADJACENT_HOLE_MODEL")
+        self.assertEqual(g["remaining_offline_question"], "PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN")
+        self.assertFalse(f["heap_reset_before_framework_main_proven"])
+        self.assertFalse(f["no_intervening_app_heap_users_proven"])
+        self.assertEqual(f["status"], "PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN")
+        self.assertFalse(h["assumption_proven"])
+        self.assertEqual(h["layout_if_true"]["display_backing_0x708"], "0x804470")
+        self.assertEqual(h["layout_if_true"]["runtime50_0x50"], "0x804b80")
+        self.assertEqual(h["runtime50_callback_source_offset_if_true"], 0x43C)
+        for branch in f["branches"].values():
+            self.assertEqual(branch["direct_bl_xrefs_to_main"], [])
+            self.assertEqual(branch["direct_bl_xrefs_to_heap_init"], [])
+            self.assertEqual(branch["raw_absolute_app_pointer_xrefs_to_main"], [])
+            self.assertEqual(branch["raw_absolute_app_pointer_xrefs_to_heap_init"], [])
+
+    def test_display_recreate_and_unbounded_plugin_spray_are_closed(self) -> None:
+        r = self._mod().build_report()
+        c = r["placement_strategy_closures"]
+        self.assertEqual(c["display_teardown_recreate"]["status"], "CLOSED_WITHIN_AUDITED_APP_GRAPH")
+        self.assertTrue(c["display_teardown_recreate"]["root_constructor_has_one_direct_caller_4_of_4"])
+        self.assertFalse(c["display_teardown_recreate"]["app_heap_free_in_display_service_window"])
+        self.assertFalse(c["display_teardown_recreate"]["app_heap_free_in_backing_service_window"])
+        self.assertEqual(c["plugin_0x80_spray"]["status"], "CLOSED_AS_UNBOUNDED_DIRECT_SPRAY")
+        self.assertEqual(c["plugin_0x80_spray"]["direct_constructor_sites_per_branch"], 2)
+        self.assertFalse(c["plugin_0x80_spray"]["unbounded_stock_spray_found"])
+        for branch in r["branches"].values():
+            self.assertEqual(len(branch["display_root_direct_constructor_callers"]), 1)
+            self.assertEqual(len(branch["plugin_direct_constructor_callers"]), 2)
+            self.assertEqual(branch["display_service_app_heap_free_calls"], [])
+            self.assertEqual(branch["display_backing_service_app_heap_free_calls"], [])
 
     def test_committed_tier2_placement_artifact_is_current_and_offline_only(self) -> None:
         live = self._mod().build_report()
@@ -5429,6 +5460,54 @@ class VolatileRamTier2PlacementTests(unittest.TestCase):
         self.assertTrue(committed["safety"]["offline_analysis_only"])
         self.assertFalse(committed["safety"]["device_io"])
         self.assertFalse(committed["safety"]["live_packet_generation"])
+        self.assertFalse(committed["safety"]["runtime_018_touched"])
+
+
+class VolatileRamTier2TriggerTests(unittest.TestCase):
+    """Tier-2 VoiceTip callback sink/trigger audit; offline and fail-closed."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_tier2_trigger")
+
+    def test_runtime50_callback_sink_is_real_across_preserved_branches(self) -> None:
+        r = self._mod().build_report()
+        self.assertTrue(r["ok"])
+        self.assertEqual(len(r["branches"]), 4)
+        self.assertTrue(r["control_sink"]["proven"])
+        self.assertEqual(r["control_sink"]["field_offset"], "0x34")
+        for branch in r["branches"].values():
+            self.assertEqual(len(branch["direct_callback_invocation_sites"]), 2)
+
+    def test_trigger_registration_and_direct_spp_trigger_remain_unproven(self) -> None:
+        r = self._mod().build_report()
+        g = r["invocation_gate"]
+        p = r["promotion"]
+        self.assertTrue(g["in_image_invocation_sites_proven"])
+        self.assertFalse(g["worker_or_wrapper_registration_proven"])
+        self.assertFalse(g["deterministic_stock_post_overwrite_invocation_proven"])
+        self.assertTrue(p["controlled_indirect_call_sink_exists"])
+        self.assertFalse(p["deterministic_post_overwrite_callback_invocation"])
+        self.assertEqual(p["remaining_trigger_blocker"], "FRAMEWORK_INDIRECT_VOICETIP_TRIGGER_REGISTRATION_OR_EXPLICIT_STOCK_TRIGGER_UNPROVEN")
+        self.assertIsNone(p["live_manifest_candidate"])
+        self.assertFalse(r["spp_trigger_checks"]["command_0x6c"]["direct_voicetip_trigger_edge_proven"])
+        self.assertFalse(r["spp_trigger_checks"]["command_0xa9_play_stop_voice"]["direct_voicetip_trigger_edge_proven"])
+        for branch in r["branches"].values():
+            self.assertEqual(branch["direct_bl_xrefs_to_worker"], [])
+            self.assertEqual(branch["direct_bl_xrefs_to_wrapper"], [])
+            self.assertEqual(branch["raw_absolute_app_pointer_xrefs_to_worker"], [])
+            self.assertEqual(branch["raw_absolute_app_pointer_xrefs_to_wrapper"], [])
+
+    def test_committed_tier2_trigger_artifact_is_current_and_offline_only(self) -> None:
+        live = self._mod().build_report()
+        committed = json.loads((ROOT / "artifacts/analysis/volatile_ram_api_tier2_trigger.json").read_text())
+        self.assertEqual(committed, live)
+        self.assertTrue(committed["safety"]["offline_analysis_only"])
+        self.assertFalse(committed["safety"]["device_io"])
+        self.assertFalse(committed["safety"]["live_packet_generation"])
+        self.assertFalse(committed["safety"]["firmware_mutation"])
+        self.assertFalse(committed["safety"]["persistent_mutation"])
         self.assertFalse(committed["safety"]["runtime_018_touched"])
 
 

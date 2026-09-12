@@ -46,7 +46,7 @@ CP15 = {
     "disable_d_cache": (0xCC8, bytes.fromhex("100f11ee0400c0e3100f01ee1eff2fe1")),
     "invalidate_both_caches": (0xCD8, bytes.fromhex("170f07ee1eff2fe1")),
     "invalidate_i_cache": (0xCE0, bytes.fromhex("150f07ee1eff2fe1")),
-    "test_clean_invalidate_d_cache": (0xCE8, bytes.fromhex("7eff17eefdffff1a1eff2fe1")),
+    "test_d_cache_clean_status": (0xCE8, bytes.fromhex("7eff17eefdffff1a1eff2fe1")),
     "invalidate_tlb": (0xCF4, bytes.fromhex("170f08ee1eff2fe1")),
     "disable_mmu": (0xCFC, bytes.fromhex("100f11ee0100c0e3100f01ee1eff2fe1")),
 }
@@ -154,7 +154,7 @@ def build_report() -> dict[str, Any]:
         },
         "cache_coherency": {
             "first_execution": "Write-through heap mapping means CPU stores reach backing SRAM; a never-before-executed heap address avoids a stale I-cache line. Static analysis cannot prove an arbitrary chosen heap address has never been fetched, so a first live stage-0 should remain tiny and use a freshly controlled span.",
-            "post_stage0": "Once stage-0 executes, stock CP15 helpers provide explicit I-cache invalidation and D-cache clean/invalidate primitives before transferring to a larger rewritten code buffer.",
+            "post_stage0": "Once stage-0 executes, stock CP15 helpers provide explicit I-cache invalidation plus D-cache status/test operations. The heap mapping is write-through, so CPU stores reach SRAM; a larger rewritten code buffer must still invalidate any stale I-cache lines before execution.",
             "helpers": {k: hex(v[0]) for k,v in CP15.items()},
         },
         "calling_contract": {

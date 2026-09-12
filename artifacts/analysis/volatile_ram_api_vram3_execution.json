@@ -54,9 +54,9 @@
       "invalidate_both_caches": "0xcd8",
       "invalidate_i_cache": "0xce0",
       "invalidate_tlb": "0xcf4",
-      "test_clean_invalidate_d_cache": "0xce8"
+      "test_d_cache_clean_status": "0xce8"
     },
-    "post_stage0": "Once stage-0 executes, stock CP15 helpers provide explicit I-cache invalidation and D-cache clean/invalidate primitives before transferring to a larger rewritten code buffer."
+    "post_stage0": "Once stage-0 executes, stock CP15 helpers provide explicit I-cache invalidation plus D-cache status/test operations. The heap mapping is write-through, so CPU stores reach SRAM; a larger rewritten code buffer must still invalidate any stale I-cache lines before execution."
   },
   "calling_contract": {
     "argument_registers": "r0-r3",

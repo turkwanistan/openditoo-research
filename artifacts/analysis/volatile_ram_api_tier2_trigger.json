@@ -1,0 +1,131 @@
+{
+  "branches": {
+    "flag42_prod_v42016": {
+      "callback_blx": "0x1fac4",
+      "callback_field_offset": "0x34",
+      "callback_function": "0x1fa8a",
+      "callback_setter": "0x1fd6a",
+      "callback_setter_store": "0x1fef4",
+      "direct_bl_xrefs_to_worker": [],
+      "direct_bl_xrefs_to_wrapper": [],
+      "direct_callback_invocation_sites": [
+        "0x1fd0a",
+        "0x1ff76"
+      ],
+      "raw_absolute_app_pointer_xrefs_to_worker": [],
+      "raw_absolute_app_pointer_xrefs_to_wrapper": [],
+      "runtime50_constructor": "0x1f9f4",
+      "spp_a9_direct_targets_include_voicetip_trigger": false,
+      "worker": "0x1fb42",
+      "wrapper": "0x1ff6c"
+    },
+    "flag42_test_v42017": {
+      "callback_blx": "0x1fab8",
+      "callback_field_offset": "0x34",
+      "callback_function": "0x1fa7e",
+      "callback_setter": "0x1fd5e",
+      "callback_setter_store": "0x1fee8",
+      "direct_bl_xrefs_to_worker": [],
+      "direct_bl_xrefs_to_wrapper": [],
+      "direct_callback_invocation_sites": [
+        "0x1fcfe",
+        "0x1ff6a"
+      ],
+      "raw_absolute_app_pointer_xrefs_to_worker": [],
+      "raw_absolute_app_pointer_xrefs_to_wrapper": [],
+      "runtime50_constructor": "0x1f9e8",
+      "spp_a9_direct_targets_include_voicetip_trigger": false,
+      "worker": "0x1fb36",
+      "wrapper": "0x1ff60"
+    },
+    "flag60_prod_v60014": {
+      "callback_blx": "0x1fac4",
+      "callback_field_offset": "0x34",
+      "callback_function": "0x1fa8a",
+      "callback_setter": "0x1fd6a",
+      "callback_setter_store": "0x1fef4",
+      "direct_bl_xrefs_to_worker": [],
+      "direct_bl_xrefs_to_wrapper": [],
+      "direct_callback_invocation_sites": [
+        "0x1fd0a",
+        "0x1ff76"
+      ],
+      "raw_absolute_app_pointer_xrefs_to_worker": [],
+      "raw_absolute_app_pointer_xrefs_to_wrapper": [],
+      "runtime50_constructor": "0x1f9f4",
+      "spp_a9_direct_targets_include_voicetip_trigger": false,
+      "worker": "0x1fb42",
+      "wrapper": "0x1ff6c"
+    },
+    "flag60_test_api60016_internal60017": {
+      "callback_blx": "0x1fac4",
+      "callback_field_offset": "0x34",
+      "callback_function": "0x1fa8a",
+      "callback_setter": "0x1fd6a",
+      "callback_setter_store": "0x1fef4",
+      "direct_bl_xrefs_to_worker": [],
+      "direct_bl_xrefs_to_wrapper": [],
+      "direct_callback_invocation_sites": [
+        "0x1fd0a",
+        "0x1ff76"
+      ],
+      "raw_absolute_app_pointer_xrefs_to_worker": [],
+      "raw_absolute_app_pointer_xrefs_to_wrapper": [],
+      "runtime50_constructor": "0x1f9f4",
+      "spp_a9_direct_targets_include_voicetip_trigger": false,
+      "worker": "0x1fb42",
+      "wrapper": "0x1ff6c"
+    }
+  },
+  "control_sink": {
+    "cross_branch": "4_OF_4_PRESERVED_PLUS_BRANCHES",
+    "field_offset": "0x34",
+    "object_family": "VoiceTip/runtime50 0x50-byte object",
+    "proven": true,
+    "semantics": "0x1fa8a-family loads object+0x34, checks nonzero, then BLXes the loaded value",
+    "setter_semantics": "0x1fd6a-family copies its incoming r1 value into object+0x34 on the configured path"
+  },
+  "invocation_gate": {
+    "deterministic_stock_post_overwrite_invocation_proven": false,
+    "in_image_invocation_sites_proven": true,
+    "reason": "Across all four preserved branches, the VoiceTip worker and wrapper have no direct in-image BL callers and no raw absolute application-code pointer xrefs. Their registration/dispatch is therefore framework-indirect or encoded outside the directly recoverable app call graph.",
+    "reference_branch_adr_search": "No Thumb ADR construction of 0x1fb42, 0x1ff6c, or 0x1fa8a was found in flag42 v42016 during the bounded offline audit.",
+    "two_invocation_paths": [
+      "worker path: callback function is reached near the terminal path of the 0x1fb42-family VoiceTip worker",
+      "wrapper path: 0x1ff6c-family checks runtime50 byte0 != 0xff and then calls the callback function"
+    ],
+    "worker_or_wrapper_registration_proven": false
+  },
+  "kind": "ditoo_plus_tier2_voicetip_trigger_gate",
+  "method_limits": [
+    "This proves a real stock indirect-call sink, not attacker-controlled placement or invocation.",
+    "Absence of direct BL/raw-pointer edges does not prove the framework can never invoke the VoiceTip worker; it proves only that the registration edge is not directly recoverable from these application blobs with the audited encodings.",
+    "No crash/timing behavior is used as an invocation oracle."
+  ],
+  "ok": true,
+  "promotion": {
+    "controlled_indirect_call_sink_exists": true,
+    "deterministic_post_overwrite_callback_invocation": false,
+    "live_manifest_candidate": null,
+    "remaining_trigger_blocker": "FRAMEWORK_INDIRECT_VOICETIP_TRIGGER_REGISTRATION_OR_EXPLICIT_STOCK_TRIGGER_UNPROVEN"
+  },
+  "safety": {
+    "device_io": false,
+    "firmware_mutation": false,
+    "live_packet_generation": false,
+    "offline_analysis_only": true,
+    "persistent_mutation": false,
+    "runtime_018_touched": false
+  },
+  "schema_version": 1,
+  "spp_trigger_checks": {
+    "command_0x6c": {
+      "direct_voicetip_trigger_edge_proven": false,
+      "note": "0x6c is proven to reach the separate DIVOOM_LIGHT_WORD resident display handoff. No direct in-image edge from its handler/display path to the VoiceTip worker/wrapper/callback has been promoted."
+    },
+    "command_0xa9_play_stop_voice": {
+      "direct_voicetip_trigger_edge_proven": false,
+      "note": "The explicit SPP play/stop-voice handler drives a higher-level voice state machine, but its direct handler body does not call the VoiceTip worker, wrapper, or +0x34 callback function."
+    }
+  }
+}

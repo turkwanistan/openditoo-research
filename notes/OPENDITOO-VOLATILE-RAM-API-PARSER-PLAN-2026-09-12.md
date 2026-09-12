@@ -237,7 +237,9 @@ Exit: every Tier-1 high-value handler is terminally classified or promoted.
 
 No direct SPP candidate reached a controlled RAM write or caller-controlled indirect branch/call without crossing a persistent storage path. Therefore VRAM-2 exits by the planned negative condition and **no VRAM-5/VRAM-6 live candidate is created from Tier-1**.
 
-Tier-2 has now resolved that seam: it is the resident `divoom_light_word` display path, not a generic media/codec decoder. The branch-specific veneer converges on resident `0x008012a8`, where the caller u16 from `0x6c` reaches a destination copy. `tools/ditoo_tier2_display_surface.py` promotes a 4/4-branch `CALLER_CONTROLLED_ADJACENT_HEAP_OVERWRITE` with a modeled maximum 1009 controlled bytes beyond the physical backing allocation. Deterministic victim/control-flow placement remains unresolved, so no live candidate is created yet.
+Tier-2 has now resolved that seam: it is the resident `divoom_light_word` display path, not a generic media/codec decoder. The branch-specific veneer converges on resident `0x008012a8`, where the caller u16 from `0x6c` reaches a destination copy. `tools/ditoo_tier2_display_surface.py` promotes a 4/4-branch `CALLER_CONTROLLED_ADJACENT_HEAP_OVERWRITE` with a modeled maximum 1009 controlled bytes beyond the physical backing allocation.
+
+Placement and invocation are now separate fail-closed gates. `tools/ditoo_tier2_placement.py` models the allocator exactly enough to produce a useful pristine-heap *hypothesis* (`display backing 0x00804470 -> runtime50 0x00804b80 -> callback 0x00804bb4`), but does not promote it because framework-owned ordering between `Fwl_MallocInit` and `0x8dea` is absent from the recoverable in-image call/pointer graph. Display teardown/recreate is closed within the audited app graph, and the callback-bearing 0x80 plugin family has only two singleton constructor sites rather than an unbounded spray. `tools/ditoo_tier2_trigger.py` proves runtime50 `+0x34` is a real 4/4-branch `BLX` control sink, while deterministic invocation remains blocked on framework-indirect VoiceTip worker/wrapper registration or another explicit stock trigger. No live candidate is created yet.
 
 ## Phase VRAM-3 — execution environment and RAM-hook feasibility
 
@@ -487,12 +489,11 @@ VRAM-0/VRAM-1 and Tier-1 direct-SPP are closed. Tier-2 reachability is also reso
 
 Immediate offline work is now:
 
-1. prove or reject deterministic placement of a callback/function-pointer-bearing victim inside that overwrite window;
-2. model the application allocator only as far as needed for that placement question — do not assume bump-allocation chronology because the heap is allocation/free-active and uses separate descriptors;
-3. investigate stock teardown/recreate paths for callback-bearing plugin/child objects as a possible deterministic grooming mechanism;
-4. Treat **VRAM-3 as closed positive**: exact Ditoo evidence establishes executable application-heap SRAM (`0x00804000..0x0081cfff`), ARMv5T Thumb interworking, stock MMU/I+D-cache setup, no XN blocker, and stock cache-maintenance helpers. Do not reopen this unless the pinned execution artifact fails closed;
-5. `tools/ditoo_tier2_placement.py` has also closed the easy grooming shortcut: callback-bearing objects are stock-allocatable/freeable/recreatable, but best-fit fragmentation and zero-on-create prevent static adjacency from being inferred. The remaining gate is `EXACT_DISPLAY_BLOCK_ADDRESS_OR_UNIQUE_ADJACENT_HOLE_MODEL`;
-6. reconstruct allocator state only as far as needed to decide whether the persistent 0x708 display backing allocation is forced into the main free extent and whether a uniquely placeable callback victim lies within the following 1009 bytes;
-7. if multiple viable layouts remain, checkpoint the primitive and keep the live gate closed rather than using a crash as a placement oracle.
+1. keep the pristine-heap layout **conditional** until new framework/bootstrap evidence proves `Fwl_MallocInit -> no intervening app-heap users -> 0x8dea`; current exact blocker is `PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN`;
+2. seek a placement proof that does **not** depend on hidden pre-main chronology. The easy display teardown/recreate route is closed within the audited app graph, and the 0x80 callback-bearing plugin family is limited to two singleton constructor sites rather than an unbounded spray;
+3. treat **VRAM-3 as closed positive**: exact Ditoo evidence establishes executable application-heap SRAM (`0x00804000..0x0081cfff`), ARMv5T Thumb interworking, stock MMU/I+D-cache setup, no XN blocker, and explicit I-cache maintenance; do not reopen unless the pinned execution artifact fails closed;
+4. treat runtime50 `+0x34` as a **proven stock indirect-call sink**. `tools/ditoo_tier2_trigger.py` proves the field is set by stock code and `BLX`ed by two in-image invocation paths across 4/4 branches;
+5. independently resolve invocation: find a deterministic stock trigger/registration edge for the VoiceTip worker/wrapper after a hypothetical overwrite. Direct `0x6c` and `0xa9` handler bodies do not currently provide such an edge, and the worker/wrapper registration is framework-indirect/unrecovered; blocker = `FRAMEWORK_INDIRECT_VOICETIP_TRIGGER_REGISTRATION_OR_EXPLICIT_STOCK_TRIGGER_UNPROVEN`;
+6. only after **both** deterministic placement and deterministic invocation are proven should stage-0 bytes/clean-return behavior be designed. If either remains ambiguous, keep the live gate closed rather than using a crash or timing effect as an oracle.
 
 Do not create or transmit a malformed/custom `0x6c` packet until a new one-use manifest is reviewed and explicitly granted. A generic crash discriminator is not enough.

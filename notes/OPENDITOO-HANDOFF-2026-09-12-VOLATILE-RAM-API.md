@@ -70,24 +70,25 @@ It does **not** yet promote code execution or a live experiment. The application
 No malformed/custom `0x6c` traffic has been transmitted. **No live manifest exists or is justified yet.**
 
 
-### Tier-2 placement + VRAM-3 execution checkpoint
+### Tier-2 placement + trigger + VRAM-3 checkpoint
 
-Two additional fail-closed artifacts now narrow the remaining problem:
+Three fail-closed artifacts now separate the remaining gates:
 
 - `tools/ditoo_tier2_placement.py` / `artifacts/analysis/volatile_ram_api_tier2_placement.json`;
+- `tools/ditoo_tier2_trigger.py` / `artifacts/analysis/volatile_ram_api_tier2_trigger.json`;
 - `tools/ditoo_vram3_execution_model.py` / `artifacts/analysis/volatile_ram_api_vram3_execution.json`.
 
-**Placement:** stock callback-bearing app-heap objects are genuinely groomable. The 0x80-byte plugin/child family is allocated from the application heap, zeroed on creation, populated with a 0x34-byte descriptor at +0x0c, later calls through function fields including +0x0c/+0x20/+0x2c, and can be destroyed/freed/recreated. A separate 0x50-byte runtime object has an indirect callback at +0x34. These properties survive all four preserved Plus branches. They do **not** establish adjacency: the application heap is best-fit/separate-descriptor and already fragmented before the persistent display backing allocation, and zero-on-create closes the simple "pre-fill a future free block with a forged callback" idea. The remaining placement question is `EXACT_DISPLAY_BLOCK_ADDRESS_OR_UNIQUE_ADJACENT_HOLE_MODEL`.
+**Placement:** the allocator is best-fit, uses 16-byte units, splits from the low-address edge, uses separate descriptors, and coalesces adjacent free extents. The in-image `0x8dea` startup sequence is pinned through the display and later runtime50 allocation. Under the *conditional* assumption that `Fwl_MallocInit` has just reset the heap and no framework-owned app-heap allocation intervenes before `0x8dea`, the model yields display backing `0x00804470`, source pointer `0x00804778`, runtime50 `0x00804b80`, and runtime50 `+0x34` callback `0x00804bb4` (source offset `0x43c`). **Do not promote those addresses.** Across all four preserved branches, both `Fwl_MallocInit` and `0x8dea` have zero direct in-image BL/BLX callers and zero raw absolute app-code pointer xrefs, so their relative framework ordering and the absence of intervening heap users are not statically proven from this corpus. The exact placement blocker is `PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN`.
 
-**VRAM-3 execution environment:** exact Ditoo initialization pins the application heap to `0x00804000..0x0081cfff` (0x19000 bytes), inside the stock identity-mapped SRAM window `0x00803000..0x0081ffff`. Stage-1 builds ARMv5T short-descriptor page tables, enables the MMU, invalidates the TLB, and enables I- and D-cache. The relevant mapping is cacheable/write-through/non-bufferable. ARMv5T short descriptors have no XN bit, so mapped heap SRAM is executable; **there is no NX blocker**. Stock code also exposes CP15 cache-maintenance helpers, giving a bounded path for a later stage-0 to synchronize a larger rewritten payload. Thumb targets must have bit0 set and return cleanly through the victim callsite.
+Two simple placement strategies are now closed. The persistent display root has one direct constructor edge and no application-heap free in the audited display/backing service families, so ordinary stock teardown/recreate cannot be used to move the vulnerable block into a groomed hole. The 0x80 callback-bearing plugin family is real and free/recreate-capable, but has only two direct constructor sites, both reviewed as singleton subsystem lifecycles; it is not an unbounded stock heap spray.
 
-The stage-1 tail itself is reclaimed into the application heap after boot (heap begins at `0x00804000` while boot/cache helper code exists above that address), while lower resident services such as `0x008012a8` remain callable. This further supports one executable SRAM region being repurposed rather than a separate non-executable data bank.
+**Control sink / trigger:** runtime50 is a 0x50-byte object whose `+0x34` field is a genuine function pointer. The `0x1fa8a` family loads `object+0x34`, checks it for zero, and `BLX`es it; the `0x1fd6a` family explicitly stores an incoming callback value into that field. This survives 4/4 preserved Plus branches. There are two in-image invocation sites: one in the VoiceTip worker and one thin wrapper. However, the worker and wrapper have no direct in-image BL callers or raw absolute app-code pointer xrefs, and the reference branch has no Thumb `ADR` construction of those entry points. Their registration/dispatch is therefore framework-indirect or encoded outside the directly recoverable application call graph. Direct stock `0x6c` and `0xa9` handler bodies do not provide a proven VoiceTip trigger edge. The trigger blocker is `FRAMEWORK_INDIRECT_VOICETIP_TRIGGER_REGISTRATION_OR_EXPLICIT_STOCK_TRIGGER_UNPROVEN`.
 
-**Current promotion state:** RAM corruption = proven; executable heap RAM = proven; deterministic indirect-control victim placement = **not proven**. No live manifest is justified until that last item is established offline.
+**VRAM-3 execution environment:** exact Ditoo initialization pins the application heap to `0x00804000..0x0081cfff` (0x19000 bytes), inside the stock identity-mapped SRAM window `0x00803000..0x0081ffff`. Stage-1 enables the ARMv5T short-descriptor MMU and I/D caches. The relevant mapping is cacheable/write-through/non-bufferable; ARMv5T short descriptors have no XN bit, so mapped heap SRAM is executable. Stock code exposes explicit I-cache invalidation and D-cache status/test helpers. Thumb targets require bit0 set and any future stage-0 must return cleanly through the victim callsite.
 
-Tier-2 checkpoint verification in constrained WSL_MCP: focused Tier-1/Tier-2 tests = 7/7 PASS; `git diff --check` = PASS; `python3 scripts/verify_day1_offline.py` = 375 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors and zero new VRAM/parser/recovery failures.
+**Current promotion state:** controlled adjacent heap overwrite = proven; executable heap RAM = proven; real indirect-call sink = proven; deterministic victim placement = **not proven**; deterministic post-overwrite callback invocation = **not proven**. No live manifest is justified.
 
-Checkpoint verification in constrained WSL_MCP: `python3 -m unittest tests.test_day1_offline.VolatileRamApiSurfaceTests -v` = 3/3 PASS; `git diff --check` = PASS; `python3 scripts/verify_day1_offline.py` = 364 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors and no new VRAM/parser/recovery failure.
+Checkpoint verification in constrained WSL_MCP: focused placement/trigger/VRAM-3 tests = 11/11 PASS; `git diff --check` = PASS; `python3 scripts/verify_day1_offline.py` = 379 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors and zero new Tier-2/VRAM/recovery/product failures. Runtime 018 was not touched and no Ditoo packet was transmitted.
 
 ## Why this is worth doing
 
@@ -223,6 +224,6 @@ Bad result: a pile of crashes/strings with no coverage accounting or controllabi
 At handoff preparation in constrained WSL_MCP:
 
 - `git diff --check` — PASS;
-- `python3 scripts/verify_day1_offline.py` — 364 tests, exactly the two known unrelated W9B optical errors from missing `PIL`, zero new parser/recovery/product failures;
+- `python3 scripts/verify_day1_offline.py` — 379 tests, exactly the two known unrelated W9B optical errors from missing `PIL`, zero new parser/recovery/product failures;
 - M2 authority remains `status=authorized_unconsumed`, `physical_execution_authorized=true`, `authorization_consumed=false`; it was not executed or consumed;
 - no Ditoo transmission, Runtime 018 change, flash operation, MassBoot action or physical measurement occurred while preparing this handoff.
