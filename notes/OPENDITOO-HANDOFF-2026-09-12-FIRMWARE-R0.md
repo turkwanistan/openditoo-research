@@ -289,9 +289,34 @@ Still LIVE-gated (unchanged): authoring the shim machine code, proving an all-`0
 a resident/executable cave, and any device write. The prototype deliberately stops at the
 seam-redirect model.
 
-### 6. TELEMETRY-R0
+### 6. TELEMETRY-R0 — least-invasive report channel — DECIDED (2026-09-12, offline)
 
-Find the least invasive way for that first patch to report a key—prefer reusing an already-initialized stock device→host SPP/notification path over adding a large subsystem.
+**Recommendation: reuse the already-initialized stock SYS SPP device→host response path.**
+
+Evidence (exact-model firmware strings + exact-unit observation):
+
+- The firmware brings up a framed, checksummed SPP command/response service at boot:
+  `SYS SPP init!: %x, %d` (`0xf72c`), `[SYS:SPP]check sum err` (`0xf7c4`),
+  `SYS_SPP_OKCommandACK` (`0x22fe8`), and a large typed command set incl.
+  `SPP_GET_DEVICE_INFO` (`0x12357`), `SPP_GET_TOOL_INFO`, `SPP_GET_VOLTAGE`, `SPP_SET_GAME`.
+  This is the **same RFCOMM/SPP stack OpenDitoo already uses** for image transport, so the Host
+  already speaks it and no new Bluetooth service, socket, or frame builder is needed.
+- The device→host direction is independently proven on the exact unit: the stock firmware
+  already emits unsolicited RFCOMM reports (`0x09`, `0xBD`) that reach Windows today (BTN-2 /
+  BTN-7 captures).
+
+**Design:** the first observe-only research revision emits one small typed SPP key-report per
+claimed key (a new/spare typed report the Host can distinguish, reusing the existing SPP frame
+builder + checksum) **while still posting the stock category-`0x82` event** (forward). This is
+strictly additive and fail-open: if the SPP send fails, stock behavior is unaffected.
+
+Ranked alternatives (rejected as primary): (2) piggyback the unsolicited `0x09`/`0xBD` RFCOMM
+reports — lower-level but tied to specific stock behaviors and reclaim side effects, harder to
+attribute cleanly; (3) AVRCP pass-through — that IS the stock action for Left/Right/lever and
+does not exist for M/+/Lighting/-, so not a general telemetry channel.
+
+Do **not** expose a generic raw-memory API; the eventual public surface stays typed/capability-
+scoped (`GET_VERSION`, `CLAIM_INPUTS`, `RELEASE_INPUTS`, `INPUT_EVENT`, heartbeat).
 
 ## Desired firmware architecture
 

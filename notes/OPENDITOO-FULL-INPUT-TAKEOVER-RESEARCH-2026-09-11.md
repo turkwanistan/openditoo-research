@@ -696,3 +696,21 @@ base 0x08400000). No device I/O.
 **Safe route (if a live factory visit is ever justified):** stage 0 (passive) -> advance with M
 to key-test (id 7) -> exercise the six keys; stop before the SPI-flash stage. No factory
 observation is authorized at this handoff.
+
+## 17. TELEMETRY-R0 — least-invasive report channel (2026-09-12, offline)
+
+**Decision: reuse the already-initialized stock SYS SPP device→host response path.** The
+firmware brings up a framed, checksummed SPP command/response service at boot (`SYS SPP init!`
+`0xf72c`, `[SYS:SPP]check sum err` `0xf7c4`, `SYS_SPP_OKCommandACK` `0x22fe8`, typed commands
+incl. `SPP_GET_DEVICE_INFO` `0x12357`). This is the **same RFCOMM/SPP stack OpenDitoo already
+uses for image transport**, so the Host already parses it — no new Bluetooth service, socket, or
+frame builder. The device→host direction is independently proven on the exact unit by the
+unsolicited `0x09`/`0xBD` RFCOMM reports that already reach Windows (BTN-2/BTN-7).
+
+The first observe-only firmware revision should emit one small typed SPP key-report per claimed
+key (a spare/new typed report the Host can distinguish, reusing the existing frame builder +
+checksum) while still posting the stock category-0x82 event — strictly additive and fail-open.
+Rejected as primary: piggybacking `0x09`/`0xBD` unsolicited reports (tied to specific stock
+behaviors + reclaim side effects) and AVRCP pass-through (that is the stock action for
+Left/Right/lever and absent for M/+/Lighting/-). No generic raw-memory API; the public surface
+stays typed/capability-scoped.
