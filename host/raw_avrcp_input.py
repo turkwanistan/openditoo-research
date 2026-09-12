@@ -225,15 +225,15 @@ def main(argv: list[str]) -> int:
     query = subprocess.run([SCHTASKS, "/query", "/tn", broker["launch"]["task_name"], "/xml"],
                            stdin=subprocess.DEVNULL, capture_output=True)
     if query.returncode != 0:
-        print("R017_TASK_NOT_INSTALLED")
+        print("RAW_AVRCP_TASK_NOT_INSTALLED")
         return 1
     raw_xml = query.stdout
     xml_text = raw_xml.decode("utf-16") if raw_xml[:2] in (b"\xff\xfe", b"\xfe\xff") else raw_xml.decode("utf-8", "replace")
     problems = task_problems(xml_text.split("?>", 1)[-1], broker, raw["target"]["exact_unit_id"])
     for problem in problems:
-        print(f"R017_TASK_MISMATCH={problem}")
+        print(f"RAW_AVRCP_TASK_MISMATCH={problem}")
     if not problems:
-        print("R017_TASK_MATCHES_POLICY")
+        print("RAW_AVRCP_TASK_MATCHES_POLICY")
     return 1 if problems else 0
 
 

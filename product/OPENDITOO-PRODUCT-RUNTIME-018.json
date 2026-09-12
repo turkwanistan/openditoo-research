@@ -43,7 +43,7 @@
       "session_sha256": "6fe151b763315d799493a5a03ec3334aff59f18875e21760ce65129ae3427a36",
       "product_runtime_sha256": "85b6ca70a1340bd53cc69441034c780d39d62db985cf6d61a10c1bccb0483e0d",
       "product_runtime_v12_sha256": "446f84c077816f6ea93b5680c17a9b1997c6c7f929d8d5bc027cfd2a1ac158c0",
-      "raw_avrcp_input_sha256": "b03def9ed28696fb826d57df747afc89ef69850a510b967cac612570957cc45d",
+      "raw_avrcp_input_sha256": "f3d8ff1e6a86da18b061221610b2bf3b5746512cc4e9d5472fc27ea33c512f81",
       "raw_avrcp_broker_program_sha256": "ede5771806ed0396bf5b567997a2cdc069d8e2b63aa6f76f8b87b2b6f9037e95",
       "raw_avrcp_broker_csproj_sha256": "bc09ad50c67535b3016650c092ec39f3945ccbaed4114e64b447cae4d49a55c4",
       "raw_avrcp_stage_script_sha256": "83a3e91c011407bb28bec4e6284d1844018507db55a2c708a29a59a890fafba7",
