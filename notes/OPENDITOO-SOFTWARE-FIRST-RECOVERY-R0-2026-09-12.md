@@ -129,7 +129,7 @@ The branch-shifted state helper is `0x38f2c` on flag42 and `0x38e98` on flag60; 
 
 A broader one-helper scan also found many SPP-invoked settings/state helpers that call the common config-read routines with **immediate, fixed first-argument selectors** (examples include `0`, `2`, `10`, `15`, `17`, `18`, `19`, `22`, `23`, `28`, `29`, `31`, `32`). This is exactly what a mature typed settings protocol should look like. It is evidence **against** a trivially exposed caller-selected flash address, while confirming that flash access is present underneath the stock command layer.
 
-This is a better software lead than the direct-edge result because it tells us where to focus SFR-1: **data flow**, not merely call existence. We now need to prove whether *any* reachable helper lets command payload bytes control an address/range or export an arbitrary buffer. The pinned shortest chains above do not.
+This was the right lead for SFR-1: **data flow**, not merely call existence. SFR-1 has now completed the deeper semantic pass. The bounded result is `SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH`: the stock SPP paths examined do reach raw SPI reads, but none lets command-controlled bytes become an arbitrary flash address/range or arbitrary firmware export buffer.
 
 ## R0 result — comparative firmware archaeology
 
@@ -223,7 +223,7 @@ The 2022 Ditoo Plus support report in which Divoom supplied an SD-card `divoomup
 1. **Do not chase `0x93..0x96`.** Exact Plus firmware proves those app-family enum slots are default/error handlers.
 2. **Do not treat `0x98/0x99` as backup commands.** They are update ingress.
 3. **Do not assume a broad hidden EXTERN namespace.** Exact Plus firmware bounds the first-level mux to `0x13..0x1b`.
-4. Stock SPP **does** indirectly read internal SPI flash for ordinary typed configuration/state operations. The shortest verified chains use fixed storage selectors and do not expose caller-selected flash addresses. A generic flash dump is therefore still unproven, but the correct next question is transitive payload-to-address/data-return flow rather than simple call reachability.
+4. Stock SPP **does** indirectly read internal SPI flash for ordinary typed configuration/state operations, but SFR-1 now closes the deeper bounded data-flow question as `SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH`. The five analyzed direct raw-read caller families are config initialization, config-record read, config-byte read, a one-byte header parser, and screen-save/content scanning. The only raw-address-shaped helper is the one-byte parser; across both preserved Plus branches, every analyzed SPP provenance path feeds it a firmware-managed config/resource address rather than caller-supplied address bytes.
 5. Comparative archaeology remains valuable: it can prove whether a lead is stable platform architecture or a branch-specific addition before any live experiment is considered.
 6. External v42012 acquisition remains useful but low-confidence/opportunistic, matching the owner's concern about reliability.
 7. **SD updater development stays parked** until recovery/rollback is solved.
@@ -231,23 +231,33 @@ The 2022 Ditoo Plus support report in which Divoom supplied an SD-card `divoomup
 
 ## Next software-only queue
 
-### SFR-1 — transitive readback reachability
+### SFR-1 — transitive readback reachability — CLOSED (2026-09-12, offline)
 
-**Highest priority. Offline/autonomous.**
+**Result:** `SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH`.
 
-Continue the bounded, fail-closed call-graph/data-flow analysis from every real SPP handler into the internal helper graph. Shortest fixed-selector flash-read chains are now proven; the remaining question is whether any reachable path lets **command-controlled data** become a flash/memory selector or arbitrary returned buffer. Determine whether any path can reach/use:
+A Capstone-assisted disposable-Lab pass was used to map candidate call/control-flow, then every promoted semantic claim was re-expressed as fail-closed byte/BL invariants in `tools/ditoo_software_recovery_surface.py` and verified independently on both preserved Plus branches. The repository does **not** depend on Capstone/angr to reproduce the accepted assertions.
 
-- `Fwl_spiflash_read`;
-- arbitrary-address memory copy/read primitives;
-- filesystem/export primitives capable of returning arbitrary flash-backed data through SPP;
-- debug/log/diagnostic responders that copy caller-selected memory into a response.
+The direct raw-SPI-read callers reached by the analyzed stock-SPP graph reduce to five semantic families:
 
-Do not equate a generic internal file-read API with a remotely selectable file/export command. The question is *reachable semantics from a stock remote command*, not whether the firmware can read its own flash.
+| family | flag42 | flag60 | raw-read semantics | caller control verdict |
+| --- | ---: | ---: | --- | --- |
+| config initializer | `0x184e8` | `0x184e8` | scans internal config-area metadata one byte at a time | no caller address |
+| config-record reader | `0x18604` | `0x18604` | internal config base + validated record offset/length | typed record selector/key, not raw address |
+| config-byte reader | `0x18b64` | `0x18b64` | one byte at internal config cursor/base | typed record matching, not raw address |
+| one-byte raw-header parser | `0x3c12c` | `0x3c098` | **function argument is used as raw read address**, fixed length 1 | all analyzed SPP provenance paths supply managed internal addresses |
+| screen-save/content scanner | `0x38b26` | `0x38a92` | object base `+0x0c` + bounded internal loop index, length 1 | managed content-area metadata |
 
-Exit with one of:
+The one-byte parser was the strongest remaining arbitrary-read candidate. Its three analyzed SPP address-provenance families close as follows on **both** Plus branches:
 
-- `SPP_READBACK_REACHABLE` with an exact, typed semantic chain worth further review; or
-- `SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH`, including explicit limits/unknown indirect calls.
+1. `0x2393a` obtains the address through config helpers that select fixed records `10/11` or `13/14`; `0x189a4` returns `internal config base + parsed record offset`. The packet may select a typed record/key, but not a raw flash address.
+2. `0x2877a` / `0x287a0` loads the parser address from an internal resource context. Its initializer resolves the resource base through `0x34382` / `0x342ee` and can only choose that base or **base + `0x100`** through a boolean alternate-bank branch.
+3. `0x32a22` / `0x32a7a` reloads an internal context address that was initialized by `0x3295c` / `0x329b4` from the same resource resolver **plus exactly `0x100`**.
+
+This means the firmware contains raw flash-read primitives underneath SPP-visible operations, but the analyzed stock remote surface does not promote them into a generic read/dump/export mechanism. `0x17718` remains a separate record-stream routine that performs both reads **and writes** and is therefore not a safe live readback candidate.
+
+**Explicit limits:** this is bounded static direct-call/control-flow analysis, not a whole-program formal proof. The monolithic SPP dispatcher makes naive per-command reachability counts over-approximate, so no exact count of remotely reachable read cases is claimed. Computed internal jump tables/callbacks are not globally proven absent; the top-level EXTERN mux is independently byte-pinned to `0x13..0x1b`. No live packet probing was used for SFR-1.
+
+The machine-checkable artifact is `artifacts/analysis/software_recovery_surface.json` schema v3. If any pinned address/provenance instruction changes in a future firmware branch, the analyzer fails closed rather than carrying this conclusion forward.
 
 ### SFR-2 — period app acquisition and updater-diff archaeology
 
@@ -295,8 +305,8 @@ No electrical probing is implied by that choice.
 R0 was verified in the authoritative WSL_MCP checkout after the software-first pivot:
 
 - `python3 tools/ditoo_software_recovery_surface.py --selfcheck` — **PASS**;
-- `SoftwareRecoverySurfaceTests` — **6/6 PASS**;
-- `python3 scripts/verify_day1_offline.py` — **351 tests**, exactly **2 errors**, both the pre-existing unrelated W9B optical tests caused by missing `PIL`; **zero software-recovery / firmware-R&D test failures**;
+- `SoftwareRecoverySurfaceTests` — **8/8 PASS**;
+- `python3 scripts/verify_day1_offline.py` — **353 tests**, exactly **2 errors**, both the pre-existing unrelated W9B optical tests caused by missing `PIL`; **zero software-recovery / firmware-R&D test failures**;
 - `git diff --check` — **PASS**;
 - M1 manifest authority remains unchanged: `status=prepared_unauthorized`, `physical_execution_authorized=false`, `authorization_consumed=false`.
 

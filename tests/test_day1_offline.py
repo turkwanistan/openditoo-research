@@ -5265,6 +5265,38 @@ class SoftwareRecoverySurfaceTests(unittest.TestCase):
         self.assertEqual(o["real_flag42_only"], ["0x23"])
         self.assertEqual(o["real_original_only"], [])
 
+
+
+    def test_transitive_readback_audit_closes_without_caller_controlled_address(self) -> None:
+        r = self._mod().build_report()
+        for name in ("flag42_v42016", "flag60_v60014"):
+            audit = r["branches"][name]["transitive_readback_audit"]
+            self.assertTrue(audit["applicable"], name)
+            self.assertEqual(
+                audit["status"],
+                "SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH",
+                name,
+            )
+            self.assertEqual(len(audit["direct_raw_read_caller_families"]), 5, name)
+            self.assertIn("No analyzed stock SPP path", audit["finding"])
+            self.assertGreaterEqual(len(audit["analysis_limits"]), 4)
+
+    def test_raw_address_parser_provenance_is_branch_specific_and_managed(self) -> None:
+        r = self._mod().build_report()
+        expected_entries = {
+            "flag42_v42016": "0x3c12c",
+            "flag60_v60014": "0x3c098",
+        }
+        for name, entry in expected_entries.items():
+            audit = r["branches"][name]["transitive_readback_audit"]
+            parser = next(
+                f for f in audit["direct_raw_read_caller_families"]
+                if f["name"] == "one_byte_raw_header_parser"
+            )
+            self.assertEqual(parser["entry"], entry)
+            self.assertEqual(len(parser["analyzed_address_provenance"]), 3)
+            self.assertTrue(all("internal" in x or "config" in x for x in parser["analyzed_address_provenance"]))
+
     def test_committed_software_recovery_artifact_is_current(self) -> None:
         live = self._mod().build_report()
         committed = json.loads((ROOT / "artifacts/analysis/software_recovery_surface.json").read_text())

@@ -266,7 +266,58 @@
           "is_secondary_default": false
         }
       },
-      "sha256": "f2509588d3ca52175591925298cdcffe9c7e01f6d43d89ee352b967610025b6a"
+      "sha256": "f2509588d3ca52175591925298cdcffe9c7e01f6d43d89ee352b967610025b6a",
+      "transitive_readback_audit": {
+        "analysis_limits": [
+          "bounded static direct-call/control-flow analysis, not a whole-program formal proof",
+          "the monolithic SPP switch makes naive command-count reachability over-approximate; no exact count of remotely reachable read cases is claimed",
+          "computed internal jump tables/callbacks are not globally proven absent; the top-level EXTERN mux is separately byte-pinned to subcommands 0x13..0x1b",
+          "no live packet probing was used for this conclusion"
+        ],
+        "applicable": true,
+        "direct_raw_read_caller_families": [
+          {
+            "entry": "0x184e8",
+            "name": "config_initializer",
+            "raw_read_calls": [
+              "0x18564",
+              "0x185ac"
+            ],
+            "semantics": "internal config-area cursor/base scan; raw reads are one byte and no caller argument supplies the flash address"
+          },
+          {
+            "entry": "0x18604",
+            "name": "config_record_reader",
+            "raw_read_call": "0x1866e",
+            "semantics": "raw address is internal config base plus parsed record offset; selector/key chooses a validated record, not a raw address"
+          },
+          {
+            "entry": "0x18b64",
+            "name": "config_byte_reader",
+            "raw_read_call": "0x18bc0",
+            "semantics": "one-byte read from internal config cursor/base; caller value participates in record matching rather than raw addressing"
+          },
+          {
+            "analyzed_address_provenance": [
+              "fixed config records 10/11 or 13/14 resolved through the config metadata table",
+              "internal resource-base resolver, optionally plus exactly 0x100 as a boolean alternate bank",
+              "secondary internal context initialized from that resource resolver plus exactly 0x100 and later loaded from context+20"
+            ],
+            "entry": "0x3c12c",
+            "name": "one_byte_raw_header_parser",
+            "raw_read_call": "0x3c152",
+            "semantics": "function argument is a raw one-byte read address, but all three analyzed SPP-reachable provenance families supply managed internal record/resource addresses"
+          },
+          {
+            "entry": "0x38b26",
+            "name": "screen_save_content_scanner",
+            "raw_read_call": "0x38b42",
+            "semantics": "one-byte scan at managed object base+0x0c plus bounded internal loop index; screen-save/content-area metadata, not firmware export"
+          }
+        ],
+        "finding": "No analyzed stock SPP path lets caller-controlled bytes become an arbitrary SPI-flash address/range or exports an arbitrary firmware buffer. The raw reads reached are typed config/resource/screen-save storage operations.",
+        "status": "SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH"
+      }
     },
     "flag60_v60014": {
       "dispatcher": {
@@ -534,7 +585,58 @@
           "is_secondary_default": false
         }
       },
-      "sha256": "02efa679cf1c152d6e6cf57f43223153218b411f41a787b65978e5caa77c1300"
+      "sha256": "02efa679cf1c152d6e6cf57f43223153218b411f41a787b65978e5caa77c1300",
+      "transitive_readback_audit": {
+        "analysis_limits": [
+          "bounded static direct-call/control-flow analysis, not a whole-program formal proof",
+          "the monolithic SPP switch makes naive command-count reachability over-approximate; no exact count of remotely reachable read cases is claimed",
+          "computed internal jump tables/callbacks are not globally proven absent; the top-level EXTERN mux is separately byte-pinned to subcommands 0x13..0x1b",
+          "no live packet probing was used for this conclusion"
+        ],
+        "applicable": true,
+        "direct_raw_read_caller_families": [
+          {
+            "entry": "0x184e8",
+            "name": "config_initializer",
+            "raw_read_calls": [
+              "0x18564",
+              "0x185ac"
+            ],
+            "semantics": "internal config-area cursor/base scan; raw reads are one byte and no caller argument supplies the flash address"
+          },
+          {
+            "entry": "0x18604",
+            "name": "config_record_reader",
+            "raw_read_call": "0x1866e",
+            "semantics": "raw address is internal config base plus parsed record offset; selector/key chooses a validated record, not a raw address"
+          },
+          {
+            "entry": "0x18b64",
+            "name": "config_byte_reader",
+            "raw_read_call": "0x18bc0",
+            "semantics": "one-byte read from internal config cursor/base; caller value participates in record matching rather than raw addressing"
+          },
+          {
+            "analyzed_address_provenance": [
+              "fixed config records 10/11 or 13/14 resolved through the config metadata table",
+              "internal resource-base resolver, optionally plus exactly 0x100 as a boolean alternate bank",
+              "secondary internal context initialized from that resource resolver plus exactly 0x100 and later loaded from context+20"
+            ],
+            "entry": "0x3c098",
+            "name": "one_byte_raw_header_parser",
+            "raw_read_call": "0x3c0be",
+            "semantics": "function argument is a raw one-byte read address, but all three analyzed SPP-reachable provenance families supply managed internal record/resource addresses"
+          },
+          {
+            "entry": "0x38a92",
+            "name": "screen_save_content_scanner",
+            "raw_read_call": "0x38aae",
+            "semantics": "one-byte scan at managed object base+0x0c plus bounded internal loop index; screen-save/content-area metadata, not firmware export"
+          }
+        ],
+        "finding": "No analyzed stock SPP path lets caller-controlled bytes become an arbitrary SPI-flash address/range or exports an arbitrary firmware buffer. The raw reads reached are typed config/resource/screen-save storage operations.",
+        "status": "SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH"
+      }
     },
     "original_ditoo_flag46_v46032": {
       "dispatcher": {
@@ -719,7 +821,11 @@
           "is_secondary_default": false
         }
       },
-      "sha256": "a7ee309ef2d0c07f8a72abb9dd9bb444f33bd8f952ca9009c7b7f8e385d7e3d2"
+      "sha256": "a7ee309ef2d0c07f8a72abb9dd9bb444f33bd8f952ca9009c7b7f8e385d7e3d2",
+      "transitive_readback_audit": {
+        "applicable": false,
+        "reason": "calibrated only on preserved Ditoo Plus branches"
+      }
     }
   },
   "comparative": {
@@ -814,8 +920,9 @@
     "hot_update_0x9b_0x9d_0x9e_0x9f": "real update-content handlers; no direct raw-SPI-read edge from SPP dispatcher region",
     "indirect_flash_reads": "verified stock SPP paths do trigger internal SPI reads via fixed config/state selectors (0x27,0x80,0x81,0x6e,0xba); none of the pinned shortest chains exposes a caller-selected flash address",
     "raw_spi_read": "63 direct callers in each preserved Plus branch; zero direct callers inside the SPP dispatcher/handler region",
-    "scope_limit": "pinned shortest-chain evidence does not prove absence of every deeper helper/data-flow path; SFR-1 remains open",
-    "sys_update_0x93_through_0x96": "default/error handler on both preserved Ditoo Plus branches"
+    "scope_limit": "bounded static direct-call/control-flow result, not whole-program formal proof; computed internal jump tables/callbacks remain explicit limits",
+    "sys_update_0x93_through_0x96": "default/error handler on both preserved Ditoo Plus branches",
+    "transitive_readback": "SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH on both preserved Plus branches; the only raw-address-shaped one-byte parser receives managed internal config/resource addresses on all analyzed SPP provenance paths"
   },
   "kind": "offline_stock_software_recovery_surface",
   "ok": true,
@@ -825,5 +932,5 @@
     "offline_only": true,
     "packet_generation": false
   },
-  "schema_version": 2
+  "schema_version": 3
 }

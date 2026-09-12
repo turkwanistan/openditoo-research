@@ -102,6 +102,65 @@ EXPECTED_PLUS_TARGETS = {
 EXTERN_PREFIX = bytes.fromhex("78781338092804d202a31b181b5a5b009f44")
 
 
+# SFR-1 semantic calibration.  Addresses are resolved independently per preserved
+# Plus branch; do not infer a global relocation delta.  These are the five direct
+# raw-SPI-read caller families reached by the bounded stock-SPP semantic audit.
+TRANSITIVE_READBACK_PLUS = {
+    "flag42_v42016": {
+        "config_init": 0x184E8,
+        "config_init_read_sites": (0x18564, 0x185AC),
+        "config_record_read": 0x18604,
+        "config_record_read_site": 0x1866E,
+        "config_byte_read": 0x18B64,
+        "config_byte_read_site": 0x18BC0,
+        "config_addr_resolver": 0x189A4,
+        "fixed_record_selector": 0x238B2,
+        "fixed_record_to_parser_call": 0x239BA,
+        "resource_reader": 0x2877A,
+        "resource_reader_parser_call": 0x287A6,
+        "resource_init": 0x288A2,
+        "resource_init_base_call": 0x288D0,
+        "resource_init_parser_call": 0x288E4,
+        "context_init": 0x3295C,
+        "context_init_parser_call": 0x32998,
+        "context_refresh": 0x32A22,
+        "context_refresh_parser_call": 0x32A50,
+        "resource_base_resolver": 0x34382,
+        "raw_header_parser": 0x3C12C,
+        "raw_header_parser_read_site": 0x3C152,
+        "screen_save_read": 0x38B26,
+        "screen_save_read_site": 0x38B42,
+        "screen_save_parent_call": 0x38EB8,
+    },
+    "flag60_v60014": {
+        "config_init": 0x184E8,
+        "config_init_read_sites": (0x18564, 0x185AC),
+        "config_record_read": 0x18604,
+        "config_record_read_site": 0x1866E,
+        "config_byte_read": 0x18B64,
+        "config_byte_read_site": 0x18BC0,
+        "config_addr_resolver": 0x189A4,
+        "fixed_record_selector": 0x238B2,
+        "fixed_record_to_parser_call": 0x239BA,
+        "resource_reader": 0x287A0,
+        "resource_reader_parser_call": 0x287CC,
+        "resource_init": 0x288C8,
+        "resource_init_base_call": 0x288F6,
+        "resource_init_parser_call": 0x2890A,
+        "context_init": 0x329B4,
+        "context_init_parser_call": 0x329F0,
+        "context_refresh": 0x32A7A,
+        "context_refresh_parser_call": 0x32AA8,
+        "resource_base_resolver": 0x342EE,
+        "raw_header_parser": 0x3C098,
+        "raw_header_parser_read_site": 0x3C0BE,
+        "screen_save_read": 0x38A92,
+        "screen_save_read_site": 0x38AAE,
+        "screen_save_parent_call": 0x38E24,
+    },
+}
+
+
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -172,6 +231,7 @@ def _branch_report(name: str, cfg: dict[str, Any]) -> dict[str, Any]:
             "direct_xrefs_inside_spp_dispatch_region": [f"0x{x:x}" for x in spp_flash_xrefs],
         },
         "known_indirect_flash_paths": _plus_indirect_flash_paths(name, cfg, dm),
+        "transitive_readback_audit": _transitive_readback_audit(name, cfg),
         "_dispatch_map": dm,
     }
 
@@ -279,6 +339,140 @@ def _plus_indirect_flash_paths(name: str, cfg: dict[str, Any], dm: dict[int, int
     }
 
 
+
+def _transitive_readback_audit(name: str, cfg: dict[str, Any]) -> dict[str, Any]:
+    """SFR-1: prove the semantics of the SPP-reachable raw-read funnels.
+
+    This intentionally does NOT claim whole-program proof.  It pins the five direct
+    raw-SPI-read caller families reached by the bounded direct-call/control-flow
+    audit and, critically, proves that the only function whose *argument itself* is
+    used as a raw flash address receives that argument from managed internal
+    config/resource address resolvers on both preserved Plus branches.
+    """
+    if name not in TRANSITIVE_READBACK_PLUS:
+        return {"applicable": False, "reason": "calibrated only on preserved Ditoo Plus branches"}
+
+    c = TRANSITIVE_READBACK_PLUS[name]
+    data = cfg["path"].read_bytes()
+    flash = cfg["flash_read"]
+
+    # 1) config initializer: internal cursor/base scan, one byte per raw read.
+    for site in c["config_init_read_sites"]:
+        _verified_bl(data, site, flash, f"{name} config_init raw read")
+    if data[c["config_init_read_sites"][0] - 8:c["config_init_read_sites"][0]] != bytes.fromhex("0122c0684019211c"):
+        raise ValueError(f"{name}: config-init internal-base read prefix drift")
+
+    # 2) typed config-record reader: address = internal config base + parsed record offset.
+    _verified_bl(data, c["config_record_read_site"], flash, f"{name} config_record_read raw read")
+    if data[c["config_record_read_site"] - 10:c["config_record_read_site"]] != bytes.fromhex("998880689a784018211c"):
+        raise ValueError(f"{name}: config-record address derivation drift")
+
+    # 3) typed config-byte reader: address = internal config cursor/base, length exactly 1.
+    _verified_bl(data, c["config_byte_read_site"], flash, f"{name} config_byte_read raw read")
+    if data[c["config_byte_read_site"] - 4:c["config_byte_read_site"]] != bytes.fromhex("012201a9"):
+        raise ValueError(f"{name}: config-byte one-byte read prefix drift")
+
+    # 4) one-byte raw-header parser.  This is the strongest arbitrary-address-looking
+    # primitive: r0 is copied from the function argument to the raw read, r2 is fixed 1.
+    _verified_bl(data, c["raw_header_parser_read_site"], flash, f"{name} raw_header_parser raw read")
+    if data[c["raw_header_parser_read_site"] - 6:c["raw_header_parser_read_site"]] != bytes.fromhex("0122281c6946"):
+        raise ValueError(f"{name}: one-byte raw-header parser semantics drift")
+
+    # Path 4a: fixed config-record selector -> address resolver -> parser.
+    # The selector helper accepts only the fixed record IDs 10/11 or 13/14 in this path.
+    for off, expected in ((0x238B6, bytes.fromhex("0a28")),
+                          (0x238CE, bytes.fromhex("0b20")),
+                          (0x238D4, bytes.fromhex("0d20")),
+                          (0x238F2, bytes.fromhex("0e20"))):
+        if data[off:off + len(expected)] != expected:
+            raise ValueError(f"{name}: fixed config-record selector drift at 0x{off:x}")
+    _verified_bl(data, 0x238BE, c["config_record_read"], f"{name} fixed record 10")
+    _verified_bl(data, 0x238D8, c["config_record_read"], f"{name} fixed record 13")
+    _verified_bl(data, 0x238F4, c["config_addr_resolver"], f"{name} fixed record address resolver")
+    _verified_bl(data, c["fixed_record_to_parser_call"], c["raw_header_parser"], f"{name} fixed-record parser")
+
+    # Path 4b: resource context.  Resolver result is stored directly or plus exactly
+    # 0x100 depending on a boolean branch; it is never replaced by packet address bytes.
+    _verified_bl(data, 0x13260, c["resource_init"], f"{name} resource init")
+    _verified_bl(data, c["resource_init_base_call"], c["resource_base_resolver"], f"{name} resource base resolver")
+    _verified_bl(data, c["resource_init_parser_call"], c["raw_header_parser"], f"{name} resource-init parser")
+    bank_window = data[c["resource_init_base_call"] + 4:c["resource_init_parser_call"]]
+    if bytes.fromhex("ff300130") not in bank_window:
+        raise ValueError(f"{name}: resource alternate-bank +0x100 proof drift")
+    _verified_bl(data, c["resource_reader_parser_call"], c["raw_header_parser"], f"{name} resource-reader parser")
+    if data[c["resource_reader_parser_call"] - 2:c["resource_reader_parser_call"]] != bytes.fromhex("0069"):
+        raise ValueError(f"{name}: resource reader no longer loads parser address from context+0x10")
+
+    # Path 4c: a second internal context is initialized from the same resource-base
+    # resolver plus exactly 0x100, then later reuses its stored +20 address field.
+    _verified_bl(data, 0x13248, c["resource_base_resolver"], f"{name} secondary context base")
+    _verified_bl(data, 0x13258, c["context_init"], f"{name} secondary context init")
+    if data[0x1324C:0x1324E] != bytes.fromhex("011c") or data[0x13250:0x13252] != bytes.fromhex("ff31") or data[0x13254:0x13256] != bytes.fromhex("0131"):
+        raise ValueError(f"{name}: secondary-context +0x100 derivation drift")
+    _verified_bl(data, c["context_init_parser_call"], c["raw_header_parser"], f"{name} secondary context parser")
+    if data[c["context_init_parser_call"] - 4:c["context_init_parser_call"]] != bytes.fromhex("4c61201c"):
+        raise ValueError(f"{name}: secondary-context stored-address handoff drift")
+    _verified_bl(data, c["context_refresh_parser_call"], c["raw_header_parser"], f"{name} secondary context refresh parser")
+    if data[c["context_refresh_parser_call"] - 4:c["context_refresh_parser_call"]] != bytes.fromhex("30684069"):
+        raise ValueError(f"{name}: secondary-context refresh no longer loads +20 address")
+
+    # 5) screen-save/content-area scanner: address = object base+0x0c + bounded loop
+    # index, raw-read length fixed to one byte.  This is managed storage metadata.
+    _verified_bl(data, c["screen_save_read_site"], flash, f"{name} screen-save raw read")
+    if data[c["screen_save_read_site"] - 8:c["screen_save_read_site"]] != bytes.fromhex("e06801224019311c"):
+        raise ValueError(f"{name}: screen-save managed-address read prefix drift")
+    _verified_bl(data, c["screen_save_parent_call"], c["screen_save_read"], f"{name} screen-save parent")
+
+    return {
+        "applicable": True,
+        "status": "SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH",
+        "direct_raw_read_caller_families": [
+            {
+                "name": "config_initializer",
+                "entry": f"0x{c['config_init']:x}",
+                "raw_read_calls": [f"0x{x:x}" for x in c["config_init_read_sites"]],
+                "semantics": "internal config-area cursor/base scan; raw reads are one byte and no caller argument supplies the flash address",
+            },
+            {
+                "name": "config_record_reader",
+                "entry": f"0x{c['config_record_read']:x}",
+                "raw_read_call": f"0x{c['config_record_read_site']:x}",
+                "semantics": "raw address is internal config base plus parsed record offset; selector/key chooses a validated record, not a raw address",
+            },
+            {
+                "name": "config_byte_reader",
+                "entry": f"0x{c['config_byte_read']:x}",
+                "raw_read_call": f"0x{c['config_byte_read_site']:x}",
+                "semantics": "one-byte read from internal config cursor/base; caller value participates in record matching rather than raw addressing",
+            },
+            {
+                "name": "one_byte_raw_header_parser",
+                "entry": f"0x{c['raw_header_parser']:x}",
+                "raw_read_call": f"0x{c['raw_header_parser_read_site']:x}",
+                "semantics": "function argument is a raw one-byte read address, but all three analyzed SPP-reachable provenance families supply managed internal record/resource addresses",
+                "analyzed_address_provenance": [
+                    "fixed config records 10/11 or 13/14 resolved through the config metadata table",
+                    "internal resource-base resolver, optionally plus exactly 0x100 as a boolean alternate bank",
+                    "secondary internal context initialized from that resource resolver plus exactly 0x100 and later loaded from context+20",
+                ],
+            },
+            {
+                "name": "screen_save_content_scanner",
+                "entry": f"0x{c['screen_save_read']:x}",
+                "raw_read_call": f"0x{c['screen_save_read_site']:x}",
+                "semantics": "one-byte scan at managed object base+0x0c plus bounded internal loop index; screen-save/content-area metadata, not firmware export",
+            },
+        ],
+        "analysis_limits": [
+            "bounded static direct-call/control-flow analysis, not a whole-program formal proof",
+            "the monolithic SPP switch makes naive command-count reachability over-approximate; no exact count of remotely reachable read cases is claimed",
+            "computed internal jump tables/callbacks are not globally proven absent; the top-level EXTERN mux is separately byte-pinned to subcommands 0x13..0x1b",
+            "no live packet probing was used for this conclusion",
+        ],
+        "finding": "No analyzed stock SPP path lets caller-controlled bytes become an arbitrary SPI-flash address/range or exports an arbitrary firmware buffer. The raw reads reached are typed config/resource/screen-save storage operations.",
+    }
+
+
 def _byte_similarity(a: bytes, b: bytes) -> dict[str, Any]:
     if len(a) != len(b):
         raise ValueError("similarity regions must be equal-sized")
@@ -344,7 +538,7 @@ def build_report() -> dict[str, Any]:
         br.pop("_dispatch_map", None)
 
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "kind": "offline_stock_software_recovery_surface",
         "ok": True,
         "safety": {
@@ -373,7 +567,8 @@ def build_report() -> dict[str, Any]:
             "extern_0xbd": "exact Plus mux shape implements only subcommands 0x13..0x1b; wider app enum does not imply firmware handlers",
             "raw_spi_read": "63 direct callers in each preserved Plus branch; zero direct callers inside the SPP dispatcher/handler region",
             "indirect_flash_reads": "verified stock SPP paths do trigger internal SPI reads via fixed config/state selectors (0x27,0x80,0x81,0x6e,0xba); none of the pinned shortest chains exposes a caller-selected flash address",
-            "scope_limit": "pinned shortest-chain evidence does not prove absence of every deeper helper/data-flow path; SFR-1 remains open",
+            "transitive_readback": "SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH on both preserved Plus branches; the only raw-address-shaped one-byte parser receives managed internal config/resource addresses on all analyzed SPP provenance paths",
+            "scope_limit": "bounded static direct-call/control-flow result, not whole-program formal proof; computed internal jump tables/callbacks remain explicit limits",
         },
     }
 
@@ -396,6 +591,7 @@ def main() -> int:
         print("PLUS_RAW_SPI_READ_DIRECT_XREFS=63,63")
         print("PLUS_SPP_DIRECT_FLASH_READ_XREFS=0,0")
         print("SYS_0X93_0X96=DEFAULT_BOTH_PLUS_BRANCHES")
+        print("SFR1=SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH")
     if not (args.json or args.selfcheck or args.write):
         print("DITOO_SOFTWARE_RECOVERY_SURFACE=PASS")
     return 0
