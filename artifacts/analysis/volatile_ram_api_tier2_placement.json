@@ -1,0 +1,125 @@
+{
+  "branches": {
+    "flag42_prod_v42016": {
+      "plugin_app_heap_free_calls": [
+        "0x207cc",
+        "0x207d4"
+      ],
+      "plugin_callback_0x0c_invoke": "0x20504",
+      "plugin_constructor": "0x204b2",
+      "plugin_descriptor_copy_bytes": 52,
+      "plugin_descriptor_destination_offset": "0xc",
+      "plugin_destructor": "0x20772",
+      "plugin_object_request_bytes": 128,
+      "plugin_zeroed_on_create": true,
+      "runtime50_callback_invoke": "0x1fac4",
+      "runtime50_callback_offset": "0x34",
+      "runtime50_constructor": "0x1f9f4",
+      "runtime50_request_bytes": 80
+    },
+    "flag42_test_v42017": {
+      "plugin_app_heap_free_calls": [
+        "0x207c0",
+        "0x207c8"
+      ],
+      "plugin_callback_0x0c_invoke": "0x204f8",
+      "plugin_constructor": "0x204a6",
+      "plugin_descriptor_copy_bytes": 52,
+      "plugin_descriptor_destination_offset": "0xc",
+      "plugin_destructor": "0x20766",
+      "plugin_object_request_bytes": 128,
+      "plugin_zeroed_on_create": true,
+      "runtime50_callback_invoke": "0x1fab8",
+      "runtime50_callback_offset": "0x34",
+      "runtime50_constructor": "0x1f9e8",
+      "runtime50_request_bytes": 80
+    },
+    "flag60_prod_v60014": {
+      "plugin_app_heap_free_calls": [
+        "0x207cc",
+        "0x207d4"
+      ],
+      "plugin_callback_0x0c_invoke": "0x20504",
+      "plugin_constructor": "0x204b2",
+      "plugin_descriptor_copy_bytes": 52,
+      "plugin_descriptor_destination_offset": "0xc",
+      "plugin_destructor": "0x20772",
+      "plugin_object_request_bytes": 128,
+      "plugin_zeroed_on_create": true,
+      "runtime50_callback_invoke": "0x1fac4",
+      "runtime50_callback_offset": "0x34",
+      "runtime50_constructor": "0x1f9f4",
+      "runtime50_request_bytes": 80
+    },
+    "flag60_test_api60016_internal60017": {
+      "plugin_app_heap_free_calls": [
+        "0x207cc",
+        "0x207d4"
+      ],
+      "plugin_callback_0x0c_invoke": "0x20504",
+      "plugin_constructor": "0x204b2",
+      "plugin_descriptor_copy_bytes": 52,
+      "plugin_descriptor_destination_offset": "0xc",
+      "plugin_destructor": "0x20772",
+      "plugin_object_request_bytes": 128,
+      "plugin_zeroed_on_create": true,
+      "runtime50_callback_invoke": "0x1fac4",
+      "runtime50_callback_offset": "0x34",
+      "runtime50_constructor": "0x1f9f4",
+      "runtime50_request_bytes": 80
+    }
+  },
+  "kind": "ditoo_plus_tier2_victim_placement",
+  "method_limits": [
+    "This proves stock grooming surfaces, not heap adjacency.",
+    "No live heap address, packet, crash probe or device observation was used."
+  ],
+  "next_bounded_work": [
+    "Reconstruct allocator state only up to the persistent 0x708 display backing allocation and determine whether any pre-existing free hole can satisfy 0x710 physical units.",
+    "If the display allocation is forced into the main extent, account only subsequent allocations/frees within the 1009-byte overwrite reach and test for a uniquely placeable callback object.",
+    "If multiple viable layouts remain, keep live promotion closed rather than using crash behavior as a placement oracle."
+  ],
+  "ok": true,
+  "placement_gate": {
+    "controlled_indirect_branch_proven": false,
+    "deterministic_adjacent_victim_proven": false,
+    "live_manifest_candidate": null,
+    "prefill_free_space_strategy_closed": true,
+    "recreate_same_size_is_not_adjacency_proof": true,
+    "remaining_offline_question": "EXACT_DISPLAY_BLOCK_ADDRESS_OR_UNIQUE_ADJACENT_HOLE_MODEL",
+    "why_not": [
+      "The application allocator is best-fit/separate-descriptor and the heap is already fragmented before the persistent display backing allocation.",
+      "Plugin creation clears all 0x80 bytes and then repopulates descriptor fields, so pre-seeding a free block cannot preserve a forged callback through creation.",
+      "Free/recreate demonstrates grooming capability but does not prove which equally suitable hole will be selected without an exact allocator-state or uniquely constrained-hole model.",
+      "No runtime address for the Tier-2 display backing block or exact adjacent free-hole topology is statically established yet."
+    ]
+  },
+  "safety": {
+    "device_io": false,
+    "firmware_mutation": false,
+    "live_packet_generation": false,
+    "offline_analysis_only": true,
+    "persistent_mutation": false,
+    "runtime_018_touched": false
+  },
+  "schema_version": 1,
+  "stock_grooming_surface": {
+    "exists": true,
+    "meaning": "Stock lifecycle code provides real app-heap allocate/free/recreate behavior for callback-bearing objects.",
+    "plugin_object": {
+      "descriptor_copied_to_offset": "0xc",
+      "known_indirect_fields": [
+        "0xc",
+        "0x20",
+        "0x2c"
+      ],
+      "request_bytes": 128,
+      "whole_object_free_recreate": true,
+      "zeroed_on_create": true
+    },
+    "runtime50_object": {
+      "callback_offset": "0x34",
+      "request_bytes": 80
+    }
+  }
+}

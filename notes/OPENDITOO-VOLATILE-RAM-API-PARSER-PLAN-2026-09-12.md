@@ -490,7 +490,9 @@ Immediate offline work is now:
 1. prove or reject deterministic placement of a callback/function-pointer-bearing victim inside that overwrite window;
 2. model the application allocator only as far as needed for that placement question — do not assume bump-allocation chronology because the heap is allocation/free-active and uses separate descriptors;
 3. investigate stock teardown/recreate paths for callback-bearing plugin/child objects as a possible deterministic grooming mechanism;
-4. in parallel, complete VRAM-3 executable-RAM, Thumb/calling-convention, cache-coherency and safe-scratch analysis so a future control sink has a concrete target model;
-5. if no deterministic sink can be established offline, checkpoint the primitive as useful RAM corruption but keep the live gate closed.
+4. Treat **VRAM-3 as closed positive**: exact Ditoo evidence establishes executable application-heap SRAM (`0x00804000..0x0081cfff`), ARMv5T Thumb interworking, stock MMU/I+D-cache setup, no XN blocker, and stock cache-maintenance helpers. Do not reopen this unless the pinned execution artifact fails closed;
+5. `tools/ditoo_tier2_placement.py` has also closed the easy grooming shortcut: callback-bearing objects are stock-allocatable/freeable/recreatable, but best-fit fragmentation and zero-on-create prevent static adjacency from being inferred. The remaining gate is `EXACT_DISPLAY_BLOCK_ADDRESS_OR_UNIQUE_ADJACENT_HOLE_MODEL`;
+6. reconstruct allocator state only as far as needed to decide whether the persistent 0x708 display backing allocation is forced into the main free extent and whether a uniquely placeable callback victim lies within the following 1009 bytes;
+7. if multiple viable layouts remain, checkpoint the primitive and keep the live gate closed rather than using a crash as a placement oracle.
 
 Do not create or transmit a malformed/custom `0x6c` packet until a new one-use manifest is reviewed and explicitly granted. A generic crash discriminator is not enough.

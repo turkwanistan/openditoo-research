@@ -69,7 +69,23 @@ It does **not** yet promote code execution or a live experiment. The application
 
 No malformed/custom `0x6c` traffic has been transmitted. **No live manifest exists or is justified yet.**
 
-Tier-2 checkpoint verification in constrained WSL_MCP: focused Tier-1/Tier-2 tests = 7/7 PASS; `git diff --check` = PASS; `python3 scripts/verify_day1_offline.py` = 368 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors and zero new VRAM/parser/recovery failures.
+
+### Tier-2 placement + VRAM-3 execution checkpoint
+
+Two additional fail-closed artifacts now narrow the remaining problem:
+
+- `tools/ditoo_tier2_placement.py` / `artifacts/analysis/volatile_ram_api_tier2_placement.json`;
+- `tools/ditoo_vram3_execution_model.py` / `artifacts/analysis/volatile_ram_api_vram3_execution.json`.
+
+**Placement:** stock callback-bearing app-heap objects are genuinely groomable. The 0x80-byte plugin/child family is allocated from the application heap, zeroed on creation, populated with a 0x34-byte descriptor at +0x0c, later calls through function fields including +0x0c/+0x20/+0x2c, and can be destroyed/freed/recreated. A separate 0x50-byte runtime object has an indirect callback at +0x34. These properties survive all four preserved Plus branches. They do **not** establish adjacency: the application heap is best-fit/separate-descriptor and already fragmented before the persistent display backing allocation, and zero-on-create closes the simple "pre-fill a future free block with a forged callback" idea. The remaining placement question is `EXACT_DISPLAY_BLOCK_ADDRESS_OR_UNIQUE_ADJACENT_HOLE_MODEL`.
+
+**VRAM-3 execution environment:** exact Ditoo initialization pins the application heap to `0x00804000..0x0081cfff` (0x19000 bytes), inside the stock identity-mapped SRAM window `0x00803000..0x0081ffff`. Stage-1 builds ARMv5T short-descriptor page tables, enables the MMU, invalidates the TLB, and enables I- and D-cache. The relevant mapping is cacheable/write-through/non-bufferable. ARMv5T short descriptors have no XN bit, so mapped heap SRAM is executable; **there is no NX blocker**. Stock code also exposes CP15 cache-maintenance helpers, giving a bounded path for a later stage-0 to synchronize a larger rewritten payload. Thumb targets must have bit0 set and return cleanly through the victim callsite.
+
+The stage-1 tail itself is reclaimed into the application heap after boot (heap begins at `0x00804000` while boot/cache helper code exists above that address), while lower resident services such as `0x008012a8` remain callable. This further supports one executable SRAM region being repurposed rather than a separate non-executable data bank.
+
+**Current promotion state:** RAM corruption = proven; executable heap RAM = proven; deterministic indirect-control victim placement = **not proven**. No live manifest is justified until that last item is established offline.
+
+Tier-2 checkpoint verification in constrained WSL_MCP: focused Tier-1/Tier-2 tests = 7/7 PASS; `git diff --check` = PASS; `python3 scripts/verify_day1_offline.py` = 375 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors and zero new VRAM/parser/recovery failures.
 
 Checkpoint verification in constrained WSL_MCP: `python3 -m unittest tests.test_day1_offline.VolatileRamApiSurfaceTests -v` = 3/3 PASS; `git diff --check` = PASS; `python3 scripts/verify_day1_offline.py` = 364 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors and no new VRAM/parser/recovery failure.
 

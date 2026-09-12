@@ -5397,6 +5397,89 @@ class VolatileRamTier2DisplayTests(unittest.TestCase):
         self.assertFalse(committed["safety"]["persistent_mutation"])
 
 
+class VolatileRamTier2PlacementTests(unittest.TestCase):
+    """Tier-2 victim-placement audit; grooming evidence without adjacency overclaim."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_tier2_placement")
+
+    def test_callback_bearing_stock_objects_are_groomable_across_branches(self) -> None:
+        r = self._mod().build_report()
+        self.assertTrue(r["ok"])
+        self.assertEqual(len(r["branches"]), 4)
+        self.assertTrue(r["stock_grooming_surface"]["exists"])
+        self.assertTrue(r["stock_grooming_surface"]["plugin_object"]["whole_object_free_recreate"])
+        self.assertTrue(r["stock_grooming_surface"]["plugin_object"]["zeroed_on_create"])
+        self.assertEqual(r["stock_grooming_surface"]["plugin_object"]["known_indirect_fields"], ["0xc", "0x20", "0x2c"])
+
+    def test_grooming_does_not_promote_deterministic_victim(self) -> None:
+        g = self._mod().build_report()["placement_gate"]
+        self.assertFalse(g["deterministic_adjacent_victim_proven"])
+        self.assertFalse(g["controlled_indirect_branch_proven"])
+        self.assertTrue(g["prefill_free_space_strategy_closed"])
+        self.assertIsNone(g["live_manifest_candidate"])
+        self.assertEqual(g["remaining_offline_question"], "EXACT_DISPLAY_BLOCK_ADDRESS_OR_UNIQUE_ADJACENT_HOLE_MODEL")
+
+    def test_committed_tier2_placement_artifact_is_current_and_offline_only(self) -> None:
+        live = self._mod().build_report()
+        committed = json.loads((ROOT / "artifacts/analysis/volatile_ram_api_tier2_placement.json").read_text())
+        self.assertEqual(committed, live)
+        self.assertTrue(committed["safety"]["offline_analysis_only"])
+        self.assertFalse(committed["safety"]["device_io"])
+        self.assertFalse(committed["safety"]["live_packet_generation"])
+        self.assertFalse(committed["safety"]["runtime_018_touched"])
+
+
+class VolatileRamVram3ExecutionTests(unittest.TestCase):
+    """VRAM-3 exact Ditoo SRAM/MMU/cache execution model; offline only."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_vram3_execution_model")
+
+    def test_heap_is_inside_stock_identity_mapped_sram_across_branches(self) -> None:
+        r = self._mod().build_report()
+        self.assertTrue(r["ok"])
+        self.assertEqual(len(r["branches"]), 4)
+        e = r["execution_model"]
+        self.assertEqual(e["heap_start"], "0x804000")
+        self.assertEqual(e["heap_end_exclusive"], "0x81d000")
+        self.assertEqual(e["heap_size_bytes"], 0x19000)
+        self.assertEqual(e["identity_mapped_sram"], "0x803000..0x81ffff")
+
+    def test_ram_execution_has_no_nx_blocker(self) -> None:
+        r = self._mod().build_report()
+        e = r["execution_model"]
+        p = r["promotion"]
+        self.assertTrue(e["mmu_enabled_by_stock_stage1"])
+        self.assertTrue(e["i_cache_enabled_by_stock_stage1"])
+        self.assertTrue(e["d_cache_enabled_by_stock_stage1"])
+        self.assertFalse(e["armv5_short_descriptor_execute_never_bit"])
+        self.assertTrue(p["ram_executable"])
+        self.assertFalse(p["nx_blocker"])
+        self.assertTrue(p["vram3_execution_environment_established"])
+
+    def test_cache_and_thumb_contract_remain_explicit(self) -> None:
+        r = self._mod().build_report()
+        self.assertEqual(r["mapping"]["cache_policy"], "WRITE_THROUGH_CACHEABLE_NONBUFFERABLE")
+        self.assertEqual(r["calling_contract"]["thumb_target"], "set bit0 of the function pointer before BLX/BX")
+        self.assertFalse(r["scratch_model"]["fixed_reserved_heap_scratch_proven"])
+        self.assertIsNone(r["promotion"]["live_manifest_candidate"])
+        self.assertEqual(r["promotion"]["remaining_blocker_before_live_stage0"], "DETERMINISTIC_CONTROL_FLOW_VICTIM_PLACEMENT")
+
+    def test_committed_vram3_artifact_is_current_and_offline_only(self) -> None:
+        live = self._mod().build_report()
+        committed = json.loads((ROOT / "artifacts/analysis/volatile_ram_api_vram3_execution.json").read_text())
+        self.assertEqual(committed, live)
+        self.assertTrue(committed["safety"]["offline_analysis_only"])
+        self.assertFalse(committed["safety"]["device_io"])
+        self.assertFalse(committed["safety"]["live_packet_generation"])
+        self.assertFalse(committed["safety"]["runtime_018_touched"])
+
+
 class OfficialTestBranchLineageTests(unittest.TestCase):
     """Official test-branch provenance/lineage audit; offline and non-installing."""
 

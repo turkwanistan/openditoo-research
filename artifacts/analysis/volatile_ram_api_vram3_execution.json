@@ -1,0 +1,120 @@
+{
+  "branches": {
+    "flag42_prod_v42016": {
+      "heap_end_exclusive": "0x81d000",
+      "heap_init": "0x3df44",
+      "heap_size_bytes": 102400,
+      "heap_start": "0x804000",
+      "identity_map_end_exclusive": "0x820000",
+      "identity_map_start": "0x803000",
+      "mmu_cache_enable_sequence": "0x4264",
+      "mmu_setup": "0x4354",
+      "resident_service_example": "0x8012a9"
+    },
+    "flag42_test_v42017": {
+      "heap_end_exclusive": "0x81d000",
+      "heap_init": "0x3df58",
+      "heap_size_bytes": 102400,
+      "heap_start": "0x804000",
+      "identity_map_end_exclusive": "0x820000",
+      "identity_map_start": "0x803000",
+      "mmu_cache_enable_sequence": "0x4264",
+      "mmu_setup": "0x4354",
+      "resident_service_example": "0x8012a9"
+    },
+    "flag60_prod_v60014": {
+      "heap_end_exclusive": "0x81d000",
+      "heap_init": "0x3deb0",
+      "heap_size_bytes": 102400,
+      "heap_start": "0x804000",
+      "identity_map_end_exclusive": "0x820000",
+      "identity_map_start": "0x803000",
+      "mmu_cache_enable_sequence": "0x4264",
+      "mmu_setup": "0x4354",
+      "resident_service_example": "0x8012a9"
+    },
+    "flag60_test_api60016_internal60017": {
+      "heap_end_exclusive": "0x81d000",
+      "heap_init": "0x3df44",
+      "heap_size_bytes": 102400,
+      "heap_start": "0x804000",
+      "identity_map_end_exclusive": "0x820000",
+      "identity_map_start": "0x803000",
+      "mmu_cache_enable_sequence": "0x4264",
+      "mmu_setup": "0x4354",
+      "resident_service_example": "0x8012a9"
+    }
+  },
+  "cache_coherency": {
+    "first_execution": "Write-through heap mapping means CPU stores reach backing SRAM; a never-before-executed heap address avoids a stale I-cache line. Static analysis cannot prove an arbitrary chosen heap address has never been fetched, so a first live stage-0 should remain tiny and use a freshly controlled span.",
+    "helpers": {
+      "disable_d_cache": "0xcc8",
+      "disable_i_cache": "0xcb8",
+      "disable_mmu": "0xcfc",
+      "invalidate_both_caches": "0xcd8",
+      "invalidate_i_cache": "0xce0",
+      "invalidate_tlb": "0xcf4",
+      "test_clean_invalidate_d_cache": "0xce8"
+    },
+    "post_stage0": "Once stage-0 executes, stock CP15 helpers provide explicit I-cache invalidation and D-cache clean/invalidate primitives before transferring to a larger rewritten code buffer."
+  },
+  "calling_contract": {
+    "argument_registers": "r0-r3",
+    "return_mechanism": "bx lr / pop {...,pc}",
+    "return_register": "r0",
+    "stage0_rule": "preserve callee-saved state used by the victim callsite and return cleanly before attempting any loader behavior",
+    "thumb_target": "set bit0 of the function pointer before BLX/BX"
+  },
+  "execution_model": {
+    "armv5_short_descriptor_execute_never_bit": false,
+    "conclusion": "The application heap is inside the stock identity-mapped SRAM window. ARMv5T short descriptors provide access/cache attributes but no XN permission, so mapped heap RAM is executable; no NX bypass is required.",
+    "d_cache_enabled_by_stock_stage1": true,
+    "heap_end_exclusive": "0x81d000",
+    "heap_executable_by_mapping_model": true,
+    "heap_size_bytes": 102400,
+    "heap_start": "0x804000",
+    "i_cache_enabled_by_stock_stage1": true,
+    "identity_mapped_sram": "0x803000..0x81ffff",
+    "isa": "ARMv5T_ARM_THUMB_INTERWORKING",
+    "mmu_enabled_by_stock_stage1": true,
+    "resident_load_base": "0x800000",
+    "thumb_entry_requires_address_bit0": 1
+  },
+  "kind": "ditoo_plus_vram3_execution_model",
+  "mapping": {
+    "access": "full-access AP fields in the pinned descriptor constant",
+    "bufferable_B": 0,
+    "cache_policy": "WRITE_THROUGH_CACHEABLE_NONBUFFERABLE",
+    "cacheable_C": 1,
+    "small_page_descriptor_low_bits": "0xffa",
+    "stage1_tail_reclaimed": "Heap begins at 0x00804000 while boot/cache helper code exists around resident 0x00804278; stock initialization deliberately reuses the stage1 tail as heap after boot."
+  },
+  "method_limits": [
+    "This proves the execution/mapping contract, not control-flow hijack.",
+    "No absolute heap allocation address for the Tier-2 backing object is inferred from boot chronology.",
+    "No live malformed/custom packet or device experiment was performed."
+  ],
+  "ok": true,
+  "promotion": {
+    "live_manifest_candidate": null,
+    "nx_blocker": false,
+    "ram_executable": true,
+    "remaining_blocker_before_live_stage0": "DETERMINISTIC_CONTROL_FLOW_VICTIM_PLACEMENT",
+    "vram3_execution_environment_established": true
+  },
+  "safety": {
+    "device_io": false,
+    "firmware_mutation": false,
+    "live_packet_generation": false,
+    "offline_analysis_only": true,
+    "persistent_mutation": false,
+    "runtime_018_touched": false
+  },
+  "schema_version": 1,
+  "scratch_model": {
+    "fixed_reserved_heap_scratch_proven": false,
+    "larger_loader_storage": "a separately controlled/allocated heap span after stage-0 can perform cache maintenance and bounds checks",
+    "preferred_stage0_storage": "caller-controlled bytes already inside the proven adjacent-overwrite span, once a deterministic victim offset is established",
+    "reason": "The heap is allocator-owned; no fixed address inside 0x00804000..0x0081cfff is statically reserved for OpenDitoo."
+  }
+}
