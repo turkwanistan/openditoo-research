@@ -68,6 +68,8 @@ The 134-byte handoff body `file[0x2968:0x29ee]` is byte-identical in preserved f
 
 The application veneer moves with the known branch layout (`flag42` literal at `0xa6468`, `flag60` at `0xa63d4`), while this low-level body remains fixed. This strengthens the conclusion that it is a stable platform handoff rather than a one-build quirk.
 
+A cross-project byte comparison against OpenTivoo's physically recovered AK1052D resident stage1 (`sha256 6831853dc37bf479c4aa926141e2fb6cd9631020d288fa0a759163ff7e94f292`, Tivoo MassBoot body at `0x2230`) is stronger still: **109/134 bytes are identical, and every one of the 25 differing bytes lies inside Thumb `BL` displacement encodings. All non-call instruction bytes match.** In other words, Ditoo and Tivoo use the same MassBoot handoff instruction skeleton with helper calls relocated. This materially raises confidence that the controller/cache/flash-read/ROM-vector semantics learned on Tivoo are relevant to understanding Ditoo MB-S, while still not granting Ditoo command semantics by assumption.
+
 ### Public Ditoo Plus board evidence is useful but not exact-unit truth
 
 FCC ID `A8I-DITOO-PLUS` internal photos show the main PCB, microSD connector, external USB-C receptacle, Anyka SoC area, and multiple exposed pads/vias. The filing's Bluetooth test report identifies the certification sample as hardware `REV:V1.1` and software `ditoo-plus(3128)_svn26520_v60001`.
