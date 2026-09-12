@@ -5348,6 +5348,55 @@ class VolatileRamApiSurfaceTests(unittest.TestCase):
         self.assertFalse(committed["safety"]["persistent_mutation"])
 
 
+class VolatileRamTier2DisplayTests(unittest.TestCase):
+    """Tier-2 resident display overwrite model; offline only, no packet/device surface."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_tier2_display_surface")
+
+    def test_resident_display_path_is_stable_across_preserved_plus_branches(self) -> None:
+        r = self._mod().build_report()
+        self.assertTrue(r["ok"])
+        self.assertEqual(len(r["branches"]), 4)
+        self.assertEqual(r["surface_identity"]["corrected_name"], "DIVOOM_LIGHT_WORD_RESIDENT_DISPLAY_HANDOFF")
+        self.assertFalse(r["surface_identity"]["generic_audio_codec_path_proven"])
+        self.assertTrue(r["reachability"]["resident_target_stable_4_of_4"])
+        self.assertFalse(r["reachability"]["requires_persistent_write"])
+
+    def test_size_model_promotes_controlled_adjacent_heap_overwrite(self) -> None:
+        r = self._mod().build_report()
+        s = r["size_model"]
+        p = r["promoted_primitive"]
+        self.assertEqual(s["spp_max_inner_bytes"], 0x800)
+        self.assertEqual(s["max_caller_controlled_source_bytes"], 2041)
+        self.assertEqual(s["backing_physical_bytes_after_rounding"], 0x710)
+        self.assertEqual(s["physical_capacity_from_display_pointer"], 0x408)
+        self.assertEqual(s["max_controlled_bytes_beyond_physical_allocation"], 1009)
+        self.assertEqual(p["class"], "CALLER_CONTROLLED_ADJACENT_HEAP_OVERWRITE")
+        self.assertEqual(p["status"], "PROMOTED_OFFLINE")
+        self.assertFalse(p["persistent"])
+
+    def test_live_gate_remains_closed_without_deterministic_victim(self) -> None:
+        g = self._mod().build_report()["control_flow_gate"]
+        self.assertFalse(g["deterministic_victim_placement_proven"])
+        self.assertFalse(g["controlled_indirect_branch_proven"])
+        self.assertIsNone(g["live_manifest_candidate"])
+        self.assertEqual(g["next_offline_gate"], "DETERMINISTIC_VICTIM_OR_CONTROL_SINK_PLACEMENT")
+
+    def test_committed_tier2_artifact_is_current_and_offline_only(self) -> None:
+        live = self._mod().build_report()
+        committed = json.loads((ROOT / "artifacts/analysis/volatile_ram_api_tier2_display.json").read_text())
+        self.assertEqual(committed, live)
+        self.assertTrue(committed["safety"]["offline_analysis_only"])
+        self.assertFalse(committed["safety"]["device_io"])
+        self.assertFalse(committed["safety"]["live_packet_generation"])
+        self.assertFalse(committed["safety"]["firmware_mutation"])
+        self.assertFalse(committed["safety"]["runtime_018_touched"])
+        self.assertFalse(committed["safety"]["persistent_mutation"])
+
+
 class OfficialTestBranchLineageTests(unittest.TestCase):
     """Official test-branch provenance/lineage audit; offline and non-installing."""
 

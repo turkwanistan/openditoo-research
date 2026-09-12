@@ -37,9 +37,39 @@ Important negative/closure details include bounded destination writes for `0x44`
 
 The 70 `CLOSED_SCALAR_CONTROL` entries are a deliberate Tier-1 bulk-parser/control-flow closure: they prove no packet pointer or outer caller length is forwarded from the direct handler into a content/copy parser and no caller-tainted direct control sink was found. They are **not** a claim that every scalar helper is mathematically free of every conceivable logic bug. Corpus/dispatcher drift or any newly unclassified explicit handler makes the atlas fail closed.
 
-**Next named surface tier:** external media/codec processing reachable behind `0x6c -> 0x34144 -> fixed fallback 0xA6490 / registered media callback`. Start from the exact SPP-to-media call chain and prove which caller bytes reach which external parser before auditing any generic decoder. Do not import MiniToo codec bugs/addresses/semantics.
+**Tier-1 handoff target (historical):** the branch-specific external veneer behind `0x6c` was the next unexpanded sink. Tier-2 has since shown that this is the resident `divoom_light_word` display handoff, not generic media/codec processing; see the Tier-2 checkpoint below.
 
 Safety state at this checkpoint is unchanged: Runtime 018 was not touched; no device transmission, malformed live packet, reboot/crash probe, factory/update write, MassBoot action, measurement, SPI attachment, UART/GPIO/reset work or other physical action occurred.
+
+## 2026-09-12 Tier-2 resident display checkpoint — RAM primitive promoted, live gate still closed
+
+Reproducible authority:
+
+- `tools/ditoo_tier2_display_surface.py`;
+- `artifacts/analysis/volatile_ram_api_tier2_display.json`;
+- `tests/test_day1_offline.py::VolatileRamTier2DisplayTests`.
+
+The prior "external media/codec" description was too broad. Source provenance places the path in `divoom_light_word.c`; each preserved Plus branch calls through a branch-specific ARM veneer to the same resident Thumb routine at `0x008012a8`. No generic audio decoder is proven reachable from this command.
+
+The exact stock path is now pinned as a two-step volatile mode transition: `0x6c` requests mode `0x0b`; first entry runs the light-word initializer, while a subsequent same-mode `0x6c` reaches `0x12cd4`, forwarding `packet+5` and the caller u16 at `packet+3` through the display function to the resident routine. The resident routine later performs a `memcpy(ctx[0], source, caller_length)` with that u16.
+
+The size mismatch is deterministic in the static model:
+
+- generic SPP assembler accepts declared inner lengths through `0x800`;
+- maximum `0x6c` source after command/payload framing is 2041 caller-controlled bytes;
+- display backing request is `0x708`;
+- application allocator rounds to 16-byte units, so the physical block is `0x710`;
+- exposed display pointer is backing+`0x308`;
+- physical capacity from that pointer is `0x408` = 1032 bytes;
+- therefore the path can write **up to 1009 caller-controlled bytes beyond the physical allocation**.
+
+This promotes `CALLER_CONTROLLED_ADJACENT_HEAP_OVERWRITE` across 4/4 preserved Plus branches. It is RAM-only and does not require the update/file/persistent paths that Tier-1 excluded.
+
+It does **not** yet promote code execution or a live experiment. The application allocator uses separate descriptors and is already allocation/free-active before the persistent display backing object is created; static chronology therefore does not prove what object is physically adjacent. Callback-bearing objects exist (including plugin/child objects with indirect calls through `+0x0c/+0x20/+0x2c` and a 0x50-byte object with a callback at `+0x34`), but none is yet proven to occupy a deterministic offset in the overwrite window. The next offline gate is **deterministic victim/control-sink placement**, in parallel with VRAM-3 executable-RAM/calling-convention work.
+
+No malformed/custom `0x6c` traffic has been transmitted. **No live manifest exists or is justified yet.**
+
+Tier-2 checkpoint verification in constrained WSL_MCP: focused Tier-1/Tier-2 tests = 7/7 PASS; `git diff --check` = PASS; `python3 scripts/verify_day1_offline.py` = 368 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors and zero new VRAM/parser/recovery failures.
 
 Checkpoint verification in constrained WSL_MCP: `python3 -m unittest tests.test_day1_offline.VolatileRamApiSurfaceTests -v` = 3/3 PASS; `git diff --check` = PASS; `python3 scripts/verify_day1_offline.py` = 364 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors and no new VRAM/parser/recovery failure.
 
@@ -132,7 +162,7 @@ and that deterministic controllability matters more than crash count. It does **
    - period APK recovery artifact/provenance;
    - exact-unit framing/drawing capture notes as needed.
 4. Treat **VRAM-0/VRAM-1 and Tier-1 direct-SPP VRAM-2 as CLOSED** unless the pinned corpus or atlas fails closed.
-5. Begin the named Tier-2 external media/codec reachability pass at `0x6c -> 0x34144 -> 0xA6490 / registered media callback`; map caller-byte provenance before decoder-specific work.
+5. Treat the Tier-2 `0x6c` resident display copy primitive as PROMOTED OFFLINE. Continue with deterministic victim/control-sink placement and VRAM-3 RAM-execution feasibility; do not reopen generic codec hunting without a concrete reachability edge.
 6. Promote a parser only for deterministic controlled RAM/control-flow influence; source overreads/crashes alone remain negative evidence.
 7. Use OptiPlex Lab for disposable heavyweight tools when useful; accepted conclusions should be reproducible from the WSL repo without depending on an opaque GUI state.
 8. Continue autonomously through offline milestones until a true live-device boundary or a genuine technical blocker.

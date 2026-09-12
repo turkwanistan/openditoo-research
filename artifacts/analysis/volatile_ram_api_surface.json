@@ -2,7 +2,7 @@
   "accepted_early_vram2_conclusions": {
     "candidate_for_live_manifest": null,
     "direct_controlled_ram_write_or_control_flow_primitive_found": false,
-    "next_named_surface_if_direct_handlers_close": "Tier-2 external media/codec sink behind 0x6c -> 0x34144 -> fixed fallback 0xA6490 / registered media callback",
+    "next_named_surface_if_direct_handlers_close": "Tier-2 resident divoom_light_word/display handoff reached from 0x6c through the branch-specific display veneer",
     "notable_noncontrol_findings": [
       "0x44 internal image decode trusts source consumption more than outer SPP length, but audited palette/output writes remain bounded",
       "0x50 packet[1] can drive an unchecked table read, but variable heap copies are allocation-matched",
@@ -5141,7 +5141,7 @@
         "caller_control": "u16 fields plus packet+5 media bytes",
         "indirect_control_sink": false,
         "landing": "media object / fixed external sink",
-        "next_tier": "external media/codec sink behind 0x34144/0xA6490 is a separate Tier-2 parser surface, not evidence of a direct SPP control-flow primitive",
+        "next_tier": "resident divoom_light_word/display handoff behind the branch-specific display veneer is a separate Tier-2 surface; generic codec reachability is not implied",
         "persistent": false,
         "status": "CLOSED_NO_CONTROL",
         "summary": "packet+5 and a caller u16 are synchronously dispatched to the media sink. The in-firmware media object is 0xC50 bytes; its only caller-data staging copy is +0x842 for 263 bytes (ending +0x948), while the callback pointer is at +0xC4C. The staging write cannot reach the callback. No direct branch/call or raw Thumb-pointer reference to the callback setter was found in the preserved blob; the fallback sink is fixed code at 0xA6490.",

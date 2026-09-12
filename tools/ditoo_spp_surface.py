@@ -190,7 +190,7 @@ AUDITED = {
         "bounds": "263-byte staging region is disjoint from callback slot by >0x300 bytes",
         "indirect_control_sink": False,
         "persistent": False,
-        "next_tier": "external media/codec sink behind 0x34144/0xA6490 is a separate Tier-2 parser surface, not evidence of a direct SPP control-flow primitive",
+        "next_tier": "resident divoom_light_word/display handoff behind the branch-specific display veneer is a separate Tier-2 surface; generic codec reachability is not implied",
         "witnesses": ["0x11fce..0x12012", "event 0x0b -> 0x12cd4 -> 0x34144", "object alloc 0xC50 at 0x340e8", "staging +0x842 at 0x34168", "callback +0xC4C at 0x341a2", "setter 0x34262 has no direct BL/B/literal-pointer xref"],
     },
     0x98: {
@@ -564,7 +564,7 @@ def build_report() -> dict[str, Any]:
                 "0x3c caller u16 can drive a compare/read over-read but not a mutable destination copy",
                 "0x5d clamps variable entry count so its maximum copy remains inside an 0x58-byte object",
             ],
-            "next_named_surface_if_direct_handlers_close": "Tier-2 external media/codec sink behind 0x6c -> 0x34144 -> fixed fallback 0xA6490 / registered media callback",
+            "next_named_surface_if_direct_handlers_close": "Tier-2 resident divoom_light_word/display handoff reached from 0x6c through the branch-specific display veneer",
         },
         "method_limits": [
             "Linear-window load/call signals are ranking evidence, not decompilation truth; inline data/shared tails can exist.",

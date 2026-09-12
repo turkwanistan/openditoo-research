@@ -237,7 +237,7 @@ Exit: every Tier-1 high-value handler is terminally classified or promoted.
 
 No direct SPP candidate reached a controlled RAM write or caller-controlled indirect branch/call without crossing a persistent storage path. Therefore VRAM-2 exits by the planned negative condition and **no VRAM-5/VRAM-6 live candidate is created from Tier-1**.
 
-The next named surface tier is the exact remotely reachable media seam behind `0x6c -> 0x34144 -> 0xA6490 / registered media callback`. Treat that as a continuation of parser exhaustion: first prove byte/length reachability into the external sink, then name and audit only the codec/parser families actually reachable.
+Tier-2 has now resolved that seam: it is the resident `divoom_light_word` display path, not a generic media/codec decoder. The branch-specific veneer converges on resident `0x008012a8`, where the caller u16 from `0x6c` reaches a destination copy. `tools/ditoo_tier2_display_surface.py` promotes a 4/4-branch `CALLER_CONTROLLED_ADJACENT_HEAP_OVERWRITE` with a modeled maximum 1009 controlled bytes beyond the physical backing allocation. Deterministic victim/control-flow placement remains unresolved, so no live candidate is created yet.
 
 ## Phase VRAM-3 — execution environment and RAM-hook feasibility
 
@@ -483,12 +483,14 @@ If a candidate is promoted, the route remains open only through the staged live 
 
 ## Immediate next action
 
-VRAM-0/VRAM-1 and the Tier-1 direct-SPP portion of VRAM-2 are closed. Do not reopen them without corpus drift or a concrete contradictory witness. Begin the **Tier-2 profile/media reachability pass** at the exact `0x6c -> 0x34144 -> 0xA6490 / registered media callback` seam:
+VRAM-0/VRAM-1 and Tier-1 direct-SPP are closed. Tier-2 reachability is also resolved far enough to promote the RAM primitive: `0x6c -> mode 0x0b -> divoom_light_word -> resident 0x008012a8` can copy up to 2041 caller-controlled source bytes into a 1032-byte physical destination capacity, for a modeled maximum 1009-byte adjacent-heap overwrite. Do not reopen generic codec hunting without a concrete edge.
 
-1. establish exact argument/object layout at the external sink across preserved Plus branches;
-2. identify which SPP-controlled bytes/lengths survive to that boundary;
-3. identify the first external parser/decoder actually selected by those fields;
-4. classify allocation/copy/output bounds and any callback/context adjacency there;
-5. only then broaden to additional remotely reachable media/codec families.
+Immediate offline work is now:
 
-Do not fuzz generic codecs merely because their strings exist. Do not create a live manifest unless deterministic controlled RAM/control-flow influence emerges offline. No device transmission is needed for this next pass.
+1. prove or reject deterministic placement of a callback/function-pointer-bearing victim inside that overwrite window;
+2. model the application allocator only as far as needed for that placement question — do not assume bump-allocation chronology because the heap is allocation/free-active and uses separate descriptors;
+3. investigate stock teardown/recreate paths for callback-bearing plugin/child objects as a possible deterministic grooming mechanism;
+4. in parallel, complete VRAM-3 executable-RAM, Thumb/calling-convention, cache-coherency and safe-scratch analysis so a future control sink has a concrete target model;
+5. if no deterministic sink can be established offline, checkpoint the primitive as useful RAM corruption but keep the live gate closed.
+
+Do not create or transmit a malformed/custom `0x6c` packet until a new one-use manifest is reviewed and explicitly granted. A generic crash discriminator is not enough.
