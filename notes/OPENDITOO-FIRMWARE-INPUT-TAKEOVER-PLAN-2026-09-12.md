@@ -112,18 +112,18 @@ Tasks:
 
 **Exit:** one documented hook seam catches the desired seven controls before stock feature-specific side effects, with no unresolved bypass for the intended input classes.
 
-**Status (2026-09-12, offline): substantially met.** Disassembly of both preserved branches
+**Status (2026-09-12, offline): DONE through R1.** Disassembly of both preserved branches
 pinned the full event graph and corrected the seam: the emitter `0x52656` catches only
-short/long *press*; auto-repeat + finalize bypass it and post directly. The single fan-in that
-catches short + long + repeat is the **category-`0x82` queue post `0xc6d7c`** (4 producers:
-`0x52680`, `0x52916`, `0x529aa`, `0x529ce`; the adjacent `0x525a8` posts a different class
-`0x81`). Timing constants verified: long ≥1000 ms, repeat 500 ms, scan 10 ms. Whole subsystem
-including `queue_post` shifts `-0x94` in flag60 (`0xc6ce8`); `0x82` conserved. Delivered:
-`tools/keypad_pipeline_report.py` (fail-closed, byte-verified, no capstone dep),
-`artifacts/analysis/keypad_pipeline.json`, and `FirmwareKeypadPipelineTests` (verifier now
-331 tests PASS). A consume-or-forward shim should therefore hook the category-`0x82`
-producers/consumer, **not** the emitter alone. Optional remaining work: annotate the `0x82`
-consumer task and confirm no other category carries a front-panel key.
+short/long *press*; auto-repeat + finalize bypass it and post directly. The producer-side single
+fan-in is the **category-`0x82` queue post `0xc6d7c`** with exactly four `0x82` producers; the
+adjacent `0x525a8` is separate class `0x81`. R1 also proved one consumer at fixed `0xbc34`,
+with the only dequeue call at `0xbc6a`, category-`0x82` dispatch at `0xbc4c`, and a separate
+`0x81 -> 0xbbac` path. Exhaustive direct queue-post xrefs are exactly those four `0x82` callers
+plus the one `0x81` caller. `tools/keypad_pipeline_report.py` and its committed JSON assert the
+producer and consumer seams on both preserved branches; `FirmwareKeypadPipelineTests` now has
+7 tests. Full verifier discovers **345 tests** after R1 (the WSL sandbox has only the two known
+missing-Pillow W9B errors; no firmware-R&D failure). A consume-or-forward shim may therefore
+hook either the verified producer seam or the verified consumer seam, **not** the emitter alone.
 
 ### UPDATE-R0 — make the SD updater fully modelled offline
 
@@ -185,6 +185,10 @@ Tasks:
 - only after a stage is proven safe, prepare a fresh observation manifest if physical confirmation is useful.
 
 **Exit:** a documented safe route to the built-in key test, or an explicit decision that it is not worth entering.
+
+**R1 exit decision:** there is no proven read-only factory-entry route. Initialization itself
+performs the destructive SPI check, so live factory re-entry is not worth pursuing under the
+current plan.
 
 ### PATCH-R0 — build a non-flashable fail-open prototype patcher
 
@@ -252,6 +256,12 @@ base `0x08400000` (code BL is PC-relative → read as base 0; absolute pointers 
 
 ### N1 — RECOVERY-R0: recover exact-flag42 v42010 (highest leverage; the binding blocker)
 
+**R1 status: UNRESOLVED / environment-blocked.** CDX/timemap requests were attempted, but this
+session's web URL-safety layer rejected the direct archive URLs before request execution and WSL
+had a deterministic DNS outage. Do **not** record this as an archive-negative. REvoom still
+confirms the v42010/v60010 filenames and SHA-1 values. Owner/community v42012 remains the
+strongest recovery lead.
+
 **Why first:** no persistent flash step is justifiable until a rollback exists. v42010 is
 exact-flag42 (older than the unit's v42012 → a *downgrade*, updater-rejected without the `0x33`
 force flag, and NOT the exact original) but is a genuine third cross-check point and a
@@ -277,6 +287,11 @@ Tasks:
 
 ### N2 — FACTORY-R0: classify `divoom_product_test_spiflash_check` (safety gate)
 
+**R1 status: DONE — CONFIRMED PERSISTENT-WRITE, and more restrictive than expected.**
+`0x16a40` erases/writes/reads/compares a 4 KiB sector beginning at
+`ALARM.start_page + 0x2b00`; `divoom_product_test_init` invokes it unconditionally at `0x171ea`.
+Factory entry itself is therefore not proven read-only. N5 is blocked.
+
 **Why:** it is currently flagged conservatively as *potentially persistent-write*, which blocks
 defining any safe factory-visit route. Settle read/verify vs erase/write.
 
@@ -295,6 +310,11 @@ Tasks:
 
 ### N3 — FIRM-R0 tail: annotate the category-`0x82` consumer
 
+**R1 status: DONE.** One consumer loop at fixed `0xbc34`; its dequeue call at `0xbc6a` is the
+only xref to the queue dequeue. Category `0x82` dispatches at `0xbc4c`; `0x81` takes a separate
+`0xbbac` path. Exhaustive queue-post xrefs are exactly the four `0x82` producers plus one `0x81`.
+The report/artifact now assert this on both preserved branches.
+
 **Why:** a consumer-side hook is an alternative *single* seam, and confirming it closes "no other
 category carries a front-panel key".
 
@@ -310,6 +330,11 @@ Tasks:
 
 ### N4 — UPDATE-R0 deepen: disassemble the flash writer `0x3a824`
 
+**R1 status: DONE.** Named targets are BIOS1/BOAR1/PROG1; page size 256 B; BIOS1 erase is
+4 KiB, PROG1+BOAR1 erase is 64 KiB; page writes are 256 B; completion re-reads flash and
+checks the additive checksum before the non-returning reset path. The read-only validator now
+reports this topology.
+
 **Why:** needed before any candidate patch package could be reviewed end-to-end (erase
 granularity, partition map, reset/completion, failure ordering after the accept gate).
 
@@ -320,21 +345,23 @@ Tasks:
   read-only; never emit a writable package).
 - **Exit:** write topology documented strongly enough to review a patch byte-for-byte.
 
-### N5 — (LIVE-GATED) read-only factory key-test observation
+### N5 — (LIVE-GATED) factory key-test observation — BLOCKED BY N2
 
-Only after N2 clears the SPI-flash stage as avoidable/safe. A fresh manifest + exact grant for a
-single passive run: M-at-boot → stage 0 (`42/012`) → advance with M to key-test (id 7) →
-exercise the six keys → confirm read-only behavior on the exact unit. Stop before the SPI-flash
-stage. No persistent write.
+**Do not prepare a live manifest under the current evidence.** N2 proved that factory/product-test
+initialization itself unconditionally performs a 4 KiB erase/write/read/compare before key-test
+navigation. The key-test routine is read-only, but the route into that environment is not. A future
+N5 would require a new method that demonstrably bypasses the destructive initializer, then a fresh
+reviewed manifest and the owner's exact named grant.
 
-### N6 — (LIVE-GATED) LIVE-0 first observe-only firmware revision
+### N6 — (LIVE-GATED) LIVE-0 first observe-only firmware revision — BLOCKED BY N1
 
-Only after N1 (recovery) + N4 (writer) + PATCH-R0 are all closed and the recovery gate is met.
+N4 and PATCH-R0 are closed offline, but N1/recovery remains unmet. Only after a credible recovery
+path exists may this return to consideration.
 Per the LIVE-0 contract below: one checksum-valid package, one install, report one key over the
 SYS SPP channel (TELEMETRY-R0) while forwarding its stock action; no suppression yet.
 
-**Do N1–N4 offline and autonomously. Stop at N5/N6 and wait for a newly reviewed manifest and the
-owner's exact named grant.**
+**R1 checkpoint:** N2–N4 are closed offline; N1 remains unresolved. N5 is blocked by destructive
+factory initialization and N6 is blocked by recovery. No live manifest is prepared or authorized.
 
 ## Long-term architecture after the hook is proven
 

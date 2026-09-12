@@ -590,16 +590,29 @@ producers or (single point) intercept the consumer dequeue of category `0x82` �
 emitter alone, or auto-repeat and finalize events would leak past the claim. Signature-locate;
 never hardcode one build offset.
 
+### R1 consumer closure (2026-09-12, offline)
+
+- Generic dequeue `0xc6df0` reads the same 32-entry, 4-byte ring and has exactly one direct
+  caller: consumer loop callsite `0xbc6a`.
+- The consumer loop is fixed at `0xbc34` in both preserved branches. It compares category `0x82`
+  at `0xbc44` and calls the key dispatcher at `0xbc4c` (`0xe1374` flag42; `0xe12e0` flag60).
+- Category `0x81` is independently compared at `0xbc40` and dispatched via fixed `0xbbac`; it is
+  a distinct callback/notify category, not the translated front-panel key class.
+- Exhaustive halfword-aligned BL/BLX xrefs to queue-post are exactly five on each branch: the four
+  known category-`0x82` producers plus the one `0x81` producer. No additional direct `0x82`
+  producer remains unresolved in these images. A consumer-side hook after dequeue/before the
+  `0x82` dispatch is therefore a viable alternative single seam.
+
 ### Delivered offline (no flashable output)
 
 - `tools/keypad_pipeline_report.py` — fail-closed byte-verifying analyzer (pure Python; the
   Thumb-BL decoder is ARMv5T T1, validated against known targets in tests).
 - `artifacts/analysis/keypad_pipeline.json` — committed machine-readable model, PASS on both
   branches, pins live firmware sha256s.
-- `tests/test_day1_offline.py::FirmwareKeypadPipelineTests` — 5 tests (locator PASS both
-  branches; locator FAIL-CLOSED on a mutated emitter byte; BL decoder vs known targets;
-  category-`0x82` fan-in verified both branches; committed artifact vs live bytes). Verifier
-  total now 331 tests PASS.
+- `tests/test_day1_offline.py::FirmwareKeypadPipelineTests` — 7 tests after R1, adding consumer
+  seam/complete-xref verification and the fixed-consumer/shifted-target cross-branch invariant.
+- `tools/thumbv5t_minidis.py` — read-only Thumb-1/ARMv5T inspection fallback with assert selfcheck,
+  used only because this session could not install Capstone during the WSL DNS outage.
 
 ## 14. UPDATE-R0 disassembly — container format + acceptance gates (2026-09-12, offline)
 
@@ -631,8 +644,13 @@ conflating the code with its adjacent rodata string block `0x886c..0x8967`).
    accumulate an additive byte sum (`0x87ee`); `0x8820` compares to the stored u32. Mismatch
    rejects before any write.
 4. **write** `0x883c`: only after all gates pass, `bl 0x3a824(mode=0, data_len, checksum,
-   version)` — the flash writer — then reset. Erase granularity / partition map / reset path
-   inside `0x3a824` are not yet disassembled (future UPDATE-R0 work).
+   version)`. R1 resolves the downstream topology: stock lookup names **BIOS1, BOAR1, PROG1**;
+   flash pages are 256 B; `0x3a746` erases BIOS1 with 4 KiB sectors (`0x1beca`) and the combined
+   PROG1+BOAR1 allocation with 64 KiB blocks (`0x1beea`); `0x3a4ec` streams one 256-byte page
+   at a time through `0x1be82` in logical order BIOS1 -> BOAR1 -> PROG1. `0x3a356` re-reads
+   mapped pages and recomputes the additive checksum from flash; only a match reaches `0x3a246`,
+   whose reset log is followed by non-returning primitive `0x1b60c`. Lookup/capacity failures
+   precede erase; post-write checksum failure exits instead of reset.
 
 This matches the log-string order (`flag err` → `pass version` → `read over` → `start update`)
 and explains SD-P1 precisely: the checksum-poisoned probe passed the marker and reached the
@@ -642,10 +660,9 @@ byte-identical.
 ### Delivered offline (read-only; no installable package)
 
 - `tools/ditoo_update_container.py` — parser/validator (`--selfcheck`) reporting each gate in
-  firmware order; accepts v42016 as an upgrade from 42012, rejects it as a reinstall on 42016.
-- `tests/test_day1_offline.py::UpdateContainerTests` — 6 tests incl. negative fixtures derived
-  from the real firmware (checksum poison → checksum gate; bad marker → marker gate first;
-  force-flag bypass; truncated → parse failure).
+  firmware order plus read-only UPDATE-R1 write-topology metadata; still emits no package.
+- `tests/test_day1_offline.py::UpdateContainerTests` — 7 tests after R1, including topology
+  invariants in addition to the negative gate fixtures.
 
 ## 15. PATCH-R0 prototype — offline, non-deployable fail-open hook model (2026-09-12)
 
@@ -686,16 +703,21 @@ base 0x08400000). No device I/O.
 - **Key-test stage (id 7, `0x16ef6`): READ-ONLY.** Verifies +,Lighting,Left,-,Right,Lever
   (`0x16,0x67,0x5f,0x0c,0x60,0x15`) pressed in order; increments a volatile counter; on
   completion calls advance and logs `key test is over!`. No flash/SPI write. Safe to observe.
-- **SPI-flash-check stage (`divoom_product_test_spiflash_check`, name `0x16d88`):** body not
-  fully disassembled; image has `Fwl_spiflash_write`/`Fwl_spiflash_erases`. **Classified
-  conservatively as potentially persistent-write — do NOT enter until its target is proven a
-  scratch region.**
+- **SPI-flash check (`divoom_product_test_spiflash_check`): CONFIRMED PERSISTENT-WRITE.** The
+  routine is `0x16a40`: allocate two 4 KiB buffers, fill a pattern, erase one 4 KiB sector,
+  write/read 16 pages, `memcmp` 4096 bytes, log error/ok. No restoration follows. Target start
+  page is **`ALARM.start_page + 0x2b00`**: `0x34382` computes the GIF base as
+  `ALARM.start_page + 0x2a00` with 0x100 pages (64 KiB), and the test adds another 0x100.
+  This looks intentionally scratch-like but remains a persistent mutation on a retail unit.
+- **More importantly, it is not an avoidable later stage:** `divoom_product_test_init` calls the
+  check unconditionally at `0x171ea -> 0x16a40` immediately after initial display setup. Entering
+  factory/product-test mode itself can erase/write that sector.
 - **charge/sd/disp stages:** read/measure + display-only; lower priority; treat read-only
   pending confirmation.
 
-**Safe route (if a live factory visit is ever justified):** stage 0 (passive) -> advance with M
-to key-test (id 7) -> exercise the six keys; stop before the SPI-flash stage. No factory
-observation is authorized at this handoff.
+**R1 live conclusion:** no read-only factory-entry route is proven. The key-test routine itself
+is read-only, but the destructive SPI check runs during initialization before navigation. N5 is
+therefore blocked; no factory observation manifest should be prepared under current evidence.
 
 ## 17. TELEMETRY-R0 — least-invasive report channel (2026-09-12, offline)
 
@@ -724,8 +746,11 @@ Recovery gate remains UNMET after exhausting offline/public avenues this pass:
 - REvoom-documented older objects PURGED: flag42 v42010
   (`f.divoom-gz.com/.../eEwpPWA93ECEIZjCAAAAAArkYGQ617.bin`) and flag60 v60010 both HTTP 404 on
   live HEAD checks (server up, objects gone).
-- Wayback Machine availability API rate-limited (429) all session — archived-copy status of the
-  v42010 object UNRESOLVED; retry from a clean IP / CDX endpoint next session.
+- Wayback status remains UNRESOLVED after R1: direct CDX/timemap requests were rejected by this
+  session's web URL-safety layer before reaching Wayback, and WSL had a deterministic DNS outage.
+  This is not evidence of archive absence. REvoom still confirms v42010 SHA-1
+  `7c352e6b8f62af8d0a2d51d824f75d1dafc18050` and v60010 SHA-1
+  `017a40dcef6018f34be0ec9b83003d71c67e4a58`.
 - No stock SPP firmware-readback: the SPP command set is status GETs + SETs + update-push
   (`SPP_APP_UPDATE_FILE_INFO`); no read/dump/export/backup command exists (only generic
   `FILE_MODE_READ`). The proven SPP channel cannot export firmware.

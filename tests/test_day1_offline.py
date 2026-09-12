@@ -5051,6 +5051,32 @@ class FirmwareKeypadPipelineTests(unittest.TestCase):
                 self.assertTrue(chk["ok"], f"{b['path']} {name} producer must verify")
             self.assertTrue(b["emitter_bl_to_translator_ok"])
 
+    def test_consumer_is_single_dequeue_seam_and_queue_xrefs_are_complete(self) -> None:
+        kp = self._report()
+        report = kp.build_report([self.FW / n for n in self.BRANCHES])
+        for branch in report["branches"]:
+            self.assertTrue(branch["queue_post_xrefs_complete"], branch["path"])
+            self.assertEqual(len(branch["queue_post_xrefs"]), 5, branch["path"])
+            self.assertTrue(branch["consumer"]["ok"], branch["path"])
+            self.assertEqual(branch["consumer"]["loop"], "0xbc34")
+            self.assertEqual(branch["consumer"]["dequeue_xrefs"], ["0xbc6a"])
+            self.assertTrue(branch["consumer"]["category_0x82_dispatch_ok"])
+            self.assertTrue(branch["consumer"]["category_0x81_dispatch_ok"])
+
+    def test_consumer_loop_stays_fixed_while_shifted_targets_retarget(self) -> None:
+        kp = self._report()
+        r = kp.build_report([self.FW / n for n in self.BRANCHES])
+        by_name = {Path(b["path"]).name: b for b in r["branches"]}
+        b42 = by_name["flag42_v42016.bin"]
+        b60 = by_name["flag60_v60014.bin"]
+        self.assertEqual(b42["consumer"]["loop"], b60["consumer"]["loop"])
+        self.assertEqual(b42["consumer"]["category_0x82_dispatch"], "0xe1374")
+        self.assertEqual(b60["consumer"]["category_0x82_dispatch"], "0xe12e0")
+        self.assertEqual(b42["consumer"]["dequeue_target"], "0xc6df0")
+        self.assertEqual(b60["consumer"]["dequeue_target"], "0xc6d5c")
+        self.assertEqual(b42["consumer"]["category_0x81_dispatch"], "0xbbac")
+        self.assertEqual(b60["consumer"]["category_0x81_dispatch"], "0xbbac")
+
     def test_committed_artifact_matches_live_firmware_bytes(self) -> None:
         art = json.loads((ROOT / "artifacts/analysis/keypad_pipeline.json").read_text())
         self.assertTrue(art["ok"], "committed artifact must be a PASS")
@@ -5113,6 +5139,19 @@ class UpdateContainerTests(unittest.TestCase):
         data = (self.FW / "flag42_v42016.bin").read_bytes()
         self.assertFalse(m.validate(data, installed_version=42016)["accepted"])
         self.assertTrue(m.validate(data, installed_version=42016, force=True)["accepted"])
+
+    def test_write_topology_is_named_region_read_only_metadata(self) -> None:
+        m = self._mod()
+        topo = m.WRITE_TOPOLOGY
+        self.assertEqual(topo["page_size_bytes"], 256)
+        self.assertEqual(topo["logical_stream_order"], ["BIOS1", "BOAR1", "PROG1"])
+        self.assertEqual(topo["erase"]["BIOS1"]["granularity_bytes"], 4096)
+        self.assertEqual(topo["erase"]["PROG1_plus_BOAR1"]["granularity_bytes"], 65536)
+        self.assertEqual(topo["write"]["unit_bytes"], 256)
+        data = (self.FW / "flag42_v42016.bin").read_bytes()
+        report = m.validate(data, installed_version=42012)
+        self.assertEqual(report["write_topology"], topo)
+        self.assertIn("no package was produced", report["note"])
 
     def test_truncated_fails_parse_not_crash(self) -> None:
         m = self._mod()

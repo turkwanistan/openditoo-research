@@ -1,4 +1,4 @@
-# OpenDitoo handoff — 2026-09-12 — firmware/input takeover R0
+# OpenDitoo handoff — 2026-09-12 — firmware/input takeover R0/R1
 
 ## Read order
 
@@ -55,11 +55,9 @@ Working conclusion: MassBoot is real/behaviorally supported, but **retail USB-C 
 - brief stock battery/startup icon;
 - dark interval while M held;
 - stable test display **`42` over `012`**;
-- no stage advance and no persistent write observed.
+- no stage advance or visible indication of a persistent write during the observation.
 
-This is strong direct on-device evidence for **product flag 42 / installed firmware v42012**, independent of the earlier stock Bluetooth version query.
-
-Static strings/routines confirm this is `divoom_product_test` / stock factory mode, not MassBoot. It contains SPI-flash check, key test, charge and SD routines plus voice/audio/display diagnostics. Do not advance it blindly. The next useful factory-mode task is **offline state-machine mapping**, especially a safe route to `divoom_product_test_key_update` if one exists.
+This is strong direct on-device evidence for **product flag 42 / installed firmware v42012**, independent of the earlier stock Bluetooth version query. **R1 static analysis later proved that factory initialization itself invokes a destructive 4 KiB SPI erase/write/read test**, so the old observation must not be described as read-only merely because the mutation was not visually apparent. Do not repeat factory entry under the current evidence.
 
 ## Major static breakthrough: true keypad pipeline
 
@@ -116,40 +114,26 @@ All are one-use and consumed. **None may be re-armed.** No fresh physical experi
 
 Private evidence under `captures/private/` remains private/ignored. The manifests preserve compact results and authority history.
 
-## Next steps — start here (R1)
+## R1 checkpoint — start here next
 
-**The ordered, detailed execution plan is `notes/OPENDITOO-FIRMWARE-INPUT-TAKEOVER-PLAN-2026-09-12.md`
-§ "Next work (R1)".** Do N1–N4 offline and autonomously; stop at N5/N6 (live) for a fresh
-manifest + the owner's exact named grant.
+The detailed status is synchronized in `notes/OPENDITOO-FIRMWARE-INPUT-TAKEOVER-PLAN-2026-09-12.md` § **Next work (R1)**. Current result:
 
-1. **N1 — RECOVERY-R0 (binding blocker):** retry Wayback **CDX** for the flag42 v42010 object
-   from a clean context (this session hit `429`); if present, fetch raw bytes (`…/web/<ts>id_/<url>`),
-   validate with `tools/ditoo_update_container.py` + `tools/keypad_pipeline_report.py`, and store
-   with provenance + `SHA256SUMS`. Else pursue owner/community v42012.
-2. **N2 — FACTORY-R0 safety gate:** disassemble `divoom_product_test_spiflash_check` (code before
-   strings `0x16e08`/`0x16e1c`; leads `0x16b92`, `0x2e522`) to decide read/verify vs erase/write
-   and name any write target. Reclassify the SPI-flash stage.
-3. **N3 — FIRM-R0 tail:** annotate the category-`0x82` consumer (ring at `queue_struct+0x80`);
-   confirm no other `0x82` producer for a front-panel key.
-4. **N4 — UPDATE-R0 deepen:** disassemble the flash writer `0x3a824` (erase granularity, write
-   region, reset/completion, failure ordering).
-5. **N5 (LIVE-GATED):** read-only factory key-test observation, only after N2 clears the
-   SPI-flash stage.
-6. **N6 (LIVE-GATED):** LIVE-0 observe-only firmware revision, only after N1+N4+PATCH-R0 and the
-   recovery gate are met.
+1. **N1 RECOVERY — UNRESOLVED / binding blocker.** Direct Wayback CDX/timemap requests could not be executed from this session, and WSL DNS was down. This is not an archive-negative. Exact v42012 is still unrecovered; owner/community v42012 is the strongest lead, with a future clean-network CDX retry for v42010 secondary.
+2. **N2 FACTORY — DONE / destructive.** The SPI check erases+writes+reads 4 KiB at `ALARM.start_page + 0x2b00` and is invoked unconditionally during factory initialization.
+3. **N3 FIRM — DONE.** A single consumer loop at `0xbc34` dequeues the ring; category `0x82` dispatch is a second viable single hook seam. Queue-post xrefs are completely enumerated.
+4. **N4 UPDATE — DONE.** Writer topology is BIOS1/BOAR1/PROG1 with 256-byte pages, 4 KiB + 64 KiB erase modes, post-write flash checksum verification, then reset.
+5. **N5 — BLOCKED.** There is no proven read-only route into factory mode because initialization itself mutates flash. No live manifest was prepared.
+6. **N6 — BLOCKED by N1.** No checksum-valid custom package or live firmware operation is authorized.
 
-Recommended start: **N2 now** (offline, no external rate limit), **N1 shortly after** (avoid
-idling on the Wayback 429), then N3/N4.
+**Single best next action:** recover a provenance-tracked exact v42012 image/restore source. Until then remain offline/non-flashable.
 
 ### Per-goal status (2026-09-12)
 
 Detailed contract in `notes/OPENDITOO-FIRMWARE-INPUT-TAKEOVER-PLAN-2026-09-12.md`. Priority order:
 
-### 1. FIRM-R0 — keypad hook contract — SUBSTANTIALLY DONE (2026-09-12, offline)
+### 1. FIRM-R0/R1 — keypad hook contract + consumer seam — DONE (2026-09-12, offline)
 
-Disassembly of both preserved branches (capstone, load base 0 confirmed — every BL resolves
-to a known file offset) produced the full runtime event graph and a **material correction to
-the hook-seam assumption**:
+Disassembly of both preserved branches produced the full runtime event graph and a **material correction to the hook-seam assumption**. Earlier R0 work used Capstone; R1 cross-checks used the repository's byte-verifying analyzers plus `tools/thumbv5t_minidis.py` because WSL DNS prevented installing Capstone in the throwaway venv. Code BL targets are PC-relative/file-offset based; absolute pointers use link base `0x08400000`.
 
 ```
 poll tick
@@ -179,8 +163,17 @@ Key findings:
   nothing (the handler posts on its own).
 - Timing constants (byte-verified): long-press threshold **1000 ms** (`0x7d<<3`), auto-repeat
   period **500 ms** (`0xff+0xf5`), scan reschedule **10 ms**.
-- The whole subsystem including the far `queue_post` shifts by exactly **`-0x94`** in flag60
-  (`queue_post` flag60 = `0xc6ce8`); category `0x82` is conserved verbatim in both branches.
+- The producer/queue/key-dispatch subsystem shifts by **`-0x94`** in flag60 (`queue_post`
+  `0xc6d7c -> 0xc6ce8`, dequeue `0xc6df0 -> 0xc6d5c`, key dispatcher `0xe1374 -> 0xe12e0`).
+  The **consumer loop itself stays fixed at `0xbc34`** in both preserved branches; 62/64 bytes
+  are identical and only the two branch-relative call immediates to the shifted targets differ.
+- The queue dequeue at `0xc6df0` has exactly **one** caller (`0xbc6a`). The consumer compares
+  category `0x82` at `0xbc44` then dispatches it at `0xbc4c`; this is a viable alternative
+  single consumer-side hook seam. Category `0x81` is compared separately at `0xbc40` and sent
+  to its own fixed dispatcher `0xbbac`, confirming it is not the translated front-panel key class.
+- Exhaustive halfword-aligned BL/BLX xref scanning finds exactly five direct callers of the
+  queue post in each preserved branch: the four `0x82` producers plus the one `0x81` producer.
+  There is no unresolved direct `0x82` producer in these images.
 
 Delivered offline:
 
@@ -190,18 +183,16 @@ Delivered offline:
   to `queue_post`. Recognition + verification only; never patches, no flashable output.
 - `artifacts/analysis/keypad_pipeline.json` — committed machine-readable artifact (PASS on
   both branches; pins live firmware sha256s).
-- `tests/test_day1_offline.py::FirmwareKeypadPipelineTests` — 5 tests: locator PASS on both
-  branches, locator FAIL-CLOSED on a mutated emitter byte, Thumb-BL decoder vs known targets,
-  category-`0x82` fan-in verified on both branches, committed artifact matches live bytes.
-  Full verifier now **331 tests PASS** in normal WSL (the two W9B optical errors were the
-  WSL_MCP sandbox missing Pillow; they do not occur here).
+- `tests/test_day1_offline.py::FirmwareKeypadPipelineTests` — now 7 tests, adding byte-verified
+  assertions for the single consumer/dequeue seam, the complete five-call queue xref set, and
+  the fixed-consumer/shifted-target relationship across both branches.
+- `tools/thumbv5t_minidis.py` — small read-only Thumb-1/ARMv5T inspection fallback with an
+  assert-based self-check. Added because this session's DNS outage prevented installing Capstone;
+  unknown encodings stay explicit instead of being guessed.
 
-Remaining FIRM-R0 (optional, lower value): annotate the exact consumer task that dequeues
-category `0x82` (a consumer-side hook is an alternative single seam), and prove no *other*
-category posts a front-panel key. The producer-side model above is already sufficient to
-specify a fail-open consume-or-forward shim.
+FIRM-R0/R1 is closed strongly enough for either producer-side or consumer-side hook design.
 
-### 2. UPDATE-R0 — SD updater fully annotated + validator — SUBSTANTIALLY DONE (2026-09-12)
+### 2. UPDATE-R0/R1 — SD updater gates + flash topology — DONE (2026-09-12, offline)
 
 `divoom_check_update` disassembled (flag42 file `0x8394`; link base **`0x08400000`** — code BL
 read as base 0 because PC-relative, but absolute string pointers use `0x08400000`; the note's
@@ -242,12 +233,20 @@ Delivered offline (read-only, produces no installable package):
   (checksum poison → checksum gate; bad marker → marker gate before checksum; force-flag
   bypass; truncated → parse fail).
 
-**Not yet done (deeper, lower priority):** erase granularity / partition map / write topology
-inside `0x3a824`, and the exact reset/completion path. Documented as future work — the gate
-model above is sufficient to review a candidate package before any (separately authorized)
-live use.
+**R1 writer topology (byte-verified offline):** `0x3a824` resolves three named flash objects
+through stock lookup: **BIOS1, BOAR1, PROG1**. The lookup returns byte capacity plus a u16
+start-page; flash page size is **256 bytes**. For mode 0, helper `0x3a746` erases BIOS1 in
+**4 KiB** sectors (`0x1beca`, 16 pages) and erases the combined PROG1+BOAR1 allocation in
+**64 KiB** blocks (`0x1beea`, 256 pages). Streaming helper `0x3a4ec` maps logical update pages
+BIOS1 -> BOAR1 -> PROG1 and writes one 256-byte page at a time via `0x1be82`. Completion helper
+`0x3a356` re-reads the mapped pages via `0x1beaa`, recomputes the additive byte sum from flash,
+and compares it to the expected checksum. Only a match enters `0x3a246`, which logs
+`divoom_update_device_update_firmware; reset!` and calls non-returning reset primitive `0x1b60c`.
+Named-object lookup/capacity failures happen before erase; a post-write checksum mismatch exits
+without the completion/reset path. `tools/ditoo_update_container.py` now reports this topology
+as read-only metadata; it still cannot create/fix an installable package.
 
-### 3. FACTORY-R0 — product-test state machine mapped offline — PARTIAL (2026-09-12)
+### 3. FACTORY-R0/R1 — product-test SPI safety reclassified — PERSISTENT-WRITE (2026-09-12, offline)
 
 Disassembled the product-test dispatcher/router (flag42 `0x16c52`-`0x16d82`) and the key-test
 stage (`0x16ef6`). Findings:
@@ -267,19 +266,30 @@ stage (`0x16ef6`). Findings:
   **in order**, incrementing a volatile counter and calling advance on completion. No SPI/flash
   write; no persistent state mutation in the routine. `divoom_product_test_key_update: key test
   is over!` (`0x16e70`) logs completion.
-- **`divoom_product_test_spiflash_check` (`0x16d88` name string): UNKNOWN / conservative.**
-  Its routine body was not fully disassembled this pass; the image contains
-  `Fwl_spiflash_write`/`Fwl_spiflash_erases` (`0x1bf08`, `0x163ac`). Until its target region is
-  proven a scratch area, **classify the SPI-flash stage as potentially persistent-write — do
-  NOT enter it.**
+- **`divoom_product_test_spiflash_check` is confirmed destructive/persistent-write.** The
+  actual routine is `0x16a40` (the earlier `0x16b92` lead is an initializer, not the check). It
+  allocates two 4 KiB buffers, fills the first with a test pattern, computes a target page, calls
+  4 KiB erase wrapper `0x1beca`, writes 16 pages with `0x1be82`, reads 16 pages back with
+  `0x1beaa`, then `memcmp`s 4096 bytes and logs `spiflash error!/ok!`. It does **not restore**
+  previous contents.
+- **Write target:** `divoom_main_get_gif_addr_info` (`0x34382`) looks up `ALARM`, returns
+  `ALARM.start_page + 0x2a00`, and reports a 0x100-page (64 KiB) GIF region. The SPI test adds
+  another `0x100` pages, so its 4 KiB target begins at page
+  **`ALARM.start_page + 0x2b00`**: the first sector immediately after that computed 64 KiB GIF
+  region. Static evidence supports that this was intended as a factory scratch location, but
+  does not prove it is disposable on every retail unit; classification remains persistent-write.
+- **Critical route correction:** `divoom_product_test_init` calls this routine **unconditionally**
+  at `0x171ea -> 0x16a40`, immediately after initial display setup. Therefore merely entering
+  factory/product-test mode can erase/write this sector; it is not a later stage that can be
+  safely avoided after entry.
 - **charge / sd / disp stages** (`divoom_product_test_charge_update` `0x172bc`,
   `_sd_update` `0x172ec`, `divoom_disp_test` `0x2e590`): read/measure + display-only; treat as
   read-only pending confirmation, below the key test in priority.
 
-**Safe live route (if ever useful):** M-at-boot → stage 0 (passive) → advance with M to the
-key-test stage (id 7) → exercise the six keys. This exercises only read-only diagnostics. **Do
-not advance into the SPI-flash stage** until its write target is disassembled. No factory
-observation is authorized at this handoff.
+**Live safety conclusion:** there is **no read-only factory-entry route** proven by this image,
+because initialization performs the erase/write test before key-test navigation. N5 is therefore
+**BLOCKED**; do not prepare or execute a factory key-test manifest under the current plan. The
+key-test routine itself remains read-only, but reaching the factory environment is not.
 
 ### 4. RECOVERY-R0 — rollback/readback search — STILL BLOCKED (2026-09-12)
 
@@ -291,9 +301,12 @@ Offline/public-source avenues exhausted this pass; the recovery gate remains **U
   (`http://f.divoom-gz.com/.../eEwpPWA93ECEIZjCAAAAAArkYGQ617.bin`) and flag60 **v60010**;
   both return **HTTP 404** on live HEAD checks (the `f.divoom-gz.com` nginx server is up, the
   objects are gone).
-- **Wayback Machine: UNRESOLVED.** The availability API rate-limited (429) throughout this
-  session; whether an archived copy of the v42010 object exists is not settled. Retry from a
-  non-rate-limited context (or the CDX endpoint) in a future session.
+- **Wayback Machine: still UNRESOLVED after R1 retry.** Direct CDX/timemap requests from the
+  web tool were rejected by its URL-safety layer before reaching Wayback, while the WSL
+  environment had a deterministic DNS outage (also preventing GitHub/pip access). This is an
+  environment/tooling block, **not evidence that no snapshot exists**. REvoom independently
+  still confirms v42010 filename/SHA-1 `7c352e6b8f62af8d0a2d51d824f75d1dafc18050` and v60010
+  SHA-1 `017a40dcef6018f34be0ec9b83003d71c67e4a58`.
 - **No stock SPP firmware-readback route:** the entire SPP command set is status GETs, SET
   commands, and update-*push* (`SPP_APP_UPDATE_FILE_INFO`); there is **no** read/dump/export/
   backup command (only a generic `FILE_MODE_READ` file mode). So the proven SPP channel cannot
@@ -327,7 +340,7 @@ recovery strategy exists, stay offline/non-flashable.
 
 Tests: `PatchPrototypeTests` (5) — BL encoder⇄decoder inverse; recognize+verify both branches;
 emitted image rejected at the updater checksum gate (independently re-validated); fail-closed
-on unknown firmware; refuse on original-byte mismatch. Verifier: **342 tests PASS**.
+on unknown firmware; refuse on original-byte mismatch. Verifier baseline before R1: **342 tests PASS**.
 
 Still LIVE-gated (unchanged): authoring the shim machine code, proving an all-`0xFF` region is
 a resident/executable cave, and any device write. The prototype deliberately stops at the
@@ -391,10 +404,11 @@ python3 scripts/locate_ditoo_keypad_pipeline.py artifacts/firmware/flag60_v60014
 python3 tools/keypad_pipeline_report.py artifacts/firmware/flag42_v42016.bin artifacts/firmware/flag60_v60014.bin
 python3 tools/ditoo_update_container.py --selfcheck
 python3 tools/openditoo_patch_prototype.py artifacts/firmware/flag42_v42016.bin
-python3 scripts/verify_day1_offline.py   # expect 342 tests PASS in normal WSL
-# For N2/N3/N4 disassembly: capstone is not in the WSL_MCP sandbox nor the ai-studio venv
-# (both externally-managed). Make a throwaway venv:  python3 -m venv /tmp/fw-venv &&
-# /tmp/fw-venv/bin/pip install capstone.  Firmware link base for absolute pointers is 0x08400000.
+python3 scripts/verify_day1_offline.py   # expect 345 tests after R1 in a normal WSL with Pillow
+# Read-only fallback when Capstone cannot be installed:
+python3 tools/thumbv5t_minidis.py --selfcheck
+# If network works, Capstone may still be installed only into a throwaway /tmp venv.
+# Firmware link base for absolute pointers is 0x08400000; code BL is PC-relative.
 ```
 
 If `verify_day1_offline.py` reports a known environment/build-artifact mismatch, compare against the handoff/current clean baseline rather than rewriting live product code to chase an unrelated firmware-R&D issue.
@@ -405,5 +419,8 @@ If `verify_day1_offline.py` reports a known environment/build-artifact mismatch,
 - locator against flag60 v60014 — PASS at emitter `0x525C2`, ADC `0x527B0`, translator `0x52892`.
 - all four new experiment manifests parse as JSON and are consumed with `physical_execution_authorized=false`.
 - `git diff --check` — PASS.
-- `python3 scripts/verify_day1_offline.py` ran 326 tests; the only two errors were unrelated W9B optical tests failing to import `PIL` because Pillow is absent in the WSL_MCP sandbox. No firmware-R&D test failed. Do not mutate product code or install dependencies merely to erase this environment-only handoff note.
+- `tools/thumbv5t_minidis.py --selfcheck` — PASS.
+- R1 focused firmware suites: 14/14 PASS.
+- Full verifier: **345 tests discovered**; exactly two errors, both the documented unrelated W9B
+  optical imports caused by missing Pillow in this sandbox. **No firmware-R&D test failed.**
 

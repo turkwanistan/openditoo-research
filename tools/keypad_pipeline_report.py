@@ -47,6 +47,8 @@ REF = {
     "translation_mapper": 0x52926,        # select short/long/repeat event from the record
     "repeat_handler": 0x52982,            # 500ms auto-repeat + key-change finalize
     "queue_post": 0xC6D7C,                # generic os_post(category, event, u16 param)
+    "queue_dequeue": 0xC6DF0,             # generic ring dequeue; shifts with queue implementation
+    "key_event_dispatch": 0xE1374,         # category-0x82 semantic dispatcher; shifts with keypad branch
 }
 # Category-0x82 (translated key event) producers -> the BL-to-queue_post site file offset.
 PRODUCERS_82 = {
@@ -56,6 +58,19 @@ PRODUCERS_82 = {
     "repeat_fire": 0x529CE,         # auto-repeat event, class 3
 }
 PRODUCER_81 = {"raw_notify": 0x525A8}  # adjacent category 0x81, NOT a translated key event
+
+# The consumer task itself is fixed at the same file offset in both preserved branches. Only
+# its BL immediates retarget the shifted dequeue/key-dispatch functions. This is deliberately
+# separate from REF: applying the keypad branch shift to the consumer would be wrong.
+CONSUMER = {
+    "loop": 0xBC34,
+    "category_0x81_compare": 0xBC40,
+    "category_0x82_compare": 0xBC44,
+    "category_0x82_dispatch_call": 0xBC4C,
+    "category_0x81_dispatch_call": 0xBC64,
+    "dequeue_call": 0xBC6A,
+    "category_0x81_dispatch": 0xBBAC,
+}
 
 CONSTANTS = {
     "category_key_event": 0x82,
@@ -84,6 +99,45 @@ def thumb_bl_target(data: bytes, off: int) -> int | None:
     if (h2 & 0xF800) == 0xE800:            # BLX forces ARM alignment
         tgt &= ~3
     return tgt
+
+
+def _bl_xrefs(data: bytes, target: int) -> list[int]:
+    """Return every halfword-aligned Thumb BL/BLX callsite targeting ``target``."""
+    return [off for off in range(0, len(data) - 3, 2) if thumb_bl_target(data, off) == target]
+
+
+def _consumer_check(data: bytes, offsets: dict[str, int]) -> dict:
+    """Verify the fixed consumer loop and its branch-specific call targets."""
+    c = CONSUMER
+    cmp81_ok = data[c["category_0x81_compare"]:c["category_0x81_compare"] + 2] == bytes.fromhex("8128")
+    cmp82_ok = data[c["category_0x82_compare"]:c["category_0x82_compare"] + 2] == bytes.fromhex("8228")
+    dispatch82 = thumb_bl_target(data, c["category_0x82_dispatch_call"])
+    dispatch81 = thumb_bl_target(data, c["category_0x81_dispatch_call"])
+    dequeue = thumb_bl_target(data, c["dequeue_call"])
+    dequeue_xrefs = _bl_xrefs(data, offsets["queue_dequeue"])
+    ok = (
+        cmp81_ok and cmp82_ok
+        and dispatch82 == offsets["key_event_dispatch"]
+        and dispatch81 == c["category_0x81_dispatch"]
+        and dequeue == offsets["queue_dequeue"]
+        and dequeue_xrefs == [c["dequeue_call"]]
+    )
+    return {
+        "loop": f"0x{c['loop']:x}",
+        "loop_position": "fixed in both preserved branches; call targets retarget per branch",
+        "category_0x81_compare_ok": cmp81_ok,
+        "category_0x82_compare_ok": cmp82_ok,
+        "category_0x82_dispatch": None if dispatch82 is None else f"0x{dispatch82:x}",
+        "category_0x82_dispatch_ok": dispatch82 == offsets["key_event_dispatch"],
+        "category_0x81_dispatch": None if dispatch81 is None else f"0x{dispatch81:x}",
+        "category_0x81_dispatch_ok": dispatch81 == c["category_0x81_dispatch"],
+        "dequeue_call": f"0x{c['dequeue_call']:x}",
+        "dequeue_target": None if dequeue is None else f"0x{dequeue:x}",
+        "dequeue_target_ok": dequeue == offsets["queue_dequeue"],
+        "dequeue_xrefs": [f"0x{x:x}" for x in dequeue_xrefs],
+        "dequeue_single_consumer_ok": dequeue_xrefs == [c["dequeue_call"]],
+        "ok": ok,
+    }
 
 
 def _check(data: bytes, addr: int, expect_prefix: bytes, expect_bl_to: int) -> dict:
@@ -137,16 +191,35 @@ def analyze(path: Path) -> dict:
     emitter_bl_to_translator = thumb_bl_target(data, located_emitter + 0xE)
     translator_ok = emitter_bl_to_translator == offsets["translation_mapper"]
 
+    # Exhaustively scan direct BL/BLX references to this queue implementation. The complete
+    # caller set must be the four translated-key producers plus the one separate 0x81 producer.
+    queue_xrefs = _bl_xrefs(data, queue)
+    expected_queue_xrefs = sorted(
+        [site - shift for site in PRODUCERS_82.values()]
+        + [site - shift for site in PRODUCER_81.values()]
+    )
+    queue_xrefs_complete = queue_xrefs == expected_queue_xrefs
+    consumer = _consumer_check(data, offsets)
+
     checks_ok = (
         all(p["ok"] for p in producers.values())
         and all(p["ok"] for p in p81.values())
         and translator_ok
+        and queue_xrefs_complete
+        and consumer["ok"]
     )
     result.update({
         "branch_shift": f"0x{shift:x}",
         "offsets": {name: f"0x{off:x}" for name, off in offsets.items()},
         "category_0x82_producers": producers,
         "category_0x81_producer": p81,
+        "queue_post_xrefs": [f"0x{x:x}" for x in queue_xrefs],
+        "queue_post_xrefs_complete": queue_xrefs_complete,
+        "consumer": consumer,
+        "category_0x81_semantics": (
+            "separate notify/callback category with its own 0xbbac dispatcher; not the translated "
+            "front-panel key class (0x82)"
+        ),
         "emitter_bl_to_translator": (
             None if emitter_bl_to_translator is None else f"0x{emitter_bl_to_translator:x}"
         ),
@@ -157,6 +230,7 @@ def analyze(path: Path) -> dict:
 
 
 def build_report(paths: list[Path]) -> dict:
+    branches = [analyze(p) for p in paths]
     return {
         "artifact": "ditoo_keypad_pipeline_analysis",
         "contract": "recognition + byte-verified semantic model; fail-closed; no patching",
@@ -167,6 +241,7 @@ def build_report(paths: list[Path]) -> dict:
             "key_state_machine -> translated_event_emitter (short/long press)",
             "translated_event_emitter -> translation_mapper -> queue_post(category=0x82)",
             "key_state_machine timer -> repeat_handler (500ms) -> queue_post(category=0x82) [BYPASSES emitter]",
+            "consumer 0xbc34 -> queue_dequeue -> category 0x82 -> key_event_dispatch",
         ],
         "hook_seam": {
             "single_common_fanin": "queue_post category 0x82",
@@ -177,6 +252,11 @@ def build_report(paths: list[Path]) -> dict:
                 "the category-0x82 producers/consumer, not the emitter alone."
             ),
             "category_0x82_producer_count": len(PRODUCERS_82),
+            "consumer_loop": "0xbc34 (same file offset in both preserved branches)",
+            "consumer_side_alternative": (
+                "hook after the single queue dequeue and before/at the category-0x82 dispatch; "
+                "all four translated-key producer paths converge here"
+            ),
         },
         "key_translation_table_semantics": {
             "record": "[key_id, short_event(byte1), long_event(byte2), third_repeat(byte3)]",
@@ -184,8 +264,8 @@ def build_report(paths: list[Path]) -> dict:
             "long_press": "translator r1!=0 -> byte2 if !=0xFF else byte1",
             "0xFF": "means 'no distinct event for this phase; fall back to short'",
         },
-        "branches": [analyze(p) for p in paths],
-        "ok": all(analyze(p)["ok"] for p in paths),
+        "branches": branches,
+        "ok": all(branch["ok"] for branch in branches),
     }
 
 

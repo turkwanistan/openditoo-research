@@ -20,7 +20,19 @@ Acceptance logic, disassembled from `divoom_check_update` (flag42 file 0x8394; l
   2. VERSION  reject if installed_version >= candidate_version,   (0x878c-0x879a)
              UNLESS a header flag byte == 0x33 ('3') forces it   (0x8790 beq skip)
   3. CHECKSUM sum(file[:-4]) mod 2**32 == stored u32             (0x87be subs #4; 0x8820 cmp)
-  4. WRITE    only then: flash writer 0x3a824(mode, data_len, checksum, version) -> reset
+  4. WRITE    only then: updater init 0x3a824(mode, data_len, checksum, version)
+
+UPDATE-R1 write topology (flag42 v42016, byte-verified offline): 0x3a824 resolves three named
+flash objects with the stock Fwl lookup — BIOS1, BOAR1 and PROG1. The lookup returns each
+object's byte capacity and a u16 start-page; flash page size is 256 bytes. For mode=0 the erase
+helper 0x3a746 erases BIOS1 in 4 KiB sectors (16 pages, wrapper 0x1beca) and the combined
+PROG1+BOAR1 allocation in 64 KiB blocks (256 pages, wrapper 0x1beea). The streaming writer
+0x3a4ec maps logical update pages BIOS1 -> BOAR1 -> PROG1 and writes one 256-byte page at a
+time through 0x1be82. Completion check 0x3a356 re-reads those mapped pages, recomputes the
+additive byte sum from flash, and compares it with the stored checksum before entering 0x3a246;
+that completion path logs `divoom_update_device_update_firmware; reset!` and calls the
+non-returning reset primitive 0x1b60c. Named-object lookup/capacity failures occur before erase;
+a post-write checksum mismatch takes the failure/exit path instead of reset.
 
 The additive checksum covers everything except the final 4 bytes (so it includes the version
 field and the marker). No cryptographic signature/HMAC is present in this path.
@@ -36,6 +48,63 @@ from pathlib import Path
 MARKER = b"DIVOOMUPDATE"
 TRAILER_LEN = 20  # u32 version + 12 marker + u32 checksum
 FORCE_FLAG = 0x33  # header flag byte '3' bypasses the version-monotonicity gate
+
+# Byte-verified UPDATE-R1 topology. This is descriptive metadata only: no method in this module
+# erases, writes, fixes a checksum, or emits a candidate package. Addresses are flag42 v42016
+# file offsets; runtime object locations are discovered by stock name lookup, not hardcoded.
+WRITE_TOPOLOGY = {
+    "initializer": "0x3a824",
+    "page_size_bytes": 256,
+    "logical_stream_order": ["BIOS1", "BOAR1", "PROG1"],
+    "named_region_lookup": {
+        "api": "Fwl lookup wrapper 0x1bf5c -> 0x52c2a",
+        "returns": "byte capacity; writes u16 start_page to caller output",
+    },
+    "erase": {
+        "BIOS1": {
+            "helper": "0x3a746 -> 0x1beca",
+            "granularity_bytes": 4096,
+            "formula": "start_sector = BIOS1.start_page >> 4; count = BIOS1.size_bytes >> 12",
+        },
+        "PROG1_plus_BOAR1": {
+            "helper": "0x3a746 -> 0x1beea",
+            "granularity_bytes": 65536,
+            "formula": (
+                "start_block = PROG1.start_page >> 8; "
+                "count = (PROG1.size_bytes + BOAR1.size_bytes) >> 16"
+            ),
+        },
+    },
+    "write": {
+        "helper": "0x3a4ec -> 0x1be82",
+        "unit_bytes": 256,
+        "mapping": (
+            "logical page i maps to BIOS1.start_page+i, then BOAR1.start_page+(i-BIOS1_pages), "
+            "then PROG1.start_page+(i-BIOS1_pages-BOAR1_pages)"
+        ),
+    },
+    "verify": {
+        "helper": "0x3a356 -> 0x1beaa",
+        "behavior": "re-read mapped pages from flash, additive-sum bytes, compare expected checksum",
+    },
+    "completion": {
+        "path": "0x3a246",
+        "reset_log": "divoom_update_device_update_firmware; reset!",
+        "reset_primitive": "0x1b60c (non-returning)",
+    },
+    "failure_order_after_outer_accept": [
+        "internal version/update-info guard",
+        "state allocation",
+        "BIOS1 lookup",
+        "BOAR1 lookup",
+        "PROG1 lookup",
+        "combined capacity check",
+        "erase/setup",
+        "streamed page writes",
+        "post-write flash re-read checksum",
+        "completion/reset only on checksum match",
+    ],
+}
 
 
 class ContainerError(ValueError):
@@ -107,6 +176,7 @@ def validate(data: bytes, installed_version: int | None = None, force: bool = Fa
         "gates": gates,
         "first_failing_gate": first_fail,
         "accepted": accepted,
+        "write_topology": WRITE_TOPOLOGY,
         "note": "read-only analysis; no package was produced or modified",
     }
 
@@ -138,6 +208,13 @@ def _selfcheck() -> None:
     # marker is checked before checksum: a file with bad marker AND bad checksum reports marker
     both_bad = bad_marker[:-1] + bytes([bad_marker[-1] ^ 0xFF])
     assert validate(both_bad, installed_version=42012)["first_failing_gate"] == "marker"
+
+    # UPDATE-R1 documentation invariants: topology is named-region based and remains read-only.
+    assert WRITE_TOPOLOGY["page_size_bytes"] == 256
+    assert WRITE_TOPOLOGY["logical_stream_order"] == ["BIOS1", "BOAR1", "PROG1"]
+    assert WRITE_TOPOLOGY["erase"]["BIOS1"]["granularity_bytes"] == 4096
+    assert WRITE_TOPOLOGY["erase"]["PROG1_plus_BOAR1"]["granularity_bytes"] == 65536
+    assert WRITE_TOPOLOGY["write"]["unit_bytes"] == 256
     print("selfcheck OK")
 
 

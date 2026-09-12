@@ -14,12 +14,15 @@
     "key_state_machine -> get_current_key -> [driver_ptr] adc_decoder -> adc_read_veneer",
     "key_state_machine -> translated_event_emitter (short/long press)",
     "translated_event_emitter -> translation_mapper -> queue_post(category=0x82)",
-    "key_state_machine timer -> repeat_handler (500ms) -> queue_post(category=0x82) [BYPASSES emitter]"
+    "key_state_machine timer -> repeat_handler (500ms) -> queue_post(category=0x82) [BYPASSES emitter]",
+    "consumer 0xbc34 -> queue_dequeue -> category 0x82 -> key_event_dispatch"
   ],
   "hook_seam": {
     "single_common_fanin": "queue_post category 0x82",
     "note": "The emitter (translated_event_emitter) catches only short/long PRESS events. Auto-repeat and key-change finalize post category 0x82 directly, bypassing the emitter. A consume-or-forward shim that must see short+long+repeat should hook the category-0x82 producers/consumer, not the emitter alone.",
-    "category_0x82_producer_count": 4
+    "category_0x82_producer_count": 4,
+    "consumer_loop": "0xbc34 (same file offset in both preserved branches)",
+    "consumer_side_alternative": "hook after the single queue dequeue and before/at the category-0x82 dispatch; all four translated-key producer paths converge here"
   },
   "key_translation_table_semantics": {
     "record": "[key_id, short_event(byte1), long_event(byte2), third_repeat(byte3)]",
@@ -55,7 +58,9 @@
         "translated_event_emitter": "0x52656",
         "translation_mapper": "0x52926",
         "repeat_handler": "0x52982",
-        "queue_post": "0xc6d7c"
+        "queue_post": "0xc6d7c",
+        "queue_dequeue": "0xc6df0",
+        "key_event_dispatch": "0xe1374"
       },
       "category_0x82_producers": {
         "emitter_press": {
@@ -101,6 +106,33 @@
           "ok": true
         }
       },
+      "queue_post_xrefs": [
+        "0x525a8",
+        "0x52680",
+        "0x52916",
+        "0x529aa",
+        "0x529ce"
+      ],
+      "queue_post_xrefs_complete": true,
+      "consumer": {
+        "loop": "0xbc34",
+        "loop_position": "fixed in both preserved branches; call targets retarget per branch",
+        "category_0x81_compare_ok": true,
+        "category_0x82_compare_ok": true,
+        "category_0x82_dispatch": "0xe1374",
+        "category_0x82_dispatch_ok": true,
+        "category_0x81_dispatch": "0xbbac",
+        "category_0x81_dispatch_ok": true,
+        "dequeue_call": "0xbc6a",
+        "dequeue_target": "0xc6df0",
+        "dequeue_target_ok": true,
+        "dequeue_xrefs": [
+          "0xbc6a"
+        ],
+        "dequeue_single_consumer_ok": true,
+        "ok": true
+      },
+      "category_0x81_semantics": "separate notify/callback category with its own 0xbbac dispatcher; not the translated front-panel key class (0x82)",
       "emitter_bl_to_translator": "0x52926",
       "emitter_bl_to_translator_ok": true,
       "ok": true
@@ -132,7 +164,9 @@
         "translated_event_emitter": "0x525c2",
         "translation_mapper": "0x52892",
         "repeat_handler": "0x528ee",
-        "queue_post": "0xc6ce8"
+        "queue_post": "0xc6ce8",
+        "queue_dequeue": "0xc6d5c",
+        "key_event_dispatch": "0xe12e0"
       },
       "category_0x82_producers": {
         "emitter_press": {
@@ -178,6 +212,33 @@
           "ok": true
         }
       },
+      "queue_post_xrefs": [
+        "0x52514",
+        "0x525ec",
+        "0x52882",
+        "0x52916",
+        "0x5293a"
+      ],
+      "queue_post_xrefs_complete": true,
+      "consumer": {
+        "loop": "0xbc34",
+        "loop_position": "fixed in both preserved branches; call targets retarget per branch",
+        "category_0x81_compare_ok": true,
+        "category_0x82_compare_ok": true,
+        "category_0x82_dispatch": "0xe12e0",
+        "category_0x82_dispatch_ok": true,
+        "category_0x81_dispatch": "0xbbac",
+        "category_0x81_dispatch_ok": true,
+        "dequeue_call": "0xbc6a",
+        "dequeue_target": "0xc6d5c",
+        "dequeue_target_ok": true,
+        "dequeue_xrefs": [
+          "0xbc6a"
+        ],
+        "dequeue_single_consumer_ok": true,
+        "ok": true
+      },
+      "category_0x81_semantics": "separate notify/callback category with its own 0xbbac dispatcher; not the translated front-panel key class (0x82)",
       "emitter_bl_to_translator": "0x52892",
       "emitter_bl_to_translator_ok": true,
       "ok": true
