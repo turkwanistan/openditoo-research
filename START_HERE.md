@@ -2,8 +2,9 @@
 
 OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit evidence and preserved artifacts outrank family resemblance, plans, and chat history.
 
-## ▶ CURRENT STATE — read this first (2026-09-11)
+## ▶ CURRENT STATE — read this first (2026-09-12)
 
+- **Handoff: `notes/OPENDITOO-HANDOFF-2026-09-12-R018.md`** — Runtime 018 (media-resilient raw-AVRCP input, hidden BTVS, self-healing binding) is live; read it before touching input, the elevated sidecar or cutovers. The Slots v2 handoff below is still the reference for page/game work.
 - **Handoff: `notes/OPENDITOO-HANDOFF-2026-09-11-SLOTS-V2.md`**. Slots v2 replaced the "impossible" hard-stop slots: lever stops snap onto the payline, and there are reachable wins (left+middle pair, three of a kind, 7-7-7 jackpot) with bounded outcome animations and shaded art. It shipped as Runtime 014 (polish), 015 (nearest-symbol snap for input lag) and 016 (steady 1 px reels). Owner verdict on the panel: **"winnable now, but hard"**, accepted as the live baseline.
 - **Live product: Runtime 018** (`runtime_revision=13`, `host/product_runtime_v12.py`, policy `OPENDITOO-PRODUCT-RUNTIME-018`, main cutover `f604c32`, 2026-09-12). This is Runtime 017 (Runtime 016's pages, Host `3faf520f…`, session, pacing, reconnect/reclaim and webcam policy 006, with media-resilient raw-AVRCP input) plus a hidden BTVS window and a one-shot rebind renewal after a sidecar restart. Runtime 017 is the exact rollback in `.openditoo-local/rollback-runtime-017` (`bash scripts/cutover_runtime_018.sh --rollback`); its own task/install root are kept. Earlier rollbacks are kept.
 - **Slots tuning knobs** (`host/slots_page.py`, hash-bound): `REEL_SPEEDS=(1,1,1)`, `SLIP_BACK=(3,2,2)` (aimed hit rate 100/67/67%), and `STRIPS` (3 cherry, 2 seven, bar, diamond, star per reel; random-timing any win ~25%, jackpot ~1.6%). If the owner wants it easier: widen `SLIP_BACK` or add cherries. Never reintroduce mixed 1/2 px steps (they judder on late ACKs) or two identical consecutive animation frames (ACK stall; see AGENTS.md). Every change needs a fresh runtime successor.
