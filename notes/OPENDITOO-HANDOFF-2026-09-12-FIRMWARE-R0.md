@@ -381,7 +381,10 @@ scoped (`GET_VERSION`, `CLAIM_INPUTS`, `RELEASE_INPUTS`, `INPUT_EVENT`, heartbea
 
 Claim should be short-lived and heartbeat/TTL based. Disconnect/crash/expiry restores stock input automatically. Do not expose generic raw-memory mutation as the public API. Long term, typed capabilities can support local SD apps and a small sandboxed runtime, but that is after input takeover and recovery are proven.
 
-## New-session execution posture
+## New-session execution posture — SUPERSEDED BY MASSBOOT R2
+
+> **Superseded 2026-09-12:** for current recovery work, route to `notes/OPENDITOO-HANDOFF-2026-09-12-MASSBOOT-R2.md` and `notes/OPENDITOO-MASSBOOT-R2-EXECUTION-PLAN-2026-09-12.md`. The bullets below are preserved as the historical R1 posture and must not send a fresh session back to completed N2–N4 work.
+
 
 - **Start at the R1 plan (§ "Next steps — start here (R1)" above / plan N1–N6).** Recommended
   first move: N2 (offline), then N1.

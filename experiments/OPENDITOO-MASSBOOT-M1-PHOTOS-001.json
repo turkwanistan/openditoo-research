@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "kind": "massboot_exact_unit_passive_board_imaging",
+  "experiment_id": "OPENDITOO-MASSBOOT-M1-PHOTOS-001",
+  "milestone": "MassBoot R2 / M1 exact-unit passive board imaging",
+  "status": "prepared_unauthorized",
+  "objective": "Obtain a complete high-resolution photographic record of both faces of the owner's exact v42012 Ditoo Plus main PCB and relevant connector/pad/component regions so USB, GPIO6/UART0, RESET and SPI-NOR routing can be reasoned about before any electrical experiment.",
+  "target": {
+    "model": "Ditoo Plus",
+    "installed_firmware": "v42012",
+    "product_flag": 42,
+    "exact_unit": "the project purchased unit"
+  },
+  "preconditions": {
+    "device": "fully powered off before disassembly",
+    "usb_charger": "disconnected",
+    "sd_card": "removed if present",
+    "battery": "disconnect through an ordinary accessible connector only if straightforward; no cutting/desoldering/forced removal",
+    "recording": "capture original full-resolution still images; do not rely on compressed screenshots"
+  },
+  "operation": {
+    "allowed": [
+      "controlled non-destructive disassembly sufficient to expose both main-PCB faces",
+      "passive visual inspection",
+      "high-resolution still photography and ordinary camera/video documentation",
+      "repositioning removable covers/connectors only as normally required for non-destructive access"
+    ],
+    "required_photo_set": [
+      "exterior/orientation and connector-side reference",
+      "full straight-on main-PCB face A plus oblique views",
+      "full straight-on main-PCB face B plus oblique views",
+      "AK1052D marking/package macro with pin-1 orientation and surrounding board",
+      "USB-C region macro on both corresponding PCB faces including nearby passives/vias/test pads",
+      "SPI-NOR full marking/package macro and surrounding passives/test pads",
+      "all exposed test pads/unpopulated headers/labels",
+      "battery/power/charge region and USB-VBUS entry",
+      "all board revision/date/lot/silkscreen/QR/barcode markings",
+      "all inter-board flex/wire/connector routing before optional disconnection"
+    ],
+    "forbidden": [
+      "powering or booting the device while open as part of this experiment",
+      "USB attachment",
+      "continuity/resistance/voltage/current measurement",
+      "powered probing",
+      "UART adapter connection",
+      "GPIO strap/pull-down/pull-up",
+      "RESET manipulation",
+      "MassBoot or factory/test-mode entry",
+      "MassBoot/USB/SCSI/vendor commands",
+      "firmware/RAM read or write",
+      "flash programmer or SPI clip attachment",
+      "soldering, desoldering, trace cutting or component removal"
+    ],
+    "automatic_retry": false
+  },
+  "evidence_to_capture": [
+    "original full-resolution photos",
+    "board revision/variant markings",
+    "AK1052D package orientation/pin-1 reference",
+    "USB-C copper/passive/test-pad neighborhood",
+    "SPI-NOR marking/package",
+    "candidate factory/test-pad clusters",
+    "battery and power connector topology",
+    "any unexpected board-to-board connectors or daughterboards"
+  ],
+  "analysis_contract": {
+    "mapping_labels": [
+      "photo_proven",
+      "geometry_inference",
+      "unknown"
+    ],
+    "required_outputs": [
+      "exact-unit board-map note/artifact",
+      "ranked candidate endpoints for USB_DM/USB_DP, GPIO6/UART0_TXD, GPIO7/UART0_RXD and RESET",
+      "identified GND/3.3V candidates only where photographically supportable",
+      "SPI-NOR no-solder clip feasibility assessment",
+      "smallest unpowered M2 measurements needed to discriminate unresolved mappings"
+    ],
+    "prohibition": "Do not promote an unlabeled or merely nearby test pad to a signal identity without measurement."
+  },
+  "risk": {
+    "classification": "low_but_nonzero_mechanical_only",
+    "reason": "No powered/electrical operation is authorized; remaining risk is ordinary mechanical handling, connector damage, ESD or accidental short/contact during disassembly."
+  },
+  "stop_policy": {
+    "one_disassembly_photo_session_only": true,
+    "stop_if_access_requires": [
+      "soldering/desoldering",
+      "cutting/glue destruction beyond ordinary non-destructive access",
+      "forcing a battery connection",
+      "powered probing",
+      "direct manipulation of unidentified electrical pads"
+    ],
+    "on_uncertain_disassembly": "Stop and capture the best accessible photos rather than forcing deeper access.",
+    "after": "Reassemble normally or leave safely unpowered for later owner decision; no M2 electrical measurement is authorized by this manifest."
+  },
+  "authority": {
+    "physical_execution_authorized": false,
+    "authorization_consumed": false,
+    "grant_text_required": "Grant OPENDITOO-MASSBOOT-M1-PHOTOS-001",
+    "grant_scope": "ONE non-destructive, unpowered exact-unit Ditoo Plus disassembly/photo session to capture the frozen M1 photo set only; no electrical measurements, USB/UART, GPIO/reset manipulation, service/factory entry, MassBoot commands, firmware/RAM/flash access, or soldering.",
+    "granted_by": null,
+    "grant_text": null,
+    "granted_at_utc": null,
+    "consumed_at_utc": null
+  },
+  "result": null
+}
