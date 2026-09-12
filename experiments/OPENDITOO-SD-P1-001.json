@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "kind": "sd_update_rejection_probe",
+  "experiment_id": "OPENDITOO-SD-P1-001",
+  "milestone": "SD-P1 Ditoo Plus updater-path recognition",
+  "status": "completed_positive_authority_consumed",
+  "objective": "Determine whether the purchased v42012 Ditoo Plus recognizes /divoom/divoomupdate.bin on the already-proven FAT32 TF card while deliberately preventing the preserved v42016 package from satisfying the known additive checksum gate.",
+  "target": {
+    "model": "Ditoo Plus",
+    "installed_firmware": "v42012",
+    "exact_unit": "the project's hash-bound purchased unit"
+  },
+  "precondition": {
+    "sd_p0": "PASS on 2026-09-12: 32 GB microSDHC, one ~28.8 GB FAT32 partition, stock Ditoo played root MP3 repeatedly",
+    "card": "same SD-P0-proven card",
+    "power": "battery adequately charged; stable USB power may remain connected",
+    "boot": "normal power-on only; no service/test/MassBoot key combination"
+  },
+  "probe": {
+    "source_file": "artifacts/firmware/flag42_v42016.bin",
+    "source_size": 1207313,
+    "source_sha256": "f2509588d3ca52175591925298cdcffe9c7e01f6d43d89ee352b967610025b6a",
+    "source_stored_additive_checksum": "0x06ab2183",
+    "source_calculated_additive_checksum": "0x06ab2183",
+    "local_probe_file": ".openditoo-local/sd-p1/openditoo-sd-p1-v42016-checksum-poison.bin",
+    "probe_size": 1207313,
+    "probe_sha256": "acf0715fc98ecc1dd1abce483a0c68d8ca7b3bf98f676b03bdedacc72bc0ba43",
+    "probe_sha1": "84a15e80118a90dfabae3ac1a59929422b6b07bb",
+    "mutation": "exactly one byte differs from the official source: zero-based file offset 1207312 (final byte), 0x06 -> 0x07",
+    "probe_stored_additive_checksum": "0x07ab2183",
+    "probe_calculated_additive_checksum": "0x06ab2183",
+    "known_gate_result": "FAIL by construction",
+    "tail_hex": "6ffdff1120a400004449564f4f4d5550444154458321ab07"
+  },
+  "cross_branch_safety_basis": "Preserved Ditoo Plus flag42 v42016 and flag60 v60014 have the same updater anchors at the same offsets; the updater region is approximately 97-98% byte-identical. Both place checksum rejection before the accepted start-update path. This lowers but does not eliminate risk because the exact v42012 bytes remain unrecovered.",
+  "operation": {
+    "phase_a_control": "Copy the frozen probe bytes to /divoom/notupdate.bin on the SD card; normal cold boot once; observe only; shut down normally and verify file size/hash unchanged.",
+    "phase_b_exact_path": "Using the same frozen bytes, rename/copy to /divoom/divoomupdate.bin; normal cold boot once; observe only; after stable normal operation shut down normally and verify file size/hash/presence.",
+    "optional_phase_c": "Only if phase B is silent and stable: with the same checksum-invalid exact-path file present, insert the card once while the Ditoo is already normally powered on; observe. Do not introduce any checksum-valid package.",
+    "automatic_retry": false,
+    "automatic_reboot": false,
+    "firmware_validity": "intentionally invalid at the known additive checksum gate",
+    "valid_official_update": false,
+    "custom_patch": false
+  },
+  "expected_observations": {
+    "positive": "A repeatable boot delay, updater/error UI, reboot/shutdown difference, or probe-file mutation that occurs only with the exact update path while installed firmware remains v42012.",
+    "negative": "No visible difference and unchanged file is inconclusive; it does not disprove the SD route.",
+    "unexpected": "Any genuine update/progress indication or installed firmware change is outside the expected result. Do not intentionally interrupt power while progress is active; record the outcome after the device reaches a stable terminal state."
+  },
+  "risk": {
+    "classification": "low_but_nonzero",
+    "reason": "The probe cannot satisfy the known v42016/v60014 additive checksum acceptance gate, but v42012 is not byte-recovered and therefore exact parser/order equivalence is not proven.",
+    "explicitly_not_zero": true
+  },
+  "stop_policy": {
+    "stop_after": "one control cold boot and one exact-path cold boot; optional one powered insertion only if exact-path cold boot is silent and stable",
+    "no_retry_after_ambiguity": true,
+    "do_not_interrupt": "If genuine update progress unexpectedly begins, do not intentionally pull power/card mid-progress. Let the device reach a stable finished/error state, record it, and stop further testing.",
+    "never_proceed_to": [
+      "valid official v42016 package",
+      "checksum-valid modified package",
+      "MassBoot/service mode",
+      "any guessed key combination"
+    ]
+  },
+  "authority": {
+    "physical_execution_authorized": false,
+    "authorization_consumed": true,
+    "grant_text_required": "Grant OPENDITOO-SD-P1-001",
+    "grant_scope": "ONE SD-P1 A/B rejection-probe experiment on the already-proven FAT32 card using only probe sha256 acf0715fc98ecc1dd1abce483a0c68d8ca7b3bf98f676b03bdedacc72bc0ba43, with no checksum-valid firmware and no service/MassBoot entry.",
+    "granted_by": "operator, in-session, 2026-09-12",
+    "grant_text": "Grant OPENDITOO-SD-P1-001",
+    "granted_at_utc": "2026-09-12T05:10:33Z",
+    "consumed_at_utc": "2026-09-12T05:22:00Z"
+  },
+  "result": {
+    "status": "pass_positive_path_recognition",
+    "phase_a_control": "normal boot; no updater UI; stock boot then OpenDitoo returned",
+    "phase_b_exact_path": "distinct updater/download-to-tray UI appeared, absent in control; device then continued to normal boot/OpenDitoo",
+    "post_hash_sha256": "acf0715fc98ecc1dd1abce483a0c68d8ca7b3bf98f676b03bdedacc72bc0ba43",
+    "post_hash_matches_probe": true,
+    "file_mutated": false,
+    "optional_phase_c": "not_run_not_needed",
+    "interpretation": "Exact purchased v42012 unit recognizes /divoom/divoomupdate.bin on the SD-P0-proven FAT32 card and enters the updater path far enough to show updater UI; checksum-poisoned image was rejected without mutating the file and normal operation returned.",
+    "installed_firmware_postcheck": "v42012 independently confirmed later the same session by consumed OPENDITOO-FACTORY-TEST-OBS-001 passive factory display 42 / 012",
+    "installed_firmware_unchanged": true
+  }
+}

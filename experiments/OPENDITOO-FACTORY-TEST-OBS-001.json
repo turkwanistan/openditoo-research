@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "kind": "factory_test_observation_only",
+  "experiment_id": "OPENDITOO-FACTORY-TEST-OBS-001",
+  "milestone": "RECOVERY/FACTORY-MODE stock product-test characterization",
+  "status": "completed_passive_factory_mode_observed",
+  "objective": "Reproduce only the stock M-at-boot factory/product-test entry screen on the purchased v42012 Ditoo Plus, record visible behavior for 20-30 seconds, press no controls after boot, and exit by normal power-cycle. No SD card, no USB service probing, no factory-test stage advancement.",
+  "target": {
+    "model": "Ditoo Plus",
+    "installed_firmware": "v42012",
+    "exact_unit": "the project purchased unit"
+  },
+  "static_evidence": {
+    "reference_firmware": "artifacts/firmware/flag42_v42016.bin",
+    "reference_sha256": "f2509588d3ca52175591925298cdcffe9c7e01f6d43d89ee352b967610025b6a",
+    "boot_selector": "M key / physical key ID1 selects stock test path",
+    "firmware_string": "enter test mode!",
+    "known_test_components": [
+      "SPI flash check",
+      "physical-key test",
+      "charging test",
+      "SD test"
+    ]
+  },
+  "preconditions": {
+    "sd_card": "removed",
+    "usb": "not required; do not intentionally probe USB during this experiment",
+    "battery": "adequately charged",
+    "recording": "camera ready before boot"
+  },
+  "operation": {
+    "steps": [
+      "Power the Ditoo fully off.",
+      "Hold M and perform only the normal power-on action.",
+      "Once the alternate/test display appears, release M.",
+      "Press no other controls and do not insert SD/USB accessories.",
+      "Record the display/LED/audio behavior for 20-30 seconds.",
+      "Power-cycle normally to exit."
+    ],
+    "advance_factory_stage": false,
+    "button_input_after_entry": false,
+    "sd_insert": false,
+    "usb_probe": false,
+    "firmware_read": false,
+    "firmware_write": false,
+    "persistent_mutation_intended": false
+  },
+  "evidence_to_capture": [
+    "video/photo of entry screen",
+    "audio/LED behavior",
+    "whether mode remains stable without input",
+    "whether normal boot returns after power-cycle"
+  ],
+  "risk": {
+    "classification": "low_but_nonzero",
+    "reason": "Entry is a stock factory/product-test mode and no stage advancement is authorized, but exact v42012 factory-mode initialization side effects are not fully characterized."
+  },
+  "stop_policy": {
+    "one_entry_only": true,
+    "no_controls_after_entry": true,
+    "on_unexpected_write_update_reset_prompt": "do not confirm anything; power-cycle normally if stable to do so and stop",
+    "never_proceed_to": [
+      "key-test sequence",
+      "SPI-flash test interaction",
+      "SD insertion",
+      "charging-stage manipulation",
+      "factory reset/calibration",
+      "firmware/service commands"
+    ]
+  },
+  "authority": {
+    "physical_execution_authorized": false,
+    "authorization_consumed": true,
+    "grant_text_required": "Grant OPENDITOO-FACTORY-TEST-OBS-001",
+    "grant_scope": "ONE stock M-at-boot factory/test-mode entry on the exact purchased v42012 unit, observation only for 20-30 seconds, no controls after entry, SD removed, no USB probing, then normal power-cycle.",
+    "grant_text": "Grant OPENDITOO-FACTORY-TEST-OBS-001",
+    "granted_by": "operator, in-session, 2026-09-12",
+    "granted_at_utc": "2026-09-12T06:17:30.826912Z",
+    "consumed_at_utc": "2026-09-12T06:17:30.826912Z"
+  },
+  "result": {
+    "observation_source": "owner video uploaded in-session 2026-09-12",
+    "video_duration_seconds": 17.61,
+    "visible_sequence": "brief stock battery/boot icon -> dark screen while M held -> factory/test display after release",
+    "factory_display_top": "42",
+    "factory_display_bottom": "012",
+    "interpretation": "Strongly consistent with Ditoo product flag 42 plus installed firmware suffix 012, i.e. v42012; this is direct on-device visual support for the previously reported installed build.",
+    "other_controls_pressed": false,
+    "sd_card_removed": true,
+    "persistent_write_observed": false,
+    "advanced_factory_stage": false
+  },
+  "completed_at_utc": "2026-09-12T06:21:52.675234Z"
+}

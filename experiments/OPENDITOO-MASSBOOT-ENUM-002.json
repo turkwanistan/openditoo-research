@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "kind": "usb_massboot_enumeration_only",
+  "experiment_id": "OPENDITOO-MASSBOOT-ENUM-002",
+  "milestone": "RECOVERY-R0 exact-unit MassBoot enumeration",
+  "status": "completed_enumeration_negative",
+  "objective": "Repeat the exact-unit MassBoot enumeration-only test with a different, independently data-validated USB cable as the sole material variable. Capture only ordinary Windows USB/PnP identity. No custom USB command, storage access, firmware read/write, or service protocol action is permitted.",
+  "target": {
+    "model": "Ditoo Plus",
+    "installed_firmware": "v42012",
+    "exact_unit": "the project hash-bound purchased unit"
+  },
+  "static_evidence": {
+    "reference_firmware": "artifacts/firmware/flag42_v42016.bin",
+    "reference_sha256": "f2509588d3ca52175591925298cdcffe9c7e01f6d43d89ee352b967610025b6a",
+    "massboot_selector_file_offsets": "0x6113..0x6115",
+    "massboot_selector_bytes": [
+      1,
+      3,
+      5
+    ],
+    "test_selector_file_offsets": "0x6116..0x6118",
+    "test_selector_bytes": [
+      1,
+      1,
+      5
+    ],
+    "key_table_offset": "0x6119",
+    "key_id_3_mapping": "Lighting button (high confidence from exact manual numbering + firmware/capture cross-checks)",
+    "selector_function": "0x1b8f4(mode)",
+    "massboot_string_offset": "0x1ba48",
+    "massboot_transfer": "0xA6460 after selector success",
+    "startup_gate": "normal startup configures/reads GPIO 0x1E (30) and calls 0x1b8f4(1) only when GPIO30 is high",
+    "gpio30_interpretation": "high-confidence external-power/charge condition: used by Ditoo offline-charge startup logic; AK1052D pin mux maps GPIO30 to ISENSE",
+    "physical_hypothesis": "data-capable USB/external power present + Lighting held stably during ordinary startup"
+  },
+  "preconditions": {
+    "sd_card": "removed; SD updater is not part of this experiment",
+    "product_runtime": "may be stopped before the experiment to avoid Bluetooth/product reconnect noise; this does not widen USB authority",
+    "windows": "Administrator PowerShell available for mountvol automount suppression",
+    "usb_cable": "NEW alternate USB cable, first proven data-capable with another known USB data device on the same Windows PC/port before involving the Ditoo",
+    "battery": "adequately charged"
+  },
+  "operation": {
+    "phase_a_baseline": "Using the NEW data-validated cable, with no special key held, observe the Ditoo under normal USB-attached startup and record present Windows PnP/USB/disk identities. Do not open or browse any new volume.",
+    "phase_b_candidate": "Using the SAME NEW data-validated cable and PC port: disable automatic mounting of newly discovered volumes; power the Ditoo fully off; hold the Lighting key; attach USB and keep Lighting held through startup. If cable insertion does not itself start the unit, use only the normal power-on action while continuing to hold Lighting. Release Lighting after the device/Windows reaches a stable state or after ~5 seconds of boot activity. Record only ordinary Windows PnP/USB/disk enumeration metadata.",
+    "stop_on_new_identity": "As soon as a new/different USB/PnP identity attributable to the Ditoo is observed, the experiment is complete. Do not interact with that interface.",
+    "phase_c": null,
+    "automatic_retry": false,
+    "custom_usb_requests": false,
+    "scsi_passthrough": false,
+    "vendor_driver_install": false,
+    "volume_browse_or_format": false,
+    "firmware_read": false,
+    "firmware_write": false,
+    "massboot_protocol_commands": false
+  },
+  "host_write_minimization": {
+    "before_phase_b": "Run mountvol /N from Administrator PowerShell to disable automatic mounting of newly discovered volumes.",
+    "during": "Do not assign a drive letter, browse a volume, initialize a disk, format, run CHKDSK, or allow any application to index/open a newly exposed device.",
+    "after": "Run mountvol /E to restore automatic mounting, even if MassBoot does not enumerate.",
+    "note": "Windows standard USB enumeration/descriptor traffic is inherently allowed; no application-level command beyond read-only OS enumeration is authorized."
+  },
+  "evidence_to_capture": [
+    "before/after Get-PnpDevice -PresentOnly entries for USB/DiskDrive/WPD classes",
+    "hardware instance IDs and VID/PID if exposed by normal PnP enumeration",
+    "Get-Disk/Get-Volume metadata only if Windows itself exposes an object; do not mount/browse it",
+    "visible Ditoo screen/LED behavior and whether normal Runtime 018/Bluetooth startup occurs",
+    "elapsed time to stable state"
+  ],
+  "expected_results": {
+    "positive": "A USB/PnP identity appears in Phase B that is absent from the same-cable normal Phase A. This would strongly support MassBoot host enumeration and show cable capability mattered; stop immediately without interacting with the interface.",
+    "negative": "If the NEW cable is independently proven data-capable yet both normal and Lighting-held Ditoo states still expose no new identity, cable capability becomes an unlikely explanation for the retail USB-C silence.",
+    "unexpected": "Any Windows prompt to initialize/format/repair a disk, any unexplained persistent device state, or any behavior suggesting a write-capable update/recovery workflow. Cancel/dismiss host prompts without acting and stop."
+  },
+  "risk": {
+    "classification": "low_but_nonzero",
+    "reason": "No intentional device write or custom USB command occurs, but the test intentionally enters a boot/service state whose exact v42012 USB presentation is not yet known. Host automount is suppressed to reduce incidental writes."
+  },
+  "stop_policy": {
+    "one_baseline_and_one_candidate_only": true,
+    "no_retry_after_ambiguity": true,
+    "on_positive": "capture identity only, restore Windows automount, then power-cycle the Ditoo normally with Lighting released; do not issue any command to the new interface",
+    "on_no_enumeration": "restore automount, return Ditoo to normal boot, preserve observations, stop",
+    "on_host_prompt": "cancel/dismiss without initialize/format/repair; restore automount and stop",
+    "never_proceed_to": [
+      "MassBoot vendor/SCSI commands",
+      "flash readback",
+      "RAM read/write/GOTO",
+      "driver installation",
+      "checksum-valid SD firmware",
+      "service protocol probing"
+    ]
+  },
+  "authority": {
+    "physical_execution_authorized": false,
+    "authorization_consumed": true,
+    "grant_text_required": "Grant OPENDITOO-MASSBOOT-ENUM-002",
+    "grant_scope": "ONE normal-USB baseline and ONE Lighting+USB MassBoot candidate startup using the NEW independently data-validated USB cable on the exact purchased v42012 unit; ordinary Windows enumeration only; automount suppressed for candidate; no custom USB/SCSI/vendor command and no firmware/RAM read or write.",
+    "granted_by": "operator, in-session, 2026-09-12",
+    "grant_text": "Grant OPENDITOO-MASSBOOT-ENUM-002",
+    "granted_at_utc": "2026-09-12T06:10:07.291212Z",
+    "consumed_at_utc": "2026-09-12T06:10:07.291212Z"
+  },
+  "result": {
+    "windows_baseline_count": 44,
+    "windows_disconnected_count": 44,
+    "windows_candidate_count": 44,
+    "new_vs_baseline_count": 0,
+    "new_vs_disconnected_count": 0,
+    "usb_pnp_delta": "none",
+    "interpretation": "A second enumeration-only MassBoot candidate using the replacement cable produced no Windows USB/PnP/disk identity in either delta. If the replacement cable was independently verified data-capable as required by the manifest, this materially weakens the charge-only-cable explanation and supports treating the retail USB-C path as unavailable for host-visible MassBoot enumeration under the tested condition.",
+    "persistent_write": false,
+    "custom_usb_requests": false,
+    "firmware_read": false,
+    "firmware_write": false,
+    "automatic_retry": "not authorized/not run"
+  },
+  "completed_at_utc": "2026-09-12T06:12:07.4910301Z"
+}

@@ -1,3 +1,11 @@
+## 2026-09-12 current research/product checkpoint — Runtime 018 live; firmware input-takeover R0
+
+The everyday product is **Runtime 018** (`OPENDITOO-PRODUCT-RUNTIME-018`, `runtime_revision=13`, `host/product_runtime_v12.py`). Its raw-AVRCP input sidecar, pages, Host/session/pacing/reconnect/reclaim envelope and webcam policy 006 remain the accepted product baseline. Read `notes/OPENDITOO-HANDOFF-2026-09-12-R018.md` before product/runtime changes.
+
+The current separate research route is **firmware/input takeover R0**. Read `notes/OPENDITOO-HANDOFF-2026-09-12-FIRMWARE-R0.md` and `notes/OPENDITOO-FIRMWARE-INPUT-TAKEOVER-PLAN-2026-09-12.md` before firmware/service-mode work. New exact-unit evidence now proves: the SD `/divoom/divoomupdate.bin` path is physically recognized on v42012 with a checksum-poisoned package; Lighting+external-power changes the boot path consistently with static MassBoot selection but produces no Windows USB/PnP identity in two bounded trials; M-at-boot enters stock factory/test mode and passively displays `42 / 012`; and the low-level analog-key pipeline has a conserved common translated-event emitter signature across both preserved Ditoo Plus branches. Exact v42012 **bytes are still unrecovered**, so persistent custom firmware remains gated on recovery/readback and full updater modelling. No checksum-valid custom image is authorized.
+
+Everything below that names Runtime 006 or an older objective as current is retained as historical evidence and is superseded by this checkpoint plus `START_HERE.md`.
+
 
 ## 2026-09-10 current product/input update — physical button pagination LIVE (Runtime 006)
 
