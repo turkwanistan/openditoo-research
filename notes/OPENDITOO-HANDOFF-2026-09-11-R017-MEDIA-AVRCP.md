@@ -1,5 +1,13 @@
 # OpenDitoo Runtime 017 media-resilient raw AVRCP handoff — 2026-09-11
 
+> **Status (2026-09-12 ~00:40Z): Runtime 017 is LIVE** (`Grant OPENDITOO-PRODUCT-RUNTIME-017`, owner; main `76b65be`, `runtime_revision=12`). The first cutover attempt crash-looped on a bare `schtasks.exe` under systemd and was rolled back to Runtime 016 (`c7bd741`). `f0ce6a2` fixed it: an absolute path, a rollback that tolerates a `failed` unit, a bounded capture head start, and backlog binding. That fix was rehearsed inside a systemd unit before the second cutover, which reported `R017_CUTOVER_PASS`.
+>
+> Owner live check with media playing: "everything looks to be working". Runtime state: 16 inputs applied, 0 gaps, `input_bound` true, one broker epoch, a Slots round played, input to first ACK 17–202 ms, lever `0xBD` reclaims as designed, `connected`, `last_error=null`.
+>
+> Rollback: `bash scripts/cutover_runtime_017.sh --rollback` (restores the Runtime 016 tree, policy and service; ends the task).
+>
+> Still untested live: a Ditoo power-cycle unbind/rebind. Follow-ups: `BTETWRTSession` outlives a killed BTVS and keeps buffering HCI; product telemetry `broker_starts` counts task run requests (one every 5 s), not broker processes.
+
 ## State
 
 Work only in `.openditoo-local/worktrees/media-avrcp` on branch `feat/media-avrcp-input`. Main remains the accepted Runtime 016 baseline; preserve its unrelated untracked `notes/OPENDITOO-FULL-INPUT-TAKEOVER-RESEARCH-2026-09-11.md`. Runtime 016 service is currently stopped after diagnostics. Runtime 017 (revision 12) is **not live and not authorized**. Do not cut over or request/consume the exact grant until live input acceptance passes.
