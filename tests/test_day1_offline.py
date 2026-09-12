@@ -5480,24 +5480,33 @@ class VolatileRamTier2TriggerTests(unittest.TestCase):
         for branch in r["branches"].values():
             self.assertEqual(len(branch["direct_callback_invocation_sites"]), 2)
 
-    def test_trigger_registration_and_direct_spp_trigger_remain_unproven(self) -> None:
+    def test_voicetip_microtask_registration_is_proven_but_completion_trigger_is_not(self) -> None:
         r = self._mod().build_report()
+        m = r["microtask_registration"]
         g = r["invocation_gate"]
         p = r["promotion"]
+        self.assertTrue(m["proven"])
+        self.assertEqual(m["cross_branch"], "4_OF_4_PRESERVED_PLUS_BRANCHES")
+        self.assertEqual(m["slot_count"], 8)
+        self.assertEqual(m["slot_size_bytes"], 12)
         self.assertTrue(g["in_image_invocation_sites_proven"])
-        self.assertFalse(g["worker_or_wrapper_registration_proven"])
+        self.assertTrue(g["worker_registration_proven"])
+        self.assertTrue(g["periodic_worker_dispatch_proven"])
+        self.assertTrue(g["worker_reaches_callback_on_completion_or_idle_path"])
         self.assertFalse(g["deterministic_stock_post_overwrite_invocation_proven"])
         self.assertTrue(p["controlled_indirect_call_sink_exists"])
+        self.assertTrue(p["voicetip_periodic_worker_registration"])
         self.assertFalse(p["deterministic_post_overwrite_callback_invocation"])
-        self.assertEqual(p["remaining_trigger_blocker"], "FRAMEWORK_INDIRECT_VOICETIP_TRIGGER_REGISTRATION_OR_EXPLICIT_STOCK_TRIGGER_UNPROVEN")
+        self.assertEqual(p["remaining_trigger_blocker"], "STOCK_VOICETIP_COMPLETION_STATE_TO_RUNTIME50_CALLBACK_UNPROVEN")
         self.assertIsNone(p["live_manifest_candidate"])
         self.assertFalse(r["spp_trigger_checks"]["command_0x6c"]["direct_voicetip_trigger_edge_proven"])
         self.assertFalse(r["spp_trigger_checks"]["command_0xa9_play_stop_voice"]["direct_voicetip_trigger_edge_proven"])
         for branch in r["branches"].values():
+            self.assertTrue(branch["microtask_callback_decodes_to_worker"])
+            self.assertEqual(branch["microtask_period_ticks"], 1)
+            self.assertEqual(branch["microtask_argument"], 0)
             self.assertEqual(branch["direct_bl_xrefs_to_worker"], [])
-            self.assertEqual(branch["direct_bl_xrefs_to_wrapper"], [])
             self.assertEqual(branch["raw_absolute_app_pointer_xrefs_to_worker"], [])
-            self.assertEqual(branch["raw_absolute_app_pointer_xrefs_to_wrapper"], [])
 
     def test_committed_tier2_trigger_artifact_is_current_and_offline_only(self) -> None:
         live = self._mod().build_report()

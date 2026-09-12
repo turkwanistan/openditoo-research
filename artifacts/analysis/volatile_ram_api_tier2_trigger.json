@@ -12,6 +12,14 @@
         "0x1fd0a",
         "0x1ff76"
       ],
+      "microtask_argument": 0,
+      "microtask_callback_decodes_to_worker": true,
+      "microtask_callback_literal_offset": "0x1fff8",
+      "microtask_callback_value": "0x218b43",
+      "microtask_period_ticks": 1,
+      "microtask_registration_call": "0x1ff24",
+      "microtask_registration_impl": "0x3e5d6",
+      "microtask_registration_veneer": "0x1b3cc",
       "raw_absolute_app_pointer_xrefs_to_worker": [],
       "raw_absolute_app_pointer_xrefs_to_wrapper": [],
       "runtime50_constructor": "0x1f9f4",
@@ -31,6 +39,14 @@
         "0x1fcfe",
         "0x1ff6a"
       ],
+      "microtask_argument": 0,
+      "microtask_callback_decodes_to_worker": true,
+      "microtask_callback_literal_offset": "0x1ffec",
+      "microtask_callback_value": "0x218b37",
+      "microtask_period_ticks": 1,
+      "microtask_registration_call": "0x1ff18",
+      "microtask_registration_impl": "0x3e5ea",
+      "microtask_registration_veneer": "0x1b3c0",
       "raw_absolute_app_pointer_xrefs_to_worker": [],
       "raw_absolute_app_pointer_xrefs_to_wrapper": [],
       "runtime50_constructor": "0x1f9e8",
@@ -50,6 +66,14 @@
         "0x1fd0a",
         "0x1ff76"
       ],
+      "microtask_argument": 0,
+      "microtask_callback_decodes_to_worker": true,
+      "microtask_callback_literal_offset": "0x1fff8",
+      "microtask_callback_value": "0x218b43",
+      "microtask_period_ticks": 1,
+      "microtask_registration_call": "0x1ff24",
+      "microtask_registration_impl": "0x3e542",
+      "microtask_registration_veneer": "0x1b3cc",
       "raw_absolute_app_pointer_xrefs_to_worker": [],
       "raw_absolute_app_pointer_xrefs_to_wrapper": [],
       "runtime50_constructor": "0x1f9f4",
@@ -69,6 +93,14 @@
         "0x1fd0a",
         "0x1ff76"
       ],
+      "microtask_argument": 0,
+      "microtask_callback_decodes_to_worker": true,
+      "microtask_callback_literal_offset": "0x1fff8",
+      "microtask_callback_value": "0x218b43",
+      "microtask_period_ticks": 1,
+      "microtask_registration_call": "0x1ff24",
+      "microtask_registration_impl": "0x3e5d6",
+      "microtask_registration_veneer": "0x1b3cc",
       "raw_absolute_app_pointer_xrefs_to_worker": [],
       "raw_absolute_app_pointer_xrefs_to_wrapper": [],
       "runtime50_constructor": "0x1f9f4",
@@ -88,26 +120,43 @@
   "invocation_gate": {
     "deterministic_stock_post_overwrite_invocation_proven": false,
     "in_image_invocation_sites_proven": true,
-    "reason": "Across all four preserved branches, the VoiceTip worker and wrapper have no direct in-image BL callers and no raw absolute application-code pointer xrefs. Their registration/dispatch is therefore framework-indirect or encoded outside the directly recoverable app call graph.",
-    "reference_branch_adr_search": "No Thumb ADR construction of 0x1fb42, 0x1ff6c, or 0x1fa8a was found in flag42 v42016 during the bounded offline audit.",
-    "two_invocation_paths": [
-      "worker path: callback function is reached near the terminal path of the 0x1fb42-family VoiceTip worker",
-      "wrapper path: 0x1ff6c-family checks runtime50 byte0 != 0xff and then calls the callback function"
-    ],
-    "worker_or_wrapper_registration_proven": false
+    "periodic_worker_dispatch_proven": true,
+    "reason": "The periodic VoiceTip worker is now proven registered and dispatched. Its path to 0x1fa8a is conditional on normal VoiceTip completion/idle state; a stock command/state transition that guarantees that condition after the display overwrite has not yet been proven.",
+    "worker_reaches_callback_on_completion_or_idle_path": true,
+    "worker_registration_proven": true,
+    "wrapper_registration_proven": false
   },
   "kind": "ditoo_plus_tier2_voicetip_trigger_gate",
   "method_limits": [
-    "This proves a real stock indirect-call sink, not attacker-controlled placement or invocation.",
-    "Absence of direct BL/raw-pointer edges does not prove the framework can never invoke the VoiceTip worker; it proves only that the registration edge is not directly recoverable from these application blobs with the audited encodings.",
+    "This proves a real stock indirect-call sink plus deterministic periodic worker registration, not attacker-controlled placement or the final completion-state transition.",
+    "The transformed 0x002xxxxx microtask callback namespace is supported by broad independent registration examples; it must not be confused with a second direct application code mapping.",
     "No crash/timing behavior is used as an invocation oracle."
   ],
+  "microtask_registration": {
+    "callback_namespace": "callback_value = 0x00200000 + (worker_file_offset - 0x7000) + 1",
+    "cross_branch": "4_OF_4_PRESERVED_PLUS_BRANCHES",
+    "proven": true,
+    "resident_dispatch": "0x15ec",
+    "resident_dispatch_blx": "0x161e",
+    "resident_dispatch_semantics": "When a due slot is pending, resident code loads slot.callback and slot.argument and BLXes the callback with the argument in r0.",
+    "resident_tick": "0x14f8",
+    "slot_count": 8,
+    "slot_layout": {
+      "argument": "+0x4",
+      "callback": "+0x0",
+      "countdown": "+0x8:u16",
+      "reload": "+0xa:u16"
+    },
+    "slot_size_bytes": 12,
+    "voicetip_registration": "VoiceTip registers its own 0x1fb42-family worker with argument 0 and period/reload 1, then resumes the returned microtask slot."
+  },
   "ok": true,
   "promotion": {
     "controlled_indirect_call_sink_exists": true,
     "deterministic_post_overwrite_callback_invocation": false,
     "live_manifest_candidate": null,
-    "remaining_trigger_blocker": "FRAMEWORK_INDIRECT_VOICETIP_TRIGGER_REGISTRATION_OR_EXPLICIT_STOCK_TRIGGER_UNPROVEN"
+    "remaining_trigger_blocker": "STOCK_VOICETIP_COMPLETION_STATE_TO_RUNTIME50_CALLBACK_UNPROVEN",
+    "voicetip_periodic_worker_registration": true
   },
   "safety": {
     "device_io": false,
@@ -117,15 +166,15 @@
     "persistent_mutation": false,
     "runtime_018_touched": false
   },
-  "schema_version": 1,
+  "schema_version": 2,
   "spp_trigger_checks": {
     "command_0x6c": {
       "direct_voicetip_trigger_edge_proven": false,
-      "note": "0x6c is proven to reach the separate DIVOOM_LIGHT_WORD resident display handoff. No direct in-image edge from its handler/display path to the VoiceTip worker/wrapper/callback has been promoted."
+      "note": "0x6c is proven to reach the separate DIVOOM_LIGHT_WORD resident display handoff. It does not directly invoke VoiceTip; a second ordinary stock state transition may still provide the post-overwrite trigger."
     },
     "command_0xa9_play_stop_voice": {
       "direct_voicetip_trigger_edge_proven": false,
-      "note": "The explicit SPP play/stop-voice handler drives a higher-level voice state machine, but its direct handler body does not call the VoiceTip worker, wrapper, or +0x34 callback function."
+      "note": "The explicit SPP play/stop-voice handler drives a separate recorded-voice state machine. Shared voice arbitration reaches VoiceTip teardown, but teardown does not itself BLX object+0x34."
     }
   }
 }
