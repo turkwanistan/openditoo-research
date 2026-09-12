@@ -235,14 +235,31 @@ live use.
 - analyze MassBoot protocol offline but do not assume retail USB accessibility;
 - consider owner-assisted no-solder board photos only if they would resolve service-transport topology.
 
-### 5. PATCH-R0 — non-flashable fail-open prototype
+### 5. PATCH-R0 — non-flashable fail-open prototype — DONE (2026-09-12, offline)
 
-- signature-locate emitter; do not hardcode one build;
-- validate executable placement before using any `0xFF` area;
-- stock path must remain exact when claim inactive/expired;
-- prototype patched outputs should intentionally retain an **invalid stored updater checksum** so they cannot accidentally pass the known SD gate;
-- deterministic diff/disassembly/untouched-hash report;
-- first eventual live revision reports one key while forwarding its stock action; suppression comes later.
+`tools/openditoo_patch_prototype.py` composes FIRM-R0 (seam) + UPDATE-R0 (validator):
+
+- **fail closed** — refuses any firmware the locator does not recognize (verified against
+  `tivoo_31102.bin`);
+- **signature-locates** the seam and derives the branch shift (0 / 0x94); no hardcoded build;
+- **verifies original bytes** — every category-`0x82` producer site must be exactly
+  `movs r0,#0x82` + `bl queue_post` or it refuses;
+- **models the fail-open hook** — re-targets each of the 4 producer BLs to a caller-supplied
+  `shim_entry` (correct Thumb-BL encoder, inverse of the decoder); the shim body (claim/
+  heartbeat + forward-or-consume) and executable-cave placement are **explicitly NOT authored**
+  — LIVE-gated;
+- **non-installable by construction** — any emitted research image has a deliberately invalid
+  stored updater checksum, and the tool re-runs the UPDATE-R0 validator to PROVE the updater
+  rejects it (refuses to emit if it somehow passed);
+- **reports changed regions** + untouched-region SHA-256 tamper witness.
+
+Tests: `PatchPrototypeTests` (5) — BL encoder⇄decoder inverse; recognize+verify both branches;
+emitted image rejected at the updater checksum gate (independently re-validated); fail-closed
+on unknown firmware; refuse on original-byte mismatch. Verifier: **342 tests PASS**.
+
+Still LIVE-gated (unchanged): authoring the shim machine code, proving an all-`0xFF` region is
+a resident/executable cave, and any device write. The prototype deliberately stops at the
+seam-redirect model.
 
 ### 6. TELEMETRY-R0
 

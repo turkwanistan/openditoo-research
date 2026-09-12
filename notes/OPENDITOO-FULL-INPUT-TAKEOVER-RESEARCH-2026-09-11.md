@@ -646,3 +646,26 @@ byte-identical.
 - `tests/test_day1_offline.py::UpdateContainerTests` — 6 tests incl. negative fixtures derived
   from the real firmware (checksum poison → checksum gate; bad marker → marker gate first;
   force-flag bypass; truncated → parse failure).
+
+## 15. PATCH-R0 prototype — offline, non-deployable fail-open hook model (2026-09-12)
+
+`tools/openditoo_patch_prototype.py` composes FIRM-R0 (the category-0x82 seam) and UPDATE-R0
+(the container validator) into a research transformer with hard safety properties:
+
+- **fail closed** on unrecognized firmware (refuses `tivoo_31102.bin`);
+- **signature-locates** the seam and derives the branch shift (0 / 0x94); no hardcoded build;
+- **verifies original bytes** at all 4 category-0x82 producer sites (`movs r0,#0x82` + `bl
+  queue_post`) before modelling any edit;
+- **models the fail-open redirect** by re-targeting each producer BL to a caller-supplied
+  `shim_entry` using a correct Thumb-BL encoder (round-trips the decoder, validated against the
+  real emitter BL bytes);
+- **non-installable by construction** — an emitted research image has an invalid stored updater
+  checksum, and the tool re-runs the UPDATE-R0 validator to PROVE the updater rejects it at the
+  checksum gate, refusing to emit anything that would pass;
+- **reports changed regions** + an untouched-region SHA-256 tamper witness.
+
+Deliberately NOT done (LIVE-gated): authoring the shim machine code (claim/heartbeat +
+forward-or-consume), proving any all-0xFF region is a resident/executable cave, recomputing a
+valid checksum, or writing a device. The prototype stops at the verified seam-redirect model.
+
+Tests: `PatchPrototypeTests` (5). Verifier total: 342 PASS.

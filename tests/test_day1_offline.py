@@ -5119,3 +5119,58 @@ class UpdateContainerTests(unittest.TestCase):
         r = m.validate(b"\x00" * 8, installed_version=42012)
         self.assertFalse(r["parse_ok"])
         self.assertFalse(r["accepted"])
+
+
+class PatchPrototypeTests(unittest.TestCase):
+    """PATCH-R0: offline, non-deployable fail-open hook prototype. Never installable."""
+
+    FW = ROOT / "artifacts/firmware"
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("openditoo_patch_prototype")
+
+    def test_bl_encoder_is_inverse_of_decoder(self) -> None:
+        m = self._mod()
+        for src, tgt in ((0x52680, 0xC6D7C), (0x52664, 0x52926), (0x5272E, 0x525C2)):
+            enc = m.encode_bl(src, tgt)
+            self.assertEqual(m.thumb_bl_target(enc + b"\x00\x00", 0), tgt - src)  # rel form
+        # round-trip against the real emitter BL bytes in flag42
+        data = (self.FW / "flag42_v42016.bin").read_bytes()
+        self.assertEqual(m.encode_bl(0x52680, 0xC6D7C), data[0x52680:0x52684])
+
+    def test_recognizes_and_verifies_both_branches(self) -> None:
+        m = self._mod()
+        for name, shift in (("flag42_v42016.bin", "0x0"), ("flag60_v60014.bin", "0x94")):
+            res = m.model_hook((self.FW / name).read_bytes(), None)
+            self.assertTrue(res["recognized"])
+            self.assertEqual(res["plan"]["branch_shift"], shift)
+            self.assertEqual(len(res["plan"]["producer_sites"]), 4)
+            self.assertFalse(res["image_emitted"])  # no image without shim_entry
+
+    def test_emitted_image_is_non_installable(self) -> None:
+        m = self._mod()
+        udc = __import__("ditoo_update_container")
+        res = m.model_hook((self.FW / "flag42_v42016.bin").read_bytes(), shim_entry=0x120000)
+        self.assertTrue(res["image_emitted"])
+        self.assertEqual(res["changed_byte_count"], 16)
+        self.assertFalse(res["non_installable_proof"]["updater_checksum_gate_ok"])
+        # independent proof via the UPDATE-R0 validator
+        verdict = udc.validate(res["_patched"], installed_version=42012)
+        self.assertFalse(verdict["accepted"])
+        self.assertEqual(verdict["first_failing_gate"], "checksum")
+
+    def test_fails_closed_on_unknown_firmware(self) -> None:
+        m = self._mod()
+        with self.assertRaises(m.UnrecognizedFirmware):
+            m.model_hook((ROOT / "artifacts/reference/tivoo_31102.bin").read_bytes(), None)
+
+    def test_refuses_on_original_byte_mismatch(self) -> None:
+        m = self._mod()
+        data = bytearray((self.FW / "flag42_v42016.bin").read_bytes())
+        # break the release_finalize producer BL (0x52916): outside every locator signature,
+        # so recognition still passes but original-byte verification must refuse.
+        data[0x52916:0x5291A] = b"\x00\x00\x00\x00"
+        with self.assertRaises(m.OriginalBytesMismatch):
+            m.model_hook(bytes(data), None)

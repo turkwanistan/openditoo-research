@@ -209,6 +209,14 @@ Implementation rules for this phase:
 
 **Exit:** two preserved exact-model branches can be located and either safely simulated/patched offline or rejected; stock-forward behavior is demonstrably preserved when claim is inactive.
 
+**Status (2026-09-12, offline): DONE.** `tools/openditoo_patch_prototype.py` recognizes the
+seam (fail-closed on unknown firmware), derives the branch shift, verifies original bytes at
+all 4 category-0x82 producer sites, models the fail-open redirect to a caller-supplied
+`shim_entry` (real Thumb-BL encoder), and emits research images that are non-installable by
+construction (invalid stored checksum, proven rejected by the UPDATE-R0 validator) with a
+changed-region diff + untouched-hash witness. Shim machine code and executable-cave placement
+remain LIVE-gated and unauthored. `PatchPrototypeTests` (5); verifier 342 PASS.
+
 ### TELEMETRY-R0 — choose the least invasive observation channel
 
 Before LIVE-0, decide how the first firmware shim proves a physical key was seen without suppressing stock behavior. Prefer reusing a stock, already-initialized device→host path rather than adding a large new stack.
