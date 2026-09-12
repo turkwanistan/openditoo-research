@@ -167,6 +167,49 @@ Current public `antiali.as/minitoo-forth` work is **methodology only**. It demon
 
 and that deterministic controllability matters more than crash count. It does **not** authorize copying its JPEG bugs, command IDs, memory map or MPU assumptions to Ditoo Plus.
 
+## 2026-09-12 final handoff checkpoint — Tier-2 offline chain complete
+
+Source checkpoint entering handoff preparation: `8dddcb2` (`Promote Tier-2 offline control-flow chain`). Live Git state always outranks this note.
+
+The analytical portion of the first-stage volatile-RAM route is now closed positive across all four pinned Plus firmware branches. Do **not** reopen placement, generic codec hunting, VoiceTip registration, RAM executability, or the old assumption that `0x6c` primes its own content mode unless a fail-closed artifact detects corpus drift.
+
+Authoritative sequence:
+
+`stock/manual btplayer -> stock 0x6e(nonzero) content-mode 0x0b prime -> stock 0xa5 selector 2/model 0x22 VoiceTip setup -> exact 1088-byte 0x6c same-mode overwrite -> runtime50 +0x34 callback 0x00804779 -> Thumb BX LR -> normal return`
+
+Pinned facts:
+
+- `0x6e SPP_DRAWING_CTRL_MOVIE_PLAY` with `payload[1] != 0` selects content mode `0x0b` through `0x71b8` and immediately confirms it through `0x12886`; `0x6c` **does not** prime itself.
+- deterministic startup geometry: display backing `0x00804470`, controlled display pointer `0x00804778`, runtime50 `0x00804b80`, callback `0x00804bb4`;
+- exact 1088-byte source reaches through callback `+0x34` and stops at runtime50 `+0x37`, preserving `+0x3c/+0x40/+0x44`;
+- controlled victim values: runtime50 byte0=`0xff`, byte8/model=`0x22`, callback=`0x00804779`;
+- VoiceTip period-1 timeout eventually reaches the callback; `0xbfe8` is only the transient app-heap busy flag and malloc/free clear it before return;
+- `0x00804779` is executable Thumb RAM in the stock ARMv5T mapping; the minimal offline return witness is `70 47` (`BX LR`);
+- the mode-`0x0b` initializer may allocate a separate 0xC50 light-word object but does not free/move the persistent display backing or runtime50 victim;
+- the all-SPP `0x8a` BLUE normalization idea remains deliberately unpromoted because queue/preemption ordering is not closed; use a stock/manual btplayer precondition for the first live discriminator.
+
+Verification at this checkpoint:
+
+- Tier-2 display/placement/trigger + VRAM-3 focused suite: **17/17 PASS**;
+- all four analyzer selfchecks: PASS;
+- `git diff --check`: PASS;
+- broad verifier: **381 tests**, exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors, zero new Tier-2/VRAM/recovery/product failures;
+- no device I/O, live packet generation, Runtime 018 change, persistent mutation, MassBoot action, or physical work occurred.
+
+### Exact next gate
+
+The next useful step is **VRAM-6/7 preparation for one bounded exact-unit returning-stage-0 discriminator**. This is a procedural/live authority boundary, not another open-ended static-analysis phase.
+
+Before any transmission, the next session should:
+
+1. hydrate from the current repo and rerun only the focused fail-closed analyzers/tests needed to ensure no drift;
+2. author a fresh **one-use reviewed live manifest** that freezes the purchased v42012 target assumption, stock/manual btplayer precondition, stock `0x6e(nonzero)` prime, stock `0xa5` setup, exactly one bounded custom `0x6c` overwrite, exact byte/count/time limits, expected liveness/success observation, no-retry rule, and rollback/stop policy;
+3. design the first live proof around the minimal returning `BX LR` stage-0 only—no loader, API, persistence, arbitrary interpreter, or follow-on payload;
+4. ensure Runtime 018 ownership/transport handling is explicit and minimally disturbed; do not stop/restart/cut it over unless the reviewed manifest requires it;
+5. stop at the grant boundary and present the exact grant text to the owner. **Do not transmit until the owner explicitly grants that exact manifest.**
+
+Only after a clean live returning-stage-0 proof should the project proceed to VRAM-8 bounded loader design. A crash, reboot, timeout, or timing-only anomaly is not success.
+
 ## Immediate executor order
 
 1. Preflight: `git status`, HEAD/upstream, preserve all concurrent/untracked work.
