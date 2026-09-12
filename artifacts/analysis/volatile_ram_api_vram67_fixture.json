@@ -1,0 +1,159 @@
+{
+  "authoritative_artifacts": {
+    "tier2_display": {
+      "path": "artifacts/analysis/volatile_ram_api_tier2_display.json",
+      "sha256": "e7055f2f37c7404fd53d59d8acf48cd502aeb563ea6a53a045f51bd395871013"
+    },
+    "tier2_placement": {
+      "path": "artifacts/analysis/volatile_ram_api_tier2_placement.json",
+      "sha256": "045c4da0bd2fb2c63609ce578d082e063d263ec3dccce9a8f492c48374182999"
+    },
+    "tier2_trigger": {
+      "path": "artifacts/analysis/volatile_ram_api_tier2_trigger.json",
+      "sha256": "c6ae80bd9df73f6c0b8286a443d26e8ef03b5bf3e16d0fbd552949c666b15cee"
+    },
+    "vram3_execution": {
+      "path": "artifacts/analysis/volatile_ram_api_vram3_execution.json",
+      "sha256": "ae0bd733b6cac05ab39e65a03d896e34c889c2e7c5c476789a16c8cbe414803d"
+    }
+  },
+  "authority_boundary": {
+    "previous_grants_transfer": false,
+    "required_grant_text": "Grant OPENDITOO-VRAM67-BXLR-001 -- stock btplayer selected",
+    "status": "STOP_BEFORE_TRANSMIT"
+  },
+  "experiment_id": "OPENDITOO-VRAM67-BXLR-001",
+  "fixtures": {
+    "overwrite": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM67-BXLR-001-03-overwrite.bin",
+      "sha256": "c3fbc813e2646b44ace4a2105163fe7bc2622d5e6cc61477ac6098d0b23b12cd",
+      "wire_length": 1099,
+      "wire_prefix_hex": "0147046c000040047047ffffffffffff",
+      "wire_suffix_hex": "ffffffffffffffffff79478000db3702"
+    },
+    "prime": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM67-BXLR-001-01-prime.bin",
+      "sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec",
+      "wire_hex": "0104006e01730002",
+      "wire_length": 8
+    },
+    "source": {
+      "length": 1088,
+      "path": "experiments/fixtures/OPENDITOO-VRAM67-BXLR-001-source.bin",
+      "sha256": "7ec43cab8cd04da6b2d90983dcec868baee3a1615448d05f446aa5a1c2e3ce48"
+    },
+    "voicetip": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM67-BXLR-001-02-voicetip.bin",
+      "sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316",
+      "wire_hex": "010600a5010201af0002",
+      "wire_length": 10
+    }
+  },
+  "kind": "openditoo_vram67_returning_stage0_live_gate_fixture",
+  "ok": true,
+  "preconditions": {
+    "host_only_0x8a_normalization_promoted": false,
+    "manual_stock_btplayer_required": true,
+    "runtime018_must_be_suspended_before_claimed_runner_opens_rfcomm": true
+  },
+  "safety": {
+    "bluetooth_opened": false,
+    "device_io": false,
+    "firmware_mutation": false,
+    "generic_raw_packet_surface": false,
+    "loader_or_followon_payload": false,
+    "offline_preparation_only": true,
+    "packets_transmitted": 0,
+    "persistent_mutation": false
+  },
+  "schema_version": 1,
+  "sequence": [
+    {
+      "class": "stock",
+      "command": "0x6e",
+      "ordinal": 1,
+      "payload_hex": "01",
+      "role": "prime content mode 0x0b"
+    },
+    {
+      "caller_arg": 1,
+      "class": "stock",
+      "command": "0xa5",
+      "model": "0x22",
+      "ordinal": 2,
+      "payload_hex": "010201",
+      "role": "VoiceTip setup",
+      "selector": 2
+    },
+    {
+      "class": "custom_once",
+      "command": "0x6c",
+      "declared_source_length": 1088,
+      "frame_counter": 0,
+      "ordinal": 3,
+      "role": "exact adjacent overwrite"
+    }
+  ],
+  "stage0": {
+    "bytes_hex": "7047",
+    "callback_source_offset": 1084,
+    "entry": "0x804779",
+    "instruction": "BX LR",
+    "last_overwritten_runtime50_offset": "0x37",
+    "preserved_runtime50_offsets": [
+      "0x3c",
+      "0x40",
+      "0x44"
+    ],
+    "runtime50_base": "0x804b80",
+    "runtime50_byte0": "0xff",
+    "runtime50_callback": "0x804bb4",
+    "runtime50_model": "0x22",
+    "runtime50_model_offset": "0x8",
+    "runtime50_source_offset": 1032,
+    "source_address": "0x804778",
+    "source_fill": "0xff",
+    "source_length": 1088
+  },
+  "stop_policy": {
+    "ambiguous_send": "STOP_NO_RETRY",
+    "connect_failure": "STOP_NO_RETRY",
+    "crash_or_reboot": "STOP_NO_RETRY_AND_RESTORE_RUNTIME018_IF_POSSIBLE",
+    "disconnect_during_observation": "STOP_NO_RETRY_AND_RESTORE_RUNTIME018",
+    "partial_send": "STOP_NO_RETRY",
+    "success": "RESTORE_RUNTIME018_RECORD_RESULT_STOP_FOR_INTERPRETATION_BEFORE_VRAM8"
+  },
+  "success_discriminator": {
+    "interpretation": "PASS only when the frozen overwrite is known to have landed under the promoted trigger model and normal execution/liveness survives beyond the callback deadline. Crash, reboot, timeout, disconnect, or timing-only change is not success.",
+    "live_required": [
+      "all three exact sends complete once on the single RFCOMM connection",
+      "the RFCOMM connection remains alive through the full post-overwrite observation hold",
+      "no crash, reboot, disconnect, or watchdog/reset symptom occurs",
+      "after the experiment socket closes, accepted Runtime 018 is restored and reaches connected with no last_error"
+    ],
+    "offline premise": "VoiceTip period-1 timeout deterministically reaches runtime50+0x34 after its stock deadline, and +0x34 is overwritten with 0x00804779."
+  },
+  "target": {
+    "identity_evidence": "captures/OPENDITOO-DAY1-M4-LIVE-RESULT-2026-09-08.json",
+    "installed_firmware_version_assumption": 42012,
+    "m4_result_sha256": "a40a23c08cfc73a3095819ebaba4e921ce0fa178584099c53b4378e4159d67fd",
+    "mac": "11:75:58:CE:DE:C7",
+    "model": "Divoom Ditoo Plus",
+    "period_apk_sha256": "c690ba9aad29811eb7b007d31b593999e1ba937b7d247ff09fdcc4ec57d67082",
+    "purchased_unit_only": true,
+    "rfcomm_channel": 1,
+    "runtime018_policy_sha256": "895268e91433b0ef18ee717c1378009398ad414d07083aac9eeb4194542b9c8f"
+  },
+  "transport_budget": {
+    "connect_budget_ms": 15000,
+    "exact_application_sends": 3,
+    "inter_packet_delay_ms": 40,
+    "max_connections": 1,
+    "max_custom_0x6c_sends": 1,
+    "observation_hold_ms_after_overwrite": 75000,
+    "reconnect": false,
+    "retry": false,
+    "total_application_tx_bytes": 1117,
+    "total_budget_ms": 92000
+  }
+}

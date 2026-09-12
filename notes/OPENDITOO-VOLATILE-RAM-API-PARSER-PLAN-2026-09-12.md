@@ -239,7 +239,7 @@ No direct SPP candidate reached a controlled RAM write or caller-controlled indi
 
 Tier-2 has now resolved that seam: it is the resident `divoom_light_word` display path, not a generic media/codec decoder. The corrected stock reachability is `0x6e SPP_DRAWING_CTRL_MOVIE_PLAY` with nonzero control -> content mode `0x0b` -> subsequent `0x6c SPP_DRAWING_ENCODE_MOVIE_PLAY` same-mode copy. `0x6c` does not prime itself. The branch-specific veneer converges on resident `0x008012a8`, where the caller u16 from `0x6c` reaches a destination copy. `tools/ditoo_tier2_display_surface.py` promotes a 4/4-branch `CALLER_CONTROLLED_ADJACENT_HEAP_OVERWRITE` with a modeled maximum 1009 controlled bytes beyond the physical backing allocation and imports the deterministic placement artifact to prove that the mode-`0x0b` initializer cannot move the persistent display/runtime50 geometry.
 
-Placement and invocation have now both passed their offline fail-closed gates. `tools/ditoo_tier2_placement.py` uses the recovered stage-1 transformed-callback bootstrap to prove `Fwl_MallocInit -> no intervening app-heap allocation -> 0x8dea`, promoting exact cold-start geometry (`display backing 0x00804470 -> controlled destination 0x00804778 -> runtime50 0x00804b80 -> callback 0x00804bb4`). `tools/ditoo_tier2_trigger.py` proves runtime50 `+0x34` is a real 4/4 `BLX` sink, stock btplayer + `0xa5` selector 2/model `0x22` creates the VoiceTip timeout state, and an exact 1088-byte `0x6c` source controls the callback while preserving the stock handles/deadline needed before `BLX`. The app-heap busy predicate is transient and period-1 dispatch retries. The companion VRAM-3 artifact proves `0x00804779` executable Thumb RAM and a minimal `BX LR` return witness. This promotes a controlled indirect branch **offline only**. The all-SPP `0x8a` mode-normalization route remains unpromoted because queue/preemption ordering is not closed. No live manifest or packet has been created.
+Placement and invocation have now both passed their offline fail-closed gates. `tools/ditoo_tier2_placement.py` uses the recovered stage-1 transformed-callback bootstrap to prove `Fwl_MallocInit -> no intervening app-heap allocation -> 0x8dea`, promoting exact cold-start geometry (`display backing 0x00804470 -> controlled destination 0x00804778 -> runtime50 0x00804b80 -> callback 0x00804bb4`). `tools/ditoo_tier2_trigger.py` proves runtime50 `+0x34` is a real 4/4 `BLX` sink, stock btplayer + `0xa5` selector 2/model `0x22` creates the VoiceTip timeout state, and an exact 1088-byte `0x6c` source controls the callback while preserving the stock handles/deadline needed before `BLX`. The app-heap busy predicate is transient and period-1 dispatch retries. The companion VRAM-3 artifact proves `0x00804779` executable Thumb RAM and a minimal `BX LR` return witness. This promotes a controlled indirect branch **offline only**. The all-SPP `0x8a` mode-normalization route remains unpromoted because queue/preemption ordering is not closed. VRAM-6/7 offline preparation is now complete in `experiments/OPENDITOO-VRAM67-BXLR-001.json` plus `artifacts/analysis/volatile_ram_api_vram67_fixture.json`; the manifest is grant-ready but explicitly unauthorized/unexecuted, and no custom packet has been transmitted.
 
 ## Phase VRAM-3 — execution environment and RAM-hook feasibility
 
@@ -308,43 +308,24 @@ A candidate should not reach live preparation unless:
 - the device can recover by ordinary power cycle;
 - there is a reason to believe the test distinguishes controllability, not merely parser fragility.
 
-## Phase VRAM-6 — first live parser discriminator (fresh manifest/grant)
+## Phase VRAM-6/7 — first returning-stage-0 live discriminator — PREPARED / UNGRANTED
 
-Prepare **only after VRAM-5**.
+Offline preparation is complete in `experiments/OPENDITOO-VRAM67-BXLR-001.json`. This exact experiment intentionally combines the smallest VRAM-6 live discriminator with the minimal VRAM-7 returning-control-flow witness rather than adding an earlier crash/no-op ladder: the offline Tier-2/VRAM proof already closes placement, trigger, executability, and clean-return prerequisites.
 
-The first live experiment should be the smallest nonpersistent discriminator possible. Prefer:
+Frozen constraints:
 
-1. a boundary input expected to alter a response/visible state without crashing;
-2. then a controlled benign fault with a single ordinary reboot recovery if needed;
-3. only later a control-flow proof.
+- one RFCOMM connection;
+- exactly three application sends: stock-shaped `0x6e`, stock-shaped `0xa5`, exactly one custom `0x6c`;
+- 40 ms inter-packet spacing; no fourth liveness/query packet;
+- exact 1088-byte `0x6c` source, stage-0 only `70 47` (`BX LR`);
+- 75-second no-send observation hold through the stock VoiceTip deadline;
+- no generic raw-send escape hatch, command enumeration, loader, API, persistence, flash/SD/factory/MassBoot path, or follow-on payload;
+- Runtime 018 is stopped only after authority/hash checks, with an 18-second sidecar-expiry settle, and must be restored/connected afterward;
+- no retry after a claimed attempt, including ambiguous/failing transport or device behavior.
 
-Constraints:
+The success discriminator is deliberately composite rather than an added stage-0 output primitive: the same RFCOMM connection survives beyond the deterministic callback deadline with no crash/reboot/disconnect, then accepted Runtime 018 reconnects cleanly. Interpreted with the promoted offline timeout->callback proof, that is the candidate returning-`BX LR` result. A timing-only effect is not success.
 
-- one RFCOMM connection unless the candidate inherently needs reconnect;
-- exact packet count/bytes frozen in manifest;
-- no generic raw-send escape hatch;
-- no command enumeration;
-- no retry after ambiguous response;
-- Runtime 018 stopped/restored only if the experiment requires transport ownership, with exact pre/post state recorded;
-- no flash/SD/factory/MassBoot path touched.
-
-A crash is evidence only if it is deterministic, candidate-specific and followed by normal reboot recovery. Do not build a crash corpus on the physical unit.
-
-## Phase VRAM-7 — volatile code-execution proof
-
-Only if a promoted primitive supports it.
-
-Stage 0 must do almost nothing:
-
-- execute a tiny RAM-resident routine;
-- emit a unique stock-SPP-framed liveness response or make another harmless, reversible RAM-only observation;
-- return cleanly to stock dispatch;
-- leave no persistent state;
-- ordinary reboot/power cycle restores pristine stock state.
-
-No input hook yet. No long-running resident loop. No flash.
-
-Success is a reproducible `packet -> controlled transfer -> RAM routine -> liveness -> stock return` chain.
+The exact grant text is `Grant OPENDITOO-VRAM67-BXLR-001 -- stock btplayer selected`. Until that text is supplied, the committed manifest remains unauthorized and no experiment Bluetooth open/transmit is allowed. After one run, stop for interpretation before VRAM-8.
 
 ## Phase VRAM-8 — bounded RAM loader
 
@@ -494,7 +475,7 @@ Immediate offline work is now:
 3. treat the stock trigger as **closed positive under a deterministic stock btplayer precondition**: after the `0x6e` content prime, `0xa5` selector 2/model `0x22` creates VoiceTip state and the period-1 timeout eventually reaches `0x1fa8a`; keep the all-SPP `0x8a` BLUE normalization route separate/unpromoted until queue-preemption ordering is proven;
 4. treat **VRAM-3 as closed positive**: `0x00804779` is executable Thumb RAM with no NX barrier, lies in a pristine `0xff`-filled unreferenced span, and the minimal returning witness is `70 47` (`BX LR`);
 5. preserve the exact 1088-byte witness geometry: callback source offset `0x43c`; controlled runtime50 byte0=`0xff`, byte8=`0x22`, callback=`0x00804779`; last overwritten victim offset `+0x37`; preserve `+0x3c/+0x40/+0x44`;
-6. the next gate is procedural, not analytical: if proceeding live, author a **fresh one-use reviewed manifest** with stock/manual btplayer plus the stock `0x6e(nonzero)` content prime as explicit preconditions, tiny returning stage-0 only, strict byte/time limits, explicit rollback/stop conditions, and no persistence; require explicit owner grant before any transmit;
-7. do not expand immediately to a loader/API until a bounded live returning-stage-0 proof exists. A crash, reboot, or timing-only effect is not success and must never be used as the primary oracle.
+6. the next gate is procedural, not analytical: the fresh one-use reviewed manifest is now **`experiments/OPENDITOO-VRAM67-BXLR-001.json`**. Keep it frozen and unauthorized until the owner supplies its exact grant; no prior grant transfers;
+7. do not expand immediately to a loader/API until this bounded live returning-stage-0 proof exists. A crash, reboot, disconnect, timeout, or timing-only effect is not success and must never be used as the primary oracle.
 
-Do not create or transmit a malformed/custom live `0x6c` packet until the new one-use manifest is reviewed and explicitly granted. Runtime 018 remains out of scope.
+Do not transmit the frozen custom `0x6c` until `OPENDITOO-VRAM67-BXLR-001` is explicitly granted. Runtime 018 remains outside parser semantics but its exact stop/18-second settle/restore-connected handover is part of this manifest.

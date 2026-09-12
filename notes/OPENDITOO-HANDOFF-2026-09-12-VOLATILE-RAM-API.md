@@ -67,7 +67,7 @@ This promotes `CALLER_CONTROLLED_ADJACENT_HEAP_OVERWRITE` across 4/4 preserved P
 
 Historical note: this was the state at the first Tier-2 display checkpoint. Placement and control flow were still unproven there. The later placement/trigger/VRAM-3 checkpoint below supersedes that limitation and promotes deterministic cold-start placement plus a returning controlled indirect branch **offline only**.
 
-No malformed/custom `0x6c` traffic has been transmitted. **No live manifest exists or is justified yet.**
+No malformed/custom `0x6c` traffic has been transmitted. At that earlier Tier-2 display checkpoint no live manifest existed; the later grant-ready VRAM-6/7 manifest is recorded below and remains ungranted/unexecuted.
 
 
 ### Tier-2 placement + trigger + VRAM-3 checkpoint
@@ -86,7 +86,17 @@ Two simple placement strategies are now closed. The persistent display root has 
 
 **VRAM-3 execution environment:** exact Ditoo initialization pins the application heap to `0x00804000..0x0081cfff` (0x19000 bytes), inside the stock identity-mapped SRAM window `0x00803000..0x0081ffff`. Stage-1 enables the ARMv5T short-descriptor MMU and I/D caches. The mapping is cacheable/write-through/non-bufferable and ARMv5T short descriptors have no XN bit, so mapped heap SRAM is executable. The now-proven first target is Thumb `0x00804779`; the corresponding preserved-image span is `0xff` fill across 4/4 branches and has zero raw address references, reducing stale-I-cache concern for first use. The minimal offline stage-0 witness is exactly `70 47` (`BX LR`), which returns through the stock `BLX` callsite without persistent mutation. Larger/reused code would still need explicit I-cache maintenance.
 
-**Current promotion state:** controlled adjacent heap overwrite = proven; executable heap RAM = proven; real indirect-call sink = proven; deterministic victim placement = **proven offline**; deterministic post-overwrite callback invocation = **proven offline**; minimal returning Thumb stage-0 target = **proven offline**. This is still not a live execution result. No live manifest has been created or granted; any live stage-0 requires a fresh reviewed one-use manifest and explicit owner grant.
+**Current promotion state:** controlled adjacent heap overwrite = proven; executable heap RAM = proven; real indirect-call sink = proven; deterministic victim placement = **proven offline**; deterministic post-overwrite callback invocation = **proven offline**; minimal returning Thumb stage-0 target = **proven offline**. This is still not a live execution result. The one-use VRAM-6/7 manifest now exists and is reviewed offline, but remains explicitly unauthorized and unexecuted; the exact owner grant below is still required before any experiment RFCOMM open/transmit.
+
+### VRAM-6/7 one-use live-gate preparation — READY / UNGRANTED / UNEXECUTED
+
+`experiments/OPENDITOO-VRAM67-BXLR-001.json` is the reviewed one-use exact-unit live manifest. It binds the purchased-unit v42012 assumption to the prior M4 result, the four authoritative Tier-2/VRAM artifacts, and `artifacts/analysis/volatile_ram_api_vram67_fixture.json`. The frozen sequence is exactly three application frames on one RFCOMM connection: stock-shaped `0x6e` payload `01`, 40 ms, stock-shaped `0xa5` payload `01 02 01`, 40 ms, then exactly one custom `0x6c` carrying an exact 1088-byte source. The source starts `70 47` (`BX LR`), uses `0xff` fill, fixes runtime50 byte0=`0xff`, byte8/model=`0x22`, and callback=`0x00804779`; its SHA-256 is `7ec43cab8cd04da6b2d90983dcec868baee3a1615448d05f446aa5a1c2e3ce48`. The custom `0x6c` wire SHA-256 is `c3fbc813e2646b44ace4a2105163fe7bc2622d5e6cc61477ac6098d0b23b12cd`. No fourth liveness packet is allowed.
+
+The dedicated runner accepts only the repo root; target and packets are frozen in source. It requires a local grant record bound to the committed manifest/fixture hashes, a stock-btplayer attestation, a fresh one-use nonce, and a Runtime 018 handover token. It atomically creates the one-use claim before `WSAStartup`/socket creation. The coordinator checks all authority/hashes first, requires accepted Runtime 018 healthy, stops `openditoo-product.service`, waits 18 seconds so the 15-second raw-AVRCP sidecar lease expires, runs the exact experiment once, then restores Runtime 018 and requires `product-status` connected with `last_error=null`. Any connect/send ambiguity, disconnect, crash/reboot, observation failure, or restore failure is stop/no-retry and is not PASS.
+
+The live discriminator intentionally adds no output primitive: after the exact overwrite, the same RFCOMM connection must survive a 75-second observation window that extends beyond the stock VoiceTip `0x3c` deadline, and accepted Runtime 018 must reconnect cleanly afterward. Interpreted together with the promoted deterministic timeout->callback proof, that is the bounded returning-`BX LR` candidate discriminator. A timing-only effect is never success. The exact grant text is: **`Grant OPENDITOO-VRAM67-BXLR-001 -- stock btplayer selected`**. Do not materialize the local grant, stop Runtime 018, open experiment Bluetooth, or transmit until the owner sends that exact text.
+
+Offline verification after preparation: all four analyzer selfchecks PASS; focused legacy Tier-2/VRAM plus new VRAM-6/7 suite = **24/24 PASS**; the coordinator was invoked without a grant and failed closed with `VRAM67_EXACT_GRANT_NOT_MATERIALIZED` before any Runtime 018/systemd or Bluetooth action. No local grant/claim/result was created.
 
 Checkpoint verification in constrained WSL_MCP: focused display/placement/trigger/VRAM-3 tests = 17/17 PASS; `git diff --check` = PASS; `python3 scripts/verify_day1_offline.py` = 381 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors and zero new Tier-2/VRAM/recovery/product failures. Runtime 018 was not touched and no Ditoo packet was transmitted.
 
@@ -198,17 +208,9 @@ Verification at this checkpoint:
 
 ### Exact next gate
 
-The next useful step is **VRAM-6/7 preparation for one bounded exact-unit returning-stage-0 discriminator**. This is a procedural/live authority boundary, not another open-ended static-analysis phase.
+The project is now at the **explicit owner-grant boundary** for `OPENDITOO-VRAM67-BXLR-001`. Do not do more parser archaeology or widen the payload. Rehydrate, rerun the focused fail-closed checks if this checkout changed, verify the committed manifest/fixture hashes, confirm no local claim/result exists, and present the owner with the exact grant text **`Grant OPENDITOO-VRAM67-BXLR-001 -- stock btplayer selected`**. No existing MassBoot, Runtime 018, SD-P1, or prior live grant transfers.
 
-Before any transmission, the next session should:
-
-1. hydrate from the current repo and rerun only the focused fail-closed analyzers/tests needed to ensure no drift;
-2. author a fresh **one-use reviewed live manifest** that freezes the purchased v42012 target assumption, stock/manual btplayer precondition, stock `0x6e(nonzero)` prime, stock `0xa5` setup, exactly one bounded custom `0x6c` overwrite, exact byte/count/time limits, expected liveness/success observation, no-retry rule, and rollback/stop policy;
-3. design the first live proof around the minimal returning `BX LR` stage-0 only—no loader, API, persistence, arbitrary interpreter, or follow-on payload;
-4. ensure Runtime 018 ownership/transport handling is explicit and minimally disturbed; do not stop/restart/cut it over unless the reviewed manifest requires it;
-5. stop at the grant boundary and present the exact grant text to the owner. **Do not transmit until the owner explicitly grants that exact manifest.**
-
-Only after a clean live returning-stage-0 proof should the project proceed to VRAM-8 bounded loader design. A crash, reboot, timeout, or timing-only anomaly is not success.
+If and only if that exact grant is supplied, materialize a local grant record bound to the committed manifest/fixture hashes and fresh one-use nonce, execute `scripts/run_vram67_bxlr_001_once.sh` once, do not automatically retry any ambiguous/failing outcome, restore accepted Runtime 018, record the result, and stop for interpretation. Only after a clean returning-stage-0 result may VRAM-8 bounded-loader design begin. A crash, reboot, timeout, disconnect, or timing-only anomaly is not success.
 
 ## Immediate executor order
 
@@ -222,7 +224,7 @@ Only after a clean live returning-stage-0 proof should the project proceed to VR
    - period APK recovery artifact/provenance;
    - exact-unit framing/drawing capture notes as needed.
 4. Treat **VRAM-0/VRAM-1 and Tier-1 direct-SPP VRAM-2 as CLOSED** unless the pinned corpus or atlas fails closed.
-5. Treat the corrected Tier-2 sequence `0x6e(nonzero) prime -> 0xa5 VoiceTip setup -> exact 1088-byte 0x6c same-mode overwrite`, deterministic runtime50 placement, VoiceTip callback trigger, and returning Thumb `BX LR` witness as PROMOTED OFFLINE. Do not transmit a custom/malformed live `0x6c` or execute stage-0 until a fresh one-use live manifest is reviewed and explicitly granted; do not reopen generic codec hunting without a concrete edge.
+5. Treat the corrected Tier-2 sequence `0x6e(nonzero) prime -> 0xa5 VoiceTip setup -> exact 1088-byte 0x6c same-mode overwrite`, deterministic runtime50 placement, VoiceTip callback trigger, and returning Thumb `BX LR` witness as PROMOTED OFFLINE. The fresh one-use manifest is now `experiments/OPENDITOO-VRAM67-BXLR-001.json`; do not alter/widen or execute it until its exact named grant is supplied, and do not reopen generic codec hunting without a concrete drift signal.
 6. Promote a parser only for deterministic controlled RAM/control-flow influence; source overreads/crashes alone remain negative evidence.
 7. Use OptiPlex Lab for disposable heavyweight tools when useful; accepted conclusions should be reproducible from the WSL repo without depending on an opaque GUI state.
 8. Continue autonomously through offline milestones until a true live-device boundary or a genuine technical blocker.
