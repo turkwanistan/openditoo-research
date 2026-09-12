@@ -256,12 +256,31 @@ key-test stage (id 7) → exercise the six keys. This exercises only read-only d
 not advance into the SPI-flash stage** until its write target is disassembled. No factory
 observation is authorized at this handoff.
 
-### 4. RECOVERY-R0 — solve exact rollback/readback
+### 4. RECOVERY-R0 — rollback/readback search — STILL BLOCKED (2026-09-12)
 
-- continue exact v42012 recovery search;
-- investigate stock Bluetooth/SD software readback/export paths;
-- analyze MassBoot protocol offline but do not assume retail USB accessibility;
-- consider owner-assisted no-solder board photos only if they would resolve service-transport topology.
+Offline/public-source avenues exhausted this pass; the recovery gate remains **UNMET**:
+
+- **Exact v42012:** not found. REvoom does not list v42012 at all — consistent with the OTA
+  API returning latest-per-flag with no historical-version selector.
+- **Documented older CDN objects are purged:** REvoom lists flag42 **v42010**
+  (`http://f.divoom-gz.com/.../eEwpPWA93ECEIZjCAAAAAArkYGQ617.bin`) and flag60 **v60010**;
+  both return **HTTP 404** on live HEAD checks (the `f.divoom-gz.com` nginx server is up, the
+  objects are gone).
+- **Wayback Machine: UNRESOLVED.** The availability API rate-limited (429) throughout this
+  session; whether an archived copy of the v42010 object exists is not settled. Retry from a
+  non-rate-limited context (or the CDX endpoint) in a future session.
+- **No stock SPP firmware-readback route:** the entire SPP command set is status GETs, SET
+  commands, and update-*push* (`SPP_APP_UPDATE_FILE_INFO`); there is **no** read/dump/export/
+  backup command (only a generic `FILE_MODE_READ` file mode). So the proven SPP channel cannot
+  export firmware.
+- **MassBoot readback:** inaccessible via retail USB (ENUM-001/002 negative); unchanged.
+
+**Best remaining leads (future):** (1) Wayback/CDX retry for the v42010 object from a clean IP —
+if recovered, v42010 is exact-flag42 (older than v42012; a *downgrade*, updater-rejected unless
+the `0x33` force flag, and NOT the exact original) but a useful third cross-check and possible
+recovery target with a documented loss-of-v42012 tradeoff; (2) owner/community v42012 copies.
+Until (a) exact v42012 restorable bytes + a credible restore path or (b) an owner-approved
+recovery strategy exists, stay offline/non-flashable.
 
 ### 5. PATCH-R0 — non-flashable fail-open prototype — DONE (2026-09-12, offline)
 

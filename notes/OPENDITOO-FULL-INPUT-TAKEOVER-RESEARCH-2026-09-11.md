@@ -714,3 +714,25 @@ Rejected as primary: piggybacking `0x09`/`0xBD` unsolicited reports (tied to spe
 behaviors + reclaim side effects) and AVRCP pass-through (that is the stock action for
 Left/Right/lever and absent for M/+/Lighting/-). No generic raw-memory API; the public surface
 stays typed/capability-scoped.
+
+## 18. RECOVERY-R0 — public-source rollback search, still blocked (2026-09-12, offline)
+
+Recovery gate remains UNMET after exhausting offline/public avenues this pass:
+
+- Exact v42012: not found; REvoom lists no v42012 (no historical-version selector; OTA returns
+  latest per flag).
+- REvoom-documented older objects PURGED: flag42 v42010
+  (`f.divoom-gz.com/.../eEwpPWA93ECEIZjCAAAAAArkYGQ617.bin`) and flag60 v60010 both HTTP 404 on
+  live HEAD checks (server up, objects gone).
+- Wayback Machine availability API rate-limited (429) all session — archived-copy status of the
+  v42010 object UNRESOLVED; retry from a clean IP / CDX endpoint next session.
+- No stock SPP firmware-readback: the SPP command set is status GETs + SETs + update-push
+  (`SPP_APP_UPDATE_FILE_INFO`); no read/dump/export/backup command exists (only generic
+  `FILE_MODE_READ`). The proven SPP channel cannot export firmware.
+- MassBoot readback inaccessible via retail USB (ENUM-001/002 negative), unchanged.
+
+Best remaining leads: (1) Wayback/CDX retry for the v42010 object from a non-rate-limited
+context — v42010 is exact-flag42 but OLDER than v42012 (a downgrade the updater rejects absent
+the 0x33 force flag, and not the exact original), useful mainly as a third cross-check /
+tradeoff recovery target; (2) owner/community v42012 copies. Stay offline/non-flashable until a
+credible restore path exists.
