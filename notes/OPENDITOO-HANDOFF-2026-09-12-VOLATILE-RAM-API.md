@@ -97,6 +97,7 @@ Root cause is the runner's Winsock model, not device behavior: `FD_WRITE` is the
 ### VRAM-6/7 successor 002 — PREPARED / UNGRANTED / UNEXECUTED
 
 `experiments/OPENDITOO-VRAM67-BXLR-002.json` is the fresh one-use successor. Its source and all three wire frames are byte-identical to 001 (including overwrite SHA-256 `c3fbc813e2646b44ace4a2105163fe7bc2622d5e6cc61477ac6098d0b23b12cd`). Runner002 waits for initial `FD_WRITE` once, then issues exactly one direct `send()` per frozen application frame; `WSAEWOULDBLOCK`, short send, close, or error remains terminal stop/no-retry. It records send progress on transport failures. The coordinator requires absolute `/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe` and builds the hash-bound runner before Runtime 018 handover. The required fresh grant is **`Grant OPENDITOO-VRAM67-BXLR-002 -- stock btplayer selected`**. No 001 authority transfers.
+Independent disposable-lab verification at commit `635b5a7f0df429988ed3c92d37af756055ff25f2`: .NET 8 restore/build of `OpenDitoo.Vram67.Runner002.csproj` succeeded with **0 warnings / 0 errors**. Focused Tier-2/VRAM + 001 + 002 tests are **31/31 PASS**. The broad constrained verifier remains at its established baseline: 381 tests with only the two unrelated W9B optical `PIL` import errors. The ungranted 002 coordinator fails closed with `VRAM67_EXACT_GRANT_NOT_MATERIALIZED` and creates no local grant/handover/claim/result.
 
 ### VRAM-6/7 one-use live-gate preparation 001 — HISTORICAL
 
