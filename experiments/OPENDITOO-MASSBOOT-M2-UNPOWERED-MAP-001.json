@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "kind": "massboot_exact_unit_unpowered_continuity_mapping",
+  "experiment_id": "OPENDITOO-MASSBOOT-M2-UNPOWERED-MAP-001",
+  "milestone": "MassBoot R2 / M2 FCC-guided unpowered board mapping",
+  "status": "prepared_unauthorized",
+  "objective": "Use the public FCC Ditoo Plus board geometry as the working map and a small set of exact-unit unpowered continuity/ohms checks to discriminate whether USB data, UART/reset/boot candidates, and SPI-NOR access justify a no-solder recovery route.",
+  "target": {
+    "model": "Ditoo Plus",
+    "installed_firmware": "v42012",
+    "product_flag": 42,
+    "exact_unit": "the project purchased unit"
+  },
+  "working_hypothesis": {
+    "source": "FCC A8I-DITOO-PLUS internal photos plus preserved AK1052D silicon/firmware evidence",
+    "silicon_targets": {
+      "RESET": "AK1052D pin 3",
+      "USB_DM": "AK1052D pin 22",
+      "USB_DP": "AK1052D pin 23",
+      "GPIO6_UART0_TXD_BOOT_SELECT": "AK1052D pin 32",
+      "GPIO7_UART0_RXD": "AK1052D pin 33"
+    },
+    "rule": "FCC geometry is a hypothesis source, not exact-unit proof; continuity may promote only physically measured connectivity."
+  },
+  "preconditions": {
+    "device": "fully powered off",
+    "usb": "disconnected",
+    "sd_card": "removed if present",
+    "battery": "disconnect through an ordinary accessible connector if straightforward before measurements; if not straightforward, stop and do not perform continuity/ohms measurements",
+    "meter": "known-good handheld multimeter in continuity or resistance mode only"
+  },
+  "operation": {
+    "allowed": [
+      "passive visual comparison against FCC board photos",
+      "high-resolution photography",
+      "continuity/resistance measurements on exposed PCB pads, connector shells, connector solder pads, vias, test pads, and component terminals where probe placement is mechanically safe",
+      "identify GND by continuity to USB connector shell or other photographically obvious ground structure",
+      "map USB D+/D- from accessible USB connector solder-side features toward candidate passives/test pads without probing fine-pitch SoC pins",
+      "test continuity among candidate UART/reset/boot pads only when those pads are physically exposed and probe placement is stable",
+      "record open/no-continuity as a result rather than increasing probe force"
+    ],
+    "forbidden": [
+      "powering or booting the device while open",
+      "USB attachment",
+      "voltage/current measurement",
+      "powered probing",
+      "probing battery-cell terminals",
+      "direct probing of fine-pitch AK1052D pins where a slip could bridge pins",
+      "GPIO strap/pull-down/pull-up",
+      "RESET manipulation",
+      "UART adapter connection",
+      "MassBoot/factory/test-mode entry",
+      "MassBoot/USB/SCSI/vendor commands",
+      "firmware/RAM/flash read or write",
+      "SPI programmer or clip attachment",
+      "soldering/desoldering/trace cutting/component removal"
+    ],
+    "automatic_retry": false
+  },
+  "measurement_order": [
+    "confirm battery disconnected and USB absent",
+    "establish one safe GND reference",
+    "map accessible USB connector data-side continuity to nearby passives/test pads",
+    "map only clearly accessible candidate pad clusters suggested by FCC geometry",
+    "photograph and log every positive continuity pair",
+    "stop once evidence is sufficient to rank USB/UART/reset/boot/SPI next-step candidates"
+  ],
+  "analysis_contract": {
+    "mapping_labels": [
+      "measured_continuity",
+      "fcc_geometry_hypothesis",
+      "photo_only",
+      "unknown"
+    ],
+    "required_outputs": [
+      "exact-unit/FCC overlay note",
+      "measured GND reference",
+      "USB D+/D- candidate route verdict",
+      "ranked UART0 TX/RX / GPIO6 boot-select / RESET candidate pads if measurable",
+      "SPI-NOR package/accessibility verdict from visual evidence",
+      "decision: no-solder SPI-read candidate vs reset-time MassBoot candidate vs insufficient access"
+    ],
+    "prohibition": "Do not infer signal identity from proximity alone; exact signal promotion requires continuity or other later direct evidence."
+  },
+  "risk": {
+    "classification": "low_to_moderate_unpowered_electrical_and_mechanical",
+    "reason": "Continuity/ohms mode is non-powered from the device perspective but a probe slip can still short adjacent nodes or damage connectors/components; battery disconnection and no fine-pitch SoC probing are required."
+  },
+  "stop_policy": {
+    "stop_if": [
+      "battery cannot be straightforwardly disconnected",
+      "probe access requires force or board flex",
+      "only fine-pitch SoC pins are available for a needed measurement",
+      "meter behavior is unstable or unexpected",
+      "any component/connector becomes mechanically stressed"
+    ],
+    "after": "No powered follow-up is implied. Any SPI clip, UART, GPIO strap, reset-time boot, USB enumeration, or MassBoot command requires a separate M3+ manifest and exact grant."
+  },
+  "authority": {
+    "physical_execution_authorized": false,
+    "authorization_consumed": false,
+    "grant_text_required": "Grant OPENDITOO-MASSBOOT-M2-UNPOWERED-MAP-001",
+    "grant_scope": "ONE bounded exact-unit Ditoo Plus session of unpowered continuity/resistance mapping using exposed safe-access PCB points and FCC geometry as a hypothesis; battery disconnected, USB absent; no powered probing, voltage/current measurement, SoC fine-pitch probing, UART connection, GPIO/reset manipulation, SPI clip/programmer, MassBoot commands, firmware access, or soldering.",
+    "granted_by": null,
+    "grant_text": null,
+    "granted_at_utc": null,
+    "consumed_at_utc": null
+  },
+  "result": null
+}
