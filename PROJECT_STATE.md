@@ -1,3 +1,7 @@
+## 2026-09-12 volatile-RAM API pivot — ACTIVE
+
+The active research route is now `notes/OPENDITOO-HANDOFF-2026-09-12-VOLATILE-RAM-API.md` / `notes/OPENDITOO-VOLATILE-RAM-API-PARSER-PLAN-2026-09-12.md`: exhaust the owned Ditoo Plus Bluetooth/parser surface for a reversible RAM-resident OpenDitoo API before considering more physical recovery work. Start with complete SPP dispatcher/nested-mux coverage and caller-controlled memory/dataflow classification; a crash without controllability is not a promoted result. Runtime 018 remains the accepted everyday product and must not be changed by offline parser research. M2 unpowered mapping remains authorized/unconsumed but is deferred by the owner's current no-measure/no-attach preference. Any live custom/malformed parser probe requires a fresh reviewed one-use manifest and exact grant.
+
 ## 2026-09-12 current research/product checkpoint — Runtime 018 live; recovery research at software-first blocker
 
 The everyday product is **Runtime 018** (`OPENDITOO-PRODUCT-RUNTIME-018`, `runtime_revision=13`, `host/product_runtime_v12.py`). Its raw-AVRCP input sidecar, pages, Host/session/pacing/reconnect/reclaim envelope and webcam policy 006 remain the accepted product baseline. Read `notes/OPENDITOO-HANDOFF-2026-09-12-R018.md` before product/runtime changes.
