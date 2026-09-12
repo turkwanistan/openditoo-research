@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-VRAM67-BXLR-001",
+  "status": "consumed_inconclusive_transport_harness",
+  "date_utc": "2026-09-12",
+  "authority": {
+    "grant_text": "Grant OPENDITOO-VRAM67-BXLR-001 -- stock btplayer selected",
+    "manifest_sha256": "e8a1f7d71375d5b270882b9cd89500cdb664da3a58bc06ca36ae24ef7bfff9b2",
+    "fixture_report_sha256": "e3288147473a6028fac2f5e2ce9b2a33ac1cbde3ebca9672f6adb4fa4466356f",
+    "claim_sha256": "6829a84ab9c3840929c39bc2fc2ea54681acea0c96e3f2309c1307e2f05cd45e",
+    "result_sha256": "6f7f51f7c487d1dd93d951d1509d0e32f59664648b5ddca416c473f9925f85bd",
+    "claimed_at_utc": "2026-09-12T21:27:15.8809663Z",
+    "consumed": true,
+    "retry_under_same_grant_allowed": false
+  },
+  "live_result": {
+    "runner_exit_code": 31,
+    "runner_error": "VRAM67_VOICETIP_0XA5_TIMEOUT; NO_RETRY",
+    "runtime018_restored": true,
+    "runtime018_restore_observation": "connected with last_error=null",
+    "candidate_pass": false,
+    "vram_execution_result_obtained": false
+  },
+  "wire_progress": {
+    "rfcomm_connection_opened": true,
+    "application_send_calls_completed": 1,
+    "prime_0x6e": {
+      "wire_sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec",
+      "send_call_completed_full_length": true
+    },
+    "voicetip_0xa5": {
+      "wire_sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316",
+      "send_call_reached": false,
+      "reason": "runner timed out waiting for a second FD_WRITE notification before calling send()"
+    },
+    "custom_overwrite_0x6c": {
+      "wire_sha256": "c3fbc813e2646b44ace4a2105163fe7bc2622d5e6cc61477ac6098d0b23b12cd",
+      "send_call_reached": false,
+      "transmitted": false
+    }
+  },
+  "interpretation": {
+    "classification": "TRANSPORT_HARNESS_INCONCLUSIVE_NOT_VRAM_NEGATIVE",
+    "why": "Frozen runner control flow increments past PRIME_0X6E only after a full-length send, then enters VOICETIP_0XA5 readiness wait before the second send call. The observed VOICETIP_0XA5_TIMEOUT therefore proves the first stock-shaped frame was sent, while the stock 0xa5 and custom 0x6c send calls were never reached. No controlled overwrite or callback discriminator occurred.",
+    "harness_defect": "The runner incorrectly required a fresh FD_WRITE event before every successful send. Winsock documents FD_WRITE as initially signaled for a connected writable socket and subsequently signaled after send returns WSAEWOULDBLOCK and buffer space becomes available; it is not a per-send readiness clock.",
+    "reference": "https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsaeventselect",
+    "device_hypothesis_changed": false
+  },
+  "pre_live_host_plumbing_event": {
+    "occurred": true,
+    "classification": "unclaimed_no_bluetooth",
+    "error": "powershell.exe: command not found",
+    "claim_created": false,
+    "bluetooth_opened": false,
+    "effect_on_one_use_authority": "none"
+  },
+  "next_boundary": {
+    "same_experiment_may_not_be_replayed": true,
+    "successor_requires_new_manifest_and_fresh_owner_grant": true,
+    "successor_payload_should_remain_identical": true,
+    "only_transport_harness_should_change": true,
+    "stop_before_vram8": true
+  }
+}

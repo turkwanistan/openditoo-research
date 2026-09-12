@@ -308,9 +308,11 @@ A candidate should not reach live preparation unless:
 - the device can recover by ordinary power cycle;
 - there is a reason to believe the test distinguishes controllability, not merely parser fragility.
 
-## Phase VRAM-6/7 — first returning-stage-0 live discriminator — PREPARED / UNGRANTED
+## Phase VRAM-6/7 — first returning-stage-0 live discriminator — 001 INCONCLUSIVE / 002 PREPARED UNGRANTED
 
-Offline preparation is complete in `experiments/OPENDITOO-VRAM67-BXLR-001.json`. This exact experiment intentionally combines the smallest VRAM-6 live discriminator with the minimal VRAM-7 returning-control-flow witness rather than adding an earlier crash/no-op ladder: the offline Tier-2/VRAM proof already closes placement, trigger, executability, and clean-return prerequisites.
+`OPENDITOO-VRAM67-BXLR-001` consumed its one-use grant but did **not** reach the `0xa5` or custom `0x6c` send calls. Only the stock `0x6e` prime completed. The runner incorrectly waited for a fresh `FD_WRITE` before each frame and timed out before the second send. Durable evidence is `captures/OPENDITOO-VRAM67-BXLR-001-LIVE-RESULT-2026-09-12.json`; classify it as transport-harness inconclusive, not a VRAM negative, and never replay 001.
+
+Fresh offline successor preparation is complete in `experiments/OPENDITOO-VRAM67-BXLR-002.json`. It keeps the smallest VRAM-6 discriminator and minimal VRAM-7 returning-control-flow witness byte-identical to 001. Only the Windows nonblocking-send harness changes: one initial `FD_WRITE` wait, then one direct `send()` call per frozen frame; any would-block/short/error remains terminal no-retry.
 
 Frozen constraints:
 
@@ -325,7 +327,7 @@ Frozen constraints:
 
 The success discriminator is deliberately composite rather than an added stage-0 output primitive: the same RFCOMM connection survives beyond the deterministic callback deadline with no crash/reboot/disconnect, then accepted Runtime 018 reconnects cleanly. Interpreted with the promoted offline timeout->callback proof, that is the candidate returning-`BX LR` result. A timing-only effect is not success.
 
-The exact grant text is `Grant OPENDITOO-VRAM67-BXLR-001 -- stock btplayer selected`. Until that text is supplied, the committed manifest remains unauthorized and no experiment Bluetooth open/transmit is allowed. After one run, stop for interpretation before VRAM-8.
+The fresh successor grant text is `Grant OPENDITOO-VRAM67-BXLR-002 -- stock btplayer selected`. The consumed 001 grant does not transfer. Until the exact 002 text is supplied, 002 remains unauthorized and no successor Bluetooth open/transmit is allowed. After one claimed 002 run, stop for interpretation before VRAM-8.
 
 ## Phase VRAM-8 — bounded RAM loader
 
@@ -475,7 +477,7 @@ Immediate offline work is now:
 3. treat the stock trigger as **closed positive under a deterministic stock btplayer precondition**: after the `0x6e` content prime, `0xa5` selector 2/model `0x22` creates VoiceTip state and the period-1 timeout eventually reaches `0x1fa8a`; keep the all-SPP `0x8a` BLUE normalization route separate/unpromoted until queue-preemption ordering is proven;
 4. treat **VRAM-3 as closed positive**: `0x00804779` is executable Thumb RAM with no NX barrier, lies in a pristine `0xff`-filled unreferenced span, and the minimal returning witness is `70 47` (`BX LR`);
 5. preserve the exact 1088-byte witness geometry: callback source offset `0x43c`; controlled runtime50 byte0=`0xff`, byte8=`0x22`, callback=`0x00804779`; last overwritten victim offset `+0x37`; preserve `+0x3c/+0x40/+0x44`;
-6. the next gate is procedural, not analytical: the fresh one-use reviewed manifest is now **`experiments/OPENDITOO-VRAM67-BXLR-001.json`**. Keep it frozen and unauthorized until the owner supplies its exact grant; no prior grant transfers;
+6. the next gate is procedural, not analytical: 001 is consumed/inconclusive before the custom packet; the fresh one-use reviewed successor is **`experiments/OPENDITOO-VRAM67-BXLR-002.json`**. Keep 002 frozen and unauthorized until the owner supplies its exact new grant; no prior grant transfers;
 7. do not expand immediately to a loader/API until this bounded live returning-stage-0 proof exists. A crash, reboot, disconnect, timeout, or timing-only effect is not success and must never be used as the primary oracle.
 
-Do not transmit the frozen custom `0x6c` until `OPENDITOO-VRAM67-BXLR-001` is explicitly granted. Runtime 018 remains outside parser semantics but its exact stop/18-second settle/restore-connected handover is part of this manifest.
+Do not replay 001. Do not transmit the frozen custom `0x6c` under successor 002 until `OPENDITOO-VRAM67-BXLR-002` is explicitly granted. Runtime 018 remains outside parser semantics but its exact stop/18-second settle/restore-connected handover is part of this manifest.
