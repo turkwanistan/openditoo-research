@@ -24,6 +24,8 @@ INPUT_TYPES = {"nav_left", "nav_right", "lever_candidate"}
 MAX_LINE_BYTES = 4096
 BROKER_RESTART_SECONDS = 5.0
 LEASE_WRITE_SECONDS = 1.0  # sidecar expires after 15 s without a change
+# Absolute: the systemd user service has no WSL-appended Windows PATH (Runtime 017 cutover crash, 2026-09-11).
+SCHTASKS = "/mnt/c/Windows/System32/schtasks.exe"
 
 
 def _utc() -> str:
@@ -50,6 +52,8 @@ class RawAvrcpEvents:
         self.gaps = 0
         self.epochs = 0
         self.rejected_lines = 0
+        self.capture_ready = False  # current broker epoch reported tshark capturing
+        self.bound = False          # current broker epoch has a learned Ditoo ACL handle
 
     def poll(self) -> list[dict]:
         try:
@@ -81,11 +85,17 @@ class RawAvrcpEvents:
                 continue
             if epoch != self.epoch:
                 self.epoch, self.epochs = epoch, self.epochs + 1
+                self.capture_ready = self.bound = False
             elif seq <= self.last_seq:
                 continue
             elif seq != self.last_seq + 1:
                 self.gaps += 1
             self.last_seq = seq
+            kind = record.get("type")
+            if kind == "capture_ready":
+                self.capture_ready = True
+            elif kind in ("handle_bound", "handle_unbound"):
+                self.bound = kind == "handle_bound"
             if record.get("type") == "event" and record.get("source") == "avrcp_raw" \
                     and record.get("normalized_candidate") in INPUT_TYPES:
                 events.append({
@@ -121,7 +131,7 @@ class RawAvrcpBroker:
         self.last_exit_code: int | None = None
 
     def _schtasks(self, verb: str):
-        return self.popen(["schtasks.exe", verb, "/tn", self.task_name], stdin=subprocess.DEVNULL,
+        return self.popen([SCHTASKS, verb, "/tn", self.task_name], stdin=subprocess.DEVNULL,
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def ensure(self) -> None:
@@ -212,7 +222,7 @@ def main(argv: list[str]) -> int:
         return 2
     raw = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
     broker = raw["pagination"]["broker"]
-    query = subprocess.run(["schtasks.exe", "/query", "/tn", broker["launch"]["task_name"], "/xml"],
+    query = subprocess.run([SCHTASKS, "/query", "/tn", broker["launch"]["task_name"], "/xml"],
                            stdin=subprocess.DEVNULL, capture_output=True)
     if query.returncode != 0:
         print("R017_TASK_NOT_INSTALLED")

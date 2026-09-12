@@ -51,7 +51,13 @@ PY
 
 stop_service(){
   systemctl --user stop "$SERVICE" || true
-  for _ in $(seq 1 40); do [[ "$(systemctl --user is-active "$SERVICE" || true)" == inactive ]] && return 0; sleep 0.25; done
+  # A crash-looped unit ends "failed", not "inactive"; that is stopped too (else rollback aborts half-way).
+  for _ in $(seq 1 40); do
+    case "$(systemctl --user is-active "$SERVICE" || true)" in
+      inactive|failed) systemctl --user reset-failed "$SERVICE" 2>/dev/null || true; return 0 ;;
+    esac
+    sleep 0.25
+  done
   echo R017_SERVICE_STOP_FAILED >&2; return 1
 }
 start_and_confirm(){
@@ -66,7 +72,7 @@ product_check(){
   python3 cli/openditoo.py product-check --policy "$POLICY" \
     | python3 -c 'import json,sys;d=json.load(sys.stdin);assert d["execution_ready"] and d["runtime_revision"]==int(sys.argv[1]),d' "$1"
 }
-end_raw_task(){ schtasks.exe /end /tn "$RAW_TASK" >/dev/null 2>&1 || true; }
+end_raw_task(){ /mnt/c/Windows/System32/schtasks.exe /end /tn "$RAW_TASK" >/dev/null 2>&1 || true; }
 
 if [[ "${1:-}" == "--rollback" ]]; then
   [[ -f "$RB/pre_commit" && -f "$RB/product-runtime-policy.json" ]] || { echo R017_NO_ROLLBACK_SAVED >&2; exit 2; }

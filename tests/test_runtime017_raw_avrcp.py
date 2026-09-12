@@ -130,6 +130,8 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertIn('R017_ELEVATED_SIDECAR_NOT_INSTALLED', shell)
         self.assertIn('python3 -m host.raw_avrcp_input verify-task', shell)
         self.assertIn('end_raw_task', shell[shell.index('--rollback'):])
+        self.assertIn('inactive|failed) systemctl --user reset-failed', shell)  # failed unit must not abort rollback
+        self.assertNotIn(' schtasks.exe', shell)
         self.assertIn('raw_avrcp_broker_sha256', shell)
         self.assertIn('raw_avrcp_dependencies_sha256', shell)
         self.assertIn("assert '__PENDING_' not in json.dumps(raw)", shell)
@@ -182,6 +184,10 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertEqual(src.count('ControlTraceW('), 2)  # declaration + the single FLUSH call
         self.assertNotIn('StartTrace', src)
         self.assertIn('Need(etw == 4201', src)
+        # Backlog rows may bind/unbind but never produce input; tshark readiness is announced.
+        self.assertIn('if (seen.Change is not ("handle_bound" or "handle_unbound")) continue;', run)
+        self.assertIn('"capture_ready"', run)
+        self.assertIn('StartsWith("Capturing on"', run)
         self.assertIn('"--status", "playing"', src)
         for op in ('0x4C', '0x4B', '0x44', '0x46'):
             self.assertIn(op, src)
@@ -189,6 +195,14 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertIn('pendingLine.Wait(250)', src)
         for forbidden in ('BluetoothClient', 'Rfcomm', 'Socket(', '/v1/session', '/v1/image'):
             self.assertNotIn(forbidden, src)
+
+    def test_runtime_gives_capture_bounded_head_start_before_first_session(self):
+        src = (ROOT / 'host' / 'product_runtime_v11.py').read_text(encoding='utf-8')
+        run = src[src.index('def run_product('):]
+        wait = run.index('for _ in range(80):')  # bounded by count, not by an injectable clock
+        self.assertLess(wait, run.index('carousel = PageCarousel('))
+        self.assertIn('if events.capture_ready or stop_requested():', run)
+        self.assertIn('"input_bound": getattr(events, "bound", None)', run)
 
 
 if __name__ == '__main__':

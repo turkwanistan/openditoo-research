@@ -56,6 +56,20 @@ class RawAvrcpInputTests(unittest.TestCase):
         self.assertEqual(cursor.epochs, 2)
         self.assertEqual(cursor.rejected_lines, 1)
 
+    def test_cursor_tracks_capture_ready_and_binding_per_epoch(self):
+        cursor = raw_avrcp_input.RawAvrcpEvents(self.events)
+        self.append({"epoch": "a", "seq": 1, "type": "broker_started"})
+        self.append({"epoch": "a", "seq": 2, "type": "capture_ready"})
+        self.append({"epoch": "a", "seq": 3, "type": "handle_bound", "acl_handle": "0x0100"})
+        self.assertEqual(cursor.poll(), [])
+        self.assertTrue(cursor.capture_ready and cursor.bound)
+        self.append({"epoch": "a", "seq": 4, "type": "handle_unbound"})
+        cursor.poll()
+        self.assertFalse(cursor.bound)
+        self.append({"epoch": "b", "seq": 1, "type": "broker_started"})  # restarted broker: fresh baseline
+        cursor.poll()
+        self.assertFalse(cursor.capture_ready or cursor.bound)
+
     def test_broker_runs_elevated_task_keeps_lease_changing_and_never_blocks(self):
         calls = []
         def popen(args, **kwargs):
@@ -65,7 +79,7 @@ class RawAvrcpInputTests(unittest.TestCase):
         broker = raw_avrcp_input.RawAvrcpBroker("OpenDitoo Raw AVRCP Broker", lease, popen=popen,
                                                 monotonic=lambda: self.clock)
         broker.ensure()
-        self.assertEqual(calls, [["schtasks.exe", "/run", "/tn", "OpenDitoo Raw AVRCP Broker"]])
+        self.assertEqual(calls, [[raw_avrcp_input.SCHTASKS, "/run", "/tn", "OpenDitoo Raw AVRCP Broker"]])
         first = lease.read_text()
         broker.request.rc = 0
         self.clock += 1.0
@@ -85,7 +99,13 @@ class RawAvrcpInputTests(unittest.TestCase):
         self.assertFalse(broker.alive)                      # missing/unrunnable task is visible
         broker.stop()
         self.assertFalse(lease.exists())
-        self.assertEqual(calls[-1], ["schtasks.exe", "/end", "/tn", "OpenDitoo Raw AVRCP Broker"])
+        self.assertEqual(calls[-1], [raw_avrcp_input.SCHTASKS, "/end", "/tn", "OpenDitoo Raw AVRCP Broker"])
+
+    def test_windows_tools_are_absolute_because_systemd_has_no_windows_path(self):
+        self.assertEqual(raw_avrcp_input.SCHTASKS, "/mnt/c/Windows/System32/schtasks.exe")
+        src = Path(raw_avrcp_input.__file__).read_text(encoding="utf-8")
+        self.assertNotIn('["schtasks.exe"', src)
+        self.assertNotIn('[\'schtasks.exe\'', src)
 
     def _policy_broker(self):
         raw = json.loads((Path(__file__).resolve().parents[1] / "product/OPENDITOO-PRODUCT-RUNTIME-017.json")

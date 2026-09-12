@@ -299,6 +299,15 @@ def run_product(policy: StandingPolicy, transport_factory, *, stop_requested: Ca
     if broker is not None:
         broker.ensure()
     events = events if events is not None else raw_avrcp_input.RawAvrcpEvents(ROOT / probe["events_file"])
+    if broker is not None and isinstance(events, raw_avrcp_input.RawAvrcpEvents):
+        # The broker learns the Ditoo handle from a session's first frame, and an idle dashboard sends frames
+        # only on change: give the elevated capture a bounded head start (<= 8 s, never blocks the product).
+        for _ in range(80):
+            if events.capture_ready or stop_requested():
+                break
+            broker.ensure()
+            events.poll()
+            sleep(0.1)
     if pages is None:
         pages = [DashboardPage(config, activity_state, renderer=LightningActivityRenderer(config, activity_state)),
                  SlotsPage(), MossPage()]
@@ -347,6 +356,7 @@ def run_product(policy: StandingPolicy, transport_factory, *, stop_requested: Ca
                  "current_page": carousel.page.name, "pages": [p.name for p in carousel.pages],
                  "page_transitions": carousel.page_transitions,
                  "input_broker_alive": broker.alive if broker else None,
+                 "input_bound": getattr(events, "bound", None),
                  "broker_starts": broker.starts if broker else 0,
                  "input_epoch": getattr(events, "epoch", None), "last_input_seq": getattr(events, "last_seq", None),
                  "input_gaps": getattr(events, "gaps", 0), "inputs_applied": driver.inputs_consumed,

@@ -190,7 +190,19 @@ internal static class Program
             var binder = new HandleBinder();
 
             var deadline = options.Seconds == 0 ? DateTimeOffset.MaxValue : DateTimeOffset.UtcNow.AddSeconds(options.Seconds);
-            var stderr = tshark.StandardError.ReadToEndAsync();
+            // tshark announces "Capturing on ..." on stderr once connected to BTVS: the product waits for this
+            // before its first session so that session's first frame (preamble A->B) binds the Ditoo handle.
+            var stderrText = new System.Text.StringBuilder();
+            var captureReady = 0;
+            var readyLogged = false;
+            tshark.ErrorDataReceived += (_, e) =>
+            {
+                if (e.Data is null) return;
+                lock (stderrText) { if (stderrText.Length < 8192) stderrText.AppendLine(e.Data); }
+                if (e.Data.StartsWith("Capturing on", StringComparison.Ordinal)) Volatile.Write(ref captureReady, 1);
+            };
+            tshark.BeginErrorReadLine();
+            string Stderr() { lock (stderrText) return stderrText.ToString(); }
             var pendingLine = tshark.StandardOutput.ReadLineAsync();
             // Lease: the unelevated WSL supervisor rewrites this file with a changing counter every second. Content
             // (not mtime, WSL/Windows clocks can drift) unchanged for LeaseTimeout means the product is gone, so the
@@ -222,31 +234,40 @@ internal static class Program
                     flushErrLogged = true; // 4201 = session not created yet by BTVS
                     Write(writer, "etw_flush_error", new Dictionary<string, object?> { ["win32"] = flushCode });
                 }
+                if (!readyLogged && Volatile.Read(ref captureReady) == 1)
+                {
+                    readyLogged = true;
+                    Write(writer, "capture_ready", new Dictionary<string, object?> { ["port"] = options.Port });
+                }
                 if (btvs.HasExited) throw new IOException($"BTVS exited {btvs.ExitCode}");
                 if (tshark.HasExited)
-                    throw new IOException($"tshark exited {tshark.ExitCode}: {(stderr.IsCompletedSuccessfully ? stderr.Result : string.Empty)}");
+                    throw new IOException($"tshark exited {tshark.ExitCode}: {Stderr()}");
 
                 // Stay responsive even when no buttons are pressed. A blocking ReadLine would hide a
                 // dead sink/BTVS indefinitely on an idle Ditoo and leave product telemetry falsely healthy.
                 if (!pendingLine.Wait(250)) continue;
                 var line = pendingLine.Result;
                 if (line is null)
-                    throw new IOException($"tshark stream ended: {(stderr.IsCompletedSuccessfully ? stderr.Result : string.Empty)}");
+                    throw new IOException($"tshark stream ended: {Stderr()}");
                 pendingLine = tshark.StandardOutput.ReadLineAsync();
 
                 var columns = line.Split('\t');
-                if (!double.TryParse(columns[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var captured) ||
-                    captured < startEpoch)
+                if (!double.TryParse(columns[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var captured))
+                    continue;
+                var seen = binder.Observe(columns);
+                // ETW backlog (captured before this broker started): history may still teach or revoke the current
+                // Ditoo handle (so a restarted broker re-binds without waiting for a frame), but never yields input.
+                var backlog = captured < startEpoch;
+                if (backlog)
                 {
                     stale++;
-                    continue;
+                    if (seen.Change is not ("handle_bound" or "handle_unbound")) continue;
                 }
-                if (stale > 0)
+                else if (stale > 0)
                 {
                     Write(writer, "stale_backlog_dropped", new Dictionary<string, object?> { ["rows"] = stale });
                     stale = 0;
                 }
-                var seen = binder.Observe(columns);
                 if (seen.Change == "handle_bound" && sink is null)
                     sink = Start(options.SinkExe, ["--seconds", "0", "--status", "playing", "--log", options.SinkLog]);
                 if (seen.Change is not null)
@@ -254,7 +275,7 @@ internal static class Program
                     Write(writer, seen.Change, new Dictionary<string, object?>
                     {
                         ["source"] = "avrcp_raw_attribution", ["acl_handle"] = seen.Handle,
-                        ["capture_time_epoch"] = columns[0],
+                        ["capture_time_epoch"] = columns[0], ["from_backlog"] = backlog,
                     });
                 var decoded = seen.Input;
                 if (decoded is null) continue;
