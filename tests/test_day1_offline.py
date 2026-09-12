@@ -5354,3 +5354,52 @@ class OfficialTestBranchLineageTests(unittest.TestCase):
         self.assertFalse(committed["safety"]["packet_generation"])
         self.assertFalse(committed["safety"]["firmware_mutation"])
         self.assertFalse(committed["safety"]["installation_authorized"])
+
+class PeriodAppRecoverySurfaceTests(unittest.TestCase):
+    """Pinned 2021-era Divoom app/update archaeology; offline and non-installing."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_period_app_recovery")
+
+    def test_period_apk_identity_and_independent_oracles_are_pinned(self) -> None:
+        r = self._mod().build_report()
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["apk"]["sha1"], "ac5158aad4a88f56772c5180887697d5c5b9415c")
+        self.assertEqual(r["apk"]["sha256"], "c690ba9aad29811eb7b007d31b593999e1ba937b7d247ff09fdcc4ec57d67082")
+        self.assertTrue(r["apk"]["signer_matches_independent_apkmirror_oracle"])
+        self.assertTrue(r["apk"]["sha1_matches_historical_revoom_oracle"])
+        self.assertTrue(r["apk"]["zip_integrity_ok"])
+        self.assertTrue(r["apk"]["manifest_package_utf16_witness"])
+        self.assertTrue(r["apk"]["manifest_version_utf16_witness"])
+
+    def test_period_test_backend_matrix_is_bounded_and_matches_current_objects(self) -> None:
+        r = self._mod().build_report()
+        m = r["period_test_backend"]
+        self.assertTrue(m["bounded_no_bruteforce"])
+        self.assertEqual(m["request_count"], 4)
+        self.assertTrue(m["same_firmware_objects_as_current_v3_matrix"])
+        self.assertEqual(m["versions"], {"42_prod": 42016, "42_test": 42017, "60_prod": 60014, "60_test": 60016})
+
+    def test_period_app_closes_selector_question_without_overclaiming_distribution_history(self) -> None:
+        r = self._mod().build_report()
+        c = r["conclusion"]
+        self.assertEqual(c["status"], "PERIOD_APP_NO_HISTORICAL_OR_RECOVERY_SELECTOR_FOUND")
+        self.assertTrue(c["firmware_test_branch_selector"])
+        self.assertTrue(c["separate_test_server_selector"])
+        self.assertFalse(c["historical_version_selector"])
+        self.assertFalse(c["caller_settable_update_flag_in_period_app"])
+        self.assertFalse(c["exact_v42012_recovered"])
+        self.assertFalse(c["support_sd_package_recovered"])
+        self.assertIn("does not formally prove", r["scope_limit"])
+
+    def test_committed_period_app_recovery_artifact_is_current_and_safe(self) -> None:
+        live = self._mod().build_report()
+        committed = json.loads((ROOT / "artifacts/analysis/period_app_recovery_surface.json").read_text())
+        self.assertEqual(committed, live)
+        self.assertTrue(committed["safety"]["offline_analysis"])
+        self.assertFalse(committed["safety"]["device_io"])
+        self.assertFalse(committed["safety"]["packet_generation"])
+        self.assertFalse(committed["safety"]["firmware_mutation"])
+        self.assertFalse(committed["safety"]["installation_authorized"])

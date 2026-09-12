@@ -1,8 +1,8 @@
-## 2026-09-12 current research/product checkpoint — Runtime 018 live; firmware input-takeover R0
+## 2026-09-12 current research/product checkpoint — Runtime 018 live; recovery research at software-first blocker
 
 The everyday product is **Runtime 018** (`OPENDITOO-PRODUCT-RUNTIME-018`, `runtime_revision=13`, `host/product_runtime_v12.py`). Its raw-AVRCP input sidecar, pages, Host/session/pacing/reconnect/reclaim envelope and webcam policy 006 remain the accepted product baseline. Read `notes/OPENDITOO-HANDOFF-2026-09-12-R018.md` before product/runtime changes.
 
-The current separate research route is **firmware/input takeover R0**. Read `notes/OPENDITOO-HANDOFF-2026-09-12-FIRMWARE-R0.md` and `notes/OPENDITOO-FIRMWARE-INPUT-TAKEOVER-PLAN-2026-09-12.md` before firmware/service-mode work. New exact-unit evidence now proves: the SD `/divoom/divoomupdate.bin` path is physically recognized on v42012 with a checksum-poisoned package; Lighting+external-power changes the boot path consistently with static MassBoot selection but produces no Windows USB/PnP identity in two bounded trials; M-at-boot enters stock factory/test mode and passively displays `42 / 012`; and the low-level analog-key pipeline has a conserved common translated-event emitter signature across both preserved Ditoo Plus branches. Exact v42012 **bytes are still unrecovered**, so persistent custom firmware remains gated on recovery/readback and full updater modelling. No checksum-valid custom image is authorized.
+The current separate research route is the **recovery-gated software-first/MassBoot decision point**. Read `notes/OPENDITOO-SOFTWARE-FIRST-RECOVERY-R0-2026-09-12.md` first; use `notes/OPENDITOO-HANDOFF-2026-09-12-MASSBOOT-R2.md` only if the owner explicitly chooses the deferred physical fallback. SFR-1/2/3 and the first SFR-4 lineage expansion are closed: stock SPP exposes no analyzed caller-controlled flash-read chain, current/legacy app update services expose production/test branches but no historical selector, and a provenance-strong 2021 Divoom 3.1.58 client confirms the hidden test-version/test-server controls without revealing a recovery catalogue. Exact v42012 **bytes are still unrecovered**. The prepared MassBoot M1 remains photos-only, `prepared_unauthorized`, and unconsumed; no checksum-valid custom image or physical escalation is authorized.
 
 Everything below that names Runtime 006 or an older objective as current is retained as historical evidence and is superseded by this checkpoint plus `START_HERE.md`.
 
@@ -470,9 +470,9 @@ Known REvoom SHA-1 values:
 - 3.1.08 `ecb991f2e4a99d7da6c304a3910bd67f3b182db9`
 - 3.1.04 `975f9505a3e26f8b9606b4d139b4950a54fc7f91`
 
-**3.1.08 is the most interesting historical target** because it predates the historical 60010/42010 Ditoo Plus firmware discovery by one day.
+**3.1.08 remains an interesting older historical target** because it predates the historical 60010/42010 Ditoo Plus firmware discovery by one day, but it is no longer an active blocker.
 
-Automated retrieval of useful 3.1.x mirrors encountered Cloudflare/human verification. This APK is now useful but no longer a blocker because the exact firmware itself yielded the update and transport architecture.
+A provenance-strong **3.1.58 APK is now preserved** at `artifacts/apps/divoom_android_3.1.58.apk`. Its SHA-1 `ac5158aad4a88f56772c5180887697d5c5b9415c` exactly matches the historical REvoom value already listed above, and its signer matches APKMirror's independently published Divoom certificate fingerprints. Offline decompilation proves the period app had separate hidden switches for test firmware (`SP_TEST_VERSION` → `IsTest`) and the test server (`SP_TEST_SERVER` → `apptest.divoom-gz.com`). The firmware request has no historical target-version field; `UpdateFlag` is constructor-fixed to 2 with no override caller in this client. A bounded current query of the legacy test host returned the same 42016/42017 and 60014/60016 objects as the modern service. See `artifacts/analysis/period_app_recovery_surface.json`.
 
 Older APKMirror 2.67 metadata found:
 
@@ -530,15 +530,14 @@ Not currently possessed:
 1. Ditoo Plus v60010 binary
 2. Ditoo Plus v42010 binary
 3. support-issued historical `divoomupdate.bin`
-4. period-correct Divoom 3.1.x APK
-5. confidential FCC schematic/block-diagram/operational-description exhibits
+4. confidential FCC schematic/block-diagram/operational-description exhibits
 
 Potential human routes:
 
 - contact REvoom maintainer (`flewkey@2a03.party` / `#revoom` on Libera) asking whether historical update bytes were retained
 - contact the 2022 Reddit Ditoo Plus owner for the original support attachment/instructions
 - ask Divoom support specifically for Ditoo Plus manual/recovery `divoomupdate.bin`
-- manually pass an old-APK host's human/Cloudflare gate if historical app analysis becomes worthwhile
+- pursue an older provenance-trackable APK only if a specific new discriminator appears; 3.1.58 is already preserved and analyzed
 
 Any recovered file must be hashed and preserved before use.
 

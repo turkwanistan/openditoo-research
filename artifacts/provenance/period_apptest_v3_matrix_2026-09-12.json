@@ -1,0 +1,79 @@
+{
+  "captured_utc": "2026-09-12",
+  "endpoint": "http://apptest.divoom-gz.com/GetUpdateFileV3",
+  "kind": "period_app_hidden_test_server_bounded_matrix",
+  "no_bruteforce": true,
+  "period_app_version": "3.1.58",
+  "rows": [
+    {
+      "request": {
+        "DeviceId": 0,
+        "Hardware": 42,
+        "IsTest": false,
+        "Language": "EN",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "Explain": "MTpGaXggYnVncyE=",
+        "FileId": "group1/M00/14/F0/eEwpPWNEzqqED5ZwAAAAAHJLNEc371.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "4371b90f4a0846fbb8dc26b77ad03695962f7ffb",
+        "Version": 42016
+      }
+    },
+    {
+      "request": {
+        "DeviceId": 0,
+        "Hardware": 42,
+        "IsTest": true,
+        "Language": "EN",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "Explain": "MTogRm9ybWF0IGhvdCBpbmZvcm1hdGlvbi4=",
+        "FileId": "group1/M00/02/A6/rBAAM2aUfwCEC6SSAAAAALeoJ_c962.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "180c5636050b871f3014894d4cea98deb06ed1f3",
+        "Version": 42017
+      }
+    },
+    {
+      "request": {
+        "DeviceId": 0,
+        "Hardware": 60,
+        "IsTest": false,
+        "Language": "EN",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "Explain": "Rml4IEJ1Z3Mh",
+        "FileId": "group1/M00/DE/44/L1ghbmDns8KEN_qPAAAAAPrbuLY357.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "0d2b2ac511d233e769dbd31f3371dc52cc589e17",
+        "Version": 60014
+      }
+    },
+    {
+      "request": {
+        "DeviceId": 0,
+        "Hardware": 60,
+        "IsTest": true,
+        "Language": "EN",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "Explain": "Rml4IEJ1ZyE=",
+        "FileId": "group1/M00/0E/B9/rBAAM2iSw-SEFifJAAAAAHxpRzo385.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "27f55d533d009f622c9c1d1afe26b26a69017dc6",
+        "Version": 60016
+      }
+    }
+  ],
+  "scope": "exactly Hardware 42/60 x IsTest false/true; Language=EN, UpdateFlag=2, DeviceId=0; no parameter/product/update-flag enumeration",
+  "transport_note": "The APK contains both HTTP and HTTPS apptest bases. HTTP was used for the durable capture after legacy HTTPS showed intermittent handshake timeout."
+}

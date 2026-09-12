@@ -1,0 +1,86 @@
+{
+  "apk": {
+    "dex_members": [
+      "classes.dex",
+      "classes2.dex",
+      "classes3.dex"
+    ],
+    "manifest_package_utf16_witness": true,
+    "manifest_version_utf16_witness": true,
+    "md5": "d60c7560aee69bffb60ae925b7bbf6fc",
+    "path": "artifacts/apps/divoom_android_3.1.58.apk",
+    "sha1": "ac5158aad4a88f56772c5180887697d5c5b9415c",
+    "sha1_matches_historical_revoom_oracle": true,
+    "sha256": "c690ba9aad29811eb7b007d31b593999e1ba937b7d247ff09fdcc4ec57d67082",
+    "signer": {
+      "sha1": "eeb353cb9bc057f8abd82cfc36f483d745ff9dd0",
+      "sha256": "b54bda23c5c9239bb80a0581220f2d46c3f59962c3ec52e692202e65b5ac0955",
+      "subject": "subject=C=US, ST=California, L=Mountain View, O=Google Inc., OU=Android, CN=Android"
+    },
+    "signer_matches_independent_apkmirror_oracle": true,
+    "size_bytes": 41427089,
+    "zip_integrity_ok": true
+  },
+  "conclusion": {
+    "caller_settable_update_flag_in_period_app": false,
+    "current_legacy_test_backend_yields_older_v42012": false,
+    "exact_v42012_recovered": false,
+    "firmware_test_branch_selector": true,
+    "historical_version_selector": false,
+    "separate_test_server_selector": true,
+    "status": "PERIOD_APP_NO_HISTORICAL_OR_RECOVERY_SELECTOR_FOUND",
+    "summary": "The verified 2021-era app exposes developer/test selection, not arbitrary or historical firmware selection. Its still-live legacy test backend currently resolves to the same latest production/test objects as the modern bounded V3 matrix.",
+    "support_sd_package_recovered": false
+  },
+  "decompilation_observations": {
+    "download_path": "UpdateFileService passes FileId to BaseParams download helper; OkHttpUtils.checkDownLoadPath prefixes GlobalApplication.f(), the f.divoom-gz.com firmware CDN base, and SHA-1 is verified before update processing",
+    "hidden_test_ui": "fragment_about_test.xml exposes literal test/formal firmware-version and test/formal server switches; About-page date entry is gated by account test flag, manager flag, or a fixed developer-account allowlist",
+    "method": "apktool 2.5.0-dirty in disposable OptiPlex Lab; observations below are tied to the pinned APK hash and class/method identifiers",
+    "no_app_manual_sd_recovery_string": "No divoomupdate filename string was found in the decoded APK; the 2022 divoomupdate.bin SD package remains support-channel evidence outside this app path",
+    "request_schema": "GetUpdateFileRequest fields Hardware, IsTest, Language, UpdateFlag; BaseRequestJson contributes DeviceId; constructor initializes UpdateFlag=2",
+    "response_schema": "GetUpdateFileResponse has only FileId, Version, Sha1, Explain",
+    "single_firmware_request_site": "com.divoom.Divoom.bluetooth.s.c.o(I): Hardware=input/1000; Language CN/EN; IsTest=GlobalApplication.A(); BaseParams.postRx('GetUpdateFileV3', request, GetUpdateFileResponse)",
+    "test_server_pref": "utils.y.t()/k0(Z) read/write com.divoom.DIVOOM.SP_TEST_SERVER; GlobalApplication.q() selects app.divoom-gz.com vs apptest.divoom-gz.com",
+    "test_version_pref": "utils.y.u()/l0(Z) read/write com.divoom.DIVOOM.SP_TEST_VERSION; AboutTestFragment toggles it through GlobalApplication.N(Z)",
+    "update_flag_override_callers": 0
+  },
+  "kind": "period_divoom_android_recovery_surface",
+  "ok": true,
+  "period_test_backend": {
+    "bounded_no_bruteforce": true,
+    "matrix_path": "artifacts/provenance/period_apptest_v3_matrix_2026-09-12.json",
+    "request_count": 4,
+    "same_firmware_objects_as_current_v3_matrix": true,
+    "versions": {
+      "42_prod": 42016,
+      "42_test": 42017,
+      "60_prod": 60014,
+      "60_test": 60016
+    }
+  },
+  "raw_apk_negative_witnesses": {
+    "divoomupdate_filename_string_absent": true,
+    "get_update_v2_string_absent": true
+  },
+  "raw_apk_witnesses": {
+    "firmware_cdn_https": true,
+    "firmware_test_pref": true,
+    "get_update_v3": true,
+    "hardware_json_field": true,
+    "is_test_json_field": true,
+    "language_json_field": true,
+    "period_prod_https": true,
+    "period_test_https": true,
+    "server_test_pref": true,
+    "update_flag_json_field": true
+  },
+  "safety": {
+    "device_io": false,
+    "firmware_mutation": false,
+    "installation_authorized": false,
+    "offline_analysis": true,
+    "packet_generation": false
+  },
+  "schema_version": 1,
+  "scope_limit": "One provenance-strong 2021-era app (3.1.58) was decompiled. This does not formally prove every older app/support backend lacked other behavior, nor reconstruct the historical state of apptest.divoom-gz.com. Failure to recover v42012/divoomupdate.bin is not proof those bytes were never distributed."
+}

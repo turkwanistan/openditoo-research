@@ -1,0 +1,34 @@
+{
+  "acceptance": {
+    "accepted_for_offline_archaeology": true,
+    "expected_md5_from_source_page_and_cdn_etag": "d60c7560aee69bffb60ae925b7bbf6fc",
+    "expected_size_bytes": 41427089,
+    "historical_identity_note": "The recovered APK SHA-1 exactly matches the 3.1.58 SHA-1 already recorded from REvoom historical metadata in PROJECT_STATE.md.",
+    "historical_revoom_sha1": "ac5158aad4a88f56772c5180887697d5c5b9415c",
+    "historical_revoom_sha1_matches": true,
+    "official_signer_sha1": "eeb353cb9bc057f8abd82cfc36f483d745ff9dd0",
+    "official_signer_sha256": "b54bda23c5c9239bb80a0581220f2d46c3f59962c3ec52e692202e65b5ac0955"
+  },
+  "artifact": "../apps/divoom_android_3.1.58.apk",
+  "captured_utc": "2026-09-12",
+  "download_note": "Ordinary public CDN GET with browser User-Agent and source-page Referer; no credentials/authentication/access-control bypass.",
+  "kind": "period_divoom_android_apk_provenance",
+  "manifest_utf16_package_witness": true,
+  "manifest_utf16_version_witness": true,
+  "md5": "d60c7560aee69bffb60ae925b7bbf6fc",
+  "package": "com.divoom.Divoom",
+  "sha1": "ac5158aad4a88f56772c5180887697d5c5b9415c",
+  "sha256": "c690ba9aad29811eb7b007d31b593999e1ba937b7d247ff09fdcc4ec57d67082",
+  "signer": {
+    "independent_oracle": "APKMirror Divoom 2.67 metadata publishes the same signer fingerprints; 2.67 binary itself is unavailable there due developer takedown.",
+    "oracle_url": "https://www.apkmirror.com/apk/divoom-lab-hk-international/divoom-pixel-art-editor/divoom-pixel-art-editor-2-67-release/divoom-pixel-art-editor-2-67-android-apk-download/",
+    "sha1": "eeb353cb9bc057f8abd82cfc36f483d745ff9dd0",
+    "sha256": "b54bda23c5c9239bb80a0581220f2d46c3f59962c3ec52e692202e65b5ac0955",
+    "subject": "subject=C=US, ST=California, L=Mountain View, O=Google Inc., OU=Android, CN=Android"
+  },
+  "size_bytes": 41427089,
+  "source_cdn": "https://dl.37790.cn/apk/com.divoom.Divoom_5868796a.apk",
+  "source_page": "https://www.aiting.com/divoom-pixel-art-editor/com.divoom.Divoom/download/3.1.58",
+  "version_name": "3.1.58",
+  "zip_integrity_ok": true
+}
