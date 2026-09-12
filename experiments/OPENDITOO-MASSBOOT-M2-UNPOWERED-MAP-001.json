@@ -3,7 +3,7 @@
   "kind": "massboot_exact_unit_unpowered_continuity_mapping",
   "experiment_id": "OPENDITOO-MASSBOOT-M2-UNPOWERED-MAP-001",
   "milestone": "MassBoot R2 / M2 FCC-guided unpowered board mapping",
-  "status": "prepared_unauthorized",
+  "status": "authorized_unconsumed",
   "objective": "Use the public FCC Ditoo Plus board geometry as the working map and a small set of exact-unit unpowered continuity/ohms checks to discriminate whether USB data, UART/reset/boot candidates, and SPI-NOR access justify a no-solder recovery route.",
   "target": {
     "model": "Ditoo Plus",
@@ -97,13 +97,13 @@
     "after": "No powered follow-up is implied. Any SPI clip, UART, GPIO strap, reset-time boot, USB enumeration, or MassBoot command requires a separate M3+ manifest and exact grant."
   },
   "authority": {
-    "physical_execution_authorized": false,
+    "physical_execution_authorized": true,
     "authorization_consumed": false,
     "grant_text_required": "Grant OPENDITOO-MASSBOOT-M2-UNPOWERED-MAP-001",
     "grant_scope": "ONE bounded exact-unit Ditoo Plus session of unpowered continuity/resistance mapping using exposed safe-access PCB points and FCC geometry as a hypothesis; battery disconnected, USB absent; no powered probing, voltage/current measurement, SoC fine-pitch probing, UART connection, GPIO/reset manipulation, SPI clip/programmer, MassBoot commands, firmware access, or soldering.",
-    "granted_by": null,
-    "grant_text": null,
-    "granted_at_utc": null,
+    "granted_by": "owner",
+    "grant_text": "Grant OPENDITOO-MASSBOOT-M2-UNPOWERED-MAP-001",
+    "granted_at_utc": "2026-09-12T15:37:00Z",
     "consumed_at_utc": null
   },
   "result": null
