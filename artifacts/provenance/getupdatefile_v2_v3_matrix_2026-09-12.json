@@ -1,0 +1,195 @@
+{
+  "bounded_dimensions": {
+    "Hardware": [
+      42,
+      60
+    ],
+    "IsTest": [
+      false,
+      true
+    ],
+    "endpoints": [
+      "GetUpdateFileV2",
+      "GetUpdateFileV3"
+    ]
+  },
+  "captured_utc": "2026-09-12",
+  "findings": [
+    "IsTest=true returns a distinct newer test-branch object for both Hardware 42 and 60 on 2026-09-12.",
+    "V2 and V3 returned identical JSON objects for every tested Hardware/IsTest pair.",
+    "The matrix does not enumerate other hardware flags, UpdateFlag values, languages, device IDs, or undocumented parameters."
+  ],
+  "fixed_request_fields": {
+    "DeviceId": "00000000-0000-0000-0000-000000000000",
+    "Language": "en",
+    "UpdateFlag": 2
+  },
+  "host": "appin.divoom-gz.com",
+  "kind": "bounded_official_update_api_matrix",
+  "method": "POST JSON",
+  "no_bruteforce": true,
+  "rows": [
+    {
+      "endpoint": "GetUpdateFileV2",
+      "explain_decoded": "1:Fix bugs!",
+      "request": {
+        "DeviceId": "00000000-0000-0000-0000-000000000000",
+        "Hardware": 42,
+        "IsTest": false,
+        "Language": "en",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "DeviceId": 0,
+        "Explain": "MTpGaXggYnVncyE=",
+        "FileId": "group1/M00/14/F0/eEwpPWNEzqqED5ZwAAAAAHJLNEc371.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "4371b90f4a0846fbb8dc26b77ad03695962f7ffb",
+        "Version": 42016
+      }
+    },
+    {
+      "endpoint": "GetUpdateFileV2",
+      "explain_decoded": "1: Format hot information.",
+      "request": {
+        "DeviceId": "00000000-0000-0000-0000-000000000000",
+        "Hardware": 42,
+        "IsTest": true,
+        "Language": "en",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "DeviceId": 0,
+        "Explain": "MTogRm9ybWF0IGhvdCBpbmZvcm1hdGlvbi4=",
+        "FileId": "group1/M00/02/A6/rBAAM2aUfwCEC6SSAAAAALeoJ_c962.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "180c5636050b871f3014894d4cea98deb06ed1f3",
+        "Version": 42017
+      }
+    },
+    {
+      "endpoint": "GetUpdateFileV2",
+      "explain_decoded": "Fix Bugs!",
+      "request": {
+        "DeviceId": "00000000-0000-0000-0000-000000000000",
+        "Hardware": 60,
+        "IsTest": false,
+        "Language": "en",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "DeviceId": 0,
+        "Explain": "Rml4IEJ1Z3Mh",
+        "FileId": "group1/M00/DE/44/L1ghbmDns8KEN_qPAAAAAPrbuLY357.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "0d2b2ac511d233e769dbd31f3371dc52cc589e17",
+        "Version": 60014
+      }
+    },
+    {
+      "endpoint": "GetUpdateFileV2",
+      "explain_decoded": "Fix Bug!",
+      "request": {
+        "DeviceId": "00000000-0000-0000-0000-000000000000",
+        "Hardware": 60,
+        "IsTest": true,
+        "Language": "en",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "DeviceId": 0,
+        "Explain": "Rml4IEJ1ZyE=",
+        "FileId": "group1/M00/0E/B9/rBAAM2iSw-SEFifJAAAAAHxpRzo385.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "27f55d533d009f622c9c1d1afe26b26a69017dc6",
+        "Version": 60016
+      }
+    },
+    {
+      "endpoint": "GetUpdateFileV3",
+      "explain_decoded": "1:Fix bugs!",
+      "request": {
+        "DeviceId": "00000000-0000-0000-0000-000000000000",
+        "Hardware": 42,
+        "IsTest": false,
+        "Language": "en",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "DeviceId": 0,
+        "Explain": "MTpGaXggYnVncyE=",
+        "FileId": "group1/M00/14/F0/eEwpPWNEzqqED5ZwAAAAAHJLNEc371.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "4371b90f4a0846fbb8dc26b77ad03695962f7ffb",
+        "Version": 42016
+      }
+    },
+    {
+      "endpoint": "GetUpdateFileV3",
+      "explain_decoded": "1: Format hot information.",
+      "request": {
+        "DeviceId": "00000000-0000-0000-0000-000000000000",
+        "Hardware": 42,
+        "IsTest": true,
+        "Language": "en",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "DeviceId": 0,
+        "Explain": "MTogRm9ybWF0IGhvdCBpbmZvcm1hdGlvbi4=",
+        "FileId": "group1/M00/02/A6/rBAAM2aUfwCEC6SSAAAAALeoJ_c962.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "180c5636050b871f3014894d4cea98deb06ed1f3",
+        "Version": 42017
+      }
+    },
+    {
+      "endpoint": "GetUpdateFileV3",
+      "explain_decoded": "Fix Bugs!",
+      "request": {
+        "DeviceId": "00000000-0000-0000-0000-000000000000",
+        "Hardware": 60,
+        "IsTest": false,
+        "Language": "en",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "DeviceId": 0,
+        "Explain": "Rml4IEJ1Z3Mh",
+        "FileId": "group1/M00/DE/44/L1ghbmDns8KEN_qPAAAAAPrbuLY357.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "0d2b2ac511d233e769dbd31f3371dc52cc589e17",
+        "Version": 60014
+      }
+    },
+    {
+      "endpoint": "GetUpdateFileV3",
+      "explain_decoded": "Fix Bug!",
+      "request": {
+        "DeviceId": "00000000-0000-0000-0000-000000000000",
+        "Hardware": 60,
+        "IsTest": true,
+        "Language": "en",
+        "UpdateFlag": 2
+      },
+      "response": {
+        "DeviceId": 0,
+        "Explain": "Rml4IEJ1ZyE=",
+        "FileId": "group1/M00/0E/B9/rBAAM2iSw-SEFifJAAAAAHxpRzo385.bin",
+        "ReturnCode": 0,
+        "ReturnMessage": "",
+        "Sha1": "27f55d533d009f622c9c1d1afe26b26a69017dc6",
+        "Version": 60016
+      }
+    }
+  ],
+  "schema_version": 1,
+  "v2_v3_responses_identical_for_matrix": true
+}

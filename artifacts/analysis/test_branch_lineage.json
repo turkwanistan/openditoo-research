@@ -1,0 +1,229 @@
+{
+  "api": {
+    "is_test_true_distinct_for_hardware_42_and_60": true,
+    "matrix_artifact": "artifacts/provenance/getupdatefile_v2_v3_matrix_2026-09-12.json",
+    "v2_v3_responses_identical_for_bounded_matrix": true
+  },
+  "artifacts": {
+    "flag42_test": {
+      "api_version": 42017,
+      "bytes": 1207333,
+      "internal_version": 42017,
+      "path": "artifacts/firmware/flag42_v42017_test.bin",
+      "raw_spi_read": {
+        "direct_bl_xref_count": 63,
+        "direct_xrefs_inside_spp_dispatch_region": [],
+        "wrapper": "0x1be9e"
+      },
+      "sha1": "180c5636050b871f3014894d4cea98deb06ed1f3",
+      "sha256": "6ac3513fc6659e57816b33382cb4ac265c7870de822171955cb2b366384dafcc"
+    },
+    "flag60_test": {
+      "api_version": 60016,
+      "bytes": 1207313,
+      "internal_version": 60017,
+      "path": "artifacts/firmware/flag60_api60016_internal60017_test.bin",
+      "raw_spi_read": {
+        "direct_bl_xref_count": 63,
+        "direct_xrefs_inside_spp_dispatch_region": [],
+        "wrapper": "0x1beaa"
+      },
+      "sha1": "27f55d533d009f622c9c1d1afe26b26a69017dc6",
+      "sha256": "05e406f1196d7ea351d58d9dcf6a0f83f0244d0857bf0d27a396be58acbcd339",
+      "version_mismatch": "API declares 60016; valid file container declares 60017"
+    }
+  },
+  "dispatcher_lineage": {
+    "flag42_v42016_vs_v42017_exact_target_equal": 251,
+    "flag42_v42017_vs_flag60_test_exact_target_equal": 251,
+    "flag60_old_to_test_changed_slots": [
+      "0x1b",
+      "0x51",
+      "0x52",
+      "0x53",
+      "0x54",
+      "0xb6",
+      "0xb7"
+    ],
+    "flag60_v60014_vs_test_exact_target_equal": 244,
+    "recovery_update_cluster_unchanged": true,
+    "sys_0x93_through_0x96_still_default_error": true
+  },
+  "kind": "offline_official_test_branch_lineage_recovery_audit",
+  "limits": [
+    "bounded static direct-call/control-flow and byte-witness analysis, not whole-program formal proof",
+    "no exact per-command raw-read reachability count is claimed for the monolithic SPP switch",
+    "computed internal jump tables/callbacks remain an explicit analysis limit",
+    "test firmware was downloaded and analyzed only; it was not sent to or installed on the device"
+  ],
+  "ok": true,
+  "readback_adversarial_check": {
+    "conclusion": "SFR-1 survives both official test branches. This is especially strong for flag42 v42017 because its config/storage implementation is materially refactored while the stock SPP protocol surface remains unchanged.",
+    "flag42_v42017": {
+      "finding": "The v42017 config/storage refactor preserves the SFR-1 result: no analyzed stock SPP path turns caller-controlled bytes into an arbitrary raw SPI address/range or firmware export buffer.",
+      "five_direct_read_families": [
+        {
+          "entry": "0x1784a",
+          "name": "config_initializer"
+        },
+        {
+          "entry": "0x17f6a",
+          "name": "config_record_reader"
+        },
+        {
+          "entry": "0x18728",
+          "name": "config_byte_reader"
+        },
+        {
+          "entry": "0x3c140",
+          "name": "one_byte_raw_header_parser"
+        },
+        {
+          "entry": "0x38b1a",
+          "name": "screen_save_content_scanner"
+        }
+      ],
+      "raw_header_address_provenance": [
+        "fixed config records 10/11 or 13/14 resolved through refactored config metadata",
+        "firmware resource-base resolver, optionally plus exactly 0x100 as a boolean alternate bank",
+        "secondary context initialized from that same resource resolver plus exactly 0x100 and stored/reloaded at context+20"
+      ],
+      "status": "SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH"
+    },
+    "flag60_test": {
+      "analysis_limits": [
+        "bounded static direct-call/control-flow analysis, not a whole-program formal proof",
+        "the monolithic SPP switch makes naive command-count reachability over-approximate; no exact count of remotely reachable read cases is claimed",
+        "computed internal jump tables/callbacks are not globally proven absent; the top-level EXTERN mux is separately byte-pinned to subcommands 0x13..0x1b",
+        "no live packet probing was used for this conclusion"
+      ],
+      "applicable": true,
+      "direct_raw_read_caller_families": [
+        {
+          "entry": "0x184e8",
+          "name": "config_initializer",
+          "raw_read_calls": [
+            "0x18564",
+            "0x185ac"
+          ],
+          "semantics": "internal config-area cursor/base scan; raw reads are one byte and no caller argument supplies the flash address"
+        },
+        {
+          "entry": "0x18604",
+          "name": "config_record_reader",
+          "raw_read_call": "0x1866e",
+          "semantics": "raw address is internal config base plus parsed record offset; selector/key chooses a validated record, not a raw address"
+        },
+        {
+          "entry": "0x18b64",
+          "name": "config_byte_reader",
+          "raw_read_call": "0x18bc0",
+          "semantics": "one-byte read from internal config cursor/base; caller value participates in record matching rather than raw addressing"
+        },
+        {
+          "analyzed_address_provenance": [
+            "fixed config records 10/11 or 13/14 resolved through the config metadata table",
+            "internal resource-base resolver, optionally plus exactly 0x100 as a boolean alternate bank",
+            "secondary internal context initialized from that resource resolver plus exactly 0x100 and later loaded from context+20"
+          ],
+          "entry": "0x3c12c",
+          "name": "one_byte_raw_header_parser",
+          "raw_read_call": "0x3c152",
+          "semantics": "function argument is a raw one-byte read address, but all three analyzed SPP-reachable provenance families supply managed internal record/resource addresses"
+        },
+        {
+          "entry": "0x38b26",
+          "name": "screen_save_content_scanner",
+          "raw_read_call": "0x38b42",
+          "semantics": "one-byte scan at managed object base+0x0c plus bounded internal loop index; screen-save/content-area metadata, not firmware export"
+        }
+      ],
+      "finding": "No analyzed stock SPP path lets caller-controlled bytes become an arbitrary SPI-flash address/range or exports an arbitrary firmware buffer. The raw reads reached are typed config/resource/screen-save storage operations.",
+      "status": "SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH"
+    }
+  },
+  "region_similarity": {
+    "flag42_v42016_to_v42017": {
+      "config_storage": {
+        "bytes": 6528,
+        "end": "0x18f80",
+        "percent": 6.097,
+        "same": 398,
+        "start": "0x17600"
+      },
+      "raw_parser_area": {
+        "bytes": 1280,
+        "end": "0x3c500",
+        "percent": 4.609,
+        "same": 59,
+        "start": "0x3c000"
+      },
+      "resource_context": {
+        "bytes": 768,
+        "end": "0x23b00",
+        "percent": 4.167,
+        "same": 32,
+        "start": "0x23800"
+      },
+      "resource_manager": {
+        "bytes": 42112,
+        "end": "0x32b80",
+        "percent": 12.137,
+        "same": 5111,
+        "start": "0x28700"
+      },
+      "spp_dispatch": {
+        "bytes": 9022,
+        "end": "0x1271e",
+        "percent": 97.273,
+        "same": 8776,
+        "start": "0x103e0"
+      }
+    },
+    "flag60_v60014_to_test": {
+      "config_storage": {
+        "bytes": 6528,
+        "end": "0x18f80",
+        "percent": 99.341,
+        "same": 6485,
+        "start": "0x17600"
+      },
+      "raw_parser_area": {
+        "bytes": 1280,
+        "end": "0x3c500",
+        "percent": 2.344,
+        "same": 30,
+        "start": "0x3c000"
+      },
+      "resource_context": {
+        "bytes": 768,
+        "end": "0x23b00",
+        "percent": 95.573,
+        "same": 734,
+        "start": "0x23800"
+      },
+      "resource_manager": {
+        "bytes": 42112,
+        "end": "0x32b80",
+        "percent": 3.854,
+        "same": 1623,
+        "start": "0x28700"
+      },
+      "spp_dispatch": {
+        "bytes": 9022,
+        "end": "0x1271e",
+        "percent": 96.364,
+        "same": 8694,
+        "start": "0x103e0"
+      }
+    }
+  },
+  "safety": {
+    "device_io": false,
+    "firmware_mutation": false,
+    "installation_authorized": false,
+    "offline_only": true,
+    "packet_generation": false
+  },
+  "schema_version": 1
+}

@@ -173,7 +173,7 @@ The Plus-only `0x23` handler was inspected separately: it accepts a small enumer
 
 ### Update service/API
 
-Public REvoom documentation and current community reverse engineering identify the Divoom update-service family around `GetUpdateFileV2`/`GetUpdateFileV3`. The known API model is “latest firmware by product flag”, not a historical-version catalogue.
+Public REvoom documentation and current community reverse engineering identify the Divoom update-service family around `GetUpdateFileV2`/`GetUpdateFileV3`. Modern app archaeology additionally identified the current service as JSON `POST` requests to `https://appin.divoom-gz.com/GetUpdateFileV2` / `GetUpdateFileV3`. The service remains latest-by-product-flag rather than a discovered historical-version catalogue.
 
 Public/community references used in this pass:
 
@@ -183,7 +183,17 @@ Public/community references used in this pass:
 
 A recent MiniToo community reverse-engineering project independently mapped modern Divoom app update orchestration and command enums. It is **family/app evidence only** because MiniToo uses different device silicon; exact Ditoo Plus firmware bytes remain authoritative. Useful cross-checks from that work include the same `0x98/0x99` app-update pairing and a narrow implemented EXTERN subset on their device.
 
-This session attempted a minimal read-only API check for `Hardware=42/60` with `IsTest=false/true`, but both WSL_MCP and OptiPlex execution environments failed DNS resolution before reaching Divoom. Treat this as an environment limitation, **not** a server-negative result.
+On 2026-09-12, SFR-3 executed exactly the bounded 2×2×2 matrix already planned: endpoint V2/V3 × `Hardware=42/60` × `IsTest=false/true`, with `UpdateFlag=2`, language `en`, and a zero DeviceId. No product-flag, update-flag or undocumented-parameter enumeration was performed. The complete immutable response record is `artifacts/provenance/getupdatefile_v2_v3_matrix_2026-09-12.json`.
+
+Results:
+
+- V2 and V3 returned identical JSON objects for every one of the four Hardware/IsTest pairs.
+- flag42 production remained **v42016**; `IsTest=true` exposed official **v42017**, SHA-1 `180c5636050b871f3014894d4cea98deb06ed1f3`.
+- flag60 production remained **v60014**; `IsTest=true` API metadata exposed **v60016**, SHA-1 `27f55d533d009f622c9c1d1afe26b26a69017dc6`.
+- The exact two test-branch CDN objects were downloaded for offline analysis only and verified against those server SHA-1s. Both are valid Divoom update containers. flag42's container also declares 42017. The flag60 object has a vendor metadata inconsistency: the API declares **60016** while the valid downloaded container internally declares **60017**. Both values are preserved; neither is silently normalized.
+- No historical-version selector or exact-v42012 source was revealed by this bounded matrix.
+
+Provenance is preserved in `artifacts/provenance/ota_flag42_v42017_test.json` and `artifacts/provenance/ota_flag60_test_api60016_internal60017.json`. These are research/reference artifacts only; no test firmware was sent to or installed on the Ditoo.
 
 ### Historical app archaeology
 
@@ -275,26 +285,33 @@ Prioritize a provenance-trackable Divoom `com.divoom.Divoom` APK from the 2021�
 
 Do not download random unverified APKs merely to increase source count.
 
-### SFR-3 — bounded current update-API matrix
+### SFR-3 — bounded current update-API matrix — CLOSED (2026-09-12, read-only public network)
 
-**Read-only public-network research when a network-capable environment is available.**
+The exact planned eight requests were captured in `artifacts/provenance/getupdatefile_v2_v3_matrix_2026-09-12.json`; no broader enumeration occurred. V2 and V3 were identical across the matrix. `IsTest=true` was materially useful and returned distinct official test branches for both Ditoo Plus flags. It did **not** expose a historical selector or v42012.
 
-Probe only the already-evidenced API shapes for product flags 42 and 60 with production/test boolean variants. Record exact responses and timestamps. Do **not** brute-force product flags, update flags or undocumented parameters.
+This closes the bounded current-API question while adding two high-value lineage artifacts rather than a recovery image.
 
-A historical selector would be a major breakthrough; another latest-only response simply confirms current behavior.
+### SFR-4 — lineage expansion — FIRST EXPANSION COMPLETE (2026-09-12, offline)
 
-### SFR-4 — lineage expansion
+The newly recovered official test branches were ingested immutably and audited by `tools/ditoo_test_branch_lineage.py`; the committed report is `artifacts/analysis/test_branch_lineage.json`.
 
-If any additional flag42/flag60 firmware image is recovered, ingest it immutably and rerun the software-recovery analyzer before bespoke disassembly. A flag42 build on either side of v42012 would be especially valuable for determining whether the SPP/update surface changed between the installed build and v42016.
+Key results:
+
+- flag42 v42017 has **251/251 identical top-level SPP handler targets** versus production v42016. `0x93..0x96` remain default/error and the recovery/update cluster is unchanged.
+- flag42 v42017 is nevertheless an adversarial implementation cross-check rather than a trivial relocation: its config/storage internals are materially refactored. The fail-closed analysis still reduces stock-SPP raw-read reachability to the same five semantic families, and the refactored one-byte raw-address parser is fed only fixed/config-managed/resource-managed addresses on the analyzed paths. SFR-1 therefore survives this independent implementation change.
+- the flag60 test object also has 63 direct raw-read callers, zero direct SPP→raw-read edges, and satisfies the accepted SFR-1 byte/data-flow invariants.
+- flag42 v42017 and the flag60 test object have **251/251 identical top-level SPP dispatch targets**, further supporting a stable typed product protocol rather than a hidden branch-specific dump namespace.
+
+Result remains `SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH`, with the same explicit bounded-static-analysis limits. Future newly recovered flag42/flag60 images should still be ingested and checked, especially anything at or below v42012.
 
 ## Stop / hardware flip condition
 
-Software-first work should continue while it is producing new discriminating evidence. Do not declare exact v42012 externally recoverable merely because nearby firmware exists.
+Software-first work should continue while it is producing new discriminating evidence. Do not declare exact v42012 externally recoverable merely because nearby firmware exists. SFR-1, SFR-3 and the first SFR-4 lineage expansion are now closed; the main remaining software discriminator is SFR-2 period-app/support-updater archaeology plus opportunistic provenance-trackable v42012 acquisition.
 
 If all of the following become true:
 
-1. SFR-1 closes without a reachable stock readback chain;
-2. period app/API archaeology yields no historical-v42012 source or recovery endpoint;
+1. SFR-1 remains closed without a reachable stock readback chain after the new lineage checks;
+2. period app/support-updater archaeology yields no historical-v42012 source or recovery endpoint;
 3. no provenance-trackable v42012 image emerges;
 
 then the software-only route has reached a meaningful evidence-backed blocker. At that point, present the owner with the choice rather than silently escalating: keep the project recovery-gated, or return to the already-prepared **photos-only M1** disassembly session to determine whether MassBoot/SPI offers a simple no-solder route.
@@ -305,8 +322,9 @@ No electrical probing is implied by that choice.
 R0 was verified in the authoritative WSL_MCP checkout after the software-first pivot:
 
 - `python3 tools/ditoo_software_recovery_surface.py --selfcheck` — **PASS**;
-- `SoftwareRecoverySurfaceTests` — **8/8 PASS**;
-- `python3 scripts/verify_day1_offline.py` — **353 tests**, exactly **2 errors**, both the pre-existing unrelated W9B optical tests caused by missing `PIL`; **zero software-recovery / firmware-R&D test failures**;
+- `python3 tools/ditoo_test_branch_lineage.py --selfcheck` — **PASS**;
+- `SoftwareRecoverySurfaceTests` + `OfficialTestBranchLineageTests` — **12/12 PASS**;
+- `python3 scripts/verify_day1_offline.py` — **357 tests**, exactly **2 errors**, both the pre-existing unrelated W9B optical tests caused by missing `PIL`; **zero software-recovery / firmware-R&D test failures**;
 - `git diff --check` — **PASS**;
 - M1 manifest authority remains unchanged: `status=prepared_unauthorized`, `physical_execution_authorized=false`, `authorization_consumed=false`.
 

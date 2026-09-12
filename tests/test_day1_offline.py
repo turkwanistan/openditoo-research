@@ -5305,3 +5305,52 @@ class SoftwareRecoverySurfaceTests(unittest.TestCase):
         self.assertFalse(committed["safety"]["device_io"])
         self.assertFalse(committed["safety"]["packet_generation"])
         self.assertFalse(committed["safety"]["firmware_mutation"])
+
+class OfficialTestBranchLineageTests(unittest.TestCase):
+    """Official test-branch provenance/lineage audit; offline and non-installing."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_test_branch_lineage")
+
+    def test_bounded_api_matrix_is_exact_and_v2_v3_identical(self) -> None:
+        r = self._mod().build_report()
+        self.assertTrue(r["ok"])
+        self.assertTrue(r["api"]["v2_v3_responses_identical_for_bounded_matrix"])
+        self.assertTrue(r["api"]["is_test_true_distinct_for_hardware_42_and_60"])
+        matrix = json.loads((ROOT / "artifacts/provenance/getupdatefile_v2_v3_matrix_2026-09-12.json").read_text())
+        self.assertEqual(len(matrix["rows"]), 8)
+        self.assertTrue(matrix["no_bruteforce"])
+
+    def test_test_branch_versions_and_flag60_mismatch_are_preserved(self) -> None:
+        a = self._mod().build_report()["artifacts"]
+        self.assertEqual(a["flag42_test"]["api_version"], 42017)
+        self.assertEqual(a["flag42_test"]["internal_version"], 42017)
+        self.assertEqual(a["flag60_test"]["api_version"], 60016)
+        self.assertEqual(a["flag60_test"]["internal_version"], 60017)
+        self.assertIn("60016", a["flag60_test"]["version_mismatch"])
+        self.assertIn("60017", a["flag60_test"]["version_mismatch"])
+
+    def test_test_branch_dispatch_lineage_and_sfr1_survive(self) -> None:
+        r = self._mod().build_report()
+        d = r["dispatcher_lineage"]
+        self.assertEqual(d["flag42_v42016_vs_v42017_exact_target_equal"], 251)
+        self.assertEqual(d["flag42_v42017_vs_flag60_test_exact_target_equal"], 251)
+        self.assertTrue(d["recovery_update_cluster_unchanged"])
+        self.assertTrue(d["sys_0x93_through_0x96_still_default_error"])
+        for key in ("flag42_v42017", "flag60_test"):
+            self.assertEqual(
+                r["readback_adversarial_check"][key]["status"],
+                "SPP_READBACK_NO_CALLER_CONTROLLED_CHAIN_WITHIN_ANALYZED_GRAPH",
+            )
+
+    def test_committed_test_branch_lineage_artifact_is_current(self) -> None:
+        live = self._mod().build_report()
+        committed = json.loads((ROOT / "artifacts/analysis/test_branch_lineage.json").read_text())
+        self.assertEqual(committed, live)
+        self.assertTrue(committed["safety"]["offline_only"])
+        self.assertFalse(committed["safety"]["device_io"])
+        self.assertFalse(committed["safety"]["packet_generation"])
+        self.assertFalse(committed["safety"]["firmware_mutation"])
+        self.assertFalse(committed["safety"]["installation_authorized"])

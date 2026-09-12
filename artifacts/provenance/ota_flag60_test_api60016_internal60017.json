@@ -1,0 +1,36 @@
+{
+  "api_host": "https://appin.divoom-gz.com",
+  "api_matrix_artifact": "getupdatefile_v2_v3_matrix_2026-09-12.json",
+  "api_request": {
+    "DeviceId": "00000000-0000-0000-0000-000000000000",
+    "Hardware": 60,
+    "IsTest": true,
+    "Language": "en",
+    "UpdateFlag": 2
+  },
+  "api_v2_response_identical": true,
+  "api_v3_response": {
+    "DeviceId": 0,
+    "Explain": "Rml4IEJ1ZyE=",
+    "FileId": "group1/M00/0E/B9/rBAAM2iSw-SEFifJAAAAAHxpRzo385.bin",
+    "ReturnCode": 0,
+    "ReturnMessage": "",
+    "Sha1": "27f55d533d009f622c9c1d1afe26b26a69017dc6",
+    "Version": 60016
+  },
+  "artifact": "../firmware/flag60_api60016_internal60017_test.bin",
+  "bytes": 1207313,
+  "captured_utc": "2026-09-12",
+  "container": {
+    "checksum_ok": true,
+    "internal_version": 60017,
+    "marker_ok": true
+  },
+  "handling": "Research/reference artifact only. Not approved for installation or device mutation.",
+  "retrieval_url": "https://f.divoom-gz.com/group1/M00/0E/B9/rBAAM2iSw-SEFifJAAAAAHxpRzo385.bin",
+  "schema_version": 1,
+  "sha1": "27f55d533d009f622c9c1d1afe26b26a69017dc6",
+  "sha256": "05e406f1196d7ea351d58d9dcf6a0f83f0244d0857bf0d27a396be58acbcd339",
+  "source_kind": "official_divoom_update_api_test_branch",
+  "version_note": "API declares 60016, while the downloaded valid update container declares 60017; both values are preserved and must not be silently normalized."
+}

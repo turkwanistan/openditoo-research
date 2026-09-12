@@ -1,0 +1,36 @@
+{
+  "api_host": "https://appin.divoom-gz.com",
+  "api_matrix_artifact": "getupdatefile_v2_v3_matrix_2026-09-12.json",
+  "api_request": {
+    "DeviceId": "00000000-0000-0000-0000-000000000000",
+    "Hardware": 42,
+    "IsTest": true,
+    "Language": "en",
+    "UpdateFlag": 2
+  },
+  "api_v2_response_identical": true,
+  "api_v3_response": {
+    "DeviceId": 0,
+    "Explain": "MTogRm9ybWF0IGhvdCBpbmZvcm1hdGlvbi4=",
+    "FileId": "group1/M00/02/A6/rBAAM2aUfwCEC6SSAAAAALeoJ_c962.bin",
+    "ReturnCode": 0,
+    "ReturnMessage": "",
+    "Sha1": "180c5636050b871f3014894d4cea98deb06ed1f3",
+    "Version": 42017
+  },
+  "artifact": "../firmware/flag42_v42017_test.bin",
+  "bytes": 1207333,
+  "captured_utc": "2026-09-12",
+  "container": {
+    "checksum_ok": true,
+    "internal_version": 42017,
+    "marker_ok": true
+  },
+  "handling": "Research/reference artifact only. Not approved for installation or device mutation.",
+  "retrieval_url": "https://f.divoom-gz.com/group1/M00/02/A6/rBAAM2aUfwCEC6SSAAAAALeoJ_c962.bin",
+  "schema_version": 1,
+  "sha1": "180c5636050b871f3014894d4cea98deb06ed1f3",
+  "sha256": "6ac3513fc6659e57816b33382cb4ac265c7870de822171955cb2b366384dafcc",
+  "source_kind": "official_divoom_update_api_test_branch",
+  "version_note": "API and file-internal versions agree."
+}

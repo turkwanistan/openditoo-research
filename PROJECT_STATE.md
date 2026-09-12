@@ -169,9 +169,7 @@ Useful references:
 - `https://divoom.2a03.party/fw/versions.html`
 - `https://divoom.2a03.party/api/app.html`
 
-Divoom update API used during reconnaissance:
-
-`https://app.divoom-gz.com/GetUpdateFileV3?Hardware=<flag>&IsTest=false&Language=EN&UpdateFlag=2`
+Divoom update API: older reconnaissance used the GET-style `app.divoom-gz.com` form. The current app-family flow verified on 2026-09-12 is JSON `POST` to `https://appin.divoom-gz.com/GetUpdateFileV2` / `GetUpdateFileV3` with fields `Hardware`, `IsTest`, `Language`, `UpdateFlag`, and `DeviceId`. The bounded flag42/60 production/test matrix is preserved at `artifacts/provenance/getupdatefile_v2_v3_matrix_2026-09-12.json`; it did not enumerate undocumented parameters or other product/update flags.
 
 Firmware CDN: `https://f.divoom-gz.com/`
 
@@ -194,9 +192,9 @@ Flag 42 / v42010:
 
 Authoritative historical metadata is in `artifacts/provenance/historical_ditoo_plus_firmware_metadata.json`.
 
-## 7. Current exact Ditoo Plus firmware — locally preserved
+## 7. Exact-model Ditoo Plus firmware — locally preserved
 
-Two live exact-model-associated branches were acquired and are permanently preserved in this repo.
+Four official exact-model-associated OTA branches are now permanently preserved in this repo: two production responses and two `IsTest=true` branches. These are lineage/recovery evidence, **not** exact installed-unit bytes; the purchased unit's v42012 remains unrecovered.
 
 ### Flag 60 — v60014
 
@@ -219,6 +217,28 @@ The FCC engineering sample uses `v60001`, so the flag-60 lineage currently has t
 - application build string: `Oct 11 2022 10:00:57`
 
 The exact meaning of flag 42 versus flag 60 remains unresolved.
+
+### Official test branch — flag 42 API/container v42017
+
+- file: `artifacts/firmware/flag42_v42017_test.bin`
+- size: 1,207,333 bytes
+- server SHA-1: `180c5636050b871f3014894d4cea98deb06ed1f3`
+- local SHA-256: `6ac3513fc6659e57816b33382cb4ac265c7870de822171955cb2b366384dafcc`
+- API and file-internal version both 42017
+- server changelog decodes to `1: Format hot information.`
+- research/reference only; never installed on the exact unit
+
+### Official test branch — flag 60 API v60016 / container v60017
+
+- file: `artifacts/firmware/flag60_api60016_internal60017_test.bin`
+- size: 1,207,313 bytes
+- server SHA-1: `27f55d533d009f622c9c1d1afe26b26a69017dc6`
+- local SHA-256: `05e406f1196d7ea351d58d9dcf6a0f83f0244d0857bf0d27a396be58acbcd339`
+- API metadata says 60016; valid downloaded update container internally says 60017; both values are preserved
+- server changelog decodes to `Fix Bug!`
+- research/reference only; never installed on the exact unit
+
+The bounded official API response matrix and per-object provenance records live under `artifacts/provenance/`. `artifacts/analysis/test_branch_lineage.json` records the offline SPP/readback lineage audit.
 
 ## 8. Firmware structure — exact Ditoo Plus findings
 
