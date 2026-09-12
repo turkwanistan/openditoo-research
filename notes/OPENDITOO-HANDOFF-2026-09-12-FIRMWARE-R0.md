@@ -116,9 +116,34 @@ All are one-use and consumed. **None may be re-armed.** No fresh physical experi
 
 Private evidence under `captures/private/` remains private/ignored. The manifests preserve compact results and authority history.
 
-## Next milestones — execute offline in parallel where useful
+## Next steps — start here (R1)
 
-The detailed contract is in `notes/OPENDITOO-FIRMWARE-INPUT-TAKEOVER-PLAN-2026-09-12.md`. Priority order:
+**The ordered, detailed execution plan is `notes/OPENDITOO-FIRMWARE-INPUT-TAKEOVER-PLAN-2026-09-12.md`
+§ "Next work (R1)".** Do N1–N4 offline and autonomously; stop at N5/N6 (live) for a fresh
+manifest + the owner's exact named grant.
+
+1. **N1 — RECOVERY-R0 (binding blocker):** retry Wayback **CDX** for the flag42 v42010 object
+   from a clean context (this session hit `429`); if present, fetch raw bytes (`…/web/<ts>id_/<url>`),
+   validate with `tools/ditoo_update_container.py` + `tools/keypad_pipeline_report.py`, and store
+   with provenance + `SHA256SUMS`. Else pursue owner/community v42012.
+2. **N2 — FACTORY-R0 safety gate:** disassemble `divoom_product_test_spiflash_check` (code before
+   strings `0x16e08`/`0x16e1c`; leads `0x16b92`, `0x2e522`) to decide read/verify vs erase/write
+   and name any write target. Reclassify the SPI-flash stage.
+3. **N3 — FIRM-R0 tail:** annotate the category-`0x82` consumer (ring at `queue_struct+0x80`);
+   confirm no other `0x82` producer for a front-panel key.
+4. **N4 — UPDATE-R0 deepen:** disassemble the flash writer `0x3a824` (erase granularity, write
+   region, reset/completion, failure ordering).
+5. **N5 (LIVE-GATED):** read-only factory key-test observation, only after N2 clears the
+   SPI-flash stage.
+6. **N6 (LIVE-GATED):** LIVE-0 observe-only firmware revision, only after N1+N4+PATCH-R0 and the
+   recovery gate are met.
+
+Recommended start: **N2 now** (offline, no external rate limit), **N1 shortly after** (avoid
+idling on the Wayback 429), then N3/N4.
+
+### Per-goal status (2026-09-12)
+
+Detailed contract in `notes/OPENDITOO-FIRMWARE-INPUT-TAKEOVER-PLAN-2026-09-12.md`. Priority order:
 
 ### 1. FIRM-R0 — keypad hook contract — SUBSTANTIALLY DONE (2026-09-12, offline)
 
@@ -345,6 +370,8 @@ Claim should be short-lived and heartbeat/TTL based. Disconnect/crash/expiry res
 
 ## New-session execution posture
 
+- **Start at the R1 plan (§ "Next steps — start here (R1)" above / plan N1–N6).** Recommended
+  first move: N2 (offline), then N1.
 - Be aggressive/autonomous on **offline static analysis, tooling, tests and repo documentation**.
 - Preserve Runtime 018 and unrelated work.
 - Do not ask the owner for routine offline decisions that the evidence can settle.
@@ -360,7 +387,14 @@ git status --short
 git log -8 --oneline
 python3 scripts/locate_ditoo_keypad_pipeline.py artifacts/firmware/flag42_v42016.bin
 python3 scripts/locate_ditoo_keypad_pipeline.py artifacts/firmware/flag60_v60014.bin
-python3 scripts/verify_day1_offline.py
+# R0 offline tools delivered 2026-09-12:
+python3 tools/keypad_pipeline_report.py artifacts/firmware/flag42_v42016.bin artifacts/firmware/flag60_v60014.bin
+python3 tools/ditoo_update_container.py --selfcheck
+python3 tools/openditoo_patch_prototype.py artifacts/firmware/flag42_v42016.bin
+python3 scripts/verify_day1_offline.py   # expect 342 tests PASS in normal WSL
+# For N2/N3/N4 disassembly: capstone is not in the WSL_MCP sandbox nor the ai-studio venv
+# (both externally-managed). Make a throwaway venv:  python3 -m venv /tmp/fw-venv &&
+# /tmp/fw-venv/bin/pip install capstone.  Firmware link base for absolute pointers is 0x08400000.
 ```
 
 If `verify_day1_offline.py` reports a known environment/build-artifact mismatch, compare against the handoff/current clean baseline rather than rewriting live product code to chase an unrelated firmware-R&D issue.

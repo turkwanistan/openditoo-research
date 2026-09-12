@@ -242,6 +242,100 @@ Only after FIRM-R0 + UPDATE-R0 + PATCH-R0 and the recovery gate:
 
 A later LIVE-1 may consume one key under an expiring claim. Full seven-control takeover follows only after that works fail-open.
 
+## Next work (R1) — ordered execution plan (2026-09-12)
+
+After the FIRM/UPDATE/PATCH/FACTORY/TELEMETRY-R0 pass, this is the concrete, ordered plan for
+the next session. Items N1–N4 are **offline** (no grant needed); N5–N6 are **live-gated** and
+must not start without a fresh reviewed manifest and the owner's exact named grant. Do them in
+this order; N1 and N2 can proceed in parallel. All offsets are flag42 v42016 file offsets, link
+base `0x08400000` (code BL is PC-relative → read as base 0; absolute pointers use the real base).
+
+### N1 — RECOVERY-R0: recover exact-flag42 v42010 (highest leverage; the binding blocker)
+
+**Why first:** no persistent flash step is justifiable until a rollback exists. v42010 is
+exact-flag42 (older than the unit's v42012 → a *downgrade*, updater-rejected without the `0x33`
+force flag, and NOT the exact original) but is a genuine third cross-check point and a
+tradeoff-documented recovery target.
+
+Tasks:
+- Retry from a non-rate-limited context (this session hit Wayback `429`). Use the CDX endpoint,
+  not just the availability API:
+  `http://web.archive.org/cdx/search/cdx?url=f.divoom-gz.com/group1/M00/B8/F6/eEwpPWA93ECEIZjCAAAAAArkYGQ617.bin&output=json`
+  (and the flag60 v60010 object `.../B8/1A/L1ghbmA929aEUhOCAAAAAD9iqis747.bin`).
+- If a snapshot exists, fetch `http://web.archive.org/web/<timestamp>id_/<url>` (the `id_` suffix
+  returns the raw bytes, not the Wayback wrapper).
+- Validate any recovered file with `python3 tools/ditoo_update_container.py <file> --installed 0`
+  (expect marker OK + checksum OK; version should read 42010). Run
+  `python3 tools/keypad_pipeline_report.py <file>` and `scripts/locate_ditoo_keypad_pipeline.py <file>`
+  to confirm the conserved pipeline is present (extends the cross-branch evidence to a third
+  point). If it locates, add its shift to `keypad_pipeline_report.REF` handling if needed.
+- If recovered, store it under `artifacts/firmware/` **only with provenance** (add an
+  `artifacts/provenance/…json` and a `SHA256SUMS` line, matching the existing convention). If
+  NOT recoverable, record the negative and pursue owner/community v42012 copies.
+- **Exit:** either a provenance-tracked exact-flag42 v42010 (or v42012) artifact + validator
+  PASS, or a documented dead end that moves recovery to owner-assisted options.
+
+### N2 — FACTORY-R0: classify `divoom_product_test_spiflash_check` (safety gate)
+
+**Why:** it is currently flagged conservatively as *potentially persistent-write*, which blocks
+defining any safe factory-visit route. Settle read/verify vs erase/write.
+
+Tasks:
+- Locate the routine. Leads: the stage jump table at `0x16c52–0x16d06` dispatches stage ids via
+  `0x2e522`; the function called at `0x16ce6` (`0x16b92`) and the disp/product-test setter
+  `0x2e522` are entry points. The `spiflash error!`/`spiflash ok!` strings (`0x16e08`/`0x16e1c`)
+  are ADR-referenced by the routine — disassemble the code immediately preceding them.
+- Determine whether it calls `Fwl_spiflash_write`/`Fwl_spiflash_erases` (`0x1bf08`/`0x163ac`
+  neighbourhood) and, if so, **on what address/region** — a dedicated scratch/test sector vs a
+  live config/calibration region.
+- **Exit:** the SPI-flash stage is reclassified read-only-safe OR confirmed persistent-write with
+  the target region named. Update FACTORY-R0 in the handoff + research note. If safe, the
+  documented factory route (stage 0 → M → key-test id 7) can be extended; if not, keep the
+  "do not enter" boundary.
+
+### N3 — FIRM-R0 tail: annotate the category-`0x82` consumer
+
+**Why:** a consumer-side hook is an alternative *single* seam, and confirming it closes "no other
+category carries a front-panel key".
+
+Tasks:
+- `queue_post 0xc6d7c` writes a ring at `&queue_struct+0x80` (head/tail u16 at `+0x80`/`+0x82`).
+  Find the task that reads that ring and dispatches by category; identify where category `0x82`
+  is consumed first.
+- Confirm no producer other than the 4 already enumerated (`0x52680`, `0x52916`, `0x529aa`,
+  `0x529ce`) posts `0x82` for a front-panel key, and that `0x81` (`0x525a8`) is not a key class.
+- Add the consumer offset + assertion to `keypad_pipeline_report.py` / the artifact if useful.
+- **Exit:** the consumer seam is documented as a viable single hook point (or ruled out), with no
+  unresolved `0x82` producer.
+
+### N4 — UPDATE-R0 deepen: disassemble the flash writer `0x3a824`
+
+**Why:** needed before any candidate patch package could be reviewed end-to-end (erase
+granularity, partition map, reset/completion, failure ordering after the accept gate).
+
+Tasks:
+- Disassemble `0x3a824(mode=0, data_len, checksum, version)` and the chunked-write loop it
+  drives; map erase granularity, write target region(s), and the reset/completion path.
+- Extend `tools/ditoo_update_container.py` docstring/report with the write topology (still
+  read-only; never emit a writable package).
+- **Exit:** write topology documented strongly enough to review a patch byte-for-byte.
+
+### N5 — (LIVE-GATED) read-only factory key-test observation
+
+Only after N2 clears the SPI-flash stage as avoidable/safe. A fresh manifest + exact grant for a
+single passive run: M-at-boot → stage 0 (`42/012`) → advance with M to key-test (id 7) →
+exercise the six keys → confirm read-only behavior on the exact unit. Stop before the SPI-flash
+stage. No persistent write.
+
+### N6 — (LIVE-GATED) LIVE-0 first observe-only firmware revision
+
+Only after N1 (recovery) + N4 (writer) + PATCH-R0 are all closed and the recovery gate is met.
+Per the LIVE-0 contract below: one checksum-valid package, one install, report one key over the
+SYS SPP channel (TELEMETRY-R0) while forwarding its stock action; no suppression yet.
+
+**Do N1–N4 offline and autonomously. Stop at N5/N6 and wait for a newly reviewed manifest and the
+owner's exact named grant.**
+
 ## Long-term architecture after the hook is proven
 
 1. persistent OpenDitoo shim initializes during normal stock boot;
