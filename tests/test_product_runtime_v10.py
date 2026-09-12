@@ -37,19 +37,17 @@ class Runtime016PolicyTests(unittest.TestCase):
         self.assertEqual(self.template["authority"]["supersedes"], "OPENDITOO-PRODUCT-RUNTIME-015")
         self.assertEqual((p.session_lifetime_seconds, p.max_frames_per_session), (600, 15000))
 
-    def test_policy_hashes_pin_v4_assets_and_is_now_a_superseded_record(self):
-        frozen = self.template["build"]["code_sha256"]
-        # Runtime 017 changes the shared CLI routing, so Runtime 016 remains immutable evidence and
-        # deliberately no longer hash-valid against the successor tree.
-        self.assertNotEqual(frozen, v10.code_hashes())
-        self.assertIn("product_runtime_v10_sha256", frozen)
-        self.assertIn("slots_page_sha256", frozen)
-        self.assertNotEqual(frozen["slots_page_sha256"], self.old["build"]["code_sha256"]["slots_page_sha256"])
-        self.assertIn("moss_page_sha256", frozen)
+    def test_policy_hashes_pin_v4_assets_and_not_v3_assets(self):
+        expected = v10.code_hashes()
+        self.assertEqual(self.template["build"]["code_sha256"], expected)
+        self.assertIn("product_runtime_v10_sha256", expected)
+        self.assertIn("slots_page_sha256", expected)
+        self.assertNotEqual(expected["slots_page_sha256"], self.old["build"]["code_sha256"]["slots_page_sha256"])
+        self.assertIn("moss_page_sha256", expected)
         asset_files = sorted(Path("assets/pocket_moss/v4").rglob("*.json"))
-        asset_keys = [k for k in frozen if k.startswith("moss_v4_asset_")]
+        asset_keys = [k for k in expected if k.startswith("moss_v4_asset_")]
         self.assertEqual(len(asset_keys), len(asset_files))
-        self.assertFalse(any(k.startswith("moss_asset_") for k in frozen))
+        self.assertFalse(any(k.startswith("moss_asset_") for k in expected))
 
     def test_cli_routes_revision_11_to_runtime_v10(self):
         self.assertIs(openditoo._product_runtime_module(v10.TEMPLATE), v10)
