@@ -1,5 +1,17 @@
 # OpenDitoo Runtime 017 media-resilient raw AVRCP handoff — 2026-09-11
 
+> **Status (2026-09-12 ~00:57Z): Runtime 018 is LIVE** (`Grant OPENDITOO-PRODUCT-RUNTIME-018`, owner; main `f604c32`, `runtime_revision=13`, `host/product_runtime_v12.py`). Runtime 018 is Runtime 017 plus two changes:
+> - **Hidden BTVS window.** The owner kept seeing it; closing it killed the capture, the sidecar restarted, and the new broker stayed unbound until the 600 s rollover. BTVS is now started with SW_HIDE and re-hidden if it ever appears.
+> - **One rebind renewal per sidecar epoch.** When the broker is capture-ready but unbound for 3 s in a connected session, the runtime does one clean session renewal.
+>
+> The sidecar has its own admin-only root `C:\Program Files\OpenDitoo\RawAvrcpBroker018` and task `OpenDitoo Raw AVRCP Broker 018`. Runtime 017's root and task are untouched as the exact rollback: `bash scripts/cutover_runtime_018.sh --rollback`.
+>
+> Live verification:
+> - BTVS window handle 0 (hidden) after cutover and after restart.
+> - Simulated sidecar crash (`schtasks /end`): the runtime restarted the sidecar (00:57:15). Capture was ready at 00:57:16, the guard renewed once (`renewals=1`, `operator_stop`), and input was bound from the new session's first frame at 00:57:19 — about 3 s instead of up to 600 s. Status stayed `connected`, with 0 reconnects and 0 reclaims.
+>
+> The Runtime 017 notes below remain the design and evidence history.
+
 > **Status (2026-09-12 ~00:40Z): Runtime 017 is LIVE** (`Grant OPENDITOO-PRODUCT-RUNTIME-017`, owner; main `76b65be`, `runtime_revision=12`). The first cutover attempt crash-looped on a bare `schtasks.exe` under systemd and was rolled back to Runtime 016 (`c7bd741`). `f0ce6a2` fixed it: an absolute path, a rollback that tolerates a `failed` unit, a bounded capture head start, and backlog binding. That fix was rehearsed inside a systemd unit before the second cutover, which reported `R017_CUTOVER_PASS`.
 >
 > Owner live check with media playing: "everything looks to be working". Runtime state: 16 inputs applied, 0 gaps, `input_bound` true, one broker epoch, a Slots round played, input to first ACK 17–202 ms, lever `0xBD` reclaims as designed, `connected`, `last_error=null`.
