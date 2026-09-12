@@ -5,7 +5,7 @@
   "gate": "Runtime 017 receive-only raw-AVRCP sidecar acceptance under active Bluetooth media, then again through the production elevated-task launch path (pre-grant; Runtime 017 NOT live)",
   "privacy": "Derived counts only. Raw HCI rows, Bluetooth addresses, ACL handles and CIDs stay in private Windows %TEMP% logs.",
   "method": {
-    "harness": "scripts/accept_runtime_017_raw_input.ps1 (Administrator PowerShell; BTVS requires elevation)",
+    "harness": "scripts/accept_runtime_017_raw_input.ps1: runs 1-2 from Administrator PowerShell launching the broker directly; run 3 from a normal PowerShell through the elevated on-demand task",
     "broker": "OpenDitoo.RawAvrcpBroker at b4d536e/14ff03f: BTVS -> tshark (btrfcomm/btavctp disabled, raw btl2cap.payload); Ditoo ACL handle learned from OpenDitoo outbound preamble A->B; inbound AVRCP presses on that handle only; ETW backlog before broker start dropped; BTETWRTSession flush-only every 50 ms; Playing SMTC sink starts on first bind",
     "binding_traffic": "accepted Runtime 016 started hands-off for a few seconds after broker start, then stopped",
     "media": "started through the EDIFIER after the sink was up (product order)"
@@ -86,7 +86,6 @@
   ],
   "untested": [
     "stale-backlog drop is implemented but saw 0 stale rows in the PASS run",
-    "Ditoo power-cycle unbind/rebind live (selftest only)",
     "BTETWRTSession outlives killed BTVS and keeps buffering HCI; not cleaned up by the broker",
     "product-supervised broker under the Runtime 017 runtime itself (requires the grant/cutover)",
     "Ditoo power-cycle unbind/rebind live under the product"
