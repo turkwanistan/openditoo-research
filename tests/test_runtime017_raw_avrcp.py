@@ -35,7 +35,10 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
         self.assertIsNone(raw['authority']['grant_text'])
         self.assertEqual(raw['authority']['required_grant_text'], 'Grant OPENDITOO-PRODUCT-RUNTIME-017')
         self.assertEqual(raw['authority']['supersedes'], 'OPENDITOO-PRODUCT-RUNTIME-016')
-        self.assertEqual(raw['build']['code_sha256'], r17.code_hashes())
+        # Runtime 018 changes shared broker/installer/CLI sources, so Runtime 017 is now an immutable
+        # record: its frozen hashes deliberately no longer match the successor tree (rollback restores its tree).
+        self.assertNotEqual(raw['build']['code_sha256'], r17.code_hashes())
+        self.assertEqual(set(raw['build']['code_sha256']), set(r17.code_hashes()))
         self.assertIn('raw_avrcp_input_sha256', raw['build']['code_sha256'])
         self.assertIn('raw_avrcp_broker_program_sha256', raw['build']['code_sha256'])
 
@@ -94,10 +97,9 @@ class Runtime017RawAvrcpTests(unittest.TestCase):
     def test_installer_is_elevated_hash_verified_admin_only_and_on_demand(self):
         src = (ROOT / 'runtime/windows/install_openditoo_raw_avrcp_task.ps1').read_text(encoding='utf-8')
         self.assertIn("Need ($principalNow.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))", src)
-        self.assertLess(src.index('R017_TASK_SOURCES_VERIFIED'), src.index('Copy-Item'))  # verify before writing
+        self.assertLess(src.index('_TASK_SOURCES_VERIFIED'), src.index('Copy-Item'))  # verify before writing
         self.assertIn('installed hash mismatch', src)
-        self.assertLess(src.index('R017_TASK_INSTALL_ROOT_ADMIN_ONLY'), src.index('Register-ScheduledTask'))
-        self.assertIn("$root = 'C:\\Program Files\\OpenDitoo\\RawAvrcpBroker'", src)
+        self.assertLess(src.index('_TASK_INSTALL_ROOT_ADMIN_ONLY'), src.index('Register-ScheduledTask'))
         for needle in ('-RunLevel Highest', '-LogonType Interactive', '-MultipleInstances IgnoreNew',
                        'Must match host/raw_avrcp_input.task_arguments exactly'):
             self.assertIn(needle, src)

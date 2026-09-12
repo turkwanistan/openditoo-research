@@ -163,7 +163,10 @@ internal static class Program
             var startEpoch = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
             long stale = 0;
             Process? sink = null; // SMTC ownership sink starts once the Ditoo link is attributable (first bind)
-            var btvs = Start(options.BtvsExe, ["-Mode", "Wireshark", "-Remote", "on", "-Port", options.Port.ToString(CultureInfo.InvariantCulture)]);
+            // BTVS is a GUI app: closing its window killed the capture and restarted the sidecar (Runtime 017 live).
+            var btvs = Start(options.BtvsExe, ["-Mode", "Wireshark", "-Remote", "on", "-Port", options.Port.ToString(CultureInfo.InvariantCulture)],
+                             hidden: true);
+            var btvsHiddenLogged = false;
             // ETW real-time buffers otherwise reach BTVS only when full/timer-flushed: ~1.1-2.1 s input lag.
             int flushCode = -1, flushOk = 0;
             using var flusher = new Timer(_ =>
@@ -212,15 +215,30 @@ internal static class Program
             var leaseChecked = DateTimeOffset.UtcNow;
             while (DateTimeOffset.UtcNow < deadline)
             {
-                if (options.Lease is not null && DateTimeOffset.UtcNow - leaseChecked >= TimeSpan.FromSeconds(1))
+                if (DateTimeOffset.UtcNow - leaseChecked >= TimeSpan.FromSeconds(1))
                 {
                     leaseChecked = DateTimeOffset.UtcNow;
-                    var now = ReadLease();
-                    if (now is not null && now != leaseSeen) { leaseSeen = now; leaseChanged = leaseChecked; }
-                    else if (leaseChecked - leaseChanged > LeaseTimeout)
+                    // Belt and braces: BTVS may show its window despite SW_HIDE in STARTUPINFO; re-hide it.
+                    btvs.Refresh();
+                    var window = btvs.MainWindowHandle;
+                    if (window != IntPtr.Zero && Win32.IsWindowVisible(window))
                     {
-                        Write(writer, "broker_stopped", new Dictionary<string, object?> { ["reason"] = "lease_expired" });
-                        return 0;
+                        Win32.ShowWindow(window, 0); // SW_HIDE
+                        if (!btvsHiddenLogged)
+                        {
+                            btvsHiddenLogged = true;
+                            Write(writer, "btvs_window_hidden", new Dictionary<string, object?>());
+                        }
+                    }
+                    if (options.Lease is not null)
+                    {
+                        var now = ReadLease();
+                        if (now is not null && now != leaseSeen) { leaseSeen = now; leaseChanged = leaseChecked; }
+                        else if (leaseChecked - leaseChanged > LeaseTimeout)
+                        {
+                            Write(writer, "broker_stopped", new Dictionary<string, object?> { ["reason"] = "lease_expired" });
+                            return 0;
+                        }
                     }
                 }
                 if (sink is { HasExited: true }) throw new IOException($"SMTC sink exited {sink.ExitCode}");
@@ -300,9 +318,10 @@ internal static class Program
             catch (UnauthorizedAccessException) { return null; }
         }
 
-        private Process Start(string file, IReadOnlyList<string> args, bool redirect = false)
+        private Process Start(string file, IReadOnlyList<string> args, bool redirect = false, bool hidden = false)
         {
             var psi = new ProcessStartInfo(file) { UseShellExecute = false, CreateNoWindow = true };
+            if (hidden) psi.WindowStyle = ProcessWindowStyle.Hidden; // STARTF_USESHOWWINDOW + SW_HIDE for GUI apps
             foreach (var arg in args) psi.ArgumentList.Add(arg);
             if (redirect)
             {
@@ -336,6 +355,12 @@ internal static class Program
             }
             job.Dispose();
         }
+    }
+
+    internal static class Win32
+    {
+        [DllImport("user32.dll")] internal static extern bool ShowWindow(IntPtr window, int command);
+        [DllImport("user32.dll")] internal static extern bool IsWindowVisible(IntPtr window);
     }
 
     /// <summary>Flush-only control of BTVS's real-time ETW session (name from btvs.exe); no start/stop/enable.</summary>
