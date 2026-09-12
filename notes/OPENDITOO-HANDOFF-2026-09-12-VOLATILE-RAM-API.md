@@ -14,6 +14,35 @@ Authoritative plan:
 
 Read it before implementation.
 
+## 2026-09-12 VRAM-0/1 + Tier-1 VRAM-2 checkpoint
+
+The direct stock SPP tier is now **comprehensively closed for this route** on the preserved Plus corpus. Reproducible authority is:
+
+- `tools/ditoo_spp_surface.py`;
+- `artifacts/analysis/volatile_ram_api_surface.json`;
+- `tests/test_day1_offline.py::VolatileRamApiSurfaceTests`.
+
+Current machine-checkable coverage:
+
+- 251/251 top-level dispatcher slots emitted across all four pinned Plus branches;
+- 9/9 implemented first-level `0xbd` EXTERN subcommands terminally classified;
+- 124/124 explicit non-default handlers terminally classified;
+- 54 high-value/deep-audited handlers plus 70 handler-local scalar/fixed-control screens;
+- 0 unresolved top-level handlers;
+- no direct caller-controlled RAM-write primitive;
+- no caller-tainted direct-SPP indirect branch/call promoted;
+- no candidate for a live parser manifest.
+
+Important negative/closure details include bounded destination writes for `0x44`, `0x50`, `0x56`, `0x58`, `0x5d`, `0x6c`, `0x75`, `0x81`, and `0x86`; read-only/source-overread classes at `0x18`/`0x3c` do not provide controlled RAM; and storage-backed GIF/file/content routes (`0x35`, `0x51`, `0x52`, `0x55`, `0x5c`, `0x7e`, `0x8b`, `0x8c`, update/file families, `0xb1`, `0xfa`, etc.) are explicitly excluded from the volatile route. Period-app command names are labeling evidence only; firmware dataflow is authoritative.
+
+The 70 `CLOSED_SCALAR_CONTROL` entries are a deliberate Tier-1 bulk-parser/control-flow closure: they prove no packet pointer or outer caller length is forwarded from the direct handler into a content/copy parser and no caller-tainted direct control sink was found. They are **not** a claim that every scalar helper is mathematically free of every conceivable logic bug. Corpus/dispatcher drift or any newly unclassified explicit handler makes the atlas fail closed.
+
+**Next named surface tier:** external media/codec processing reachable behind `0x6c -> 0x34144 -> fixed fallback 0xA6490 / registered media callback`. Start from the exact SPP-to-media call chain and prove which caller bytes reach which external parser before auditing any generic decoder. Do not import MiniToo codec bugs/addresses/semantics.
+
+Safety state at this checkpoint is unchanged: Runtime 018 was not touched; no device transmission, malformed live packet, reboot/crash probe, factory/update write, MassBoot action, measurement, SPI attachment, UART/GPIO/reset work or other physical action occurred.
+
+Checkpoint verification in constrained WSL_MCP: `python3 -m unittest tests.test_day1_offline.VolatileRamApiSurfaceTests -v` = 3/3 PASS; `git diff --check` = PASS; `python3 scripts/verify_day1_offline.py` = 364 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors and no new VRAM/parser/recovery failure.
+
 ## Why this is worth doing
 
 The firmware-input work already solved the *shim architecture* problem:
@@ -102,9 +131,9 @@ and that deterministic controllability matters more than crash count. It does **
    - `artifacts/analysis/keypad_pipeline.json`;
    - period APK recovery artifact/provenance;
    - exact-unit framing/drawing capture notes as needed.
-4. Begin **VRAM-0 + VRAM-1**, not another planning session.
-5. Build a machine-readable all-command SPP surface atlas and focused tests.
-6. Rank variable-length/copy/parser handlers for VRAM-2; promote facts only when byte/dataflow evidence supports them.
+4. Treat **VRAM-0/VRAM-1 and Tier-1 direct-SPP VRAM-2 as CLOSED** unless the pinned corpus or atlas fails closed.
+5. Begin the named Tier-2 external media/codec reachability pass at `0x6c -> 0x34144 -> 0xA6490 / registered media callback`; map caller-byte provenance before decoder-specific work.
+6. Promote a parser only for deterministic controlled RAM/control-flow influence; source overreads/crashes alone remain negative evidence.
 7. Use OptiPlex Lab for disposable heavyweight tools when useful; accepted conclusions should be reproducible from the WSL repo without depending on an opaque GUI state.
 8. Continue autonomously through offline milestones until a true live-device boundary or a genuine technical blocker.
 
@@ -148,6 +177,6 @@ Bad result: a pile of crashes/strings with no coverage accounting or controllabi
 At handoff preparation in constrained WSL_MCP:
 
 - `git diff --check` — PASS;
-- `python3 scripts/verify_day1_offline.py` — 361 tests, exactly the two known unrelated W9B optical errors from missing `PIL`, zero new parser/recovery/product failures;
+- `python3 scripts/verify_day1_offline.py` — 364 tests, exactly the two known unrelated W9B optical errors from missing `PIL`, zero new parser/recovery/product failures;
 - M2 authority remains `status=authorized_unconsumed`, `physical_execution_authorized=true`, `authorization_consumed=false`; it was not executed or consumed;
 - no Ditoo transmission, Runtime 018 change, flash operation, MassBoot action or physical measurement occurred while preparing this handoff.

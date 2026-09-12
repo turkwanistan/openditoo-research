@@ -231,6 +231,14 @@ Do not score a null dereference or simple out-of-range reject as useful unless c
 
 Exit: every Tier-1 high-value handler is terminally classified or promoted.
 
+### VRAM-0/1 + direct-SPP VRAM-2 status — CLOSED 2026-09-12
+
+`tools/ditoo_spp_surface.py` and `artifacts/analysis/volatile_ram_api_surface.json` now provide the fail-closed direct-tier accounting: 251/251 top-level slots, 9/9 implemented EXTERN subcommands, 124/124 explicit non-default handlers terminally classified, and zero unresolved handlers. Fifty-four high-value handlers have byte/helper-level conclusions; seventy additional handlers are closed for Tier-1 bulk-parser/control-flow purposes by handler-local scalar/fixed-control screening.
+
+No direct SPP candidate reached a controlled RAM write or caller-controlled indirect branch/call without crossing a persistent storage path. Therefore VRAM-2 exits by the planned negative condition and **no VRAM-5/VRAM-6 live candidate is created from Tier-1**.
+
+The next named surface tier is the exact remotely reachable media seam behind `0x6c -> 0x34144 -> 0xA6490 / registered media callback`. Treat that as a continuation of parser exhaustion: first prove byte/length reachability into the external sink, then name and audit only the codec/parser families actually reachable.
+
 ## Phase VRAM-3 — execution environment and RAM-hook feasibility
 
 Independently establish what a successful memory-corruption primitive would need on **AK1052D/Ditoo**, rather than importing MiniToo assumptions.
@@ -475,9 +483,12 @@ If a candidate is promoted, the route remains open only through the staged live 
 
 ## Immediate next action
 
-Start VRAM-0/VRAM-1 autonomously. Do not ask the owner to finish disassembly or perform M2 measurements. Build the complete SPP/parser inventory from preserved firmware and the recovered period APK, use the current MiniToo no-flash work only as methodology comparison, and drive the first pass until either:
+VRAM-0/VRAM-1 and the Tier-1 direct-SPP portion of VRAM-2 are closed. Do not reopen them without corpus drift or a concrete contradictory witness. Begin the **Tier-2 profile/media reachability pass** at the exact `0x6c -> 0x34144 -> 0xA6490 / registered media callback` seam:
 
-- a specific high-value Ditoo parser candidate is promoted for deep offline analysis; or
-- the direct SPP surface is closed strongly enough to move to profile/media surfaces.
+1. establish exact argument/object layout at the external sink across preserved Plus branches;
+2. identify which SPP-controlled bytes/lengths survive to that boundary;
+3. identify the first external parser/decoder actually selected by those fields;
+4. classify allocation/copy/output bounds and any callback/context adjacency there;
+5. only then broaden to additional remotely reachable media/codec families.
 
-No device transmission is needed for that work.
+Do not fuzz generic codecs merely because their strings exist. Do not create a live manifest unless deterministic controlled RAM/control-flow influence emerges offline. No device transmission is needed for this next pass.

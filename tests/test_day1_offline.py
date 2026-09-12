@@ -5306,6 +5306,48 @@ class SoftwareRecoverySurfaceTests(unittest.TestCase):
         self.assertFalse(committed["safety"]["packet_generation"])
         self.assertFalse(committed["safety"]["firmware_mutation"])
 
+class VolatileRamApiSurfaceTests(unittest.TestCase):
+    """VRAM-0/1/2 direct-SPP closure; offline, fail-closed, no packet/device surface."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_spp_surface")
+
+    def test_direct_spp_surface_is_terminally_accounted(self) -> None:
+        r = self._mod().build_report()
+        c = r["coverage"]
+        self.assertTrue(r["ok"])
+        self.assertEqual(c["top_level_slots_emitted"], 251)
+        self.assertEqual(c["nested_extern_slots_emitted"], 9)
+        self.assertEqual(c["explicit_real_handlers_total"], 124)
+        self.assertEqual(c["explicit_real_handlers_terminally_classified"], 124)
+        self.assertEqual(c["unresolved_top_level_commands"], [])
+        self.assertTrue(r["accepted_early_vram2_conclusions"]["tier1_direct_spp_surface_closed"])
+        self.assertIsNone(r["accepted_early_vram2_conclusions"]["candidate_for_live_manifest"])
+        self.assertFalse(r["accepted_early_vram2_conclusions"]["direct_controlled_ram_write_or_control_flow_primitive_found"])
+
+    def test_high_value_content_routes_are_bounded_or_persistent_excluded(self) -> None:
+        r = self._mod().build_report()
+        by_cmd = {row["command_hex"]: row["vram2"] for row in r["slots"]}
+        for cmd in ("0x44", "0x50", "0x56", "0x58", "0x5d", "0x6c", "0x75", "0x81", "0x86"):
+            self.assertIn(by_cmd[cmd]["status"], {"CLOSED_BOUNDS_SAFE", "CLOSED_NO_CONTROL"}, cmd)
+            self.assertFalse(by_cmd[cmd]["persistent"], cmd)
+        for cmd in ("0x35", "0x51", "0x52", "0x55", "0x5c", "0x7e", "0x8b", "0x8c", "0x98", "0x99", "0x9e", "0xb1", "0xfa"):
+            self.assertEqual(by_cmd[cmd]["status"], "EXCLUDED_PERSISTENT", cmd)
+            self.assertTrue(by_cmd[cmd]["persistent"], cmd)
+
+    def test_committed_volatile_ram_surface_artifact_is_current(self) -> None:
+        live = self._mod().build_report()
+        committed = json.loads((ROOT / "artifacts/analysis/volatile_ram_api_surface.json").read_text())
+        self.assertEqual(committed, live)
+        self.assertTrue(committed["safety"]["offline_analysis_only"])
+        self.assertFalse(committed["safety"]["device_io"])
+        self.assertFalse(committed["safety"]["live_packet_generation"])
+        self.assertFalse(committed["safety"]["runtime_018_touched"])
+        self.assertFalse(committed["safety"]["persistent_mutation"])
+
+
 class OfficialTestBranchLineageTests(unittest.TestCase):
     """Official test-branch provenance/lineage audit; offline and non-installing."""
 
