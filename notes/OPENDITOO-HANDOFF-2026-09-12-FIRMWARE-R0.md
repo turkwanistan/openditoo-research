@@ -222,11 +222,39 @@ inside `0x3a824`, and the exact reset/completion path. Documented as future work
 model above is sufficient to review a candidate package before any (separately authorized)
 live use.
 
-### 3. FACTORY-R0 — map test stages without entering them
+### 3. FACTORY-R0 — product-test state machine mapped offline — PARTIAL (2026-09-12)
 
-- stage index -> visible screen/function/advance condition;
-- classify passive vs stateful vs persistent/unknown;
-- find the exact built-in key-test stage and prove whether it is safe before proposing a new live observation.
+Disassembled the product-test dispatcher/router (flag42 `0x16c52`-`0x16d82`) and the key-test
+stage (`0x16ef6`). Findings:
+
+- **Entry:** M-at-boot → `0x1b8f4(0)` → `enter test mode!` → `divoom_product_test`
+  (`..\source\divoom_app\divoom_product_test.c`, string `0x16dc0`).
+- **Stage routing (`0x16d3e`):** gated on product-test mode (`global[0]==2`). The **M key short
+  event `0x43`** (`[r4]==0x43`, `[r4+1]==0`) is the advance/route key. Stages are dispatched by
+  id (observed ids 4,5,6,7,8,9,0xc,0xd,0xe,0xf) via `0x2e522` (per-stage display/routine set).
+- **Advance (`0x16d08`):** increments a volatile step index in RAM (`[state+4]+0xa`); on a
+  stage's last step it moves to the next stage id. **Advancement is key-driven, never
+  automatic** — this is why the passive observation stayed on stage 0 (`42 / 012`) with no
+  controls pressed.
+- **Stage 0:** passive; displays product flag / firmware version (`42 / 012`). **Read-only.**
+- **Key-test stage (id 7, `0x16ef6`): READ-ONLY / SAFE.** It verifies the six controls
+  +,Lighting,Left,-,Right,Lever (`0x16,0x67,0x5f,0x0c,0x60,0x15` = key IDs 2..7) are pressed
+  **in order**, incrementing a volatile counter and calling advance on completion. No SPI/flash
+  write; no persistent state mutation in the routine. `divoom_product_test_key_update: key test
+  is over!` (`0x16e70`) logs completion.
+- **`divoom_product_test_spiflash_check` (`0x16d88` name string): UNKNOWN / conservative.**
+  Its routine body was not fully disassembled this pass; the image contains
+  `Fwl_spiflash_write`/`Fwl_spiflash_erases` (`0x1bf08`, `0x163ac`). Until its target region is
+  proven a scratch area, **classify the SPI-flash stage as potentially persistent-write — do
+  NOT enter it.**
+- **charge / sd / disp stages** (`divoom_product_test_charge_update` `0x172bc`,
+  `_sd_update` `0x172ec`, `divoom_disp_test` `0x2e590`): read/measure + display-only; treat as
+  read-only pending confirmation, below the key test in priority.
+
+**Safe live route (if ever useful):** M-at-boot → stage 0 (passive) → advance with M to the
+key-test stage (id 7) → exercise the six keys. This exercises only read-only diagnostics. **Do
+not advance into the SPI-flash stage** until its write target is disassembled. No factory
+observation is authorized at this handoff.
 
 ### 4. RECOVERY-R0 — solve exact rollback/readback
 

@@ -669,3 +669,30 @@ forward-or-consume), proving any all-0xFF region is a resident/executable cave, 
 valid checksum, or writing a device. The prototype stops at the verified seam-redirect model.
 
 Tests: `PatchPrototypeTests` (5). Verifier total: 342 PASS.
+
+## 16. FACTORY-R0 disassembly — product-test state machine (2026-09-12, offline)
+
+Disassembled the stock product-test dispatcher/router and the key-test stage (flag42, link
+base 0x08400000). No device I/O.
+
+- **Entry:** M-at-boot -> `0x1b8f4(0)` -> `enter test mode!` -> `divoom_product_test`.
+- **Event router `0x16d3e`:** active only in product-test mode (`global[0]==2`). The **M short
+  event `0x43`** is the stage advance/route key; stage handlers are dispatched by id
+  (4,5,6,7,8,9,0xc,0xd,0xe,0xf) through `0x2e522`.
+- **Advance `0x16d08`:** increments a volatile RAM step index (`[state+4]+0xa`); at a stage's
+  last step, moves to the next stage id. **Never auto-advances** — hence the passive
+  observation held on stage 0 (`42 / 012`).
+- **Stage 0:** passive product-flag/version display (`42 / 012`). Read-only.
+- **Key-test stage (id 7, `0x16ef6`): READ-ONLY.** Verifies +,Lighting,Left,-,Right,Lever
+  (`0x16,0x67,0x5f,0x0c,0x60,0x15`) pressed in order; increments a volatile counter; on
+  completion calls advance and logs `key test is over!`. No flash/SPI write. Safe to observe.
+- **SPI-flash-check stage (`divoom_product_test_spiflash_check`, name `0x16d88`):** body not
+  fully disassembled; image has `Fwl_spiflash_write`/`Fwl_spiflash_erases`. **Classified
+  conservatively as potentially persistent-write — do NOT enter until its target is proven a
+  scratch region.**
+- **charge/sd/disp stages:** read/measure + display-only; lower priority; treat read-only
+  pending confirmation.
+
+**Safe route (if a live factory visit is ever justified):** stage 0 (passive) -> advance with M
+to key-test (id 7) -> exercise the six keys; stop before the SPI-flash stage. No factory
+observation is authorized at this handoff.
