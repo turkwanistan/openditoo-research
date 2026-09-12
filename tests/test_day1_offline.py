@@ -5213,3 +5213,63 @@ class PatchPrototypeTests(unittest.TestCase):
         data[0x52916:0x5291A] = b"\x00\x00\x00\x00"
         with self.assertRaises(m.OriginalBytesMismatch):
             m.model_hook(bytes(data), None)
+
+
+class SoftwareRecoverySurfaceTests(unittest.TestCase):
+    """Software-first recovery audit: recognition-only, no packet/device/write surface."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_software_recovery_surface")
+
+    def test_preserved_plus_sys_update_family_is_default(self) -> None:
+        r = self._mod().build_report()
+        self.assertTrue(r["ok"])
+        for name in ("flag42_v42016", "flag60_v60014"):
+            cmds = r["branches"][name]["recovery_commands"]
+            for cmd in ("0x93", "0x94", "0x95", "0x96"):
+                self.assertTrue(cmds[cmd]["is_primary_default"], f"{name} {cmd}")
+
+    def test_raw_spi_read_has_no_direct_spp_dispatch_edge(self) -> None:
+        r = self._mod().build_report()
+        for name in ("flag42_v42016", "flag60_v60014", "original_ditoo_flag46_v46032"):
+            spi = r["branches"][name]["raw_spi_read"]
+            self.assertEqual(spi["direct_bl_xref_count"], 63, name)
+            self.assertEqual(spi["direct_xrefs_inside_spp_dispatch_region"], [], name)
+
+    def test_extern_mux_is_narrow_on_both_plus_branches(self) -> None:
+        r = self._mod().build_report()
+        for name in ("flag42_v42016", "flag60_v60014"):
+            ext = r["branches"][name]["extern_mux"]
+            self.assertTrue(ext["plus_style_0x13_through_0x1b_prefix_verified"], name)
+            self.assertEqual(ext["implemented_range_if_verified"], ["0x13", "0x1b"])
+
+    def test_known_indirect_flash_paths_are_fixed_selector_not_arbitrary(self) -> None:
+        r = self._mod().build_report()
+        expected = {"0x27", "0x80", "0x81", "0x6e", "0xba"}
+        for name in ("flag42_v42016", "flag60_v60014"):
+            indirect = r["branches"][name]["known_indirect_flash_paths"]
+            self.assertTrue(indirect["applicable"], name)
+            self.assertEqual({p["command"] for p in indirect["paths"]}, expected, name)
+            for path in indirect["paths"]:
+                self.assertIn("not an arbitrary-address flash export", path["classification"], path)
+
+    def test_comparative_protocol_topology_is_stable(self) -> None:
+        c = self._mod().build_report()["comparative"]
+        self.assertEqual(c["flag42_vs_flag60_exact_dispatch_target_equal"], 244)
+        self.assertEqual(c["dispatch_entry_count"], 251)
+        o = c["flag42_plus_vs_original_ditoo"]
+        self.assertEqual(o["commands_default_in_both"], 107)
+        self.assertEqual(o["commands_real_in_both"], 143)
+        self.assertEqual(o["real_flag42_only"], ["0x23"])
+        self.assertEqual(o["real_original_only"], [])
+
+    def test_committed_software_recovery_artifact_is_current(self) -> None:
+        live = self._mod().build_report()
+        committed = json.loads((ROOT / "artifacts/analysis/software_recovery_surface.json").read_text())
+        self.assertEqual(committed, live)
+        self.assertTrue(committed["safety"]["offline_only"])
+        self.assertFalse(committed["safety"]["device_io"])
+        self.assertFalse(committed["safety"]["packet_generation"])
+        self.assertFalse(committed["safety"]["firmware_mutation"])

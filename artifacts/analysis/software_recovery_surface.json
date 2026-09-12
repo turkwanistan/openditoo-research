@@ -1,0 +1,829 @@
+{
+  "branches": {
+    "flag42_v42016": {
+      "dispatcher": {
+        "end": "0x1271e",
+        "entry_count": 251,
+        "primary_default": "0x126e4",
+        "primary_default_count": 107,
+        "real_handler_count_by_primary_default": 144,
+        "secondary_default": "0x126ec",
+        "secondary_default_count": 20,
+        "start": "0x1047c",
+        "table_jump_base": "0x105e4",
+        "table_read_base": "0x105e8"
+      },
+      "extern_mux": {
+        "handler": "0x10a88",
+        "implemented_range_if_verified": [
+          "0x13",
+          "0x1b"
+        ],
+        "plus_style_0x13_through_0x1b_prefix_verified": true
+      },
+      "known_indirect_flash_paths": {
+        "applicable": true,
+        "finding": "SPP can indirectly trigger internal SPI reads, but the shortest verified chains use fixed internal selectors rather than caller-selected flash addresses",
+        "paths": [
+          {
+            "chain": [
+              "0x18604",
+              "0x1beaa"
+            ],
+            "classification": "fixed internal storage/config read path; not an arbitrary-address flash export",
+            "command": "0x80",
+            "fixed_immediates_before_helper": {
+              "r0": 0,
+              "r1": 0,
+              "r2": 72
+            },
+            "handler": "0x12180",
+            "spp_callsite": "0x12186"
+          },
+          {
+            "chain": [
+              "0x18604",
+              "0x1beaa"
+            ],
+            "classification": "fixed internal storage/config read path; not an arbitrary-address flash export",
+            "command": "0x81",
+            "fixed_immediates_before_helper": {
+              "r0": 0,
+              "r1": 0,
+              "r2": 72
+            },
+            "handler": "0x121c6",
+            "spp_callsite": "0x121cc"
+          },
+          {
+            "chain": [
+              "0x18b64",
+              "0x1beaa"
+            ],
+            "classification": "fixed internal config-byte read path; not an arbitrary-address flash export",
+            "command": "0x27",
+            "fixed_immediates_before_helper": {
+              "r0": 28,
+              "r1": 0
+            },
+            "handler": "0x10bf2",
+            "raw_spi_read_length_inside_helper_bytes": 1,
+            "spp_callsite": "0x10c02",
+            "subcase": "payload[1] == 0"
+          },
+          {
+            "chain": [
+              "0x38f2c",
+              "0x18604",
+              "0x1beaa"
+            ],
+            "classification": "state-management path reaches a fixed internal storage record; not an arbitrary-address flash export",
+            "command": "0xba",
+            "handler": "0x110e6",
+            "inner_fixed_immediates": {
+              "r0": 22,
+              "r1": 0,
+              "r2": 0
+            },
+            "inner_fixed_storage_callsite": "0x38f7e",
+            "spp_callsite": "0x1111e"
+          },
+          {
+            "chain": [
+              "0x38f2c",
+              "0x18604",
+              "0x1beaa"
+            ],
+            "classification": "state-management path reaches a fixed internal storage record; not an arbitrary-address flash export",
+            "command": "0x6e",
+            "handler": "0x11278",
+            "inner_fixed_immediates": {
+              "r0": 22,
+              "r1": 0,
+              "r2": 0
+            },
+            "inner_fixed_storage_callsite": "0x38f7e",
+            "spp_callsite": "0x112ae"
+          }
+        ],
+        "scope_limit": "These pinned shortest chains do not close every deeper SPP helper/data-flow path; transitive semantic reachability remains SFR-1."
+      },
+      "name": "flag42_v42016",
+      "path": "artifacts/firmware/flag42_v42016.bin",
+      "raw_spi_read": {
+        "direct_bl_xref_count": 63,
+        "direct_bl_xrefs": [
+          "0x13356",
+          "0x1338e",
+          "0x16ab2",
+          "0x176a0",
+          "0x17756",
+          "0x177ac",
+          "0x177e4",
+          "0x1781e",
+          "0x17852",
+          "0x17886",
+          "0x178be",
+          "0x178fc",
+          "0x17928",
+          "0x1797c",
+          "0x17a30",
+          "0x17ae4",
+          "0x17b84",
+          "0x17c82",
+          "0x18564",
+          "0x185ac",
+          "0x1866e",
+          "0x18ab2",
+          "0x18bc0",
+          "0x2c8e0",
+          "0x2cbb6",
+          "0x2cbd4",
+          "0x2cc0c",
+          "0x2cc2e",
+          "0x2cc50",
+          "0x2cc72",
+          "0x2ccac",
+          "0x2cce0",
+          "0x2cd26",
+          "0x2cee2",
+          "0x2cf06",
+          "0x32af6",
+          "0x35d24",
+          "0x360f4",
+          "0x371d0",
+          "0x3787c",
+          "0x37b16",
+          "0x385b4",
+          "0x38820",
+          "0x38b42",
+          "0x39036",
+          "0x3921e",
+          "0x39278",
+          "0x393c0",
+          "0x394e6",
+          "0x39508",
+          "0x397c6",
+          "0x397e8",
+          "0x39848",
+          "0x3a18e",
+          "0x3a1d8",
+          "0x3a39e",
+          "0x3a7f2",
+          "0x3c152",
+          "0x3c1ec",
+          "0x3c286",
+          "0x50a6c",
+          "0x50af2",
+          "0x50b8c"
+        ],
+        "direct_xrefs_inside_spp_dispatch_region": [],
+        "wrapper": "0x1beaa"
+      },
+      "recovery_commands": {
+        "0x48": {
+          "family_label": "SPP_PAUSE_SYS_UPDATE_DATA",
+          "handler": "0x11144",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x49": {
+          "family_label": "update_state_query_family_label",
+          "handler": "0x11bb8",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x93": {
+          "family_label": "SPP_SYS_DEVICE_UPDATE",
+          "handler": "0x126e4",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x94": {
+          "family_label": "SPP_SYS_UPDATE_DATA",
+          "handler": "0x126e4",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x95": {
+          "family_label": "SPP_SYS_CONTINUE_UPDATE_DATA",
+          "handler": "0x126e4",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x96": {
+          "family_label": "SPP_SYS_GET_UPDATE_ADDR",
+          "handler": "0x126e4",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x97": {
+          "family_label": "SPP_GET_FILE_VERSION",
+          "handler": "0x110cc",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x98": {
+          "family_label": "SPP_APP_UPDATE_FILE_INFO",
+          "handler": "0x1115a",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x99": {
+          "family_label": "SPP_APP_SEND_FILE_DATA",
+          "handler": "0x1124c",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9b": {
+          "family_label": "SPP_SEND_HOT_FILE_LIST",
+          "handler": "0x10e78",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9d": {
+          "family_label": "SPP_HOT_UPDATE_FILE_INFO",
+          "handler": "0x10ea2",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9e": {
+          "family_label": "SPP_HOT_SEND_FILE_DATA",
+          "handler": "0x10f52",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9f": {
+          "family_label": "SPP_HOT_PAUSE_FILE_SEND",
+          "handler": "0x10f3c",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0xbd": {
+          "family_label": "SPP_DIVOOM_EXTERN_CMD",
+          "handler": "0x10a88",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        }
+      },
+      "sha256": "f2509588d3ca52175591925298cdcffe9c7e01f6d43d89ee352b967610025b6a"
+    },
+    "flag60_v60014": {
+      "dispatcher": {
+        "end": "0x1271e",
+        "entry_count": 251,
+        "primary_default": "0x126e4",
+        "primary_default_count": 107,
+        "real_handler_count_by_primary_default": 144,
+        "secondary_default": "0x126ec",
+        "secondary_default_count": 20,
+        "start": "0x1047c",
+        "table_jump_base": "0x105e4",
+        "table_read_base": "0x105e8"
+      },
+      "extern_mux": {
+        "handler": "0x10a88",
+        "implemented_range_if_verified": [
+          "0x13",
+          "0x1b"
+        ],
+        "plus_style_0x13_through_0x1b_prefix_verified": true
+      },
+      "known_indirect_flash_paths": {
+        "applicable": true,
+        "finding": "SPP can indirectly trigger internal SPI reads, but the shortest verified chains use fixed internal selectors rather than caller-selected flash addresses",
+        "paths": [
+          {
+            "chain": [
+              "0x18604",
+              "0x1beaa"
+            ],
+            "classification": "fixed internal storage/config read path; not an arbitrary-address flash export",
+            "command": "0x80",
+            "fixed_immediates_before_helper": {
+              "r0": 0,
+              "r1": 0,
+              "r2": 72
+            },
+            "handler": "0x12180",
+            "spp_callsite": "0x12186"
+          },
+          {
+            "chain": [
+              "0x18604",
+              "0x1beaa"
+            ],
+            "classification": "fixed internal storage/config read path; not an arbitrary-address flash export",
+            "command": "0x81",
+            "fixed_immediates_before_helper": {
+              "r0": 0,
+              "r1": 0,
+              "r2": 72
+            },
+            "handler": "0x121c6",
+            "spp_callsite": "0x121cc"
+          },
+          {
+            "chain": [
+              "0x18b64",
+              "0x1beaa"
+            ],
+            "classification": "fixed internal config-byte read path; not an arbitrary-address flash export",
+            "command": "0x27",
+            "fixed_immediates_before_helper": {
+              "r0": 28,
+              "r1": 0
+            },
+            "handler": "0x10bf2",
+            "raw_spi_read_length_inside_helper_bytes": 1,
+            "spp_callsite": "0x10c02",
+            "subcase": "payload[1] == 0"
+          },
+          {
+            "chain": [
+              "0x38e98",
+              "0x18604",
+              "0x1beaa"
+            ],
+            "classification": "state-management path reaches a fixed internal storage record; not an arbitrary-address flash export",
+            "command": "0xba",
+            "handler": "0x110e6",
+            "inner_fixed_immediates": {
+              "r0": 22,
+              "r1": 0,
+              "r2": 0
+            },
+            "inner_fixed_storage_callsite": "0x38eea",
+            "spp_callsite": "0x1111e"
+          },
+          {
+            "chain": [
+              "0x38e98",
+              "0x18604",
+              "0x1beaa"
+            ],
+            "classification": "state-management path reaches a fixed internal storage record; not an arbitrary-address flash export",
+            "command": "0x6e",
+            "handler": "0x11278",
+            "inner_fixed_immediates": {
+              "r0": 22,
+              "r1": 0,
+              "r2": 0
+            },
+            "inner_fixed_storage_callsite": "0x38eea",
+            "spp_callsite": "0x112ae"
+          }
+        ],
+        "scope_limit": "These pinned shortest chains do not close every deeper SPP helper/data-flow path; transitive semantic reachability remains SFR-1."
+      },
+      "name": "flag60_v60014",
+      "path": "artifacts/firmware/flag60_v60014.bin",
+      "raw_spi_read": {
+        "direct_bl_xref_count": 63,
+        "direct_bl_xrefs": [
+          "0x13356",
+          "0x1338e",
+          "0x16ab2",
+          "0x176a0",
+          "0x17756",
+          "0x177ac",
+          "0x177e4",
+          "0x1781e",
+          "0x17852",
+          "0x17886",
+          "0x178be",
+          "0x178fc",
+          "0x17928",
+          "0x1797c",
+          "0x17a30",
+          "0x17ae4",
+          "0x17b84",
+          "0x17c82",
+          "0x18564",
+          "0x185ac",
+          "0x1866e",
+          "0x18ab2",
+          "0x18bc0",
+          "0x2c92c",
+          "0x2cc02",
+          "0x2cc20",
+          "0x2cc58",
+          "0x2cc7a",
+          "0x2cc9c",
+          "0x2ccbe",
+          "0x2ccf8",
+          "0x2cd2c",
+          "0x2cd72",
+          "0x2cf2e",
+          "0x2cf52",
+          "0x32b4e",
+          "0x35c90",
+          "0x36060",
+          "0x3713c",
+          "0x377e8",
+          "0x37a82",
+          "0x38520",
+          "0x3878c",
+          "0x38aae",
+          "0x38fa2",
+          "0x3918a",
+          "0x391e4",
+          "0x3932c",
+          "0x39452",
+          "0x39474",
+          "0x39732",
+          "0x39754",
+          "0x397b4",
+          "0x3a0fa",
+          "0x3a144",
+          "0x3a30a",
+          "0x3a75e",
+          "0x3c0be",
+          "0x3c158",
+          "0x3c1f2",
+          "0x509d8",
+          "0x50a5e",
+          "0x50af8"
+        ],
+        "direct_xrefs_inside_spp_dispatch_region": [],
+        "wrapper": "0x1beaa"
+      },
+      "recovery_commands": {
+        "0x48": {
+          "family_label": "SPP_PAUSE_SYS_UPDATE_DATA",
+          "handler": "0x11144",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x49": {
+          "family_label": "update_state_query_family_label",
+          "handler": "0x11bb8",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x93": {
+          "family_label": "SPP_SYS_DEVICE_UPDATE",
+          "handler": "0x126e4",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x94": {
+          "family_label": "SPP_SYS_UPDATE_DATA",
+          "handler": "0x126e4",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x95": {
+          "family_label": "SPP_SYS_CONTINUE_UPDATE_DATA",
+          "handler": "0x126e4",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x96": {
+          "family_label": "SPP_SYS_GET_UPDATE_ADDR",
+          "handler": "0x126e4",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x97": {
+          "family_label": "SPP_GET_FILE_VERSION",
+          "handler": "0x110cc",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x98": {
+          "family_label": "SPP_APP_UPDATE_FILE_INFO",
+          "handler": "0x1115a",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x99": {
+          "family_label": "SPP_APP_SEND_FILE_DATA",
+          "handler": "0x1124c",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9b": {
+          "family_label": "SPP_SEND_HOT_FILE_LIST",
+          "handler": "0x10e78",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9d": {
+          "family_label": "SPP_HOT_UPDATE_FILE_INFO",
+          "handler": "0x10ea2",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9e": {
+          "family_label": "SPP_HOT_SEND_FILE_DATA",
+          "handler": "0x10f52",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9f": {
+          "family_label": "SPP_HOT_PAUSE_FILE_SEND",
+          "handler": "0x10f3c",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0xbd": {
+          "family_label": "SPP_DIVOOM_EXTERN_CMD",
+          "handler": "0x10a88",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        }
+      },
+      "sha256": "02efa679cf1c152d6e6cf57f43223153218b411f41a787b65978e5caa77c1300"
+    },
+    "original_ditoo_flag46_v46032": {
+      "dispatcher": {
+        "end": "0x126ca",
+        "entry_count": 251,
+        "primary_default": "0x12690",
+        "primary_default_count": 108,
+        "real_handler_count_by_primary_default": 143,
+        "secondary_default": "0x12698",
+        "secondary_default_count": 20,
+        "start": "0x1045c",
+        "table_jump_base": "0x105c4",
+        "table_read_base": "0x105c8"
+      },
+      "extern_mux": {
+        "handler": "0x10a68",
+        "implemented_range_if_verified": [
+          "0x13",
+          "0x1b"
+        ],
+        "plus_style_0x13_through_0x1b_prefix_verified": true
+      },
+      "known_indirect_flash_paths": {
+        "applicable": false,
+        "reason": "calibrated only on preserved Ditoo Plus branches"
+      },
+      "name": "original_ditoo_flag46_v46032",
+      "path": "artifacts/reference/ditoo_flag46_v46032.bin",
+      "raw_spi_read": {
+        "direct_bl_xref_count": 63,
+        "direct_bl_xrefs": [
+          "0x13302",
+          "0x1333a",
+          "0x16a66",
+          "0x1761c",
+          "0x176d2",
+          "0x17728",
+          "0x17760",
+          "0x1779a",
+          "0x177ce",
+          "0x17802",
+          "0x1783a",
+          "0x17878",
+          "0x178a4",
+          "0x178f8",
+          "0x179ac",
+          "0x17a60",
+          "0x17b00",
+          "0x17bfe",
+          "0x184c0",
+          "0x18508",
+          "0x185ca",
+          "0x18a0e",
+          "0x18b1c",
+          "0x29580",
+          "0x29856",
+          "0x29874",
+          "0x298ac",
+          "0x298ce",
+          "0x298f0",
+          "0x29912",
+          "0x2994c",
+          "0x29980",
+          "0x299c6",
+          "0x29b82",
+          "0x29ba6",
+          "0x2f73e",
+          "0x32880",
+          "0x32c50",
+          "0x33c3c",
+          "0x342ec",
+          "0x34586",
+          "0x34eb0",
+          "0x351f6",
+          "0x3552a",
+          "0x35a5e",
+          "0x35b3c",
+          "0x35b96",
+          "0x35ce4",
+          "0x35e0a",
+          "0x35e2c",
+          "0x360ea",
+          "0x3610c",
+          "0x3616c",
+          "0x368e2",
+          "0x3692c",
+          "0x36af2",
+          "0x36f46",
+          "0x388a6",
+          "0x38940",
+          "0x389da",
+          "0x4d408",
+          "0x4d48e",
+          "0x4d528"
+        ],
+        "direct_xrefs_inside_spp_dispatch_region": [],
+        "wrapper": "0x1bfb8"
+      },
+      "recovery_commands": {
+        "0x48": {
+          "family_label": "SPP_PAUSE_SYS_UPDATE_DATA",
+          "handler": "0x110f2",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x49": {
+          "family_label": "update_state_query_family_label",
+          "handler": "0x11b64",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x93": {
+          "family_label": "SPP_SYS_DEVICE_UPDATE",
+          "handler": "0x12690",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x94": {
+          "family_label": "SPP_SYS_UPDATE_DATA",
+          "handler": "0x12690",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x95": {
+          "family_label": "SPP_SYS_CONTINUE_UPDATE_DATA",
+          "handler": "0x12690",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x96": {
+          "family_label": "SPP_SYS_GET_UPDATE_ADDR",
+          "handler": "0x12690",
+          "is_primary_default": true,
+          "is_secondary_default": false
+        },
+        "0x97": {
+          "family_label": "SPP_GET_FILE_VERSION",
+          "handler": "0x1107a",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x98": {
+          "family_label": "SPP_APP_UPDATE_FILE_INFO",
+          "handler": "0x11108",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x99": {
+          "family_label": "SPP_APP_SEND_FILE_DATA",
+          "handler": "0x111fa",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9b": {
+          "family_label": "SPP_SEND_HOT_FILE_LIST",
+          "handler": "0x10e26",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9d": {
+          "family_label": "SPP_HOT_UPDATE_FILE_INFO",
+          "handler": "0x10e50",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9e": {
+          "family_label": "SPP_HOT_SEND_FILE_DATA",
+          "handler": "0x10f00",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0x9f": {
+          "family_label": "SPP_HOT_PAUSE_FILE_SEND",
+          "handler": "0x10eea",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        },
+        "0xbd": {
+          "family_label": "SPP_DIVOOM_EXTERN_CMD",
+          "handler": "0x10a68",
+          "is_primary_default": false,
+          "is_secondary_default": false
+        }
+      },
+      "sha256": "a7ee309ef2d0c07f8a72abb9dd9bb444f33bd8f952ca9009c7b7f8e385d7e3d2"
+    }
+  },
+  "comparative": {
+    "dispatch_entry_count": 251,
+    "flag42_plus_vs_original_ditoo": {
+      "commands_default_in_both": 107,
+      "commands_real_in_both": 143,
+      "real_flag42_only": [
+        "0x23"
+      ],
+      "real_original_only": []
+    },
+    "flag42_vs_flag60_exact_dispatch_target_equal": 244,
+    "flag42_vs_flag60_region_similarity": {
+      "app_update": {
+        "bytes": 428,
+        "end": "0x11278",
+        "percent": 96.028,
+        "same": 411,
+        "start": "0x110cc"
+      },
+      "extern_mux": {
+        "bytes": 740,
+        "end": "0x10d6c",
+        "percent": 98.378,
+        "same": 728,
+        "start": "0x10a88"
+      },
+      "flash_wrappers": {
+        "bytes": 126,
+        "end": "0x1bf00",
+        "percent": 96.032,
+        "same": 121,
+        "start": "0x1be82"
+      },
+      "hot_update": {
+        "bytes": 424,
+        "end": "0x11020",
+        "percent": 98.349,
+        "same": 417,
+        "start": "0x10e78"
+      },
+      "spp_dispatch_monolith": {
+        "bytes": 9022,
+        "end": "0x1271e",
+        "percent": 96.353,
+        "same": 8693,
+        "start": "0x103e0"
+      },
+      "spp_jump_table": {
+        "bytes": 502,
+        "end": "0x107de",
+        "percent": 98.606,
+        "same": 495,
+        "start": "0x105e8"
+      }
+    },
+    "flag42_vs_flag60_target_differences": {
+      "0x1b": {
+        "flag42": "0x11c88",
+        "flag60": "0x11c86"
+      },
+      "0x51": {
+        "flag42": "0x11c7c",
+        "flag60": "0x11c7a"
+      },
+      "0x52": {
+        "flag42": "0x11ca6",
+        "flag60": "0x11ca4"
+      },
+      "0x53": {
+        "flag42": "0x11cda",
+        "flag60": "0x11cd8"
+      },
+      "0x54": {
+        "flag42": "0x11ce8",
+        "flag60": "0x11ce6"
+      },
+      "0xb6": {
+        "flag42": "0x11cb6",
+        "flag60": "0x11cb4"
+      },
+      "0xb7": {
+        "flag42": "0x11c94",
+        "flag60": "0x11c92"
+      }
+    }
+  },
+  "conclusions": {
+    "app_update_0x98_0x99": "real inbound update-info/chunk handlers; not a stock flash-readback surface",
+    "extern_0xbd": "exact Plus mux shape implements only subcommands 0x13..0x1b; wider app enum does not imply firmware handlers",
+    "hot_update_0x9b_0x9d_0x9e_0x9f": "real update-content handlers; no direct raw-SPI-read edge from SPP dispatcher region",
+    "indirect_flash_reads": "verified stock SPP paths do trigger internal SPI reads via fixed config/state selectors (0x27,0x80,0x81,0x6e,0xba); none of the pinned shortest chains exposes a caller-selected flash address",
+    "raw_spi_read": "63 direct callers in each preserved Plus branch; zero direct callers inside the SPP dispatcher/handler region",
+    "scope_limit": "pinned shortest-chain evidence does not prove absence of every deeper helper/data-flow path; SFR-1 remains open",
+    "sys_update_0x93_through_0x96": "default/error handler on both preserved Ditoo Plus branches"
+  },
+  "kind": "offline_stock_software_recovery_surface",
+  "ok": true,
+  "safety": {
+    "device_io": false,
+    "firmware_mutation": false,
+    "offline_only": true,
+    "packet_generation": false
+  },
+  "schema_version": 2
+}
