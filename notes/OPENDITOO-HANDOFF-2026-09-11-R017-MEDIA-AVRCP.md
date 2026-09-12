@@ -40,17 +40,27 @@ Acceptance (`captures/OPENDITOO-R017-RAW-AVRCP-ACCEPTANCE-2026-09-11.json`):
 - **21:16Z PASS** — reduced by owner request to 3/3, 3/3, 8/8 = 14. Tivoo excluded (2 rows), 0 unbinds, ETW flush OK, latency p50 104 / max 142 ms, 0 orphans, media reaction NO.
 - Focused tests 16/16, broker selftest PASS, interactive verifier 136/136. Broker DLL + program hash refrozen in the Runtime 017 policy.
 
-## Immediate next step — production elevation plumbing (blocks the grant)
+## Elevated-task plumbing — built and accepted (`41d2790`)
 
-Runtime 017 is **not grant-ready**. `product_runtime_v11` launches the broker from WSL with a normal token, and `btvs.exe` refuses without elevation (Win32 740). A cut-over 017 would therefore get zero input, and the broker would restart every 5 s. Needed:
+Only the sidecar is elevated; the WSL runtime never is.
+- **Installer:** `runtime/windows/install_openditoo_raw_avrcp_task.ps1`, run once from Administrator PowerShell and again after any broker rebuild. It verifies every source hash, copies the broker, the ButtonProbe sink and `btvs.exe` into admin-only `C:\Program Files\OpenDitoo\RawAvrcpBroker`, re-verifies, and refuses any non-admin write ACE. It then registers `OpenDitoo Raw AVRCP Broker`: on-demand (no trigger), highest privilege, interactive session, `IgnoreNew`, with arguments fixed from the policy.
+- **Why the copies:** `C:\BTP\...\btvs.exe` is Authenticated Users:Modify, and the old broker and sink lived in the user profile. Launching those elevated would be silent elevation.
+- **WSL side:** `host/raw_avrcp_input.RawAvrcpBroker` only runs `schtasks /run` (non-blocking, once per 5 s) and rewrites a lease counter every second. `stop()` deletes the lease and ends the task.
+- **Lease expiry:** the broker exits 15 s after the lease content stops changing, taking its Job-owned helpers with it. It is `WinExe`, so no console window appears, and it truncates its own event log.
+- **Policy and checks:** the policy pins all 11 admin-only files. `load_policy` rejects launched executables outside the root. `python3 -m host.raw_avrcp_input verify-task` checks the registered task against the policy. The cutover requires both and never stages files; rollback ends the task.
+- **Live acceptance PASS:** normal PowerShell through the task. 3/3, 3/3, 8/8 = 14; Tivoo excluded; latency p50 140 / max 171 ms; lease-expiry self-exit PASS; 0 orphans; media reaction NO. Focused tests 19/19, interactive verifier 136/136.
 
-1. A narrowly elevated launch for **only** `OpenDitoo.RawAvrcpBroker.exe`. Candidate: a scheduled task registered once from Administrator PowerShell with *Run with highest privileges*, hash-pinned exe/args, on-demand only. The WSL supervisor starts and stops it (`schtasks /run` / `/end`) and keeps reading the same NDJSON.
-2. Liveness/stop semantics equivalent to today's child-process supervision, plus the Job Object helper cleanup.
-3. Tests and policy/cutover updates for the task identity, then a short product-supervised live check: bind from the product's own frames, a few presses under media, a Ditoo power-cycle rebind.
+## Immediate next step — owner decision on the grant
 
-Only then request `Grant OPENDITOO-PRODUCT-RUNTIME-017`.
+Runtime 017 is now technically grant-ready but still **not granted and not live**. Runtime 016 is the rollback baseline and is currently stopped. If the owner decides to grant, run this from WSL, from the feature worktree:
 
-Open follow-ups: `BTETWRTSession` outlives a killed BTVS and keeps buffering HCI (privacy/perf; consider stopping it on broker exit). The stale-drop path saw 0 rows in the PASS run.
+```bash
+bash scripts/cutover_runtime_017.sh "Grant OPENDITOO-PRODUCT-RUNTIME-017"
+```
+
+The cutover checks the installed task and hashes before touching main and rolls back to 016 on any failure (`--rollback` does it manually). Post-cutover checks: dashboard connected; Left/Right/lever with media playing; Ditoo power-cycle unbind/rebind (untested live); standing acceptance items as needed. Uninstalling the task, if ever wanted: installer `-Uninstall` from Administrator PowerShell.
+
+Open follow-ups: `BTETWRTSession` outlives a killed BTVS and keeps buffering HCI (privacy/perf). The stale-drop path saw 0 rows in both PASS runs.
 
 ## Guardrails
 

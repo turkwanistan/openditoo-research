@@ -140,3 +140,7 @@ After dynamic attribution is implemented, repeat active-media acceptance with th
 ## Attribution closed / acceptance PASS — 2026-09-11 21:17Z
 
 Superseded the checkpoint above. Dynamic handle binding from OpenDitoo's own outbound image preambles, the raw-L2CAP extraction fixes, the ETW backlog drop, the 50 ms ETW flush and the sink-after-bind are all recorded in `notes/OPENDITOO-HANDOFF-2026-09-11-R017-MEDIA-AVRCP.md`. Evidence: `captures/OPENDITOO-R017-RAW-AVRCP-ACCEPTANCE-2026-09-11.json` (PASS: 14/14 reduced run, Tivoo excluded, latency p50 104 / max 142 ms, media reaction NO, 0 orphans). Remaining gate before the grant: a narrowly elevated broker launch for the product runtime.
+
+## Elevated-task launch accepted — 2026-09-11
+
+The remaining gate is closed: the sidecar launches through the admin-only on-demand scheduled task (`41d2790`), and acceptance through that path from an unelevated caller PASSED (14/14, Tivoo excluded, p50 140 ms, lease-expiry self-exit, 0 orphans, media reaction NO). Runtime 017 is grant-ready; the grant is the owner's decision.
