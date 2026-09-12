@@ -8,9 +8,15 @@
       "heap_allocator": "0x51108",
       "mode_0x0b_first_entry": "0x12f94",
       "mode_0x0b_initializer": "0x340d2",
+      "mode_0x0b_initializer_direct_app_free": false,
+      "mode_0x0b_initializer_uses_separate_heap_object": true,
       "mode_0x0b_same_mode_handler": "0x12cd4",
       "resident_target_thumb": "0x8012a9",
       "resident_veneer": "0xa6490",
+      "spp_0x6e_nonzero_primes_mode_0x0b": true,
+      "spp_0x6e_prime_content_dispatch": "0x71b8",
+      "spp_0x6e_prime_handler": "0x11278",
+      "spp_0x6e_prime_mode_getter": "0x12886",
       "spp_max_inner_verified": 2048
     },
     "flag42_test_v42017": {
@@ -21,9 +27,15 @@
       "heap_allocator": "0x5111c",
       "mode_0x0b_first_entry": "0x12f94",
       "mode_0x0b_initializer": "0x340c6",
+      "mode_0x0b_initializer_direct_app_free": false,
+      "mode_0x0b_initializer_uses_separate_heap_object": true,
       "mode_0x0b_same_mode_handler": "0x12cd4",
       "resident_target_thumb": "0x8012a9",
       "resident_veneer": "0xa64a4",
+      "spp_0x6e_nonzero_primes_mode_0x0b": true,
+      "spp_0x6e_prime_content_dispatch": "0x71b8",
+      "spp_0x6e_prime_handler": "0x11278",
+      "spp_0x6e_prime_mode_getter": "0x12886",
       "spp_max_inner_verified": 2048
     },
     "flag60_prod_v60014": {
@@ -34,9 +46,15 @@
       "heap_allocator": "0x51074",
       "mode_0x0b_first_entry": "0x12f94",
       "mode_0x0b_initializer": "0x34038",
+      "mode_0x0b_initializer_direct_app_free": false,
+      "mode_0x0b_initializer_uses_separate_heap_object": true,
       "mode_0x0b_same_mode_handler": "0x12cd4",
       "resident_target_thumb": "0x8012a9",
       "resident_veneer": "0xa63fc",
+      "spp_0x6e_nonzero_primes_mode_0x0b": true,
+      "spp_0x6e_prime_content_dispatch": "0x71b8",
+      "spp_0x6e_prime_handler": "0x11278",
+      "spp_0x6e_prime_mode_getter": "0x12886",
       "spp_max_inner_verified": 2048
     },
     "flag60_test_api60016_internal60017": {
@@ -47,43 +65,17 @@
       "heap_allocator": "0x51108",
       "mode_0x0b_first_entry": "0x12f94",
       "mode_0x0b_initializer": "0x340d2",
+      "mode_0x0b_initializer_direct_app_free": false,
+      "mode_0x0b_initializer_uses_separate_heap_object": true,
       "mode_0x0b_same_mode_handler": "0x12cd4",
       "resident_target_thumb": "0x8012a9",
       "resident_veneer": "0xa6490",
+      "spp_0x6e_nonzero_primes_mode_0x0b": true,
+      "spp_0x6e_prime_content_dispatch": "0x71b8",
+      "spp_0x6e_prime_handler": "0x11278",
+      "spp_0x6e_prime_mode_getter": "0x12886",
       "spp_max_inner_verified": 2048
     }
-  },
-  "control_flow_gate": {
-    "controlled_indirect_branch_proven": false,
-    "deterministic_victim_placement_proven": false,
-    "interesting_unpromoted_flag42_sinks": [
-      {
-        "callback_offsets": [
-          "0x0c",
-          "0x20",
-          "0x2c"
-        ],
-        "indirect_calls": [
-          "0x20508",
-          "0x20356",
-          "0x20332",
-          "0x204a8"
-        ],
-        "object_family": "plugin/child object"
-      },
-      {
-        "callback_offset": "0x34",
-        "indirect_call": "0x1fac4",
-        "object_family": "0x50-byte runtime object"
-      }
-    ],
-    "live_manifest_candidate": null,
-    "next_offline_gate": "DETERMINISTIC_VICTIM_OR_CONTROL_SINK_PLACEMENT",
-    "why_not_yet": [
-      "The application heap uses separate descriptors and 16-byte units rather than an inline next-chunk header, so the first overflow bytes are not automatically control metadata.",
-      "The heap is already allocation/free-active before the display backing object is created; static call chronology alone does not prove physical adjacency.",
-      "Callback-bearing objects exist in firmware, but no exact victim has yet been proven to occupy a deterministic offset inside the overwrite window."
-    ]
   },
   "corpus": {
     "flag42_prod_v42016": {
@@ -107,13 +99,28 @@
       "size_bytes": 1207313
     }
   },
+  "downstream_control_flow": {
+    "delegated_artifact": "artifacts/analysis/volatile_ram_api_tier2_trigger.json",
+    "live_manifest_candidate": null,
+    "proven_in_this_artifact": false
+  },
   "kind": "ditoo_plus_tier2_resident_display_surface",
   "method_limits": [
-    "This artifact proves a copy primitive and its maximum structural overwrite, not code execution.",
-    "It does not infer heap adjacency from allocation order because the allocator is not modeled as a monotonic bump allocator.",
+    "This artifact proves the corrected stock 0x6e-prime -> 0x6c-copy reachability and copy primitive; code-execution proof remains delegated to the trigger artifact.",
+    "Startup adjacency is imported from the separate fail-closed placement artifact rather than inferred from command-time allocation order.",
     "No live malformed/custom 0x6c packet has been transmitted; physical behavior remains untested by design."
   ],
   "ok": true,
+  "placement_integration": {
+    "deterministic_victim_placement_proven": true,
+    "display_data_pointer": "0x804778",
+    "display_teardown_recreate_status": "CLOSED_WITHIN_AUDITED_APP_GRAPH",
+    "meaning": "The 0x6e content-mode initializer may allocate a separate later light-word object, but it cannot move the already-proven persistent display backing/runtime50 startup geometry.",
+    "runtime50_base": "0x804b80",
+    "runtime50_callback": "0x804bb4",
+    "runtime50_persistent_startup_allocation": true,
+    "runtime50_stock_free_recreate_proven": false
+  },
   "promoted_primitive": {
     "class": "CALLER_CONTROLLED_ADJACENT_HEAP_OVERWRITE",
     "copy_length": "caller u16(packet+3)",
@@ -125,13 +132,19 @@
     "status": "PROMOTED_OFFLINE"
   },
   "reachability": {
-    "command": "0x6c",
-    "first_packet_role": "normal volatile mode entry initializes the light-word/display object",
-    "handler": "0x11fce",
+    "copy_command": "0x6c SPP_DRAWING_ENCODE_MOVIE_PLAY",
+    "copy_handler": "0x11fce",
+    "copy_precondition": "content mode 0x0b already selected; 0x6c does not prime itself",
+    "prime_command": "0x6e SPP_DRAWING_CTRL_MOVIE_PLAY",
+    "prime_control": "payload[1] != 0",
+    "prime_handler": "0x11278",
+    "prime_initializer_preserves_proven_startup_geometry": true,
+    "prime_role": "select content mode 0x0b through 0x71b8; the handler immediately re-reads 0x12886 and confirms 0x0b",
+    "prime_stable_4_of_4": true,
     "requires_persistent_write": false,
     "resident_target_stable_4_of_4": true,
-    "stock_mode": "0x0b",
-    "subsequent_same_mode_role": "same-mode event reaches 0x12cd4 and forwards caller source/length through the display function to resident stage-1"
+    "same_mode_role": "same-mode event reaches 0x12cd4 and forwards caller source/length through the display function to resident stage-1",
+    "stock_mode": "0x0b"
   },
   "safety": {
     "device_io": false,

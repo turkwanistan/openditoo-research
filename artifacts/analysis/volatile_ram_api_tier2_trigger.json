@@ -1,6 +1,10 @@
 {
   "branches": {
     "flag42_prod_v42016": {
+      "allocator_busy_flag_is_transient": true,
+      "allocator_busy_flag_predicate": "0xbfe8",
+      "btplayer_handler": "0x40c7c",
+      "btplayer_voicetip_setter_call": "0x41070",
       "callback_blx": "0x1fac4",
       "callback_field_offset": "0x34",
       "callback_function": "0x1fa8a",
@@ -12,6 +16,7 @@
         "0x1fd0a",
         "0x1ff76"
       ],
+      "event_34c_builder": "0x17348",
       "microtask_argument": 0,
       "microtask_callback_decodes_to_worker": true,
       "microtask_callback_literal_offset": "0x1fff8",
@@ -20,14 +25,27 @@
       "microtask_registration_call": "0x1ff24",
       "microtask_registration_impl": "0x3e5d6",
       "microtask_registration_veneer": "0x1b3cc",
+      "microtask_release_helper": "0x1b3dc",
+      "model_bound_helper": "0x45596",
+      "model_opener": "0x455b6",
       "raw_absolute_app_pointer_xrefs_to_worker": [],
       "raw_absolute_app_pointer_xrefs_to_wrapper": [],
       "runtime50_constructor": "0x1f9f4",
+      "spp_a5_helper": "0x22d20",
+      "spp_a5_model_table_literal": "0x23054",
+      "spp_a5_model_table_pointer": "0x2e625c",
+      "spp_a5_selector_2_model": "0x22",
       "spp_a9_direct_targets_include_voicetip_trigger": false,
+      "stage0_raw_pointer_xrefs": [],
+      "stage0_span_pristine_fill": true,
       "worker": "0x1fb42",
       "wrapper": "0x1ff6c"
     },
     "flag42_test_v42017": {
+      "allocator_busy_flag_is_transient": true,
+      "allocator_busy_flag_predicate": "0xbfe8",
+      "btplayer_handler": "0x40c90",
+      "btplayer_voicetip_setter_call": "0x41084",
       "callback_blx": "0x1fab8",
       "callback_field_offset": "0x34",
       "callback_function": "0x1fa7e",
@@ -39,6 +57,7 @@
         "0x1fcfe",
         "0x1ff6a"
       ],
+      "event_34c_builder": "0x17348",
       "microtask_argument": 0,
       "microtask_callback_decodes_to_worker": true,
       "microtask_callback_literal_offset": "0x1ffec",
@@ -47,14 +66,27 @@
       "microtask_registration_call": "0x1ff18",
       "microtask_registration_impl": "0x3e5ea",
       "microtask_registration_veneer": "0x1b3c0",
+      "microtask_release_helper": "0x1b3d0",
+      "model_bound_helper": "0x455aa",
+      "model_opener": "0x455ca",
       "raw_absolute_app_pointer_xrefs_to_worker": [],
       "raw_absolute_app_pointer_xrefs_to_wrapper": [],
       "runtime50_constructor": "0x1f9e8",
+      "spp_a5_helper": "0x22d14",
+      "spp_a5_model_table_literal": "0x23048",
+      "spp_a5_model_table_pointer": "0x2e6270",
+      "spp_a5_selector_2_model": "0x22",
       "spp_a9_direct_targets_include_voicetip_trigger": false,
+      "stage0_raw_pointer_xrefs": [],
+      "stage0_span_pristine_fill": true,
       "worker": "0x1fb36",
       "wrapper": "0x1ff60"
     },
     "flag60_prod_v60014": {
+      "allocator_busy_flag_is_transient": true,
+      "allocator_busy_flag_predicate": "0xbfe8",
+      "btplayer_handler": "0x40be8",
+      "btplayer_voicetip_setter_call": "0x40fdc",
       "callback_blx": "0x1fac4",
       "callback_field_offset": "0x34",
       "callback_function": "0x1fa8a",
@@ -66,6 +98,7 @@
         "0x1fd0a",
         "0x1ff76"
       ],
+      "event_34c_builder": "0x17348",
       "microtask_argument": 0,
       "microtask_callback_decodes_to_worker": true,
       "microtask_callback_literal_offset": "0x1fff8",
@@ -74,14 +107,27 @@
       "microtask_registration_call": "0x1ff24",
       "microtask_registration_impl": "0x3e542",
       "microtask_registration_veneer": "0x1b3cc",
+      "microtask_release_helper": "0x1b3dc",
+      "model_bound_helper": "0x45502",
+      "model_opener": "0x45522",
       "raw_absolute_app_pointer_xrefs_to_worker": [],
       "raw_absolute_app_pointer_xrefs_to_wrapper": [],
       "runtime50_constructor": "0x1f9f4",
+      "spp_a5_helper": "0x22d20",
+      "spp_a5_model_table_literal": "0x23054",
+      "spp_a5_model_table_pointer": "0x2e61c8",
+      "spp_a5_selector_2_model": "0x22",
       "spp_a9_direct_targets_include_voicetip_trigger": false,
+      "stage0_raw_pointer_xrefs": [],
+      "stage0_span_pristine_fill": true,
       "worker": "0x1fb42",
       "wrapper": "0x1ff6c"
     },
     "flag60_test_api60016_internal60017": {
+      "allocator_busy_flag_is_transient": true,
+      "allocator_busy_flag_predicate": "0xbfe8",
+      "btplayer_handler": "0x40c7c",
+      "btplayer_voicetip_setter_call": "0x41070",
       "callback_blx": "0x1fac4",
       "callback_field_offset": "0x34",
       "callback_function": "0x1fa8a",
@@ -93,6 +139,7 @@
         "0x1fd0a",
         "0x1ff76"
       ],
+      "event_34c_builder": "0x17348",
       "microtask_argument": 0,
       "microtask_callback_decodes_to_worker": true,
       "microtask_callback_literal_offset": "0x1fff8",
@@ -101,36 +148,54 @@
       "microtask_registration_call": "0x1ff24",
       "microtask_registration_impl": "0x3e5d6",
       "microtask_registration_veneer": "0x1b3cc",
+      "microtask_release_helper": "0x1b3dc",
+      "model_bound_helper": "0x45596",
+      "model_opener": "0x455b6",
       "raw_absolute_app_pointer_xrefs_to_worker": [],
       "raw_absolute_app_pointer_xrefs_to_wrapper": [],
       "runtime50_constructor": "0x1f9f4",
+      "spp_a5_helper": "0x22d20",
+      "spp_a5_model_table_literal": "0x23054",
+      "spp_a5_model_table_pointer": "0x2e625c",
+      "spp_a5_selector_2_model": "0x22",
       "spp_a9_direct_targets_include_voicetip_trigger": false,
+      "stage0_raw_pointer_xrefs": [],
+      "stage0_span_pristine_fill": true,
       "worker": "0x1fb42",
       "wrapper": "0x1ff6c"
     }
   },
   "control_sink": {
+    "callback_address": "0x804bb4",
     "cross_branch": "4_OF_4_PRESERVED_PLUS_BRANCHES",
     "field_offset": "0x34",
     "object_family": "VoiceTip/runtime50 0x50-byte object",
     "proven": true,
+    "runtime50_base": "0x804b80",
     "semantics": "0x1fa8a-family loads object+0x34, checks nonzero, then BLXes the loaded value",
     "setter_semantics": "0x1fd6a-family copies its incoming r1 value into object+0x34 on the configured path"
   },
   "invocation_gate": {
-    "deterministic_stock_post_overwrite_invocation_proven": false,
+    "allocator_busy_flag_is_transient": true,
+    "conditions": [
+      "stock btplayer precondition",
+      "successful stock 0xa5 VoiceTip preview setup using selector 2/model 0x22",
+      "exact 1088-byte overwrite so runtime50+0x3c/+0x40/+0x44 remain intact",
+      "normal VoiceTip timeout expires; transient app-heap busy flag 0xbfe8 eventually returns zero after any in-flight malloc/free wrapper exits"
+    ],
+    "deterministic_stock_post_overwrite_invocation_proven": true,
+    "eventual_invocation_semantics": "If the timeout tick collides with app-heap malloc/free, the worker defers while 0x008030c4 is 1; both wrappers clear it before return, and the period-1 worker retries on subsequent ticks.",
     "in_image_invocation_sites_proven": true,
     "periodic_worker_dispatch_proven": true,
-    "reason": "The periodic VoiceTip worker is now proven registered and dispatched. Its path to 0x1fa8a is conditional on normal VoiceTip completion/idle state; a stock command/state transition that guarantees that condition after the display overwrite has not yet been proven.",
-    "worker_reaches_callback_on_completion_or_idle_path": true,
     "worker_registration_proven": true,
-    "wrapper_registration_proven": false
+    "worker_timeout_path_reaches_callback": true
   },
   "kind": "ditoo_plus_tier2_voicetip_trigger_gate",
   "method_limits": [
-    "This proves a real stock indirect-call sink plus deterministic periodic worker registration, not attacker-controlled placement or the final completion-state transition.",
-    "The transformed 0x002xxxxx microtask callback namespace is supported by broad independent registration examples; it must not be confused with a second direct application code mapping.",
-    "No crash/timing behavior is used as an invocation oracle."
+    "This is an offline structural control-flow proof, not a live device execution observation.",
+    "The deterministic proof deliberately uses a stock/manual btplayer-mode precondition; content mode 0x0b is then primed separately by stock 0x6e(nonzero). The all-SPP 0x8a btplayer normalization candidate remains unpromoted because queue/preemption ordering is not statically closed.",
+    "The timeout edge may defer during an in-flight app-heap malloc/free critical section; the wrappers clear the busy flag before return and the periodic worker retries. No crash or timing behavior is used as an oracle.",
+    "No malformed/custom live packet, transmitter, loader, firmware write, or persistent mutation is produced by this analyzer."
   ],
   "microtask_registration": {
     "callback_namespace": "callback_value = 0x00200000 + (worker_file_offset - 0x7000) + 1",
@@ -138,7 +203,6 @@
     "proven": true,
     "resident_dispatch": "0x15ec",
     "resident_dispatch_blx": "0x161e",
-    "resident_dispatch_semantics": "When a due slot is pending, resident code loads slot.callback and slot.argument and BLXes the callback with the argument in r0.",
     "resident_tick": "0x14f8",
     "slot_count": 8,
     "slot_layout": {
@@ -148,15 +212,34 @@
       "reload": "+0xa:u16"
     },
     "slot_size_bytes": 12,
-    "voicetip_registration": "VoiceTip registers its own 0x1fb42-family worker with argument 0 and period/reload 1, then resumes the returned microtask slot."
+    "voicetip_registration": "VoiceTip registers its worker with argument 0 and period/reload 1, then resumes the returned microtask slot."
   },
   "ok": true,
+  "overwrite_witness": {
+    "callback_source_offset": 1084,
+    "controlled_callback_value": "0x804779",
+    "controlled_runtime50_byte0": "0xff",
+    "controlled_runtime50_byte8_model": "0x22",
+    "exact_source_length": 1088,
+    "last_overwritten_runtime50_offset": "0x37",
+    "pre_blx_dependency_closure": "Before BLX +0x34, the controlled prefix needs only byte0=0xff and byte8=0x22; +0x3c and +0x44 are preserved stock handles and +0x40 is the preserved timeout/deadline consumed by the worker.",
+    "preserved_runtime50_offsets": [
+      "0x3c",
+      "0x40",
+      "0x44"
+    ],
+    "runtime50_source_offset": 1032,
+    "source_address": "0x804778"
+  },
   "promotion": {
+    "controlled_indirect_branch_proven_offline": true,
     "controlled_indirect_call_sink_exists": true,
-    "deterministic_post_overwrite_callback_invocation": false,
+    "deterministic_post_overwrite_callback_invocation": true,
+    "deterministic_victim_placement": true,
     "live_manifest_candidate": null,
-    "remaining_trigger_blocker": "STOCK_VOICETIP_COMPLETION_STATE_TO_RUNTIME50_CALLBACK_UNPROVEN",
-    "voicetip_periodic_worker_registration": true
+    "remaining_before_any_live_stage0": "REVIEWED_ONE_USE_LIVE_MANIFEST_AND_EXPLICIT_GRANT",
+    "remaining_trigger_blocker": null,
+    "returning_thumb_stage0_witness_proven_offline": true
   },
   "safety": {
     "device_io": false,
@@ -166,15 +249,61 @@
     "persistent_mutation": false,
     "runtime_018_touched": false
   },
-  "schema_version": 2,
+  "schema_version": 4,
   "spp_trigger_checks": {
     "command_0x6c": {
       "direct_voicetip_trigger_edge_proven": false,
-      "note": "0x6c is proven to reach the separate DIVOOM_LIGHT_WORD resident display handoff. It does not directly invoke VoiceTip; a second ordinary stock state transition may still provide the post-overwrite trigger."
+      "requires_content_mode_0x0b_preselected": true,
+      "role": "resident display copy/adjacent overwrite primitive; does not prime its own content mode"
+    },
+    "command_0x6e_drawing_ctrl_movie_play": {
+      "content_mode_prime_proven": true,
+      "control": "payload[1] != 0",
+      "role": "select content mode 0x0b before the separate 0x6c copy primitive"
+    },
+    "command_0xa5_alarm_listen": {
+      "direct_stock_setup_edge_proven": true,
+      "role": "stock VoiceTip preview setup and timeout source"
     },
     "command_0xa9_play_stop_voice": {
       "direct_voicetip_trigger_edge_proven": false,
-      "note": "The explicit SPP play/stop-voice handler drives a separate recorded-voice state machine. Shared voice arbitration reaches VoiceTip teardown, but teardown does not itself BLX object+0x34."
+      "role": "separate recorded-voice state machine"
     }
+  },
+  "stage0_witness": {
+    "bytes_hex": "7047",
+    "candidate_span_pristine_ff_in_image_4_of_4": true,
+    "entry": "0x804779",
+    "instruction": "BX LR",
+    "purpose": "minimal offline returning execution witness only; no loader, mutation, or device packet is emitted",
+    "raw_pointer_xrefs_4_of_4": 0
+  },
+  "stock_setup": {
+    "btplayer_event_34c_reaches_voicetip_setter": true,
+    "caller_argument": "payload[3]",
+    "content_mode_prime": {
+      "command": "0x6e SPP_DRAWING_CTRL_MOVIE_PLAY",
+      "control": "payload[1] != 0",
+      "geometry_preserved": true,
+      "role": "select content mode 0x0b through 0x71b8; the handler immediately re-reads 0x12886 and confirms 0x0b",
+      "target_mode": "0x0b"
+    },
+    "event": "0x34c",
+    "event_payload_halfwords": [
+      "0x22",
+      "caller_argument",
+      "0x3c",
+      "0x2"
+    ],
+    "host_only_mode_normalization_candidate": {
+      "command": "0x8a SPP_SET_POWER_CHANNEL payload[1]=0",
+      "reason": "The handler enqueues 0x101f before mutating the selector queue; static analysis has not excluded a scheduler preemption between those operations. Active btphone mode also intentionally blocks the BLUE normalization branch.",
+      "status": "NOT_PROMOTED_AS_DETERMINISTIC_PRECONDITION"
+    },
+    "model_id": "0x22",
+    "model_selector": 2,
+    "precondition": "stock Bluetooth-player / btplayer mode (mode 4); manual stock-mode selection is the fail-closed deterministic precondition",
+    "start_flag": "payload[1] != 0",
+    "voicetip_setup_command": "0xa5 SPP_SET_ALARM_LISTEN"
   }
 }

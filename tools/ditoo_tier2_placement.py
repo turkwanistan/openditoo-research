@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Fail-closed offline audit of Tier-2 heap-victim placement candidates.
 
-This does not generate packets or touch a live heap. It proves stock callback-bearing objects
-can be allocated/freed and reconstructs a useful *conditional* cold-start layout, but refuses
-to promote that layout unless the framework-owned pre-main heap chronology is proven.
+This does not generate packets or touch a live heap. It proves the stage-1 bootstrap ordering,
+proves no app-heap user intervenes between Fwl_MallocInit and the application main entry,
+and reconstructs the deterministic cold-start adjacency between the vulnerable display backing
+and the persistent VoiceTip/runtime50 callback-bearing object.
 """
 from __future__ import annotations
 
@@ -31,6 +32,35 @@ RUNTIME50_ALLOC_SIZE_SETUP = bytes.fromhex("5020")
 
 APP_LINK_BASE = 0x08400000
 FRAMEWORK_MAIN_ENTRY = 0x8DEA
+TRANSFORMED_CALLBACK_BASE = 0x00200000
+TRANSFORMED_FILE_BIAS = 0x7000
+STAGE1_BSS_START = 0x00802FC4
+STAGE1_BSS_END_EXCLUSIVE = 0x00803F80
+STAGE1_CALLBACK_TABLE = 0x00803ADC
+STAGE1_RESIDENT_CALLBACK = 0x0080010D
+STAGE1_BSS_ZERO_PATTERN = bytes.fromhex(
+    "30009fe50010a0e3001080e528009fe50020a0e318309fe5030050e104208034fcffff3a"
+)
+STAGE1_ARM_VENEER = bytes.fromhex("00c09fe51cff2fe1")
+STAGE1_BOOTSTRAP_CALL_PATTERN = bytes.fromhex(
+    "fff73ceefff740ee0c4800ab98800c4802900c4803900c48049001a8fff73aee0a48fff73eeefff742ee"
+)
+POST_HEAP_HELPER_PATTERN = bytes.fromhex(
+    "10b50fc80b4c0fc4fff748ff5bf7a6fcc4f724effff7e6ffc4f7d0ef011c06480122c4f7eaee0448012200212838c4f7e4ee10bddc3a8000"
+)
+EMPTY_CONSTRUCTOR_LOOP_PATTERN = bytes.fromhex(
+    "b0b5054d2c6802e020688047043468688442f9d3b0bd0000a02c8000"
+)
+CALLBACK_STORE_HELPER_PATTERN = bytes.fromhex("0349086070470000")
+RESIDENT_CALLBACK_INVOKE_PATTERN = bytes.fromhex("80b5034b5b68002b00d0984780bd0000")
+RESIDENT_CALLBACK_TABLE_READ_PATTERN = bytes.fromhex("0148008870470000dc3a8000")
+RESIDENT_CALLBACK_BODY_PATTERN = bytes.fromhex("b0b50c1c151cfff7f4ff002c02d0201c00f006f8")
+
+def _transformed_app_pointer(file_offset:int)->int:
+    return TRANSFORMED_CALLBACK_BASE + (file_offset - TRANSFORMED_FILE_BIAS) + 1
+
+def _decode_transformed_app_pointer(value:int)->int:
+    return TRANSFORMED_FILE_BIAS + ((value & ~1) - TRANSFORMED_CALLBACK_BASE)
 
 def _direct_bl_xrefs(b:bytes,target:int)->list[int]:
     return [o for o in range(0,len(b)-4,2) if thumb_bl_target(b,o)==target]
@@ -210,36 +240,120 @@ def _branch(name:str,s:dict[str,Any])->dict[str,Any]:
         "cold_start_main_init":hex(mi),
     }
 
+def _stage1_bootstrap_proof(name:str,spec:dict[str,Any],b:bytes)->dict[str,Any]:
+    import struct
+    hi=spec["heap_init"]
+    expected_heap=_transformed_app_pointer(hi)
+    expected_main=_transformed_app_pointer(FRAMEWORK_MAIN_ENTRY)
+    if b[0xA0:0xA0+len(STAGE1_BSS_ZERO_PATTERN)] != STAGE1_BSS_ZERO_PATTERN:
+        raise ValueError(f"{name}: stage1 BSS zero loop drift")
+    if struct.unpack_from("<I",b,0xD4)[0] != STAGE1_BSS_END_EXCLUSIVE or struct.unpack_from("<I",b,0xDC)[0] != STAGE1_BSS_START:
+        raise ValueError(f"{name}: stage1 BSS bounds drift")
+    if b[0x400C:0x4014] != STAGE1_ARM_VENEER or b[0x4030:0x4038] != STAGE1_ARM_VENEER:
+        raise ValueError(f"{name}: stage1 heap/main ARM veneer drift")
+    if struct.unpack_from("<I",b,0x4014)[0] != expected_heap:
+        raise ValueError(f"{name}: transformed Fwl_MallocInit pointer drift")
+    if struct.unpack_from("<I",b,0x4038)[0] != expected_main:
+        raise ValueError(f"{name}: transformed framework-main pointer drift")
+    if b[0x4384:0x4384+len(STAGE1_BOOTSTRAP_CALL_PATTERN)] != STAGE1_BOOTSTRAP_CALL_PATTERN:
+        raise ValueError(f"{name}: stage1 bootstrap call order drift")
+
+    post_reset=_decode_transformed_app_pointer(struct.unpack_from("<I",b,0x4020)[0])
+    callback_store=_decode_transformed_app_pointer(struct.unpack_from("<I",b,0x402C)[0])
+    if b[post_reset:post_reset+len(POST_HEAP_HELPER_PATTERN)] != POST_HEAP_HELPER_PATTERN:
+        raise ValueError(f"{name}: post-heap framework helper drift")
+    if b[callback_store:callback_store+len(CALLBACK_STORE_HELPER_PATTERN)] != CALLBACK_STORE_HELPER_PATTERN:
+        raise ValueError(f"{name}: pre-main callback-store helper drift")
+    constructor_loop=post_reset-0x1C
+    if b[constructor_loop:constructor_loop+len(EMPTY_CONSTRUCTOR_LOOP_PATTERN)] != EMPTY_CONSTRUCTOR_LOOP_PATTERN:
+        raise ValueError(f"{name}: empty constructor-loop helper drift")
+    ctor_start=struct.unpack_from("<I",b,0x2CA0)[0]
+    ctor_end=struct.unpack_from("<I",b,0x2CA4)[0]
+    if ctor_start != 0x00802C08 or ctor_end != ctor_start:
+        raise ValueError(f"{name}: pre-main constructor range is no longer empty")
+
+    allocator_cb=hi+0x50
+    free_cb=hi+0x6E
+    if struct.unpack_from("<I",b,0x43C4)[0] != STAGE1_RESIDENT_CALLBACK:
+        raise ValueError(f"{name}: resident callback-table +4 drift")
+    if struct.unpack_from("<I",b,0x43C8)[0] != _transformed_app_pointer(allocator_cb):
+        raise ValueError(f"{name}: registered app allocator callback drift")
+    if struct.unpack_from("<I",b,0x43CC)[0] != _transformed_app_pointer(free_cb):
+        raise ValueError(f"{name}: registered app free callback drift")
+
+    table_needle=struct.pack("<I",STAGE1_CALLBACK_TABLE)
+    resident_refs=[]; pos=0
+    while True:
+        i=b.find(table_needle,pos,0x5000)
+        if i<0: break
+        resident_refs.append(i); pos=i+1
+    if resident_refs != [0x2928,0x293C]:
+        raise ValueError(f"{name}: resident callback-table reference set drift {resident_refs}")
+    if b[0x2918:0x2918+len(RESIDENT_CALLBACK_INVOKE_PATTERN)] != RESIDENT_CALLBACK_INVOKE_PATTERN:
+        raise ValueError(f"{name}: resident table+4 invocation drift")
+    if b[0x2934:0x2934+len(RESIDENT_CALLBACK_TABLE_READ_PATTERN)] != RESIDENT_CALLBACK_TABLE_READ_PATTERN:
+        raise ValueError(f"{name}: resident table+0 read drift")
+    if b[0x10C:0x10C+len(RESIDENT_CALLBACK_BODY_PATTERN)] != RESIDENT_CALLBACK_BODY_PATTERN:
+        raise ValueError(f"{name}: resident callback body drift")
+
+    helper_mallocs=[o for o in range(post_reset,post_reset+len(POST_HEAP_HELPER_PATTERN),2) if thumb_bl_target(b,o)==0xBFBC]
+    store_mallocs=[o for o in range(callback_store,callback_store+len(CALLBACK_STORE_HELPER_PATTERN),2) if thumb_bl_target(b,o)==0xBFBC]
+    if helper_mallocs or store_mallocs:
+        raise ValueError(f"{name}: app heap user appeared between heap reset and main")
+
+    return {
+        "bss_zero_start":hex(STAGE1_BSS_START),
+        "bss_zero_end_exclusive":hex(STAGE1_BSS_END_EXCLUSIVE),
+        "dispatcher_initial_mode_address":"0x8036ec",
+        "dispatcher_initial_mode_zero_proven":STAGE1_BSS_START <= 0x008036EC < STAGE1_BSS_END_EXCLUSIVE,
+        "heap_init":hex(hi),
+        "transformed_heap_init_pointer":hex(expected_heap),
+        "heap_init_veneer_literal_offset":"0x4014",
+        "heap_init_bootstrap_call_va":"0x804388",
+        "framework_main_entry":hex(FRAMEWORK_MAIN_ENTRY),
+        "transformed_framework_main_pointer":hex(expected_main),
+        "framework_main_veneer_literal_offset":"0x4038",
+        "framework_main_bootstrap_call_va":"0x8043aa",
+        "post_heap_helper":hex(post_reset),
+        "callback_store_helper":hex(callback_store),
+        "constructor_table_start":hex(ctor_start),
+        "constructor_table_end":hex(ctor_end),
+        "constructor_table_empty":True,
+        "registered_allocator_callback":hex(allocator_cb),
+        "registered_free_callback":hex(free_cb),
+        "resident_callback_table":hex(STAGE1_CALLBACK_TABLE),
+        "resident_callback_table_refs":[hex(x) for x in resident_refs],
+        "resident_callback_invoked_pre_main":hex(STAGE1_RESIDENT_CALLBACK),
+        "app_allocator_callback_invoked_pre_main":False,
+        "app_free_callback_invoked_pre_main":False,
+        "intervening_app_heap_users":[],
+    }
+
 def build_report()->dict[str,Any]:
     branches={n:_branch(n,spec) for n,spec in BRANCHES.items()}
     layout=_simulate_pristine_heap_hypothesis()
     if layout["display_backing_0x708"] != 0x00804470 or layout["display_data_pointer"] != 0x00804778:
-        raise ValueError("conditional layout: display address drift")
+        raise ValueError("deterministic layout: display address drift")
     if layout["runtime50_0x50"] != 0x00804B80 or layout["runtime50_callback"] != 0x00804BB4 or layout["callback_source_offset"] != 0x43C:
-        raise ValueError("conditional layout: runtime50 adjacency drift")
+        raise ValueError("deterministic layout: runtime50 adjacency drift")
 
     framework={}
     for name,spec in BRANCHES.items():
-        b=_load(name,spec); hi=spec["heap_init"]
+        b=_load(name,spec)
         if b[FRAMEWORK_MAIN_ENTRY:FRAMEWORK_MAIN_ENTRY+2] != bytes.fromhex("80b5"):
             raise ValueError(f"{name}: framework main entry prologue drift")
-        main_bl=_direct_bl_xrefs(b,FRAMEWORK_MAIN_ENTRY)
-        heap_bl=_direct_bl_xrefs(b,hi)
-        main_abs=_absolute_app_pointer_xrefs(b,FRAMEWORK_MAIN_ENTRY)
-        heap_abs=_absolute_app_pointer_xrefs(b,hi)
-        if main_bl or heap_bl or main_abs or heap_abs:
-            raise ValueError(f"{name}: framework ordering evidence changed: main_bl={main_bl} heap_bl={heap_bl} main_abs={main_abs} heap_abs={heap_abs}")
-        framework[name]={
-            "framework_main_entry":hex(FRAMEWORK_MAIN_ENTRY),
-            "heap_init":hex(hi),
-            "direct_bl_xrefs_to_main":[],
-            "direct_bl_xrefs_to_heap_init":[],
-            "raw_absolute_app_pointer_xrefs_to_main":[],
-            "raw_absolute_app_pointer_xrefs_to_heap_init":[],
-        }
+        proof=_stage1_bootstrap_proof(name,spec,b)
+        proof["direct_bl_xrefs_to_main"]=_direct_bl_xrefs(b,FRAMEWORK_MAIN_ENTRY)
+        proof["direct_bl_xrefs_to_heap_init"]=_direct_bl_xrefs(b,spec["heap_init"])
+        proof["raw_absolute_app_pointer_xrefs_to_main"]=_absolute_app_pointer_xrefs(b,FRAMEWORK_MAIN_ENTRY)
+        proof["raw_absolute_app_pointer_xrefs_to_heap_init"]=_absolute_app_pointer_xrefs(b,spec["heap_init"])
+        if any(proof[k] for k in ("direct_bl_xrefs_to_main","direct_bl_xrefs_to_heap_init","raw_absolute_app_pointer_xrefs_to_main","raw_absolute_app_pointer_xrefs_to_heap_init")):
+            raise ValueError(f"{name}: ordinary framework xref evidence changed")
+        framework[name]=proof
 
+    deterministic_layout={k:hex(v) for k,v in layout.items() if k!="callback_source_offset"}
     return {
-        "schema_version":3,
+        "schema_version":4,
         "kind":"ditoo_plus_tier2_victim_placement",
         "ok":True,
         "safety":{"offline_analysis_only":True,"device_io":False,"live_packet_generation":False,"firmware_mutation":False,"persistent_mutation":False,"runtime_018_touched":False},
@@ -247,23 +361,26 @@ def build_report()->dict[str,Any]:
         "allocator_model":{
             "heap_start":hex(HEAP_START),"heap_end_exclusive":hex(HEAP_START+HEAP_SIZE),"allocation_quantum":ALLOC_QUANTUM,
             "policy":"BEST_FIT_LOW_ADDRESS_SPLIT_SEPARATE_DESCRIPTORS_WITH_ADJACENT_FREE_COALESCING",
-            "reviewed_startup_allocations":"The in-image 0x8dea path, once entered, has branch-pinned allocation/free ordering through the display backing and later runtime50 construction.",
+            "reviewed_startup_allocations":"The 0x8dea startup allocation/free sequence is branch-pinned through the display backing and persistent runtime50 construction. Stage-1 now proves the application heap is reset immediately before this sequence with no intervening app-heap user.",
         },
         "framework_ordering_gate":{
             "app_link_base":hex(APP_LINK_BASE),
+            "transformed_callback_base":hex(TRANSFORMED_CALLBACK_BASE),
             "branches":framework,
-            "heap_reset_before_framework_main_proven":False,
-            "no_intervening_app_heap_users_proven":False,
-            "reason":"Both Fwl_MallocInit and the 0x8dea application main entry have zero direct in-image BL/BLX callers and zero raw absolute application-pointer xrefs across all four preserved branches. Their ordering is therefore mediated by framework/bootstrap state not represented as a directly recoverable call edge in this corpus.",
-            "status":"PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN",
+            "heap_reset_before_framework_main_proven":True,
+            "no_intervening_app_heap_users_proven":True,
+            "reason":"Stage-1 ARM veneers and the common Thumb bootstrap explicitly order Fwl_MallocInit before 0x8dea. The only two post-reset/pre-main helpers are byte-pinned; their constructor range is empty, and resident callback-table use invokes +4 (0x0080010D), not the app malloc/free callbacks registered at +8/+0c.",
+            "status":"PROVEN_STAGE1_BOOTSTRAP_ORDER_AND_EMPTY_APP_HEAP",
         },
-        "conditional_pristine_heap_hypothesis":{
-            "assumption":"Fwl_MallocInit resets the 0x00804000..0x0081cfff application heap immediately before the modeled 0x8dea startup sequence, with no intervening app-heap allocations.",
-            "assumption_proven":False,
-            "layout_if_true":{k:hex(v) for k,v in layout.items() if k!="callback_source_offset"},
-            "runtime50_callback_source_offset_if_true":layout["callback_source_offset"],
-            "runtime50_callback_fully_controlled_if_true":True,
-            "meaning":"This is a useful candidate geometry only. The addresses 0x00804470/0x00804b80/0x00804bb4 are not promoted as observed or deterministic runtime addresses.",
+        "deterministic_startup_layout":{
+            "proven":True,
+            "layout":deterministic_layout,
+            "runtime50_callback_source_offset":layout["callback_source_offset"],
+            "minimum_source_length_to_fully_control_callback":layout["callback_source_offset"]+4,
+            "display_to_runtime50_base_offset":layout["runtime50_0x50"]-layout["display_data_pointer"],
+            "runtime50_callback_fully_controlled":True,
+            "cross_branch":"4_OF_4_PRESERVED_PLUS_BRANCHES",
+            "meaning":"The vulnerable display data pointer is 0x00804778 and the persistent 0x50-byte VoiceTip/runtime50 object starts at 0x00804b80. The runtime50 base is exactly 0x408 bytes after the display pointer, i.e. immediately after the display backing allocation's physical capacity. Callback +0x34 is source offset 0x43c.",
         },
         "placement_strategy_closures":{
             "display_teardown_recreate":{
@@ -271,44 +388,44 @@ def build_report()->dict[str,Any]:
                 "root_constructor_has_one_direct_caller_4_of_4":True,
                 "app_heap_free_in_display_service_window":False,
                 "app_heap_free_in_backing_service_window":False,
-                "meaning":"No stock app-heap teardown/recreate path for the persistent display root/backing was found in the audited service families, so moving the vulnerable block by ordinary teardown/recreate is not a supported placement strategy."
+                "meaning":"No stock app-heap teardown/recreate path for the persistent display root/backing was found in the audited service families."
             },
             "plugin_0x80_spray":{
                 "status":"CLOSED_AS_UNBOUNDED_DIRECT_SPRAY",
                 "direct_constructor_sites_per_branch":2,
                 "reviewed_as_singleton_subsystem_lifecycles":True,
                 "unbounded_stock_spray_found":False,
-                "meaning":"The 0x80 callback-bearing object is genuinely free/recreate capable, but its only two direct construction sites are singleton subsystem paths rather than an unbounded allocation spray."
+                "meaning":"The 0x80 callback-bearing plugin object is free/recreate capable, but its two direct construction sites are singleton subsystem lifecycles, not an unbounded spray."
             }
         },
         "stock_grooming_surface":{
             "exists":True,
             "plugin_object":{"request_bytes":0x80,"zeroed_on_create":True,"descriptor_copied_to_offset":hex(0x0C),"known_indirect_fields":[hex(0x0C),hex(0x20),hex(0x2C)],"whole_object_free_recreate":True},
-            "runtime50_object":{"request_bytes":0x50,"callback_offset":hex(0x34),"conditional_base_if_pristine":hex(layout["runtime50_0x50"]),"conditional_callback_if_pristine":hex(layout["runtime50_callback"]),"conditional_callback_source_offset_if_pristine":layout["callback_source_offset"]},
-            "meaning":"Stock lifecycle code provides real app-heap allocate/free/recreate behavior for callback-bearing objects, but grooming capability alone does not prove adjacency.",
+            "runtime50_object":{"request_bytes":0x50,"callback_offset":hex(0x34),"deterministic_base":hex(layout["runtime50_0x50"]),"deterministic_callback":hex(layout["runtime50_callback"]),"callback_source_offset":layout["callback_source_offset"],"persistent_startup_allocation":True,"stock_free_recreate_proven":False},
+            "meaning":"Stock grooming remains available for the separate plugin object. VoiceTip/runtime50 is a persistent startup allocation; its value here is deterministic adjacency, not preview-time free/recreate grooming.",
         },
         "placement_gate":{
-            "deterministic_adjacent_victim_proven":False,
-            "controlled_callback_field_proven":False,
+            "deterministic_adjacent_victim_proven":True,
+            "controlled_callback_field_proven":True,
             "controlled_indirect_branch_proven":False,
-            "conditional_runtime50_candidate":{
+            "runtime50_candidate":{
                 "base":hex(layout["runtime50_0x50"]),
                 "callback":hex(layout["runtime50_callback"]),
                 "callback_source_offset":layout["callback_source_offset"],
                 "minimum_source_length_to_fully_control_callback":layout["callback_source_offset"]+4,
                 "candidate_thumb_payload_entry":hex(layout["display_data_pointer"]|1),
             },
-            "remaining_offline_question":"PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN",
+            "remaining_offline_question":"RUNTIME50_POST_OVERWRITE_STATE_AND_TRIGGER",
             "live_manifest_candidate":None,
         },
         "next_bounded_work":[
-            "Do not promote the pristine cold-start addresses unless new exact framework/bootstrap evidence proves Fwl_MallocInit -> no intervening app-heap users -> 0x8dea.",
-            "Prefer a placement proof independent of hidden pre-main chronology: audit stock teardown/recreate of the persistent display object and adjacent callback-bearing allocations for a uniquely constrained hole.",
-            "If static placement remains non-deterministic, keep live promotion closed rather than using crash behavior as a placement oracle.",
+            "Audit the exact 1088-byte source prefix needed to reach runtime50+0x34 while preserving or deliberately setting the VoiceTip fields consumed before the callback BLX.",
+            "Close a deterministic stock VoiceTip setup/completion route in a known dispatcher mode; 0xA5 SPP_SET_ALARM_LISTEN -> event 0x34c is already a strong candidate.",
+            "Keep live promotion closed until controlled callback invocation is proven without using crash behavior as an oracle.",
         ],
         "method_limits":[
-            "The in-image startup allocation sequence is real and branch-pinned, but the preserved application blobs do not expose a direct call/pointer edge ordering framework-owned Fwl_MallocInit and 0x8dea.",
-            "The conditional pristine-heap simulation is not a runtime observation and is not sufficient to prove victim placement.",
+            "The promoted addresses are a static cold-start proof for the pinned firmware corpus; they are not a live heap observation.",
+            "Placement alone does not prove that overwriting runtime50+0x34 yields a safe/deterministic indirect call: the preceding runtime50 bytes and the VoiceTip trigger path still require proof.",
             "No live heap address, packet, crash probe or device observation was used.",
         ],
     }
@@ -322,10 +439,10 @@ def main()->int:
         print('DITOO_TIER2_PLACEMENT=PASS')
         print(f"PLACEMENT_BRANCHES={len(r['branches'])}")
         print('PLACEMENT_STOCK_GROOMING=true')
-        print('PLACEMENT_CONDITIONAL_PRISTINE_RUNTIME50=0x804b80')
-        print('PLACEMENT_DETERMINISTIC_VICTIM=false')
+        print('PLACEMENT_DETERMINISTIC_RUNTIME50=0x804b80')
+        print('PLACEMENT_DETERMINISTIC_VICTIM=true')
         print('PLACEMENT_CONTROLLED_INDIRECT_BRANCH=false')
-        print('PLACEMENT_BLOCKER=PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN')
+        print('PLACEMENT_BLOCKER=RUNTIME50_POST_OVERWRITE_STATE_AND_TRIGGER')
         print('PLACEMENT_LIVE_MANIFEST_CANDIDATE=NONE')
     if not (a.write or a.json or a.selfcheck): print('DITOO_TIER2_PLACEMENT=PASS')
     return 0

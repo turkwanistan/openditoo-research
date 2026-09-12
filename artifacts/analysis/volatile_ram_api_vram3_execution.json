@@ -9,6 +9,10 @@
       "identity_map_start": "0x803000",
       "mmu_cache_enable_sequence": "0x4264",
       "mmu_setup": "0x4354",
+      "proven_stage0_entry": "0x804779",
+      "proven_stage0_raw_pointer_xrefs": [],
+      "proven_stage0_source": "0x804778",
+      "proven_stage0_span_pristine_fill": true,
       "resident_service_example": "0x8012a9"
     },
     "flag42_test_v42017": {
@@ -20,6 +24,10 @@
       "identity_map_start": "0x803000",
       "mmu_cache_enable_sequence": "0x4264",
       "mmu_setup": "0x4354",
+      "proven_stage0_entry": "0x804779",
+      "proven_stage0_raw_pointer_xrefs": [],
+      "proven_stage0_source": "0x804778",
+      "proven_stage0_span_pristine_fill": true,
       "resident_service_example": "0x8012a9"
     },
     "flag60_prod_v60014": {
@@ -31,6 +39,10 @@
       "identity_map_start": "0x803000",
       "mmu_cache_enable_sequence": "0x4264",
       "mmu_setup": "0x4354",
+      "proven_stage0_entry": "0x804779",
+      "proven_stage0_raw_pointer_xrefs": [],
+      "proven_stage0_source": "0x804778",
+      "proven_stage0_span_pristine_fill": true,
       "resident_service_example": "0x8012a9"
     },
     "flag60_test_api60016_internal60017": {
@@ -42,11 +54,15 @@
       "identity_map_start": "0x803000",
       "mmu_cache_enable_sequence": "0x4264",
       "mmu_setup": "0x4354",
+      "proven_stage0_entry": "0x804779",
+      "proven_stage0_raw_pointer_xrefs": [],
+      "proven_stage0_source": "0x804778",
+      "proven_stage0_span_pristine_fill": true,
       "resident_service_example": "0x8012a9"
     }
   },
   "cache_coherency": {
-    "first_execution": "Write-through heap mapping means CPU stores reach backing SRAM; a never-before-executed heap address avoids a stale I-cache line. Static analysis cannot prove an arbitrary chosen heap address has never been fetched, so a first live stage-0 should remain tiny and use a freshly controlled span.",
+    "first_execution": "The proven stage-0 entry 0x00804779 lies in a 0xff-filled reclaimed stage-1 span with zero raw pointer xrefs across all four preserved branches. The write-through heap mapping carries controlled stores to SRAM, and the minimal witness is a two-byte BX LR. A future larger/reused code span must still perform explicit I-cache maintenance.",
     "helpers": {
       "disable_d_cache": "0xcc8",
       "disable_i_cache": "0xcb8",
@@ -90,16 +106,22 @@
     "stage1_tail_reclaimed": "Heap begins at 0x00804000 while boot/cache helper code exists around resident 0x00804278; stock initialization deliberately reuses the stage1 tail as heap after boot."
   },
   "method_limits": [
-    "This proves the execution/mapping contract, not control-flow hijack.",
-    "No absolute heap allocation address for the Tier-2 backing object is inferred from boot chronology.",
-    "No live malformed/custom packet or device experiment was performed."
+    "This execution-model artifact proves the RAM/Thumb/cache contract and deterministic first stage-0 address; the companion Tier-2 trigger artifact carries the structural control-flow proof.",
+    "It does not promote a loader or a general fixed scratch arena beyond the first controlled span.",
+    "No live malformed/custom packet, device experiment, Runtime 018 action, firmware write or persistent mutation was performed."
   ],
   "ok": true,
   "promotion": {
+    "deterministic_stage0_entry_address_proven": true,
     "live_manifest_candidate": null,
     "nx_blocker": false,
     "ram_executable": true,
-    "remaining_blocker_before_live_stage0": "DETERMINISTIC_CONTROL_FLOW_VICTIM_PLACEMENT",
+    "remaining_blocker_before_live_stage0": "REVIEWED_ONE_USE_LIVE_MANIFEST_AND_EXPLICIT_GRANT",
+    "returning_thumb_stage0_witness": {
+      "bytes_hex": "7047",
+      "entry": "0x804779",
+      "instruction": "BX LR"
+    },
     "vram3_execution_environment_established": true
   },
   "safety": {
@@ -112,9 +134,13 @@
   },
   "schema_version": 1,
   "scratch_model": {
+    "deterministic_stage0_storage_proven": true,
     "fixed_reserved_heap_scratch_proven": false,
-    "larger_loader_storage": "a separately controlled/allocated heap span after stage-0 can perform cache maintenance and bounds checks",
-    "preferred_stage0_storage": "caller-controlled bytes already inside the proven adjacent-overwrite span, once a deterministic victim offset is established",
-    "reason": "The heap is allocator-owned; no fixed address inside 0x00804000..0x0081cfff is statically reserved for OpenDitoo."
+    "larger_loader_storage": "a separately controlled/allocated heap span after stage-0, with explicit cache maintenance and bounds checks; no loader is promoted or generated here",
+    "preferred_stage0_storage": "the caller-controlled Tier-2 display-copy destination at 0x00804778; callback target uses Thumb entry 0x00804779",
+    "reason": "The exact Tier-2 cold-start geometry now proves this first controlled span, but the broader heap remains allocator-owned and no fixed loader arena is reserved for OpenDitoo.",
+    "stage0_entry": "0x804779",
+    "stage0_return_bytes_hex": "7047",
+    "stage0_source": "0x804778"
   }
 }

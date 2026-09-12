@@ -5364,6 +5364,15 @@ class VolatileRamTier2DisplayTests(unittest.TestCase):
         self.assertFalse(r["surface_identity"]["generic_audio_codec_path_proven"])
         self.assertTrue(r["reachability"]["resident_target_stable_4_of_4"])
         self.assertFalse(r["reachability"]["requires_persistent_write"])
+        self.assertEqual(r["reachability"]["prime_command"], "0x6e SPP_DRAWING_CTRL_MOVIE_PLAY")
+        self.assertEqual(r["reachability"]["prime_control"], "payload[1] != 0")
+        self.assertTrue(r["reachability"]["prime_stable_4_of_4"])
+        self.assertEqual(r["reachability"]["copy_command"], "0x6c SPP_DRAWING_ENCODE_MOVIE_PLAY")
+        self.assertEqual(r["reachability"]["copy_precondition"], "content mode 0x0b already selected; 0x6c does not prime itself")
+        for branch in r["branches"].values():
+            self.assertTrue(branch["spp_0x6e_nonzero_primes_mode_0x0b"])
+            self.assertTrue(branch["mode_0x0b_initializer_uses_separate_heap_object"])
+            self.assertFalse(branch["mode_0x0b_initializer_direct_app_free"])
 
     def test_size_model_promotes_controlled_adjacent_heap_overwrite(self) -> None:
         r = self._mod().build_report()
@@ -5378,12 +5387,19 @@ class VolatileRamTier2DisplayTests(unittest.TestCase):
         self.assertEqual(p["status"], "PROMOTED_OFFLINE")
         self.assertFalse(p["persistent"])
 
-    def test_live_gate_remains_closed_without_deterministic_victim(self) -> None:
-        g = self._mod().build_report()["control_flow_gate"]
-        self.assertFalse(g["deterministic_victim_placement_proven"])
-        self.assertFalse(g["controlled_indirect_branch_proven"])
-        self.assertIsNone(g["live_manifest_candidate"])
-        self.assertEqual(g["next_offline_gate"], "DETERMINISTIC_VICTIM_OR_CONTROL_SINK_PLACEMENT")
+    def test_corrected_prime_integrates_persistent_deterministic_geometry(self) -> None:
+        r = self._mod().build_report()
+        g = r["placement_integration"]
+        self.assertTrue(g["deterministic_victim_placement_proven"])
+        self.assertEqual(g["display_data_pointer"], "0x804778")
+        self.assertEqual(g["runtime50_base"], "0x804b80")
+        self.assertEqual(g["runtime50_callback"], "0x804bb4")
+        self.assertTrue(g["runtime50_persistent_startup_allocation"])
+        self.assertFalse(g["runtime50_stock_free_recreate_proven"])
+        self.assertEqual(g["display_teardown_recreate_status"], "CLOSED_WITHIN_AUDITED_APP_GRAPH")
+        self.assertTrue(r["reachability"]["prime_initializer_preserves_proven_startup_geometry"])
+        self.assertFalse(r["downstream_control_flow"]["proven_in_this_artifact"])
+        self.assertIsNone(r["downstream_control_flow"]["live_manifest_candidate"])
 
     def test_committed_tier2_artifact_is_current_and_offline_only(self) -> None:
         live = self._mod().build_report()
@@ -5414,28 +5430,48 @@ class VolatileRamTier2PlacementTests(unittest.TestCase):
         self.assertTrue(r["stock_grooming_surface"]["plugin_object"]["zeroed_on_create"])
         self.assertEqual(r["stock_grooming_surface"]["plugin_object"]["known_indirect_fields"], ["0xc", "0x20", "0x2c"])
 
-    def test_pristine_heap_layout_remains_conditional_and_fail_closed(self) -> None:
+    def test_stage1_bootstrap_promotes_deterministic_runtime50_adjacency(self) -> None:
         r = self._mod().build_report()
         g = r["placement_gate"]
         f = r["framework_ordering_gate"]
-        h = r["conditional_pristine_heap_hypothesis"]
-        self.assertFalse(g["deterministic_adjacent_victim_proven"])
-        self.assertFalse(g["controlled_callback_field_proven"])
+        h = r["deterministic_startup_layout"]
+        self.assertTrue(g["deterministic_adjacent_victim_proven"])
+        self.assertTrue(g["controlled_callback_field_proven"])
         self.assertFalse(g["controlled_indirect_branch_proven"])
         self.assertIsNone(g["live_manifest_candidate"])
-        self.assertEqual(g["remaining_offline_question"], "PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN")
-        self.assertFalse(f["heap_reset_before_framework_main_proven"])
-        self.assertFalse(f["no_intervening_app_heap_users_proven"])
-        self.assertEqual(f["status"], "PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN")
-        self.assertFalse(h["assumption_proven"])
-        self.assertEqual(h["layout_if_true"]["display_backing_0x708"], "0x804470")
-        self.assertEqual(h["layout_if_true"]["runtime50_0x50"], "0x804b80")
-        self.assertEqual(h["runtime50_callback_source_offset_if_true"], 0x43C)
+        self.assertEqual(g["remaining_offline_question"], "RUNTIME50_POST_OVERWRITE_STATE_AND_TRIGGER")
+        self.assertTrue(f["heap_reset_before_framework_main_proven"])
+        self.assertTrue(f["no_intervening_app_heap_users_proven"])
+        self.assertEqual(f["status"], "PROVEN_STAGE1_BOOTSTRAP_ORDER_AND_EMPTY_APP_HEAP")
+        self.assertTrue(h["proven"])
+        self.assertEqual(h["layout"]["display_backing_0x708"], "0x804470")
+        self.assertEqual(h["layout"]["display_data_pointer"], "0x804778")
+        self.assertEqual(h["layout"]["runtime50_0x50"], "0x804b80")
+        self.assertEqual(h["layout"]["runtime50_callback"], "0x804bb4")
+        self.assertEqual(h["display_to_runtime50_base_offset"], 0x408)
+        self.assertEqual(h["runtime50_callback_source_offset"], 0x43C)
+        self.assertEqual(h["minimum_source_length_to_fully_control_callback"], 0x440)
+        self.assertTrue(h["runtime50_callback_fully_controlled"])
         for branch in f["branches"].values():
+            self.assertTrue(branch["dispatcher_initial_mode_zero_proven"])
+            self.assertTrue(branch["constructor_table_empty"])
+            self.assertEqual(branch["resident_callback_table_refs"], ["0x2928", "0x293c"])
+            self.assertFalse(branch["app_allocator_callback_invoked_pre_main"])
+            self.assertFalse(branch["app_free_callback_invoked_pre_main"])
+            self.assertEqual(branch["intervening_app_heap_users"], [])
             self.assertEqual(branch["direct_bl_xrefs_to_main"], [])
             self.assertEqual(branch["direct_bl_xrefs_to_heap_init"], [])
             self.assertEqual(branch["raw_absolute_app_pointer_xrefs_to_main"], [])
             self.assertEqual(branch["raw_absolute_app_pointer_xrefs_to_heap_init"], [])
+
+    def test_runtime50_is_persistent_startup_victim_not_preview_grooming_object(self) -> None:
+        r = self._mod().build_report()
+        v = r["stock_grooming_surface"]["runtime50_object"]
+        self.assertTrue(v["persistent_startup_allocation"])
+        self.assertFalse(v["stock_free_recreate_proven"])
+        self.assertEqual(v["deterministic_base"], "0x804b80")
+        self.assertEqual(v["deterministic_callback"], "0x804bb4")
+        self.assertEqual(v["callback_source_offset"], 0x43C)
 
     def test_display_recreate_and_unbounded_plugin_spray_are_closed(self) -> None:
         r = self._mod().build_report()
@@ -5480,11 +5516,13 @@ class VolatileRamTier2TriggerTests(unittest.TestCase):
         for branch in r["branches"].values():
             self.assertEqual(len(branch["direct_callback_invocation_sites"]), 2)
 
-    def test_voicetip_microtask_registration_is_proven_but_completion_trigger_is_not(self) -> None:
+    def test_voicetip_stock_setup_and_timeout_close_the_offline_callback_trigger(self) -> None:
         r = self._mod().build_report()
         m = r["microtask_registration"]
         g = r["invocation_gate"]
         p = r["promotion"]
+        setup = r["stock_setup"]
+        witness = r["overwrite_witness"]
         self.assertTrue(m["proven"])
         self.assertEqual(m["cross_branch"], "4_OF_4_PRESERVED_PLUS_BRANCHES")
         self.assertEqual(m["slot_count"], 8)
@@ -5492,14 +5530,38 @@ class VolatileRamTier2TriggerTests(unittest.TestCase):
         self.assertTrue(g["in_image_invocation_sites_proven"])
         self.assertTrue(g["worker_registration_proven"])
         self.assertTrue(g["periodic_worker_dispatch_proven"])
-        self.assertTrue(g["worker_reaches_callback_on_completion_or_idle_path"])
-        self.assertFalse(g["deterministic_stock_post_overwrite_invocation_proven"])
+        self.assertTrue(g["worker_timeout_path_reaches_callback"])
+        self.assertTrue(g["allocator_busy_flag_is_transient"])
+        self.assertTrue(g["deterministic_stock_post_overwrite_invocation_proven"])
+        self.assertEqual(setup["content_mode_prime"]["command"], "0x6e SPP_DRAWING_CTRL_MOVIE_PLAY")
+        self.assertEqual(setup["content_mode_prime"]["control"], "payload[1] != 0")
+        self.assertEqual(setup["content_mode_prime"]["target_mode"], "0x0b")
+        self.assertTrue(setup["content_mode_prime"]["geometry_preserved"])
+        self.assertEqual(setup["voicetip_setup_command"], "0xa5 SPP_SET_ALARM_LISTEN")
+        self.assertEqual(setup["model_selector"], 2)
+        self.assertEqual(setup["model_id"], "0x22")
+        self.assertTrue(setup["btplayer_event_34c_reaches_voicetip_setter"])
+        self.assertEqual(setup["host_only_mode_normalization_candidate"]["status"], "NOT_PROMOTED_AS_DETERMINISTIC_PRECONDITION")
+        self.assertEqual(witness["source_address"], "0x804778")
+        self.assertEqual(witness["exact_source_length"], 1088)
+        self.assertEqual(witness["callback_source_offset"], 0x43C)
+        self.assertEqual(witness["controlled_runtime50_byte0"], "0xff")
+        self.assertEqual(witness["controlled_runtime50_byte8_model"], "0x22")
+        self.assertEqual(witness["controlled_callback_value"], "0x804779")
+        self.assertEqual(witness["last_overwritten_runtime50_offset"], "0x37")
+        self.assertEqual(witness["preserved_runtime50_offsets"], ["0x3c", "0x40", "0x44"])
         self.assertTrue(p["controlled_indirect_call_sink_exists"])
-        self.assertTrue(p["voicetip_periodic_worker_registration"])
-        self.assertFalse(p["deterministic_post_overwrite_callback_invocation"])
-        self.assertEqual(p["remaining_trigger_blocker"], "STOCK_VOICETIP_COMPLETION_STATE_TO_RUNTIME50_CALLBACK_UNPROVEN")
+        self.assertTrue(p["deterministic_victim_placement"])
+        self.assertTrue(p["deterministic_post_overwrite_callback_invocation"])
+        self.assertTrue(p["controlled_indirect_branch_proven_offline"])
+        self.assertTrue(p["returning_thumb_stage0_witness_proven_offline"])
+        self.assertIsNone(p["remaining_trigger_blocker"])
+        self.assertEqual(p["remaining_before_any_live_stage0"], "REVIEWED_ONE_USE_LIVE_MANIFEST_AND_EXPLICIT_GRANT")
         self.assertIsNone(p["live_manifest_candidate"])
+        self.assertTrue(r["spp_trigger_checks"]["command_0x6e_drawing_ctrl_movie_play"]["content_mode_prime_proven"])
         self.assertFalse(r["spp_trigger_checks"]["command_0x6c"]["direct_voicetip_trigger_edge_proven"])
+        self.assertTrue(r["spp_trigger_checks"]["command_0x6c"]["requires_content_mode_0x0b_preselected"])
+        self.assertTrue(r["spp_trigger_checks"]["command_0xa5_alarm_listen"]["direct_stock_setup_edge_proven"])
         self.assertFalse(r["spp_trigger_checks"]["command_0xa9_play_stop_voice"]["direct_voicetip_trigger_edge_proven"])
         for branch in r["branches"].values():
             self.assertTrue(branch["microtask_callback_decodes_to_worker"])
@@ -5507,6 +5569,20 @@ class VolatileRamTier2TriggerTests(unittest.TestCase):
             self.assertEqual(branch["microtask_argument"], 0)
             self.assertEqual(branch["direct_bl_xrefs_to_worker"], [])
             self.assertEqual(branch["raw_absolute_app_pointer_xrefs_to_worker"], [])
+            self.assertEqual(branch["spp_a5_selector_2_model"], "0x22")
+            self.assertTrue(branch["stage0_span_pristine_fill"])
+            self.assertTrue(branch["allocator_busy_flag_is_transient"])
+
+    def test_returning_thumb_stage0_witness_is_minimal_and_offline_only(self) -> None:
+        r = self._mod().build_report()
+        w = r["stage0_witness"]
+        self.assertEqual(w["entry"], "0x804779")
+        self.assertEqual(w["bytes_hex"], "7047")
+        self.assertEqual(w["instruction"], "BX LR")
+        self.assertTrue(w["candidate_span_pristine_ff_in_image_4_of_4"])
+        self.assertEqual(w["raw_pointer_xrefs_4_of_4"], 0)
+        self.assertFalse(r["safety"]["live_packet_generation"])
+        self.assertFalse(r["safety"]["device_io"])
 
     def test_committed_tier2_trigger_artifact_is_current_and_offline_only(self) -> None:
         live = self._mod().build_report()
@@ -5555,8 +5631,14 @@ class VolatileRamVram3ExecutionTests(unittest.TestCase):
         self.assertEqual(r["mapping"]["cache_policy"], "WRITE_THROUGH_CACHEABLE_NONBUFFERABLE")
         self.assertEqual(r["calling_contract"]["thumb_target"], "set bit0 of the function pointer before BLX/BX")
         self.assertFalse(r["scratch_model"]["fixed_reserved_heap_scratch_proven"])
+        self.assertTrue(r["scratch_model"]["deterministic_stage0_storage_proven"])
+        self.assertEqual(r["scratch_model"]["stage0_source"], "0x804778")
+        self.assertEqual(r["scratch_model"]["stage0_entry"], "0x804779")
+        self.assertEqual(r["scratch_model"]["stage0_return_bytes_hex"], "7047")
+        self.assertTrue(r["promotion"]["deterministic_stage0_entry_address_proven"])
+        self.assertEqual(r["promotion"]["returning_thumb_stage0_witness"]["instruction"], "BX LR")
         self.assertIsNone(r["promotion"]["live_manifest_candidate"])
-        self.assertEqual(r["promotion"]["remaining_blocker_before_live_stage0"], "DETERMINISTIC_CONTROL_FLOW_VICTIM_PLACEMENT")
+        self.assertEqual(r["promotion"]["remaining_blocker_before_live_stage0"], "REVIEWED_ONE_USE_LIVE_MANIFEST_AND_EXPLICIT_GRANT")
 
     def test_committed_vram3_artifact_is_current_and_offline_only(self) -> None:
         live = self._mod().build_report()

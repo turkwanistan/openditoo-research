@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from keypad_pipeline_report import thumb_bl_target
+from ditoo_tier2_placement import build_report as build_placement_report
 
 ROOT = Path(__file__).resolve().parents[1]
 FW = ROOT / "artifacts" / "firmware"
@@ -72,6 +73,10 @@ BRANCHES = {
 
 SPP_COMMAND = 0x6C
 SPP_HANDLER = 0x11FCE
+SPP_PRIME_COMMAND = 0x6E
+SPP_PRIME_HANDLER = 0x11278
+CONTENT_DISPATCH_WRAPPER = 0x71B8
+CONTENT_MODE_GETTER = 0x12886
 SPP_ASSEMBLER = 0xF614
 SPP_MAX_INNER = 0x800
 SPP_INNER_FIXED_BYTES = 3  # command + checksum u16
@@ -94,6 +99,9 @@ ALLOC_QUANTUM = 0x10
 # Bytes decoded once during discovery and now used as fail-closed invariants. They are
 # intentionally small semantic anchors rather than a full disassembly dependency.
 CMD6C_PREFIX = bytes.fromhex("00f05afc0b281dd1a088a16802380204")
+CMD6E_NONZERO_GATE = bytes.fromhex("a0684078002809d1")  # packet payload[1]; zero takes stop path, nonzero primes movie mode
+CMD6E_PRIME_SETUP = bytes.fromhex("00210b20")          # r1=0; r0=0x0b immediately before content-dispatch wrapper
+CMD6E_POSTCHECK = bytes.fromhex("0b2840d0")            # getter result compared with 0x0b after priming
 SAME_MODE_PREFIX = bytes.fromhex("002cd3d021886068002262e1")
 SPP_LIMIT_BYTES = bytes.fromhex("0121c9028842288202d9")  # 1<<11; cmp; store; <= accepted
 PLUS_0X308_BYTES = bytes.fromhex("002803d06121c9004018704700207047")
@@ -133,7 +141,25 @@ def _check_branch(name: str, spec: dict[str, Any], data: bytes) -> dict[str, Any
     if data[0xF638:0xF638 + len(SPP_LIMIT_BYTES)] != SPP_LIMIT_BYTES:
         raise ValueError(f"{name}: SPP 0x800 inner-length gate drift")
 
-    # Mode 0x0b: first packet enters/initializes; later same-mode packet reaches 0x12cd4.
+    # Stock content-mode prime: 0x6e (SPP_DRAWING_CTRL_MOVIE_PLAY) uses
+    # payload[1] as a start/stop control.  The nonzero branch calls the common
+    # content dispatcher with mode 0x0b, then immediately re-reads the content
+    # mode and compares it with 0x0b.  0x6c itself does NOT perform this prime.
+    if data[SPP_PRIME_HANDLER + 0x0A:SPP_PRIME_HANDLER + 0x12] != CMD6E_NONZERO_GATE:
+        raise ValueError(f"{name}: 0x6e nonzero-control gate drift")
+    if thumb_bl_target(data, SPP_PRIME_HANDLER + 0x12) != CONTENT_MODE_GETTER:
+        raise ValueError(f"{name}: 0x6e pre-prime mode getter drift")
+    if data[SPP_PRIME_HANDLER + 0x42:SPP_PRIME_HANDLER + 0x46] != CMD6E_PRIME_SETUP:
+        raise ValueError(f"{name}: 0x6e mode-0x0b prime setup drift")
+    if thumb_bl_target(data, SPP_PRIME_HANDLER + 0x46) != CONTENT_DISPATCH_WRAPPER:
+        raise ValueError(f"{name}: 0x6e content-dispatch edge drift")
+    if thumb_bl_target(data, SPP_PRIME_HANDLER + 0x4A) != CONTENT_MODE_GETTER:
+        raise ValueError(f"{name}: 0x6e post-prime mode getter drift")
+    if data[SPP_PRIME_HANDLER + 0x4E:SPP_PRIME_HANDLER + 0x52] != CMD6E_POSTCHECK:
+        raise ValueError(f"{name}: 0x6e post-prime 0x0b confirmation drift")
+
+    # Once content mode is 0x0b, the common dispatcher uses the same-mode
+    # handler at 0x12cd4 for the subsequent 0x6c copy event.
     same_rel = _u16(data, SAME_MODE_TABLE + 2 * MODE)
     same_target = SAME_MODE_PC_BASE + 2 * same_rel
     entry_rel = _u16(data, MODE_ENTRY_TABLE + 2 * MODE)
@@ -144,6 +170,17 @@ def _check_branch(name: str, spec: dict[str, Any], data: bytes) -> dict[str, Any
         raise ValueError(f"{name}: same-mode 0x0b argument bridge drift")
     if thumb_bl_target(data, 0x12F98) != spec["mode_init"]:
         raise ValueError(f"{name}: mode-0x0b initializer target drift")
+    # The mode initializer owns a separate 0xc50 light-word object. On first
+    # entry it may allocate that object, but it does not free the persistent
+    # display backing/runtime50 objects whose startup geometry is proved by the
+    # placement artifact.
+    init_targets = {
+        thumb_bl_target(data, o)
+        for o in range(spec["mode_init"], min(spec["mode_init"] + 0x70, len(data) - 4), 2)
+        if thumb_bl_target(data, o) is not None
+    }
+    if 0xBFBC not in init_targets or 0xBFCE in init_targets:
+        raise ValueError(f"{name}: mode-0x0b initializer heap behavior drift")
     if thumb_bl_target(data, SHARED_DISPLAY_CALL) != spec["display_entry"]:
         raise ValueError(f"{name}: same-mode display target drift")
 
@@ -180,6 +217,12 @@ def _check_branch(name: str, spec: dict[str, Any], data: bytes) -> dict[str, Any
         "mode_0x0b_first_entry": _hex(entry_target),
         "mode_0x0b_same_mode_handler": _hex(same_target),
         "mode_0x0b_initializer": _hex(spec["mode_init"]),
+        "spp_0x6e_prime_handler": _hex(SPP_PRIME_HANDLER),
+        "spp_0x6e_prime_content_dispatch": _hex(CONTENT_DISPATCH_WRAPPER),
+        "spp_0x6e_prime_mode_getter": _hex(CONTENT_MODE_GETTER),
+        "spp_0x6e_nonzero_primes_mode_0x0b": True,
+        "mode_0x0b_initializer_uses_separate_heap_object": True,
+        "mode_0x0b_initializer_direct_app_free": False,
         "backing_allocation_helper": _hex(ba),
         "backing_data_pointer_helper": _hex(po),
         "heap_allocator": _hex(ha),
@@ -188,6 +231,14 @@ def _check_branch(name: str, spec: dict[str, Any], data: bytes) -> dict[str, Any
 
 
 def build_report() -> dict[str, Any]:
+    placement = build_placement_report()
+    placement_gate = placement["placement_gate"]
+    layout = placement["deterministic_startup_layout"]
+    if not placement_gate["deterministic_adjacent_victim_proven"] or not layout["proven"]:
+        raise ValueError("Tier-2 display refuses corrected reachability without deterministic startup placement")
+    if layout["layout"]["display_data_pointer"] != "0x804778" or layout["layout"]["runtime50_0x50"] != "0x804b80":
+        raise ValueError("Tier-2 display startup geometry drift")
+
     branches: dict[str, Any] = {}
     for name, spec in BRANCHES.items():
         data = _load(name, spec)
@@ -230,11 +281,17 @@ def build_report() -> dict[str, Any]:
         },
         "branches": branches,
         "reachability": {
-            "command": "0x6c",
-            "handler": _hex(SPP_HANDLER),
+            "prime_command": "0x6e SPP_DRAWING_CTRL_MOVIE_PLAY",
+            "prime_handler": _hex(SPP_PRIME_HANDLER),
+            "prime_control": "payload[1] != 0",
+            "prime_role": "select content mode 0x0b through 0x71b8; the handler immediately re-reads 0x12886 and confirms 0x0b",
+            "copy_command": "0x6c SPP_DRAWING_ENCODE_MOVIE_PLAY",
+            "copy_handler": _hex(SPP_HANDLER),
             "stock_mode": "0x0b",
-            "first_packet_role": "normal volatile mode entry initializes the light-word/display object",
-            "subsequent_same_mode_role": "same-mode event reaches 0x12cd4 and forwards caller source/length through the display function to resident stage-1",
+            "copy_precondition": "content mode 0x0b already selected; 0x6c does not prime itself",
+            "same_mode_role": "same-mode event reaches 0x12cd4 and forwards caller source/length through the display function to resident stage-1",
+            "prime_stable_4_of_4": True,
+            "prime_initializer_preserves_proven_startup_geometry": True,
             "requires_persistent_write": False,
             "resident_target_stable_4_of_4": True,
         },
@@ -261,24 +318,24 @@ def build_report() -> dict[str, Any]:
             "persistent": False,
             "cross_branch": "4_OF_4_PRESERVED_PLUS_BRANCHES",
         },
-        "control_flow_gate": {
-            "deterministic_victim_placement_proven": False,
-            "controlled_indirect_branch_proven": False,
+        "placement_integration": {
+            "deterministic_victim_placement_proven": True,
+            "display_data_pointer": layout["layout"]["display_data_pointer"],
+            "runtime50_base": layout["layout"]["runtime50_0x50"],
+            "runtime50_callback": layout["layout"]["runtime50_callback"],
+            "runtime50_persistent_startup_allocation": placement["stock_grooming_surface"]["runtime50_object"]["persistent_startup_allocation"],
+            "runtime50_stock_free_recreate_proven": placement["stock_grooming_surface"]["runtime50_object"]["stock_free_recreate_proven"],
+            "display_teardown_recreate_status": placement["placement_strategy_closures"]["display_teardown_recreate"]["status"],
+            "meaning": "The 0x6e content-mode initializer may allocate a separate later light-word object, but it cannot move the already-proven persistent display backing/runtime50 startup geometry.",
+        },
+        "downstream_control_flow": {
+            "proven_in_this_artifact": False,
+            "delegated_artifact": "artifacts/analysis/volatile_ram_api_tier2_trigger.json",
             "live_manifest_candidate": None,
-            "why_not_yet": [
-                "The application heap uses separate descriptors and 16-byte units rather than an inline next-chunk header, so the first overflow bytes are not automatically control metadata.",
-                "The heap is already allocation/free-active before the display backing object is created; static call chronology alone does not prove physical adjacency.",
-                "Callback-bearing objects exist in firmware, but no exact victim has yet been proven to occupy a deterministic offset inside the overwrite window.",
-            ],
-            "interesting_unpromoted_flag42_sinks": [
-                {"object_family": "plugin/child object", "callback_offsets": ["0x0c", "0x20", "0x2c"], "indirect_calls": ["0x20508", "0x20356", "0x20332", "0x204a8"]},
-                {"object_family": "0x50-byte runtime object", "callback_offset": "0x34", "indirect_call": "0x1fac4"},
-            ],
-            "next_offline_gate": "DETERMINISTIC_VICTIM_OR_CONTROL_SINK_PLACEMENT",
         },
         "method_limits": [
-            "This artifact proves a copy primitive and its maximum structural overwrite, not code execution.",
-            "It does not infer heap adjacency from allocation order because the allocator is not modeled as a monotonic bump allocator.",
+            "This artifact proves the corrected stock 0x6e-prime -> 0x6c-copy reachability and copy primitive; code-execution proof remains delegated to the trigger artifact.",
+            "Startup adjacency is imported from the separate fail-closed placement artifact rather than inferred from command-time allocation order.",
             "No live malformed/custom 0x6c packet has been transmitted; physical behavior remains untested by design.",
         ],
     }
@@ -306,7 +363,9 @@ def main() -> int:
         print(f"TIER2_MAX_SOURCE_BYTES={s['max_caller_controlled_source_bytes']}")
         print(f"TIER2_PHYSICAL_CAPACITY={s['physical_capacity_from_display_pointer']}")
         print(f"TIER2_MAX_OVERWRITE_BYTES={s['max_controlled_bytes_beyond_physical_allocation']}")
-        print("TIER2_CONTROL_FLOW_SINK=UNRESOLVED_PLACEMENT")
+        print("TIER2_PRIME=0x6e_NONZERO_TO_MODE_0x0b")
+        print("TIER2_DETERMINISTIC_VICTIM=true")
+        print("TIER2_CONTROL_FLOW=DELEGATED_TO_TRIGGER_ARTIFACT")
         print("TIER2_LIVE_MANIFEST_CANDIDATE=NONE")
     if not (args.json or args.write or args.selfcheck):
         print("DITOO_TIER2_DISPLAY=PASS")

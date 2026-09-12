@@ -4,7 +4,7 @@
     "heap_end_exclusive": "0x81d000",
     "heap_start": "0x804000",
     "policy": "BEST_FIT_LOW_ADDRESS_SPLIT_SEPARATE_DESCRIPTORS_WITH_ADJACENT_FREE_COALESCING",
-    "reviewed_startup_allocations": "The in-image 0x8dea path, once entered, has branch-pinned allocation/free ordering through the display backing and later runtime50 construction."
+    "reviewed_startup_allocations": "The 0x8dea startup allocation/free sequence is branch-pinned through the display backing and persistent runtime50 construction. Stage-1 now proves the application heap is reset immediately before this sequence with no intervening app-heap user."
   },
   "branches": {
     "flag42_prod_v42016": {
@@ -132,10 +132,10 @@
       "runtime50_request_bytes": 80
     }
   },
-  "conditional_pristine_heap_hypothesis": {
-    "assumption": "Fwl_MallocInit resets the 0x00804000..0x0081cfff application heap immediately before the modeled 0x8dea startup sequence, with no intervening app-heap allocations.",
-    "assumption_proven": false,
-    "layout_if_true": {
+  "deterministic_startup_layout": {
+    "cross_branch": "4_OF_4_PRESERVED_PLUS_BRANCHES",
+    "display_to_runtime50_base_offset": 1032,
+    "layout": {
       "display_backing_0x708": "0x804470",
       "display_data_pointer": "0x804778",
       "display_root_0x318": "0x804150",
@@ -150,88 +150,195 @@
       "runtime50_0x50": "0x804b80",
       "runtime50_callback": "0x804bb4"
     },
-    "meaning": "This is a useful candidate geometry only. The addresses 0x00804470/0x00804b80/0x00804bb4 are not promoted as observed or deterministic runtime addresses.",
-    "runtime50_callback_fully_controlled_if_true": true,
-    "runtime50_callback_source_offset_if_true": 1084
+    "meaning": "The vulnerable display data pointer is 0x00804778 and the persistent 0x50-byte VoiceTip/runtime50 object starts at 0x00804b80. The runtime50 base is exactly 0x408 bytes after the display pointer, i.e. immediately after the display backing allocation's physical capacity. Callback +0x34 is source offset 0x43c.",
+    "minimum_source_length_to_fully_control_callback": 1088,
+    "proven": true,
+    "runtime50_callback_fully_controlled": true,
+    "runtime50_callback_source_offset": 1084
   },
   "framework_ordering_gate": {
     "app_link_base": "0x8400000",
     "branches": {
       "flag42_prod_v42016": {
+        "app_allocator_callback_invoked_pre_main": false,
+        "app_free_callback_invoked_pre_main": false,
+        "bss_zero_end_exclusive": "0x803f80",
+        "bss_zero_start": "0x802fc4",
+        "callback_store_helper": "0x3d054",
+        "constructor_table_empty": true,
+        "constructor_table_end": "0x802c08",
+        "constructor_table_start": "0x802c08",
         "direct_bl_xrefs_to_heap_init": [],
         "direct_bl_xrefs_to_main": [],
+        "dispatcher_initial_mode_address": "0x8036ec",
+        "dispatcher_initial_mode_zero_proven": true,
+        "framework_main_bootstrap_call_va": "0x8043aa",
         "framework_main_entry": "0x8dea",
+        "framework_main_veneer_literal_offset": "0x4038",
         "heap_init": "0x3df44",
+        "heap_init_bootstrap_call_va": "0x804388",
+        "heap_init_veneer_literal_offset": "0x4014",
+        "intervening_app_heap_users": [],
+        "post_heap_helper": "0xe16d4",
         "raw_absolute_app_pointer_xrefs_to_heap_init": [],
-        "raw_absolute_app_pointer_xrefs_to_main": []
+        "raw_absolute_app_pointer_xrefs_to_main": [],
+        "registered_allocator_callback": "0x3df94",
+        "registered_free_callback": "0x3dfb2",
+        "resident_callback_invoked_pre_main": "0x80010d",
+        "resident_callback_table": "0x803adc",
+        "resident_callback_table_refs": [
+          "0x2928",
+          "0x293c"
+        ],
+        "transformed_framework_main_pointer": "0x201deb",
+        "transformed_heap_init_pointer": "0x236f45"
       },
       "flag42_test_v42017": {
+        "app_allocator_callback_invoked_pre_main": false,
+        "app_free_callback_invoked_pre_main": false,
+        "bss_zero_end_exclusive": "0x803f80",
+        "bss_zero_start": "0x802fc4",
+        "callback_store_helper": "0x3d068",
+        "constructor_table_empty": true,
+        "constructor_table_end": "0x802c08",
+        "constructor_table_start": "0x802c08",
         "direct_bl_xrefs_to_heap_init": [],
         "direct_bl_xrefs_to_main": [],
+        "dispatcher_initial_mode_address": "0x8036ec",
+        "dispatcher_initial_mode_zero_proven": true,
+        "framework_main_bootstrap_call_va": "0x8043aa",
         "framework_main_entry": "0x8dea",
+        "framework_main_veneer_literal_offset": "0x4038",
         "heap_init": "0x3df58",
+        "heap_init_bootstrap_call_va": "0x804388",
+        "heap_init_veneer_literal_offset": "0x4014",
+        "intervening_app_heap_users": [],
+        "post_heap_helper": "0xe16e8",
         "raw_absolute_app_pointer_xrefs_to_heap_init": [],
-        "raw_absolute_app_pointer_xrefs_to_main": []
+        "raw_absolute_app_pointer_xrefs_to_main": [],
+        "registered_allocator_callback": "0x3dfa8",
+        "registered_free_callback": "0x3dfc6",
+        "resident_callback_invoked_pre_main": "0x80010d",
+        "resident_callback_table": "0x803adc",
+        "resident_callback_table_refs": [
+          "0x2928",
+          "0x293c"
+        ],
+        "transformed_framework_main_pointer": "0x201deb",
+        "transformed_heap_init_pointer": "0x236f59"
       },
       "flag60_prod_v60014": {
+        "app_allocator_callback_invoked_pre_main": false,
+        "app_free_callback_invoked_pre_main": false,
+        "bss_zero_end_exclusive": "0x803f80",
+        "bss_zero_start": "0x802fc4",
+        "callback_store_helper": "0x3cfc0",
+        "constructor_table_empty": true,
+        "constructor_table_end": "0x802c08",
+        "constructor_table_start": "0x802c08",
         "direct_bl_xrefs_to_heap_init": [],
         "direct_bl_xrefs_to_main": [],
+        "dispatcher_initial_mode_address": "0x8036ec",
+        "dispatcher_initial_mode_zero_proven": true,
+        "framework_main_bootstrap_call_va": "0x8043aa",
         "framework_main_entry": "0x8dea",
+        "framework_main_veneer_literal_offset": "0x4038",
         "heap_init": "0x3deb0",
+        "heap_init_bootstrap_call_va": "0x804388",
+        "heap_init_veneer_literal_offset": "0x4014",
+        "intervening_app_heap_users": [],
+        "post_heap_helper": "0xe1640",
         "raw_absolute_app_pointer_xrefs_to_heap_init": [],
-        "raw_absolute_app_pointer_xrefs_to_main": []
+        "raw_absolute_app_pointer_xrefs_to_main": [],
+        "registered_allocator_callback": "0x3df00",
+        "registered_free_callback": "0x3df1e",
+        "resident_callback_invoked_pre_main": "0x80010d",
+        "resident_callback_table": "0x803adc",
+        "resident_callback_table_refs": [
+          "0x2928",
+          "0x293c"
+        ],
+        "transformed_framework_main_pointer": "0x201deb",
+        "transformed_heap_init_pointer": "0x236eb1"
       },
       "flag60_test_api60016_internal60017": {
+        "app_allocator_callback_invoked_pre_main": false,
+        "app_free_callback_invoked_pre_main": false,
+        "bss_zero_end_exclusive": "0x803f80",
+        "bss_zero_start": "0x802fc4",
+        "callback_store_helper": "0x3d054",
+        "constructor_table_empty": true,
+        "constructor_table_end": "0x802c08",
+        "constructor_table_start": "0x802c08",
         "direct_bl_xrefs_to_heap_init": [],
         "direct_bl_xrefs_to_main": [],
+        "dispatcher_initial_mode_address": "0x8036ec",
+        "dispatcher_initial_mode_zero_proven": true,
+        "framework_main_bootstrap_call_va": "0x8043aa",
         "framework_main_entry": "0x8dea",
+        "framework_main_veneer_literal_offset": "0x4038",
         "heap_init": "0x3df44",
+        "heap_init_bootstrap_call_va": "0x804388",
+        "heap_init_veneer_literal_offset": "0x4014",
+        "intervening_app_heap_users": [],
+        "post_heap_helper": "0xe16d4",
         "raw_absolute_app_pointer_xrefs_to_heap_init": [],
-        "raw_absolute_app_pointer_xrefs_to_main": []
+        "raw_absolute_app_pointer_xrefs_to_main": [],
+        "registered_allocator_callback": "0x3df94",
+        "registered_free_callback": "0x3dfb2",
+        "resident_callback_invoked_pre_main": "0x80010d",
+        "resident_callback_table": "0x803adc",
+        "resident_callback_table_refs": [
+          "0x2928",
+          "0x293c"
+        ],
+        "transformed_framework_main_pointer": "0x201deb",
+        "transformed_heap_init_pointer": "0x236f45"
       }
     },
-    "heap_reset_before_framework_main_proven": false,
-    "no_intervening_app_heap_users_proven": false,
-    "reason": "Both Fwl_MallocInit and the 0x8dea application main entry have zero direct in-image BL/BLX callers and zero raw absolute application-pointer xrefs across all four preserved branches. Their ordering is therefore mediated by framework/bootstrap state not represented as a directly recoverable call edge in this corpus.",
-    "status": "PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN"
+    "heap_reset_before_framework_main_proven": true,
+    "no_intervening_app_heap_users_proven": true,
+    "reason": "Stage-1 ARM veneers and the common Thumb bootstrap explicitly order Fwl_MallocInit before 0x8dea. The only two post-reset/pre-main helpers are byte-pinned; their constructor range is empty, and resident callback-table use invokes +4 (0x0080010D), not the app malloc/free callbacks registered at +8/+0c.",
+    "status": "PROVEN_STAGE1_BOOTSTRAP_ORDER_AND_EMPTY_APP_HEAP",
+    "transformed_callback_base": "0x200000"
   },
   "kind": "ditoo_plus_tier2_victim_placement",
   "method_limits": [
-    "The in-image startup allocation sequence is real and branch-pinned, but the preserved application blobs do not expose a direct call/pointer edge ordering framework-owned Fwl_MallocInit and 0x8dea.",
-    "The conditional pristine-heap simulation is not a runtime observation and is not sufficient to prove victim placement.",
+    "The promoted addresses are a static cold-start proof for the pinned firmware corpus; they are not a live heap observation.",
+    "Placement alone does not prove that overwriting runtime50+0x34 yields a safe/deterministic indirect call: the preceding runtime50 bytes and the VoiceTip trigger path still require proof.",
     "No live heap address, packet, crash probe or device observation was used."
   ],
   "next_bounded_work": [
-    "Do not promote the pristine cold-start addresses unless new exact framework/bootstrap evidence proves Fwl_MallocInit -> no intervening app-heap users -> 0x8dea.",
-    "Prefer a placement proof independent of hidden pre-main chronology: audit stock teardown/recreate of the persistent display object and adjacent callback-bearing allocations for a uniquely constrained hole.",
-    "If static placement remains non-deterministic, keep live promotion closed rather than using crash behavior as a placement oracle."
+    "Audit the exact 1088-byte source prefix needed to reach runtime50+0x34 while preserving or deliberately setting the VoiceTip fields consumed before the callback BLX.",
+    "Close a deterministic stock VoiceTip setup/completion route in a known dispatcher mode; 0xA5 SPP_SET_ALARM_LISTEN -> event 0x34c is already a strong candidate.",
+    "Keep live promotion closed until controlled callback invocation is proven without using crash behavior as an oracle."
   ],
   "ok": true,
   "placement_gate": {
-    "conditional_runtime50_candidate": {
+    "controlled_callback_field_proven": true,
+    "controlled_indirect_branch_proven": false,
+    "deterministic_adjacent_victim_proven": true,
+    "live_manifest_candidate": null,
+    "remaining_offline_question": "RUNTIME50_POST_OVERWRITE_STATE_AND_TRIGGER",
+    "runtime50_candidate": {
       "base": "0x804b80",
       "callback": "0x804bb4",
       "callback_source_offset": 1084,
       "candidate_thumb_payload_entry": "0x804779",
       "minimum_source_length_to_fully_control_callback": 1088
-    },
-    "controlled_callback_field_proven": false,
-    "controlled_indirect_branch_proven": false,
-    "deterministic_adjacent_victim_proven": false,
-    "live_manifest_candidate": null,
-    "remaining_offline_question": "PRE_MAIN_HEAP_STATE_AFTER_FWL_MALLOCINIT_UNPROVEN"
+    }
   },
   "placement_strategy_closures": {
     "display_teardown_recreate": {
       "app_heap_free_in_backing_service_window": false,
       "app_heap_free_in_display_service_window": false,
-      "meaning": "No stock app-heap teardown/recreate path for the persistent display root/backing was found in the audited service families, so moving the vulnerable block by ordinary teardown/recreate is not a supported placement strategy.",
+      "meaning": "No stock app-heap teardown/recreate path for the persistent display root/backing was found in the audited service families.",
       "root_constructor_has_one_direct_caller_4_of_4": true,
       "status": "CLOSED_WITHIN_AUDITED_APP_GRAPH"
     },
     "plugin_0x80_spray": {
       "direct_constructor_sites_per_branch": 2,
-      "meaning": "The 0x80 callback-bearing object is genuinely free/recreate capable, but its only two direct construction sites are singleton subsystem paths rather than an unbounded allocation spray.",
+      "meaning": "The 0x80 callback-bearing plugin object is free/recreate capable, but its two direct construction sites are singleton subsystem lifecycles, not an unbounded spray.",
       "reviewed_as_singleton_subsystem_lifecycles": true,
       "status": "CLOSED_AS_UNBOUNDED_DIRECT_SPRAY",
       "unbounded_stock_spray_found": false
@@ -245,10 +352,10 @@
     "persistent_mutation": false,
     "runtime_018_touched": false
   },
-  "schema_version": 3,
+  "schema_version": 4,
   "stock_grooming_surface": {
     "exists": true,
-    "meaning": "Stock lifecycle code provides real app-heap allocate/free/recreate behavior for callback-bearing objects, but grooming capability alone does not prove adjacency.",
+    "meaning": "Stock grooming remains available for the separate plugin object. VoiceTip/runtime50 is a persistent startup allocation; its value here is deterministic adjacency, not preview-time free/recreate grooming.",
     "plugin_object": {
       "descriptor_copied_to_offset": "0xc",
       "known_indirect_fields": [
@@ -262,10 +369,12 @@
     },
     "runtime50_object": {
       "callback_offset": "0x34",
-      "conditional_base_if_pristine": "0x804b80",
-      "conditional_callback_if_pristine": "0x804bb4",
-      "conditional_callback_source_offset_if_pristine": 1084,
-      "request_bytes": 80
+      "callback_source_offset": 1084,
+      "deterministic_base": "0x804b80",
+      "deterministic_callback": "0x804bb4",
+      "persistent_startup_allocation": true,
+      "request_bytes": 80,
+      "stock_free_recreate_proven": false
     }
   }
 }

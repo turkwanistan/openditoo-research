@@ -7,7 +7,7 @@ No Bluetooth/device IO, packet generation, firmware mutation or Runtime 018 acce
 """
 from __future__ import annotations
 
-import argparse, hashlib, json
+import argparse, hashlib, json, struct
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +39,10 @@ IDENTITY_MAP_END = 0x00820000
 PAGE_ATTR = 0xFFA
 RESIDENT_BASE = 0x00800000
 RESIDENT_RUNTIME_SERVICE = 0x008012A9
+PROVEN_STAGE0_SOURCE = 0x00804778
+PROVEN_STAGE0_ENTRY = 0x00804779
+PROVEN_STAGE0_FILE_OFFSET = PROVEN_STAGE0_SOURCE - RESIDENT_BASE
+PROVEN_STAGE0_RETURN_BYTES = bytes.fromhex("7047")
 
 # Application-copy CP15 helpers (file/runtime application offset uses normal app mapping).
 CP15 = {
@@ -91,6 +95,16 @@ def _branch(name: str, spec: tuple[str,str,int]) -> dict[str, Any]:
     if vals != [HEAP_MANAGER, HEAP_RAW_START, 0xFFF, HEAP_END]:
         raise ValueError(f"{name}: heap init literals drift: {vals}")
 
+    # The now-proven Tier-2 stage-0 destination is in the reclaimed stage-1 tail.
+    # The preserved image contains only erased/fill bytes there and no raw pointer
+    # reference to either the aligned address or Thumb entry, reducing the first-use
+    # I-cache concern for the minimal returning witness.
+    if b[PROVEN_STAGE0_FILE_OFFSET:PROVEN_STAGE0_FILE_OFFSET + 0x40] != b"\xff" * 0x40:
+        raise ValueError(f"{name}: proven stage-0 span no longer pristine fill")
+    for ptr in (PROVEN_STAGE0_SOURCE, PROVEN_STAGE0_ENTRY):
+        if struct.pack("<I", ptr) in b:
+            raise ValueError(f"{name}: proven stage-0 address unexpectedly referenced")
+
     # The common setup's literal block and arithmetic pin the identity-mapped SRAM window.
     literals = [int.from_bytes(b[o:o+4], 'little') for o in (0x43B0,0x43B4,0x43B8)]
     if literals != [0x0081FC00, 0x0081F000, 0x00800048]:
@@ -109,6 +123,10 @@ def _branch(name: str, spec: tuple[str,str,int]) -> dict[str, Any]:
         "mmu_setup": hex(MMU_SETUP),
         "mmu_cache_enable_sequence": hex(ENABLE_SEQ),
         "resident_service_example": hex(RESIDENT_RUNTIME_SERVICE),
+        "proven_stage0_source": hex(PROVEN_STAGE0_SOURCE),
+        "proven_stage0_entry": hex(PROVEN_STAGE0_ENTRY),
+        "proven_stage0_span_pristine_fill": True,
+        "proven_stage0_raw_pointer_xrefs": [],
     }
 
 
@@ -153,7 +171,7 @@ def build_report() -> dict[str, Any]:
             "stage1_tail_reclaimed": "Heap begins at 0x00804000 while boot/cache helper code exists around resident 0x00804278; stock initialization deliberately reuses the stage1 tail as heap after boot.",
         },
         "cache_coherency": {
-            "first_execution": "Write-through heap mapping means CPU stores reach backing SRAM; a never-before-executed heap address avoids a stale I-cache line. Static analysis cannot prove an arbitrary chosen heap address has never been fetched, so a first live stage-0 should remain tiny and use a freshly controlled span.",
+            "first_execution": "The proven stage-0 entry 0x00804779 lies in a 0xff-filled reclaimed stage-1 span with zero raw pointer xrefs across all four preserved branches. The write-through heap mapping carries controlled stores to SRAM, and the minimal witness is a two-byte BX LR. A future larger/reused code span must still perform explicit I-cache maintenance.",
             "post_stage0": "Once stage-0 executes, stock CP15 helpers provide explicit I-cache invalidation plus D-cache status/test operations. The heap mapping is write-through, so CPU stores reach SRAM; a larger rewritten code buffer must still invalidate any stale I-cache lines before execution.",
             "helpers": {k: hex(v[0]) for k,v in CP15.items()},
         },
@@ -166,21 +184,27 @@ def build_report() -> dict[str, Any]:
         },
         "scratch_model": {
             "fixed_reserved_heap_scratch_proven": False,
-            "preferred_stage0_storage": "caller-controlled bytes already inside the proven adjacent-overwrite span, once a deterministic victim offset is established",
-            "larger_loader_storage": "a separately controlled/allocated heap span after stage-0 can perform cache maintenance and bounds checks",
-            "reason": "The heap is allocator-owned; no fixed address inside 0x00804000..0x0081cfff is statically reserved for OpenDitoo.",
+            "deterministic_stage0_storage_proven": True,
+            "stage0_source": hex(PROVEN_STAGE0_SOURCE),
+            "stage0_entry": hex(PROVEN_STAGE0_ENTRY),
+            "stage0_return_bytes_hex": PROVEN_STAGE0_RETURN_BYTES.hex(),
+            "preferred_stage0_storage": "the caller-controlled Tier-2 display-copy destination at 0x00804778; callback target uses Thumb entry 0x00804779",
+            "larger_loader_storage": "a separately controlled/allocated heap span after stage-0, with explicit cache maintenance and bounds checks; no loader is promoted or generated here",
+            "reason": "The exact Tier-2 cold-start geometry now proves this first controlled span, but the broader heap remains allocator-owned and no fixed loader arena is reserved for OpenDitoo.",
         },
         "promotion": {
             "vram3_execution_environment_established": True,
             "ram_executable": True,
             "nx_blocker": False,
-            "remaining_blocker_before_live_stage0": "DETERMINISTIC_CONTROL_FLOW_VICTIM_PLACEMENT",
+            "deterministic_stage0_entry_address_proven": True,
+            "returning_thumb_stage0_witness": {"entry": hex(PROVEN_STAGE0_ENTRY), "bytes_hex": PROVEN_STAGE0_RETURN_BYTES.hex(), "instruction": "BX LR"},
+            "remaining_blocker_before_live_stage0": "REVIEWED_ONE_USE_LIVE_MANIFEST_AND_EXPLICIT_GRANT",
             "live_manifest_candidate": None,
         },
         "method_limits": [
-            "This proves the execution/mapping contract, not control-flow hijack.",
-            "No absolute heap allocation address for the Tier-2 backing object is inferred from boot chronology.",
-            "No live malformed/custom packet or device experiment was performed.",
+            "This execution-model artifact proves the RAM/Thumb/cache contract and deterministic first stage-0 address; the companion Tier-2 trigger artifact carries the structural control-flow proof.",
+            "It does not promote a loader or a general fixed scratch arena beyond the first controlled span.",
+            "No live malformed/custom packet, device experiment, Runtime 018 action, firmware write or persistent mutation was performed.",
         ],
     }
 
