@@ -518,3 +518,85 @@ A fresh one-use repetition with a replacement USB cable produced the same Window
 
 Passive exact-unit observation on 2026-09-12 confirms the M-at-boot branch reaches the stock Ditoo Plus factory/product-test environment. With the SD card removed and no controls pressed after entry, the display settled on `42` over `012`. This is strong direct on-device evidence for product/update flag 42 and installed firmware v42012. No later factory-test stage was advanced and no persistent write was observed.
 
+
+## 13. FIRM-R0 disassembly — the true common key-event fan-in (2026-09-12, offline)
+
+Static disassembly (capstone Thumb, flat image, load base 0 — confirmed because every BL in
+the keypad module resolves exactly to a known file offset). No device I/O. This pins the
+earliest guaranteed-common seam INPUT-R0 left open, and corrects the working assumption that
+the emitter `0x52656` is that seam.
+
+### Runtime event graph (flag42 v42016 offsets)
+
+```
+poll tick
+  -> key_state_machine 0x52790       debounce/hold timing; short <1000ms vs long >=1000ms
+       -> get_current_key 0x526f2 -> [RAM driver ptr] adc_decoder 0x52844
+            -> adc_read_veneer 0xc6764   6 samples, drop min+max, average -> counts
+            -> compare vs 7 calibrated ranges -> key id
+       -> translated_event_emitter 0x52656   (short/long PRESS)
+            -> translation_mapper 0x52926    pick short/long/repeat from 4-byte record
+            -> queue_post 0xc6d7c            category 0x82
+       -> 500ms auto-repeat timer -> repeat_handler 0x52982
+            -> queue_post 0xc6d7c            category 0x82   [BYPASSES the emitter]
+  -> stock consumer task dequeues category 0x82
+```
+
+`adc_decoder 0x52844` has zero BL callers and no flash literal pointer: it is registered as a
+RAM driver callback and invoked via `blx` from `get_current_key 0x526f2` (`[base+0xc]+4`).
+`key_state_machine 0x52790` is likewise a registered poll callback (no BL caller, no literal).
+
+### The seam is the category-0x82 queue post, not the emitter
+
+The emitter `0x52656` only handles short/long PRESS. Auto-repeat and key-change finalize post
+to the queue directly. The single fan-in catching short + long + repeat is the category-`0x82`
+post `queue_post 0xc6d7c` (`os_post(category r0, event r1, u16 param r2)`, a generic
+ring-buffer enqueue). Exactly four category-`0x82` producers:
+
+| site (flag42) | source | event byte | class param |
+| --- | --- | --- | --- |
+| `0x52680` | emitter, translated short/long press | translated / raw key id | phase<<8 \| 2 |
+| `0x52916` | release-finalize: current key short event | record byte1 | 2 |
+| `0x529aa` | repeat handler: previous key short on key change | record byte1 | 2 |
+| `0x529ce` | repeat handler: auto-repeat fire | record byte3 | 3 |
+
+An adjacent producer `0x525a8` posts a different class **`0x81`** and is not a translated key
+event (do not hook it for key takeover).
+
+### Translator (`0x52926`) contract
+
+Return code steers the emitter: `0` emit translated byte written to `*out`; `1` emit the raw
+key id (no table present); `2` key id not found → drop; `3` repeat/third handler `0x52982`
+invoked → emitter emits nothing (handler posts on its own). Record layout confirmed
+`[key_id, short(byte1), long(byte2), third/repeat(byte3)]`; `0xFF` in a phase column means
+"no distinct event, fall back to short byte1".
+
+### Byte-verified constants
+
+Long-press threshold **1000 ms** (`movs r1,#0x7d; lsls r1,#3` = `0x3e8`), auto-repeat period
+**500 ms** (`movs r0,#0xff; adds r0,#0xf5` = `0x1f4`), scan reschedule **10 ms** (`#0x0a`).
+
+### Cross-branch conservation
+
+flag60 v60014 is the same subsystem shifted by exactly **`-0x94`**, including the far
+`queue_post` (flag60 `0xc6ce8`). Category `0x82` and the emitter/translator/decoder bodies are
+conserved (48/48, 92/92, 134/134 identical per the locator). This makes a signature-located
+shim branch-portable rather than hardcoded to one build.
+
+### Hook-seam consequence for PATCH-R0
+
+A fail-open consume-or-forward shim must hook the category-`0x82` path — either wrap the four
+producers or (single point) intercept the consumer dequeue of category `0x82` — **not** the
+emitter alone, or auto-repeat and finalize events would leak past the claim. Signature-locate;
+never hardcode one build offset.
+
+### Delivered offline (no flashable output)
+
+- `tools/keypad_pipeline_report.py` — fail-closed byte-verifying analyzer (pure Python; the
+  Thumb-BL decoder is ARMv5T T1, validated against known targets in tests).
+- `artifacts/analysis/keypad_pipeline.json` — committed machine-readable model, PASS on both
+  branches, pins live firmware sha256s.
+- `tests/test_day1_offline.py::FirmwareKeypadPipelineTests` — 5 tests (locator PASS both
+  branches; locator FAIL-CLOSED on a mutated emitter byte; BL decoder vs known targets;
+  category-`0x82` fan-in verified both branches; committed artifact vs live bytes). Verifier
+  total now 331 tests PASS.

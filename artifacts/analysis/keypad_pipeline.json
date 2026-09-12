@@ -1,0 +1,187 @@
+{
+  "artifact": "ditoo_keypad_pipeline_analysis",
+  "contract": "recognition + byte-verified semantic model; fail-closed; no patching",
+  "constants": {
+    "category_key_event": 130,
+    "category_adjacent_0x81": 129,
+    "long_press_threshold_ms": 1000,
+    "auto_repeat_period_ms": 500,
+    "scan_reschedule_ms": 10,
+    "record_stride_bytes": 4
+  },
+  "runtime_graph": [
+    "poll_tick -> key_state_machine",
+    "key_state_machine -> get_current_key -> [driver_ptr] adc_decoder -> adc_read_veneer",
+    "key_state_machine -> translated_event_emitter (short/long press)",
+    "translated_event_emitter -> translation_mapper -> queue_post(category=0x82)",
+    "key_state_machine timer -> repeat_handler (500ms) -> queue_post(category=0x82) [BYPASSES emitter]"
+  ],
+  "hook_seam": {
+    "single_common_fanin": "queue_post category 0x82",
+    "note": "The emitter (translated_event_emitter) catches only short/long PRESS events. Auto-repeat and key-change finalize post category 0x82 directly, bypassing the emitter. A consume-or-forward shim that must see short+long+repeat should hook the category-0x82 producers/consumer, not the emitter alone.",
+    "category_0x82_producer_count": 4
+  },
+  "key_translation_table_semantics": {
+    "record": "[key_id, short_event(byte1), long_event(byte2), third_repeat(byte3)]",
+    "short_press": "translator r1==0 -> byte3 if !=0xFF invokes repeat_handler else byte1",
+    "long_press": "translator r1!=0 -> byte2 if !=0xFF else byte1",
+    "0xFF": "means 'no distinct event for this phase; fall back to short'"
+  },
+  "branches": [
+    {
+      "path": "artifacts/firmware/flag42_v42016.bin",
+      "size": 1207313,
+      "sha256": "f2509588d3ca52175591925298cdcffe9c7e01f6d43d89ee352b967610025b6a",
+      "locator_ok": true,
+      "locator": {
+        "offsets": {
+          "translated_emitter": "0x52656",
+          "adc_decoder": "0x52844",
+          "translation_mapper": "0x52926"
+        },
+        "observed_deltas": {
+          "translated_emitter->adc_decoder": "0x1ee",
+          "adc_decoder->translation_mapper": "0xe2"
+        }
+      },
+      "branch_shift": "0x0",
+      "offsets": {
+        "analog_key_config": "0x60d0",
+        "key_translation_table": "0x6119",
+        "adc_read_veneer": "0xc6764",
+        "adc_decoder": "0x52844",
+        "get_current_key": "0x526f2",
+        "key_state_machine": "0x52790",
+        "translated_event_emitter": "0x52656",
+        "translation_mapper": "0x52926",
+        "repeat_handler": "0x52982",
+        "queue_post": "0xc6d7c"
+      },
+      "category_0x82_producers": {
+        "emitter_press": {
+          "site": "0x52680",
+          "movs_r0_prefix": "8220",
+          "movs_r0_ok": true,
+          "bl_target": "0xc6d7c",
+          "bl_target_ok": true,
+          "ok": true
+        },
+        "release_finalize": {
+          "site": "0x52916",
+          "movs_r0_prefix": "8220",
+          "movs_r0_ok": true,
+          "bl_target": "0xc6d7c",
+          "bl_target_ok": true,
+          "ok": true
+        },
+        "repeat_keychange": {
+          "site": "0x529aa",
+          "movs_r0_prefix": "8220",
+          "movs_r0_ok": true,
+          "bl_target": "0xc6d7c",
+          "bl_target_ok": true,
+          "ok": true
+        },
+        "repeat_fire": {
+          "site": "0x529ce",
+          "movs_r0_prefix": "8220",
+          "movs_r0_ok": true,
+          "bl_target": "0xc6d7c",
+          "bl_target_ok": true,
+          "ok": true
+        }
+      },
+      "category_0x81_producer": {
+        "raw_notify": {
+          "site": "0x525a8",
+          "movs_r0_prefix": "8120",
+          "movs_r0_ok": true,
+          "bl_target": "0xc6d7c",
+          "bl_target_ok": true,
+          "ok": true
+        }
+      },
+      "emitter_bl_to_translator": "0x52926",
+      "emitter_bl_to_translator_ok": true,
+      "ok": true
+    },
+    {
+      "path": "artifacts/firmware/flag60_v60014.bin",
+      "size": 1207165,
+      "sha256": "02efa679cf1c152d6e6cf57f43223153218b411f41a787b65978e5caa77c1300",
+      "locator_ok": true,
+      "locator": {
+        "offsets": {
+          "translated_emitter": "0x525c2",
+          "adc_decoder": "0x527b0",
+          "translation_mapper": "0x52892"
+        },
+        "observed_deltas": {
+          "translated_emitter->adc_decoder": "0x1ee",
+          "adc_decoder->translation_mapper": "0xe2"
+        }
+      },
+      "branch_shift": "0x94",
+      "offsets": {
+        "analog_key_config": "0x603c",
+        "key_translation_table": "0x6085",
+        "adc_read_veneer": "0xc66d0",
+        "adc_decoder": "0x527b0",
+        "get_current_key": "0x5265e",
+        "key_state_machine": "0x526fc",
+        "translated_event_emitter": "0x525c2",
+        "translation_mapper": "0x52892",
+        "repeat_handler": "0x528ee",
+        "queue_post": "0xc6ce8"
+      },
+      "category_0x82_producers": {
+        "emitter_press": {
+          "site": "0x525ec",
+          "movs_r0_prefix": "8220",
+          "movs_r0_ok": true,
+          "bl_target": "0xc6ce8",
+          "bl_target_ok": true,
+          "ok": true
+        },
+        "release_finalize": {
+          "site": "0x52882",
+          "movs_r0_prefix": "8220",
+          "movs_r0_ok": true,
+          "bl_target": "0xc6ce8",
+          "bl_target_ok": true,
+          "ok": true
+        },
+        "repeat_keychange": {
+          "site": "0x52916",
+          "movs_r0_prefix": "8220",
+          "movs_r0_ok": true,
+          "bl_target": "0xc6ce8",
+          "bl_target_ok": true,
+          "ok": true
+        },
+        "repeat_fire": {
+          "site": "0x5293a",
+          "movs_r0_prefix": "8220",
+          "movs_r0_ok": true,
+          "bl_target": "0xc6ce8",
+          "bl_target_ok": true,
+          "ok": true
+        }
+      },
+      "category_0x81_producer": {
+        "raw_notify": {
+          "site": "0x52514",
+          "movs_r0_prefix": "8120",
+          "movs_r0_ok": true,
+          "bl_target": "0xc6ce8",
+          "bl_target_ok": true,
+          "ok": true
+        }
+      },
+      "emitter_bl_to_translator": "0x52892",
+      "emitter_bl_to_translator_ok": true,
+      "ok": true
+    }
+  ],
+  "ok": true
+}

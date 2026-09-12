@@ -112,6 +112,19 @@ Tasks:
 
 **Exit:** one documented hook seam catches the desired seven controls before stock feature-specific side effects, with no unresolved bypass for the intended input classes.
 
+**Status (2026-09-12, offline): substantially met.** Disassembly of both preserved branches
+pinned the full event graph and corrected the seam: the emitter `0x52656` catches only
+short/long *press*; auto-repeat + finalize bypass it and post directly. The single fan-in that
+catches short + long + repeat is the **category-`0x82` queue post `0xc6d7c`** (4 producers:
+`0x52680`, `0x52916`, `0x529aa`, `0x529ce`; the adjacent `0x525a8` posts a different class
+`0x81`). Timing constants verified: long ≥1000 ms, repeat 500 ms, scan 10 ms. Whole subsystem
+including `queue_post` shifts `-0x94` in flag60 (`0xc6ce8`); `0x82` conserved. Delivered:
+`tools/keypad_pipeline_report.py` (fail-closed, byte-verified, no capstone dep),
+`artifacts/analysis/keypad_pipeline.json`, and `FirmwareKeypadPipelineTests` (verifier now
+331 tests PASS). A consume-or-forward shim should therefore hook the category-`0x82`
+producers/consumer, **not** the emitter alone. Optional remaining work: annotate the `0x82`
+consumer task and confirm no other category carries a front-panel key.
+
 ### UPDATE-R0 — make the SD updater fully modelled offline
 
 **Objective:** know exactly what an accepted update changes before supplying one.

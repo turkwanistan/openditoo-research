@@ -4992,3 +4992,69 @@ class ButtonProbeStatusModeTests(unittest.TestCase):
         self.assertIn('string status = "playing";', src)
         self.assertIn('if (status == "mirror" && button is "Play" or "Pause")', src)
         self.assertIn('["status_before"] = before', src)
+
+
+class FirmwareKeypadPipelineTests(unittest.TestCase):
+    """FIRM-R0: recognition-only locator + byte-verified category-0x82 event model.
+
+    These never patch firmware. They pin the conserved keypad pipeline across both
+    preserved Ditoo Plus branches and prove the locator/analyzer fail CLOSED on drift.
+    """
+
+    FW = ROOT / "artifacts/firmware"
+    BRANCHES = ("flag42_v42016.bin", "flag60_v60014.bin")
+
+    def _report(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("keypad_pipeline_report")
+
+    def test_locator_passes_on_both_preserved_branches(self) -> None:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import importlib
+        loc = importlib.import_module("locate_ditoo_keypad_pipeline")
+        for name in self.BRANCHES:
+            r = loc.inspect(self.FW / name)
+            self.assertTrue(r["ok"], f"{name} should be recognized")
+
+    def test_locator_fails_closed_on_mutated_emitter(self) -> None:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import importlib
+        loc = importlib.import_module("locate_ditoo_keypad_pipeline")
+        data = bytearray((self.FW / "flag42_v42016.bin").read_bytes())
+        data[0x52656] ^= 0xFF  # corrupt one emitter byte
+        with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as fh:
+            fh.write(data)
+            path = Path(fh.name)
+        try:
+            self.assertFalse(loc.inspect(path)["ok"], "mutation must fail closed")
+        finally:
+            path.unlink()
+
+    def test_thumb_bl_decoder_matches_known_targets(self) -> None:
+        kp = self._report()
+        data = (self.FW / "flag42_v42016.bin").read_bytes()
+        # emitter BL -> translator, and emitter BL -> queue_post (category 0x82).
+        self.assertEqual(kp.thumb_bl_target(data, 0x52664), 0x52926)
+        self.assertEqual(kp.thumb_bl_target(data, 0x52680), 0xC6D7C)
+
+    def test_analysis_verifies_category_0x82_fanin_on_both_branches(self) -> None:
+        kp = self._report()
+        report = kp.build_report([self.FW / n for n in self.BRANCHES])
+        self.assertTrue(report["ok"])
+        self.assertEqual(report["hook_seam"]["category_0x82_producer_count"], 4)
+        shifts = {b["path"].split("/")[-1]: b["branch_shift"] for b in report["branches"]}
+        self.assertEqual(shifts["flag42_v42016.bin"], "0x0")
+        self.assertEqual(shifts["flag60_v60014.bin"], "0x94")
+        for b in report["branches"]:
+            for name, chk in b["category_0x82_producers"].items():
+                self.assertTrue(chk["ok"], f"{b['path']} {name} producer must verify")
+            self.assertTrue(b["emitter_bl_to_translator_ok"])
+
+    def test_committed_artifact_matches_live_firmware_bytes(self) -> None:
+        art = json.loads((ROOT / "artifacts/analysis/keypad_pipeline.json").read_text())
+        self.assertTrue(art["ok"], "committed artifact must be a PASS")
+        by_name = {b["path"].split("/")[-1]: b for b in art["branches"]}
+        for name in self.BRANCHES:
+            live = hashlib.sha256((self.FW / name).read_bytes()).hexdigest()
+            self.assertEqual(by_name[name]["sha256"], live, f"{name} artifact stale")

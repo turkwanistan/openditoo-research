@@ -120,13 +120,61 @@ Private evidence under `captures/private/` remains private/ignored. The manifest
 
 The detailed contract is in `notes/OPENDITOO-FIRMWARE-INPUT-TAKEOVER-PLAN-2026-09-12.md`. Priority order:
 
-### 1. FIRM-R0 — finish the keypad hook contract
+### 1. FIRM-R0 — keypad hook contract — SUBSTANTIALLY DONE (2026-09-12, offline)
 
-- annotate `0x52656` and `0xC6D7C` queue semantics;
-- prove short/long/repeat and all desired analog keys flow through the common emitter;
-- enumerate any bypass path;
-- add regression fixtures/tests around the locator and structural deltas;
-- produce a machine-readable keypad-pipeline analysis artifact.
+Disassembly of both preserved branches (capstone, load base 0 confirmed — every BL resolves
+to a known file offset) produced the full runtime event graph and a **material correction to
+the hook-seam assumption**:
+
+```
+poll tick
+  -> key_state_machine 0x52790  (debounce/hold timing: short <1000ms, long >=1000ms)
+       -> get_current_key 0x526f2 -> [RAM driver ptr] ADC decoder 0x52844
+            -> adc_read_veneer 0xc6764  (6-sample read, drop min+max, average)
+       -> translated_event_emitter 0x52656   (short/long PRESS only)
+            -> translation_mapper 0x52926     (pick short/long/repeat from the 4-byte record)
+            -> queue_post 0xc6d7c (category 0x82)
+       -> 500ms auto-repeat timer -> repeat_handler 0x52982
+            -> queue_post 0xc6d7c (category 0x82)   <-- BYPASSES the emitter
+```
+
+Key findings:
+
+- **The emitter `0x52656` is NOT the single common seam.** It catches only short/long
+  *press* events. Auto-repeat and key-change *finalize* post to the queue **directly**,
+  bypassing the emitter. The guaranteed single fan-in that catches short + long + repeat is
+  the **category-`0x82` message-queue post `0xc6d7c`**. There are exactly **4** category-`0x82`
+  producers (`0x52680` emitter press, `0x52916` release-finalize class 2, `0x529aa` repeat
+  key-change class 2, `0x529ce` auto-repeat class 3). An adjacent producer `0x525a8` posts a
+  different class `0x81` and is not a translated key event.
+- `0xc6d7c` is a generic `os_post(category, event, u16 param)` ring-buffer enqueue; the key
+  event class is the constant `0x82` loaded in `r0` at each producer.
+- Translator return codes drive the emitter: `0`=emit translated byte, `1`=emit raw key id
+  (no table), `2`=key not found → drop, `3`=repeat/third handler invoked → emitter emits
+  nothing (the handler posts on its own).
+- Timing constants (byte-verified): long-press threshold **1000 ms** (`0x7d<<3`), auto-repeat
+  period **500 ms** (`0xff+0xf5`), scan reschedule **10 ms**.
+- The whole subsystem including the far `queue_post` shifts by exactly **`-0x94`** in flag60
+  (`queue_post` flag60 = `0xc6ce8`); category `0x82` is conserved verbatim in both branches.
+
+Delivered offline:
+
+- `tools/keypad_pipeline_report.py` — pure-Python (no capstone dep), fail-closed analyzer
+  that re-locates the conserved bodies by signature, derives the per-branch shift, and
+  **verifies against real bytes** that each category-`0x82` producer is `movs r0,#0x82` + BL
+  to `queue_post`. Recognition + verification only; never patches, no flashable output.
+- `artifacts/analysis/keypad_pipeline.json` — committed machine-readable artifact (PASS on
+  both branches; pins live firmware sha256s).
+- `tests/test_day1_offline.py::FirmwareKeypadPipelineTests` — 5 tests: locator PASS on both
+  branches, locator FAIL-CLOSED on a mutated emitter byte, Thumb-BL decoder vs known targets,
+  category-`0x82` fan-in verified on both branches, committed artifact matches live bytes.
+  Full verifier now **331 tests PASS** in normal WSL (the two W9B optical errors were the
+  WSL_MCP sandbox missing Pillow; they do not occur here).
+
+Remaining FIRM-R0 (optional, lower value): annotate the exact consumer task that dequeues
+category `0x82` (a consumer-side hook is an alternative single seam), and prove no *other*
+category posts a front-panel key. The producer-side model above is already sufficient to
+specify a fail-open consume-or-forward shim.
 
 ### 2. UPDATE-R0 — fully annotate the SD updater
 
