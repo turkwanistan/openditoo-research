@@ -5058,3 +5058,64 @@ class FirmwareKeypadPipelineTests(unittest.TestCase):
         for name in self.BRANCHES:
             live = hashlib.sha256((self.FW / name).read_bytes()).hexdigest()
             self.assertEqual(by_name[name]["sha256"], live, f"{name} artifact stale")
+
+
+class UpdateContainerTests(unittest.TestCase):
+    """UPDATE-R0: offline SD update-container parser/validator + negative fixtures.
+
+    Read-only. Verifies the container format and acceptance gates against both preserved
+    branches, and that malformed candidates are rejected at the correct gate, in firmware
+    evaluation order (marker -> version -> checksum).
+    """
+
+    FW = ROOT / "artifacts/firmware"
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_update_container")
+
+    def test_selfcheck_fixtures_pass(self) -> None:
+        self._mod()._selfcheck()  # asserts internally
+
+    def test_real_branches_parse_and_upgrade_accepts(self) -> None:
+        m = self._mod()
+        for name, ver in (("flag42_v42016.bin", 42016), ("flag60_v60014.bin", 60014)):
+            data = (self.FW / name).read_bytes()
+            c = m.parse(data)
+            self.assertEqual(c.version, ver, name)
+            self.assertTrue(c.marker_ok, name)
+            self.assertTrue(c.checksum_ok, f"{name} additive checksum over file[:-4]")
+            # upgrade from one below accepts; reinstall/downgrade rejects at version gate.
+            self.assertTrue(m.validate(data, installed_version=ver - 1)["accepted"], name)
+            r = m.validate(data, installed_version=ver)
+            self.assertFalse(r["accepted"])
+            self.assertEqual(r["first_failing_gate"], "version")
+
+    def test_checksum_poison_rejects_at_checksum_gate(self) -> None:
+        # Mirrors the physical SD-P1 probe: flip only the final stored-checksum byte.
+        m = self._mod()
+        data = bytearray((self.FW / "flag42_v42016.bin").read_bytes())
+        data[-1] ^= 0x01
+        r = m.validate(bytes(data), installed_version=42012)
+        self.assertFalse(r["accepted"])
+        self.assertEqual(r["first_failing_gate"], "checksum")
+
+    def test_bad_marker_rejects_before_checksum(self) -> None:
+        m = self._mod()
+        data = bytearray((self.FW / "flag42_v42016.bin").read_bytes())
+        data[-16] = ord("X")  # corrupt first marker byte
+        r = m.validate(bytes(data), installed_version=42012)
+        self.assertEqual(r["first_failing_gate"], "marker")
+
+    def test_force_flag_bypasses_version_gate(self) -> None:
+        m = self._mod()
+        data = (self.FW / "flag42_v42016.bin").read_bytes()
+        self.assertFalse(m.validate(data, installed_version=42016)["accepted"])
+        self.assertTrue(m.validate(data, installed_version=42016, force=True)["accepted"])
+
+    def test_truncated_fails_parse_not_crash(self) -> None:
+        m = self._mod()
+        r = m.validate(b"\x00" * 8, installed_version=42012)
+        self.assertFalse(r["parse_ok"])
+        self.assertFalse(r["accepted"])

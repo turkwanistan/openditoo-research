@@ -141,6 +141,16 @@ Tasks:
 
 **Exit:** updater validation and flash-write topology are documented strongly enough that a future patch package can be reviewed byte-for-byte before any live use.
 
+**Status (2026-09-12, offline): validation fully modelled; write topology deferred.**
+`divoom_check_update` disassembled (flag42 `0x8394`, link base `0x08400000`). Trailer =
+`[u32 version][12 "DIVOOMUPDATE"][u32 checksum]` (last 20 bytes); checksum = `sum(file[:-4])
+mod 2**32`, no signature. Gate order marker → version → checksum → writer `0x3a824`. Version
+policy: reject if `installed >= candidate` unless header flag byte `0x33` forces. Delivered
+`tools/ditoo_update_container.py` (read-only validator, `--selfcheck`) + `UpdateContainerTests`
+(6, negative fixtures). Explains SD-P1: checksum-poison reached updater UI but failed the
+checksum gate → no flash. Remaining: erase/partition/write topology inside `0x3a824` and the
+reset/completion path.
+
 ### RECOVERY-R0 — close rollback/readback before persistent custom firmware
 
 **Objective:** obtain a credible recovery path for the exact purchased unit.

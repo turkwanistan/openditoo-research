@@ -600,3 +600,49 @@ never hardcode one build offset.
   branches; locator FAIL-CLOSED on a mutated emitter byte; BL decoder vs known targets;
   category-`0x82` fan-in verified both branches; committed artifact vs live bytes). Verifier
   total now 331 tests PASS.
+
+## 14. UPDATE-R0 disassembly — container format + acceptance gates (2026-09-12, offline)
+
+`divoom_check_update` disassembled at flag42 file `0x8394` (link base **`0x08400000`**: code
+BL read as base 0 because PC-relative; absolute rodata string pointers confirm the real base
+`0x08400000`, so the earlier note that the "update routine" sits at `0x8394..0x89f9` was
+conflating the code with its adjacent rodata string block `0x886c..0x8967`).
+
+### Container format (verified on both preserved branches, last 20 bytes)
+
+```
+[ version : u32 LE ][ "DIVOOMUPDATE" : 12 bytes ][ checksum : u32 LE ]
+  file[-20:-16]        file[-16:-4]                 file[-4:]
+```
+
+- flag42 v42016: version `42016`, checksum `0x06ab2183` == `sum(file[:-4]) & 0xffffffff`.
+- flag60 v60014: version `60014`, checksum `0x06ab2798` == `sum(file[:-4]) & 0xffffffff`.
+- The additive checksum covers the version field and marker; only the final stored u32 is
+  excluded. No cryptographic signature/HMAC is present in this path.
+
+### Acceptance gates (firmware evaluation order; reject at first failure)
+
+1. **marker** `0x8744`: `memcmp(header+5, "DIVOOMUPDATE", 12)` via `0xa2850`. Mismatch clears a
+   header byte and rejects.
+2. **version** `0x878c-0x879a`: `bl 0x34308` (installed version) `cmp` candidate; `bhs` →
+   reject when `installed >= candidate` (no downgrade, no same-version reinstall). A header
+   flag byte `== 0x33` ('3') at `0x8790` bypasses this gate (forced update).
+3. **checksum** `0x87be`: `subs r2,#4` sets coverage to `file[:-4]`; chunked 1024-byte reads
+   accumulate an additive byte sum (`0x87ee`); `0x8820` compares to the stored u32. Mismatch
+   rejects before any write.
+4. **write** `0x883c`: only after all gates pass, `bl 0x3a824(mode=0, data_len, checksum,
+   version)` — the flash writer — then reset. Erase granularity / partition map / reset path
+   inside `0x3a824` are not yet disassembled (future UPDATE-R0 work).
+
+This matches the log-string order (`flag err` → `pass version` → `read over` → `start update`)
+and explains SD-P1 precisely: the checksum-poisoned probe passed the marker and reached the
+updater UI but failed the checksum gate, so nothing was flashed and the file stayed
+byte-identical.
+
+### Delivered offline (read-only; no installable package)
+
+- `tools/ditoo_update_container.py` — parser/validator (`--selfcheck`) reporting each gate in
+  firmware order; accepts v42016 as an upgrade from 42012, rejects it as a reinstall on 42016.
+- `tests/test_day1_offline.py::UpdateContainerTests` — 6 tests incl. negative fixtures derived
+  from the real firmware (checksum poison → checksum gate; bad marker → marker gate first;
+  force-flag bypass; truncated → parse failure).
