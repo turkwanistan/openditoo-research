@@ -1,0 +1,108 @@
+{
+  "authority": {
+    "authorization_consumed": false,
+    "grant_materialization_rule": "Fresh owner grant binds committed manifest SHA-256 + fixture-report SHA-256 and fresh one-use nonce before socket creation.",
+    "one_use": true,
+    "previous_grants_transfer": false,
+    "required_grant_text": "Grant OPENDITOO-VRAM8B-PREMODEL-008 -- stock btplayer selected",
+    "retry": false,
+    "transmission_authorized": false
+  },
+  "exact_version_boundary": "Exact v42012 bytes are unrecovered. Addresses/offsets are hypotheses until a live differential establishes them.",
+  "experiment_id": "OPENDITOO-VRAM8B-PREMODEL-008",
+  "fixture_report": {
+    "path": "artifacts/analysis/volatile_ram_api_vram8b_premodel_008.json",
+    "sha256": "84edcd2ae29b90a7c9ccb7359a9aba4b8ba28cf23841360f9cfc3e5a90c963c3"
+  },
+  "kind": "openditoo_vram8b_premodel_differential_one_use_manifest",
+  "next_if_matches_control": "Prepare MODEL-SENTINEL-009 with the identical source prefix plus exactly one extra byte (source length 0x411) so predicted runtime50+0x08 changes from stock 0x22 to 0xff while callback remains unreachable.",
+  "predecessor_control": {
+    "path": "captures/OPENDITOO-VRAM8B-CONTROL-007-LIVE-RESULT-2026-09-13.json",
+    "sha256": "42f53970da762c86c585cd50013beea9620bd6c94ac6b7e7737beb184aa449a0"
+  },
+  "purpose": "Exact-unit differential control for later-branch runtime50 placement hypothesis: stock 0x6e + A5, capture the immediate report, then at ~40 ms send one 0x6c with 0x410 bytes of 0xff and capture through 75 s. Under preserved later-branch geometry the copy reaches runtime50 +0..+7 but stops one byte before model +0x08 and far before callback +0x34.",
+  "receive_policy": {
+    "capture_window_ms_from_a5": 75000,
+    "concatenated_frames_supported": true,
+    "disconnect": "STOP_NO_RETRY",
+    "fragmentation_supported": true,
+    "malformed_or_checksum_failure": "STOP_NO_RETRY",
+    "overwrite_target_elapsed_ms_from_a5": 40,
+    "record_full_wire_and_payload": true,
+    "start": "immediately after completed 0xA5 send",
+    "zero_reports_is_valid_completion": true
+  },
+  "safety_boundary": {
+    "callback_pointer_write": false,
+    "custom_code": false,
+    "flash_write": false,
+    "persistent_write": false,
+    "predicted_last_runtime50_offset": "0x07",
+    "predicted_model_byte_write": false,
+    "runtime018_restore_required": true
+  },
+  "schema_version": 1,
+  "sequence": [
+    {
+      "command": "0x6e",
+      "ordinal": 1,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-PREMODEL-008-01-prime.bin",
+      "sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec",
+      "wire_hex": "0104006e01730002",
+      "wire_length": 8
+    },
+    {
+      "command": "0xa5",
+      "ordinal": 2,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-PREMODEL-008-02-voicetip.bin",
+      "sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316",
+      "wire_hex": "010600a5010201af0002",
+      "wire_length": 10
+    },
+    {
+      "command": "0x6c",
+      "declared_source_length": 1040,
+      "ordinal": 3,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-PREMODEL-008-03-overwrite.bin",
+      "sha256": "7f2df478e82e69583a31f31944788258cf09a0962b6c858b702ad24dd83451ff",
+      "wire_length": 1051,
+      "wire_prefix_hex": "0117046c00001004ffffffffffffffff",
+      "wire_suffix_hex": "ffffffffffffffffffffffffff8b0c02"
+    }
+  ],
+  "status": "prepared_unauthorized",
+  "success_discriminator": {
+    "interpretation": "DIFFERENTIAL_CONTROL_TRANSCRIPT_COMPLETE only. Comparison to CONTROL-007 determines whether bytes +0..+7/display-overflow perturb the lifecycle; no exact-v42012 placement claim is implied by send success alone.",
+    "required": [
+      "exact three sends on one connection",
+      "exact one custom 0x6c with declared source length 0x410",
+      "full 75-second from-A5 capture completes",
+      "all captured frames validate",
+      "Runtime 018 restores connected with last_error=null"
+    ]
+  },
+  "target": {
+    "installed_firmware_version_assumption": 42012,
+    "mac": "11:75:58:CE:DE:C7",
+    "model": "Divoom Ditoo Plus",
+    "purchased_unit_only": true,
+    "rfcomm_channel": 1
+  },
+  "timing": {
+    "a5_to_overwrite_target_ms": 40,
+    "capture_window_from_a5_ms": 75000,
+    "prime_to_a5_ms": 40
+  },
+  "transport_budget": {
+    "connect_budget_ms": 15000,
+    "custom_0x6c_declared_source_length": 1040,
+    "exact_application_sends": 3,
+    "max_connections": 1,
+    "max_custom_0x6c_sends": 1,
+    "max_reports": 64,
+    "max_wire_bytes_per_report": 64,
+    "reconnect": false,
+    "retry": false,
+    "total_budget_ms": 95000
+  }
+}

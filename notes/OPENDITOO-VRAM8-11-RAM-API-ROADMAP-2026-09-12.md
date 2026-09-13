@@ -1,5 +1,14 @@
 # OpenDitoo VRAM-8..11 RAM API roadmap — 2026-09-12
 
+
+## 2026-09-13 exact-unit VoiceTip baseline closed / PREMODEL-008 prepared — CURRENT
+
+`OPENDITOO-VRAM8B-CONTROL-007` is **consumed / PASS_EXACT_UNIT_STOCK_VOICETIP_TRANSCRIPT**. On one RFCOMM connection it sent only stock `0x6e 01` then stock `0xA5 01 02 01`, with no custom `0x6c`, and captured the full 75-second exact-v42012 receive stream. Two valid wrapped `0xBD` reports occurred: payload `13 01 4b 00` at **23 ms**, then `13 01 1e 00` at **65,252 ms**. The connection survived through 75,003 ms and Runtime 018 revision 13 restored `connected`, `last_error=null`. Durable evidence: `captures/OPENDITOO-VRAM8B-CONTROL-007-LIVE-RESULT-2026-09-13.json` (SHA-256 `42f53970da762c86c585cd50013beea9620bd6c94ac6b7e7737beb184aa449a0`). This closes the exact-unit stock VoiceTip/report timing baseline; it does not by itself prove later-branch RAM addresses.
+
+Fresh differential `OPENDITOO-VRAM8B-PREMODEL-008` is **prepared / unauthorized**. It preserves the exact stock prime/A5 setup and the same A5-relative 75-second capture, but schedules exactly one data-only `0x6c` at ~40 ms after A5. Its source is exactly **0x410 / 1040 bytes of `0xFF`**. Under the preserved later-branch geometry this reaches predicted runtime50 bytes `+0..+7` and stops **one byte before model `+0x08`** and far before callback `+0x34`; no custom code or callback pointer is present. The purpose is a causal boundary control: if its transcript reproduces CONTROL-007's `4b -> 1e` lifecycle, the planned 009 successor may add exactly one source byte (`0x411`) to flip only predicted model `+0x08` to `0xFF`. If 008 itself perturbs the lifecycle, stop and diagnose rather than advancing. Manifest SHA-256 `201b55743131fa143abcbc360a76d9c22a85f5177217d897b3726802e6b5bbf8`; fixture-report SHA-256 `84edcd2ae29b90a7c9ccb7359a9aba4b8ba28cf23841360f9cfc3e5a90c963c3`. Exact future grant: **`Grant OPENDITOO-VRAM8B-PREMODEL-008 -- stock btplayer selected`**.
+
+Do not prepare another executable callback canary or VRAM-8D installer from the 005/006 negatives. First close the 008/009 data-only differential and keep exact-v42012 address claims fail-closed.
+
 ## 2026-09-13 VRAM-8B exact-unit recalibration — 006 negative / CONTROL-007 prepared — CURRENT
 
 `OPENDITOO-VRAM8B-CANARY-006` is **consumed / typed-canary negative on the relocated stage-0 site**. Like 005, it completed one RFCOMM connection, the stock baseline/prime/VoiceTip sequence and exactly one custom `0x6c`, survived the full 75-second post-overwrite window, then received an exact wrapped B3 value `0` where the frozen canary expected `1`. Runtime 018 revision 13 restored `connected`, `last_error=null`. Durable evidence: `captures/OPENDITOO-VRAM8B-CANARY-006-LIVE-RESULT-2026-09-13.json`.

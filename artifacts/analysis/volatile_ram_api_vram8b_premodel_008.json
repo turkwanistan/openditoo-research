@@ -1,0 +1,74 @@
+{
+  "experiment_id": "OPENDITOO-VRAM8B-PREMODEL-008",
+  "geometry_hypothesis": {
+    "boundary_note": "These are preserved-later-branch hypotheses, not exact v42012 addresses.",
+    "callback_reached": false,
+    "last_source_offset": "0x40f",
+    "model_reached": false,
+    "predicted_callback_offset": "runtime50+0x34",
+    "predicted_last_victim_offset": "runtime50+0x07",
+    "predicted_model_offset": "runtime50+0x08",
+    "predicted_runtime50_base_later_branch": "0x00804b80",
+    "predicted_runtime50_source_offset": "0x408",
+    "source_base_later_branch": "0x00804778",
+    "source_length": 1040
+  },
+  "kind": "openditoo_vram8b_premodel_008_differential_fixture",
+  "predecessor_control": {
+    "immediate_bd_payload": "13014b00",
+    "immediate_elapsed_ms": 23,
+    "late_bd_payload": "13011e00",
+    "late_elapsed_ms": 65252,
+    "path": "captures/OPENDITOO-VRAM8B-CONTROL-007-LIVE-RESULT-2026-09-13.json",
+    "sha256": "42f53970da762c86c585cd50013beea9620bd6c94ac6b7e7737beb184aa449a0"
+  },
+  "safety": {
+    "custom_callback_pointer": false,
+    "custom_code": false,
+    "flash_write": false,
+    "offline_preparation_only": true,
+    "persistent_mutation": false,
+    "predicted_callback_field_touched": false,
+    "predicted_model_byte_touched": false
+  },
+  "schema_version": 1,
+  "source": {
+    "fill": "0xff",
+    "length": 1040,
+    "path": "experiments/fixtures/OPENDITOO-VRAM8B-PREMODEL-008-source.bin",
+    "sha256": "a096f2c4317dc713fc5121a3a4521eeb396f3552fb1e768463dc1b8d756d8912"
+  },
+  "timing": {
+    "a5_to_overwrite_target_ms": 40,
+    "capture_window_from_a5_ms": 75000,
+    "prime_to_a5_ms": 40
+  },
+  "transmit": [
+    {
+      "command": "0x6e",
+      "ordinal": 1,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-PREMODEL-008-01-prime.bin",
+      "sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec",
+      "wire_hex": "0104006e01730002",
+      "wire_length": 8
+    },
+    {
+      "command": "0xa5",
+      "ordinal": 2,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-PREMODEL-008-02-voicetip.bin",
+      "sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316",
+      "wire_hex": "010600a5010201af0002",
+      "wire_length": 10
+    },
+    {
+      "command": "0x6c",
+      "declared_source_length": 1040,
+      "ordinal": 3,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-PREMODEL-008-03-overwrite.bin",
+      "sha256": "7f2df478e82e69583a31f31944788258cf09a0962b6c858b702ad24dd83451ff",
+      "wire_length": 1051,
+      "wire_prefix_hex": "0117046c00001004ffffffffffffffff",
+      "wire_suffix_hex": "ffffffffffffffffffffffffff8b0c02"
+    }
+  ]
+}

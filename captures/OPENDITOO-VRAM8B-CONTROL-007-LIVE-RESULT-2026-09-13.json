@@ -1,0 +1,65 @@
+{
+  "authority": {
+    "authorization_consumed": true,
+    "one_use_claim_created": true,
+    "replay_allowed": false,
+    "retry_allowed": false
+  },
+  "capture_id": "OPENDITOO-VRAM8B-CONTROL-007-LIVE-RESULT-2026-09-13",
+  "classification": "PASS_EXACT_UNIT_STOCK_VOICETIP_TRANSCRIPT",
+  "exact_unit_transcript": [
+    {
+      "ChecksumLe16": 382,
+      "ElapsedMs": 23,
+      "InnerCommand": 189,
+      "OuterCommand": 4,
+      "PayloadHex": "13014b00",
+      "Tag": 85,
+      "WireHex": "01090004bd5513014b007e0102",
+      "WireLength": 13
+    },
+    {
+      "ChecksumLe16": 337,
+      "ElapsedMs": 65252,
+      "InnerCommand": 189,
+      "OuterCommand": 4,
+      "PayloadHex": "13011e00",
+      "Tag": 85,
+      "WireHex": "01090004bd5513011e00510102",
+      "WireLength": 13
+    }
+  ],
+  "execution": {
+    "application_sends_completed": 2,
+    "claim_sha256": "f33a4ae9d2e9d3eaaf3ae9f286ea2cd8cc055ccf4faa4132da226f0816972f93",
+    "connection_survived_observation": true,
+    "connections_attempted": 1,
+    "custom_0x6c_sends": 0,
+    "execution_assembly_sha256": "9e31409bdcf27065b0d28802b9687be2c20267809d4ecd434d910993c20dcdc6",
+    "execution_seal_sha256": "049cb95b9459db29c58e91934790e9cca0e0177df4d667a2ff25a624967cd7b3",
+    "local_result_sha256": "ecbcf33bd734b1bf0123df64f6794253ad2c06a4753457f265def8629f818bac",
+    "observation_ms": 75003,
+    "report_count": 2
+  },
+  "experiment_id": "OPENDITOO-VRAM8B-CONTROL-007",
+  "interpretation": {
+    "immediate_report": "inner 0xBD payload 13014b00 at 23 ms",
+    "late_report": "inner 0xBD payload 13011e00 at 65252 ms",
+    "meaning": "Exact v42012 stock baseline for later bounded placement differentials. No overwrite/callback/execution claim is implied.",
+    "stock_sequence": "0x6e payload 01 -> 0xa5 payload 01 02 01 -> receive-only",
+    "v42012_boundary": "Exact installed bytes remain unrecovered; later-branch absolute RAM addresses are hypotheses until calibrated live."
+  },
+  "recovery": {
+    "last_error": null,
+    "runtime018_restored": true,
+    "runtime_revision": 13,
+    "status": "connected"
+  },
+  "safety": {
+    "custom_0x6c": false,
+    "flash_write": false,
+    "persistent_firmware_mutation": false,
+    "ram_overwrite": false
+  },
+  "schema_version": 1
+}
