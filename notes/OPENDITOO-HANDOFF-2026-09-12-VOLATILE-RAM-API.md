@@ -311,3 +311,8 @@ At handoff preparation in constrained WSL_MCP:
 - `python3 scripts/verify_day1_offline.py` — 381 tests, exactly the two known unrelated W9B optical errors from missing `PIL`, zero new parser/recovery/product failures;
 - M2 authority remains `status=authorized_unconsumed`, `physical_execution_authorized=true`, `authorization_consumed=false`; it was not executed or consumed;
 - no Ditoo transmission, Runtime 018 change, flash operation, MassBoot action or physical measurement occurred while preparing this handoff.
+
+
+## VRAM-8B GRANT STATE — 2026-09-12
+
+`OPENDITOO-VRAM8B-CANARY-001` has an exact owner grant materialized locally and remains **authorized but unconsumed**. No claim, handover, result, or live device action was created. Runtime 018 remained connected. Do not request another 8B grant unless this grant is consumed, revoked, or the frozen manifest changes.

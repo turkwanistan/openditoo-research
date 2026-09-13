@@ -671,3 +671,8 @@ Raw mirrored evidence and hashes should outrank these links if upstream sources 
 We have progressed well beyond generic reconnaissance. The project now has exact current firmware, a recovered native update-container format, an exact filesystem update path, exact dual BLE/SPP firmware support, independent Anyka 1052D identification, a statically confirmed MassBoot/test-mode selector, and a strong map of what must be measured on the purchased unit next.
 
 The largest remaining unknowns are not whether a service/update framework exists—they are the **exact physical MassBoot trigger, exact GPIO role, exact data-command dispatch, exact purchased-unit firmware/hardware revision, and exact proprietary Bluetooth topology**.
+
+
+## VRAM-8B GRANT STATE — 2026-09-12
+
+`OPENDITOO-VRAM8B-CANARY-001` has an exact owner grant materialized locally and remains **authorized but unconsumed**. No claim, handover, result, or live device action was created. Runtime 018 remained connected. Do not request another 8B grant unless this grant is consumed, revoked, or the frozen manifest changes.
