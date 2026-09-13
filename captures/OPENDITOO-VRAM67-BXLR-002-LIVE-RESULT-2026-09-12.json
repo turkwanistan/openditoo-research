@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-VRAM67-BXLR-002",
+  "date_utc": "2026-09-13",
+  "classification": "PASS_UNDER_PROMOTED_OFFLINE_TRIGGER_MODEL",
+  "final_interpretation": "The precommitted VRAM-6/7 returning-stage0 discriminator passed. All three exact frozen application frames completed on one RFCOMM connection, including exactly one custom 0x6c overwrite. The same connection survived 75009 ms after the overwrite, beyond the stock VoiceTip callback deadline used by the promoted offline trigger model. Accepted Runtime 018 then restored to runtime_revision 13, status connected, last_error null, and ACKed frames in a fresh session. Under the precommitted composite discriminator this is the planned live returning-BX-LR PASS. It is not a separate wire-level stage0 marker; the inference depends on the already-promoted deterministic placement/timeout/callback model.",
+  "target": {
+    "model": "Divoom Ditoo Plus",
+    "mac": "11:75:58:CE:DE:C7",
+    "rfcomm_channel": 1,
+    "installed_firmware_version_assumption": 42012,
+    "manual_stock_btplayer_selected": true
+  },
+  "authority": {
+    "grant_text": "Grant OPENDITOO-VRAM67-BXLR-002 -- stock btplayer selected",
+    "one_use": true,
+    "retry": false,
+    "grant_file_sha256": "bb071613d9928d793eab685c221bd1b85bba6c1b1a0518cf4d3aeea579697490",
+    "claim_file_sha256": "c310164613e8d1e97b0978d6ba0de8413275595f91f0502ff608d15cbf248f77",
+    "result_file_sha256": "981c9c5f14d462ba0bf800986cfd28e834393e557840d33678ced05538277ede"
+  },
+  "bindings": {
+    "manifest_path": "experiments/OPENDITOO-VRAM67-BXLR-002.json",
+    "manifest_sha256": "47cbd5123e0422e4c6cb0779749d9fffc6a1d18e2a26342fa56ba4c2bb7480e9",
+    "fixture_report_path": "artifacts/analysis/volatile_ram_api_vram67_fixture_002.json",
+    "fixture_report_sha256": "777044a4845315e8b662b38ba2f39a01a951bc38e93fd01f64da1ed04ed7a4c2",
+    "prime_sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec",
+    "voicetip_sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316",
+    "overwrite_sha256": "c3fbc813e2646b44ace4a2105163fe7bc2622d5e6cc61477ac6098d0b23b12cd",
+    "source_sha256": "7ec43cab8cd04da6b2d90983dcec868baee3a1615448d05f446aa5a1c2e3ce48",
+    "stage0_bytes_hex": "7047",
+    "stage0_instruction": "BX LR"
+  },
+  "live_transport_result": {
+    "runner_outcome": "candidate_pass_transport_observation",
+    "connections_attempted": 1,
+    "application_sends_completed": 3,
+    "custom_0x6c_sends": 1,
+    "observation_ms": 75009,
+    "connection_survived_observation": true,
+    "retry": false,
+    "runner_completed_at_utc": "2026-09-13T00:13:14.5334116+00:00"
+  },
+  "runtime018_restoration": {
+    "restored": true,
+    "runtime_revision": 13,
+    "status": "connected",
+    "last_error": null,
+    "fresh_session_opened_at_utc": "2026-09-13T00:13:17.277383Z",
+    "post_restore_frame_acked_at_utc": "2026-09-13T00:13:18.499797Z"
+  },
+  "promotion": {
+    "controlled_adjacent_heap_overwrite": "PROVEN_OFFLINE_AND_LIVE_SEQUENCE_COMPLETED",
+    "deterministic_victim_placement": "PROMOTED_OFFLINE",
+    "deterministic_voicetip_timeout_to_callback": "PROMOTED_OFFLINE",
+    "heap_thumb_executability": "PROMOTED_OFFLINE",
+    "minimal_returning_stage0": "LIVE_PASS_UNDER_COMPOSITE_DISCRIMINATOR",
+    "wire_level_stage0_marker": false,
+    "vram8_started": false
+  },
+  "stop_boundary": "STOP_BEFORE_VRAM8_BOUNDED_LOADER_DESIGN_OR_ANY_NEW_LIVE_GRANT"
+}

@@ -308,26 +308,13 @@ A candidate should not reach live preparation unless:
 - the device can recover by ordinary power cycle;
 - there is a reason to believe the test distinguishes controllability, not merely parser fragility.
 
-## Phase VRAM-6/7 — first returning-stage-0 live discriminator — 001 INCONCLUSIVE / 002 PREPARED UNGRANTED
+## Phase VRAM-6/7 — first returning-stage-0 live discriminator — CLOSED LIVE PASS
 
-`OPENDITOO-VRAM67-BXLR-001` consumed its one-use grant but did **not** reach the `0xa5` or custom `0x6c` send calls. Only the stock `0x6e` prime completed. The runner incorrectly waited for a fresh `FD_WRITE` before each frame and timed out before the second send. Durable evidence is `captures/OPENDITOO-VRAM67-BXLR-001-LIVE-RESULT-2026-09-12.json`; classify it as transport-harness inconclusive, not a VRAM negative, and never replay 001.
+Attempt 001 is consumed/inconclusive due to the historical per-send `FD_WRITE` harness bug and never reached `0xa5` or custom `0x6c`. Successor 002 corrected only that transport bookkeeping while keeping the source and all three wire frames byte-identical. 002 then completed one RFCOMM connection, all three frozen application sends, exactly one custom `0x6c`, no retry, and 75,009 ms of post-overwrite connection survival. Runtime 018 restored afterward to revision 13, `connected`, `last_error=null`, with a fresh post-restore frame ACK.
 
-Fresh offline successor preparation is complete in `experiments/OPENDITOO-VRAM67-BXLR-002.json`. It keeps the smallest VRAM-6 discriminator and minimal VRAM-7 returning-control-flow witness byte-identical to 001. Only the Windows nonblocking-send harness changes: one initial `FD_WRITE` wait, then one direct `send()` call per frozen frame; any would-block/short/error remains terminal no-retry.
+Under the precommitted composite discriminator and the already-promoted deterministic placement + VoiceTip timeout/callback + executable-Thumb-heap model, **the minimal returning `70 47` (`BX LR`) stage0 is now a LIVE PASS**. This is not an independent wire-level execution marker; the live inference explicitly depends on that promoted offline model. Evidence: `captures/OPENDITOO-VRAM67-BXLR-002-LIVE-RESULT-2026-09-12.json`.
 
-Frozen constraints:
-
-- one RFCOMM connection;
-- exactly three application sends: stock-shaped `0x6e`, stock-shaped `0xa5`, exactly one custom `0x6c`;
-- 40 ms inter-packet spacing; no fourth liveness/query packet;
-- exact 1088-byte `0x6c` source, stage-0 only `70 47` (`BX LR`);
-- 75-second no-send observation hold through the stock VoiceTip deadline;
-- no generic raw-send escape hatch, command enumeration, loader, API, persistence, flash/SD/factory/MassBoot path, or follow-on payload;
-- Runtime 018 is stopped only after authority/hash checks, with an 18-second sidecar-expiry settle, and must be restored/connected afterward;
-- no retry after a claimed attempt, including ambiguous/failing transport or device behavior.
-
-The success discriminator is deliberately composite rather than an added stage-0 output primitive: the same RFCOMM connection survives beyond the deterministic callback deadline with no crash/reboot/disconnect, then accepted Runtime 018 reconnects cleanly. Interpreted with the promoted offline timeout->callback proof, that is the candidate returning-`BX LR` result. A timing-only effect is not success.
-
-The fresh successor grant text is `Grant OPENDITOO-VRAM67-BXLR-002 -- stock btplayer selected`. The consumed 001 grant does not transfer. Until the exact 002 text is supplied, 002 remains unauthorized and no successor Bluetooth open/transmit is allowed. After one claimed 002 run, stop for interpretation before VRAM-8.
+Both 001 and 002 are consumed and must not be replayed. No prior authority transfers. Stop here before any VRAM-8 packet design is executed live.
 
 ## Phase VRAM-8 — bounded RAM loader
 
@@ -477,7 +464,7 @@ Immediate offline work is now:
 3. treat the stock trigger as **closed positive under a deterministic stock btplayer precondition**: after the `0x6e` content prime, `0xa5` selector 2/model `0x22` creates VoiceTip state and the period-1 timeout eventually reaches `0x1fa8a`; keep the all-SPP `0x8a` BLUE normalization route separate/unpromoted until queue-preemption ordering is proven;
 4. treat **VRAM-3 as closed positive**: `0x00804779` is executable Thumb RAM with no NX barrier, lies in a pristine `0xff`-filled unreferenced span, and the minimal returning witness is `70 47` (`BX LR`);
 5. preserve the exact 1088-byte witness geometry: callback source offset `0x43c`; controlled runtime50 byte0=`0xff`, byte8=`0x22`, callback=`0x00804779`; last overwritten victim offset `+0x37`; preserve `+0x3c/+0x40/+0x44`;
-6. the next gate is procedural, not analytical: 001 is consumed/inconclusive before the custom packet; the fresh one-use reviewed successor is **`experiments/OPENDITOO-VRAM67-BXLR-002.json`**. Keep 002 frozen and unauthorized until the owner supplies its exact new grant; no prior grant transfers;
+6. VRAM-6/7 is now closed live PASS under the precommitted composite discriminator. Both 001 and 002 are consumed/non-replayable. The next gate is offline VRAM-8 bounded-loader design; any new live packet sequence needs a fresh reviewed manifest and fresh explicit owner grant;
 7. do not expand immediately to a loader/API until this bounded live returning-stage-0 proof exists. A crash, reboot, disconnect, timeout, or timing-only effect is not success and must never be used as the primary oracle.
 
-Do not replay 001. Do not transmit the frozen custom `0x6c` under successor 002 until `OPENDITOO-VRAM67-BXLR-002` is explicitly granted. Runtime 018 remains outside parser semantics but its exact stop/18-second settle/restore-connected handover is part of this manifest.
+Do not replay 001 or 002. Runtime 018 restored cleanly after 002. No new live transmission is authorized by either consumed grant; stop before VRAM-8 live work.

@@ -94,10 +94,13 @@ The owner granted `OPENDITOO-VRAM67-BXLR-001` with stock btplayer selected. Afte
 
 Root cause is the runner's Winsock model, not device behavior: `FD_WRITE` is the initial writable notification and is subsequently re-signaled after a `send()` returns `WSAEWOULDBLOCK` and space becomes available; it is not a fresh event before each normal send. The successor must preserve every payload byte while changing only this harness behavior.
 
-### VRAM-6/7 successor 002 — PREPARED / UNGRANTED / UNEXECUTED
+### VRAM-6/7 successor 002 — CONSUMED / LIVE PASS UNDER PROMOTED OFFLINE TRIGGER MODEL
 
-`experiments/OPENDITOO-VRAM67-BXLR-002.json` is the fresh one-use successor. Its source and all three wire frames are byte-identical to 001 (including overwrite SHA-256 `c3fbc813e2646b44ace4a2105163fe7bc2622d5e6cc61477ac6098d0b23b12cd`). Runner002 waits for initial `FD_WRITE` once, then issues exactly one direct `send()` per frozen application frame; `WSAEWOULDBLOCK`, short send, close, or error remains terminal stop/no-retry. It records send progress on transport failures. The coordinator requires absolute `/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe` and builds the hash-bound runner before Runtime 018 handover. The required fresh grant is **`Grant OPENDITOO-VRAM67-BXLR-002 -- stock btplayer selected`**. No 001 authority transfers.
-Independent disposable-lab verification at commit `635b5a7f0df429988ed3c92d37af756055ff25f2`: .NET 8 restore/build of `OpenDitoo.Vram67.Runner002.csproj` succeeded with **0 warnings / 0 errors**. Focused Tier-2/VRAM + 001 + 002 tests are **31/31 PASS**. The broad constrained verifier remains at its established baseline: 381 tests with only the two unrelated W9B optical `PIL` import errors. The ungranted 002 coordinator fails closed with `VRAM67_EXACT_GRANT_NOT_MATERIALIZED` and creates no local grant/handover/claim/result.
+`OPENDITOO-VRAM67-BXLR-002` consumed its fresh one-use grant and completed the frozen sequence exactly once: one RFCOMM connection, all three exact application sends, exactly one custom `0x6c`, no retry, then 75,009 ms of continuous post-overwrite connection survival. The runner result is `candidate_pass_transport_observation`; the coordinator then restored accepted Runtime 018, which independently verified revision 13, `status=connected`, `last_error=null`, and a post-restore frame ACK in a fresh session. Durable evidence is `captures/OPENDITOO-VRAM67-BXLR-002-LIVE-RESULT-2026-09-12.json`.
+
+Interpretation follows the precommitted composite discriminator: the deterministic placement, preserved VoiceTip deadline/handles, timeout-to-runtime50-callback path, executable Thumb heap mapping, and `0x00804779 -> 70 47 (BX LR)` witness were already promoted offline. Given the exact overwrite completed and the same RFCOMM connection remained healthy through the callback window before normal product liveness returned, **VRAM-6/7 is a live returning-stage0 PASS under that promoted trigger model**. There is intentionally no independent wire-level stage0 marker; do not overstate the result beyond that model.
+
+Both 001 and 002 are consumed. Do not replay either. No authority transfers forward. **STOP BEFORE VRAM-8 bounded-loader design or any new live-device action.**
 
 ### VRAM-6/7 one-use live-gate preparation 001 — HISTORICAL
 
@@ -219,9 +222,7 @@ Verification at this checkpoint:
 
 ### Exact next gate
 
-The project is now at the **fresh explicit owner-grant boundary** for `OPENDITOO-VRAM67-BXLR-002`. Do not replay 001, do more parser archaeology, or widen the payload. Rehydrate, verify the committed 002 manifest/fixture/execution-surface hashes, confirm no local 002 claim/result exists, and present the owner with the exact grant text **`Grant OPENDITOO-VRAM67-BXLR-002 -- stock btplayer selected`**. No 001, MassBoot, Runtime 018, SD-P1, or other prior grant transfers.
-
-If and only if that exact 002 grant is supplied, materialize a fresh local 002 grant bound to the committed manifest/fixture hashes and fresh one-use nonce, execute `scripts/run_vram67_bxlr_002_once.sh` once from normal local WSL, do not automatically retry any claimed/ambiguous/failing outcome, restore accepted Runtime 018, record the result, and stop for interpretation. Only after a clean returning-stage-0 result may VRAM-8 bounded-loader design begin. A crash, reboot, timeout, disconnect, send anomaly, or timing-only effect is not success.
+VRAM-6/7 is closed PASS under the precommitted composite discriminator. The project is now at a **design-only boundary before VRAM-8**. Do not replay 001/002 and do not send any new device traffic under their consumed grants. The next session may design and review a bounded RAM-loader protocol offline, but any implementation that would transmit a new packet sequence requires a fresh reviewed manifest and fresh explicit owner grant.
 
 ## Immediate executor order
 
@@ -235,7 +236,7 @@ If and only if that exact 002 grant is supplied, materialize a fresh local 002 g
    - period APK recovery artifact/provenance;
    - exact-unit framing/drawing capture notes as needed.
 4. Treat **VRAM-0/VRAM-1 and Tier-1 direct-SPP VRAM-2 as CLOSED** unless the pinned corpus or atlas fails closed.
-5. Treat the corrected Tier-2 sequence `0x6e(nonzero) prime -> 0xa5 VoiceTip setup -> exact 1088-byte 0x6c same-mode overwrite`, deterministic runtime50 placement, VoiceTip callback trigger, and returning Thumb `BX LR` witness as PROMOTED OFFLINE. The consumed 001 manifest is historical; the fresh byte-identical successor is `experiments/OPENDITOO-VRAM67-BXLR-002.json`. Do not replay 001 or alter/widen/execute 002 until its exact fresh named grant is supplied, and do not reopen generic codec hunting without a concrete drift signal.
+5. Treat the corrected Tier-2 sequence and returning Thumb `BX LR` witness as PROMOTED OFFLINE, and treat `OPENDITOO-VRAM67-BXLR-002` as the consumed live PASS under that promoted composite trigger model. Both 001/002 are historical and non-replayable. Do not begin VRAM-8 transmission or reopen generic codec hunting without a new reviewed design/manifest and explicit fresh authority.
 6. Promote a parser only for deterministic controlled RAM/control-flow influence; source overreads/crashes alone remain negative evidence.
 7. Use OptiPlex Lab for disposable heavyweight tools when useful; accepted conclusions should be reproducible from the WSL repo without depending on an opaque GUI state.
 8. Continue autonomously through offline milestones until a true live-device boundary or a genuine technical blocker.
