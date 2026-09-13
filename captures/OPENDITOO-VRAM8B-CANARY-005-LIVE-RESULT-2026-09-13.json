@@ -1,0 +1,59 @@
+{
+  "authority": {
+    "authorization_consumed": true,
+    "one_use_claim_created": true,
+    "previous_grant_transfers": false,
+    "replay_allowed": false,
+    "retry_allowed": false
+  },
+  "capture_id": "OPENDITOO-VRAM8B-CANARY-005-LIVE-RESULT-2026-09-13",
+  "classification": "CONSUMED_TYPED_CANARY_NEGATIVE_STAGE0_EFFECT_NOT_OBSERVED",
+  "execution": {
+    "application_sends_completed": 6,
+    "claim_sha256": "6e7313ef63d06498ffe46d74196b5d132250575e80dda82cef2569e615c9dfc5",
+    "completed_at_utc": "2026-09-13T07:32:53.5738898+00:00",
+    "connections_attempted": 1,
+    "custom_0x6c_sends": 1,
+    "error": "VRAM8B_RESPONSE_PAYLOAD_REJECTED INNER=0xB3 LENGTH=1 VALUE=0 EXPECTED=1",
+    "execution_assembly_sha256": "2a7358b5ea1ef9bad61305bc4dc4c2310a393d865d8506799a165cf482ee5e1c",
+    "execution_seal_sha256": "82237cfb2ced32540e66394e052e5abc76e37621556f00e16ea592c48f3c75ee",
+    "fixture_report_sha256": "43b55d41162dc12c4f98f8923fa5269affca28d3cdb1e3d96d0015630159e395",
+    "local_result_sha256": "9e2acf1bb8d28fb04e823097650af4d6544cd860cdb6e045dd15202fb6b7762e",
+    "manifest_sha256": "0248438e5b448858a31ed64d266a84314291332022f149e9bd25a4c99e37cc57"
+  },
+  "experiment_id": "OPENDITOO-VRAM8B-CANARY-005",
+  "interpretation": {
+    "exact_005_configuration_result": "NEGATIVE",
+    "next_probe": "Relocate the exact same 20-byte canary to vetted pristine first-execution Thumb entry 0x00804A81; keep sequence, oracle, transport, timing and callback field unchanged except pointer value.",
+    "not_a_general_volatile_ram_path_disproof": true,
+    "root_cause_not_distinguished": [
+      "runtime50+0x34 callback was not invoked after overwrite as modeled",
+      "callback was invoked but fresh instructions at 0x00804901 were not the executed bytes / execution-site cache premise failed"
+    ],
+    "stage0_effect_observed": false,
+    "transport_harness_reached_target_question": true
+  },
+  "live_observation": {
+    "a5_unsolicited_report": "valid wrapped inner 0xBD drained within bounded optional window",
+    "baseline_b3_value": 0,
+    "connection_survived_hold": true,
+    "expected_stage0_value": 1,
+    "overwrite_sent_exactly_once": true,
+    "post_hold_b3_value": 0,
+    "post_hold_unsolicited_report": "valid wrapped inner 0xBD skipped while correlating post B3",
+    "post_overwrite_hold_ms": 75000,
+    "restore_b2_b3_not_reached": true
+  },
+  "recovery": {
+    "last_error": null,
+    "runtime018_restored": true,
+    "runtime_revision": 13,
+    "status": "connected"
+  },
+  "safety": {
+    "device_crash_or_reboot_observed": false,
+    "flash_write": false,
+    "persistent_firmware_mutation": false
+  },
+  "schema_version": 1
+}
