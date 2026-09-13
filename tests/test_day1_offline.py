@@ -5816,6 +5816,170 @@ class VolatileRamVram8bManifestTests(unittest.TestCase):
         self.assertFalse(live["safety"]["runtime_018_touched"])
 
 
+class VolatileRamVram8cContextTests(unittest.TestCase):
+    """VRAM-8C deferred callback context + allocator contract; offline only."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_vram8c_context")
+
+    def test_voice_tip_worker_is_deferred_out_of_hardware_irq_cross_branch(self) -> None:
+        r = self._mod().build_report()
+        self.assertTrue(r["ok"])
+        self.assertEqual(len(r["branches"]), 4)
+        c = r["callback_context"]
+        self.assertEqual(c["cross_branch"], "4_OF_4_PRESERVED_PLUS_BRANCHES")
+        self.assertTrue(c["hardware_timer_tick_runs_in_irq"])
+        self.assertFalse(c["voice_tip_callback_is_direct_irq_callback"])
+        self.assertTrue(c["non_irq_deferred_context_proven"])
+        self.assertIn("no registered worker BLX", c["irq_tick_behavior"])
+        self.assertIn("exception return", c["deferred_dispatch"])
+        self.assertTrue(c["privileged_svc_context_proven"])
+        self.assertEqual(c["deferred_dispatch_cpsr"], "0x33")
+        self.assertEqual(c["deferred_dispatch_mode"], "THUMB_SVC_PRIVILEGED")
+        for b in r["branches"].values():
+            self.assertEqual(b["irq_vector"], "0x18")
+            self.assertEqual(b["irq_entry"], "0xaf4")
+            self.assertEqual(b["timer_irq_branch"], "0xb28")
+            self.assertEqual(b["timer_veneer"], "0xd3c")
+            self.assertEqual(b["timer_handler_thumb"], "0x802171")
+            self.assertFalse(b["microtask_tick_direct_worker_blx"])
+            self.assertEqual(b["microtask_dispatch_thumb"], "0x8015ed")
+            self.assertEqual(b["microtask_dispatch_worker_blx"], "0x161e")
+
+    def test_allocator_abi_and_busy_gate_are_closed_cross_branch(self) -> None:
+        r = self._mod().build_report()
+        a = r["allocator_contract"]
+        self.assertEqual(a["cross_branch"], "4_OF_4_PRESERVED_PLUS_BRANCHES")
+        self.assertEqual(a["fwl_malloc_thumb"], "0x840bfbd")
+        self.assertEqual(a["signature"], "r0=request_bytes -> r0=allocated_pointer_or_null")
+        self.assertEqual(a["busy_byte"], "0x8030c4")
+        self.assertTrue(a["allocator_context_gate_closed_offline"])
+        self.assertIn("after any in-flight Fwl_Malloc/Fwl_Free wrapper clears it", a["entry_rule"])
+        for b in r["branches"].values():
+            self.assertEqual(b["fwl_malloc_file_offset"], "0xbfbc")
+            self.assertEqual(b["fwl_free_file_offset"], "0xbfce")
+            self.assertEqual(b["app_heap_busy_byte"], "0x8030c4")
+
+    def test_retained_allocation_and_cache_privilege_are_promoted_offline(self) -> None:
+        r = self._mod().build_report()
+        p = r["promotion"]
+        self.assertTrue(p["vram8c_callback_non_irq_deferred_context_closed"])
+        self.assertTrue(p["vram8c_allocator_abi_closed"])
+        self.assertTrue(p["vram8c_allocator_entry_gate_closed"])
+        self.assertTrue(p["vram8c_retained_allocation_design_promoted"])
+        self.assertTrue(p["vram8c_cache_maintenance_privilege_closed"])
+        self.assertFalse(p["vram8c_fixed_resident_image_measured"])
+        self.assertFalse(p["vram8c_installer_closed"])
+        self.assertFalse(p["vram8d_live_authorized"])
+        self.assertFalse(p["vram9_authorized"])
+        cache = r["cache_contract"]
+        self.assertEqual(cache["stock_invalidate_i_cache_helper"], "0xce0")
+        self.assertTrue(cache["direct_cp15_call_authorized"])
+        self.assertIsNone(cache["remaining_question"])
+        self.assertEqual(cache["deferred_callback_mode"], "THUMB_SVC_PRIVILEGED")
+        self.assertIn("0x00800ce0", cache["interworking_contract"])
+
+    def test_committed_vram8c_context_artifact_is_current_and_offline_only(self) -> None:
+        m = self._mod()
+        live = m.build_report()
+        committed = json.loads((ROOT / "artifacts/analysis/volatile_ram_api_vram8c_context.json").read_text())
+        self.assertEqual(committed, live)
+        self.assertTrue(committed["safety"]["offline_analysis_only"])
+        self.assertFalse(committed["safety"]["device_io"])
+        self.assertFalse(committed["safety"]["bluetooth_opened"])
+        self.assertFalse(committed["safety"]["live_packet_generation"])
+        self.assertFalse(committed["safety"]["runtime_018_touched"])
+        self.assertFalse(committed["safety"]["persistent_mutation"])
+
+
+class VolatileRamVram8cInstallerTests(unittest.TestCase):
+    """VRAM-8C fixed resident image + bounded installer; offline only."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_vram8c_installer_model")
+
+    def test_fixed_stage1_is_measured_integrity_bound_and_inert(self) -> None:
+        m = self._mod()
+        r = m.build_report()
+        s = r["stage1_v0"]
+        self.assertEqual(s["image_length"], 0x50)
+        self.assertEqual(s["allocation_request"], 0x50)
+        self.assertEqual(s["entry_offset"], "0x20")
+        self.assertEqual(s["entry_thumb_delta"], "0x21")
+        self.assertEqual(s["sha256"], "d2a7a4fb116ba52261e4e2e345b6c190ab09bf6ff28d5a53a59730c12fa8ee2d")
+        image = m.build_stage1()[0]
+        self.assertEqual(len(image), 0x50)
+        self.assertEqual(sum(__import__("struct").unpack("<20I", image)) & 0xFFFFFFFF, 0)
+        self.assertEqual(image, (ROOT / "artifacts/analysis/volatile_ram_api_vram8c_stage1_v0.bin").read_bytes())
+        self.assertIn("no stock service call", "; ".join(s["behavior"]))
+        self.assertIn("no input interception", "; ".join(s["behavior"]))
+
+    def test_installer_uses_fresh_post_8b_entry_and_fits_before_runtime50(self) -> None:
+        m = self._mod()
+        r = m.build_report()
+        s = r["stage0_installer"]
+        self.assertEqual(s["source"], "0x804a80")
+        self.assertEqual(s["entry"], "0x804a81")
+        self.assertEqual(s["length_bytes"], 160)
+        self.assertLessEqual(s["length_bytes"], s["max_pre_runtime50_bytes"])
+        self.assertEqual(s["stack_frame_bytes"], 24)
+        self.assertTrue(s["stack_alignment_preserved_mod8"])
+        self.assertNotEqual(s["entry"], "0x804901")
+        self.assertEqual(m.build_stage0()[0], (ROOT / "artifacts/analysis/volatile_ram_api_vram8c_installer_stage0.bin").read_bytes())
+        for row in r["fresh_installer_span"].values():
+            self.assertTrue(row["pristine_ff"])
+            self.assertEqual(row["fresh_installer_span_bytes"], 0x100)
+            self.assertTrue(all(not hits for hits in row["raw_pointer_refs"].values()))
+
+    def test_installer_contract_has_no_host_selected_memory_or_call_surface(self) -> None:
+        r = self._mod().build_report()
+        p = r["bounded_installer_proof"]
+        self.assertIn("Fwl_Malloc(0x50)", p["destination"])
+        self.assertIn("20 word stores", p["copy_bounds"])
+        self.assertIn("0x00800ce0", p["cache"])
+        self.assertIn("allocation_base + fixed 0x21", p["entry"])
+        self.assertFalse(p["host_selected_address"])
+        self.assertFalse(p["host_selected_length"])
+        self.assertFalse(p["host_selected_entry"])
+        self.assertFalse(p["chunking"])
+        self.assertFalse(p["generic_upload_surface"])
+        self.assertFalse(p["generic_call_surface"])
+        calls = r["stage0_installer"]["fixed_calls"]
+        self.assertEqual(calls["fwl_malloc_thumb"], "0x840bfbd")
+        self.assertEqual(calls["fwl_free_thumb_failure_only"], "0x840bfcf")
+        self.assertEqual(calls["invalidate_i_cache_arm"], "0x800ce0")
+
+    def test_vram8c_is_closed_offline_without_creating_8d_authority(self) -> None:
+        r = self._mod().build_report()
+        p = r["promotion"]
+        self.assertTrue(p["vram8c_callback_context_closed"])
+        self.assertTrue(p["vram8c_allocator_abi_closed"])
+        self.assertTrue(p["vram8c_cache_privilege_closed"])
+        self.assertTrue(p["vram8c_fixed_resident_image_measured"])
+        self.assertEqual(p["vram8c_fixed_resident_image_length"], 0x50)
+        self.assertTrue(p["vram8c_bounded_installer_closed_offline"])
+        self.assertEqual(p["vram8c_status"], "CLOSED_OFFLINE")
+        self.assertTrue(p["vram8d_manifest_may_be_prepared_offline"])
+        self.assertFalse(p["vram8d_live_authorized"])
+        self.assertFalse(p["vram9_authorized"])
+
+    def test_committed_vram8c_installer_artifacts_are_current_and_offline_only(self) -> None:
+        m = self._mod()
+        live, stage0, stage1 = m.verify_committed()
+        self.assertEqual(json.loads((ROOT / "artifacts/analysis/volatile_ram_api_vram8c_installer.json").read_text()), live)
+        self.assertEqual((ROOT / "artifacts/analysis/volatile_ram_api_vram8c_installer_stage0.bin").read_bytes(), stage0)
+        self.assertEqual((ROOT / "artifacts/analysis/volatile_ram_api_vram8c_stage1_v0.bin").read_bytes(), stage1)
+        self.assertTrue(live["safety"]["offline_analysis_only"])
+        self.assertFalse(live["safety"]["device_io"])
+        self.assertFalse(live["safety"]["bluetooth_opened"])
+        self.assertFalse(live["safety"]["live_packet_generation"])
+        self.assertFalse(live["safety"]["live_authority_created"])
+
+
 class OfficialTestBranchLineageTests(unittest.TestCase):
     """Official test-branch provenance/lineage audit; offline and non-installing."""
 

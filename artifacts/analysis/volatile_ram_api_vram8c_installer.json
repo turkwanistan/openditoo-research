@@ -1,0 +1,643 @@
+{
+  "bounded_installer_proof": {
+    "cache": "write-through heap mapping + fixed privileged ARM I-cache invalidate helper 0x00800ce0 before stage1 execution",
+    "chunking": false,
+    "copy_bounds": "exactly 20 word stores -> allocation_base+0x00..+0x4f; allocation request is exactly 0x50",
+    "destination": "exact one Fwl_Malloc(0x50) result; host never supplies or influences the address",
+    "entry": "callback field and BLX target are derived only as allocation_base + fixed 0x21",
+    "failure_after_allocation": "free the exact allocation, clear runtime50+0x34, return; no stage1 execute",
+    "failure_before_allocation": "clear runtime50+0x34 custom callback and return; no copy/execute",
+    "generic_call_surface": false,
+    "generic_upload_surface": false,
+    "guard_check": "fixed pre/post guards are re-read from destination before any execution",
+    "host_selected_address": false,
+    "host_selected_entry": false,
+    "host_selected_length": false,
+    "integrity": "stage0 sums exactly twenty fixed source words; nonzero sum fails before allocation",
+    "metadata": "fixed embedded image only; magic/ABI/header/length/entry are exact constants",
+    "success_persistence": "retain allocation for boot session and replace runtime50+0x34 with its fixed stage1 Thumb entry; reboot/power loss removes state"
+  },
+  "controlled_source": {
+    "base": "0x804778",
+    "length": 1088,
+    "runtime50_callback_source_offset": "0x43c",
+    "runtime50_model": "0x22",
+    "runtime50_source_offset": "0x408",
+    "sha256": "50c7eec021b11ccd63ea5d49107d057b4be8aa71d5a3c2839731ab6afdcbf8f8",
+    "stage0_entry": "0x804a81",
+    "stage0_source": "0x804a80",
+    "stage0_source_offset": "0x308",
+    "stage1_source": "0x804900",
+    "stage1_source_offset": "0x188"
+  },
+  "fresh_installer_span": {
+    "flag42_prod_v42016": {
+      "fresh_installer_span_bytes": 256,
+      "fresh_installer_span_end_exclusive": "0x804b80",
+      "fresh_installer_span_start": "0x804a80",
+      "pristine_ff": true,
+      "raw_pointer_refs": {
+        "0x804900": [],
+        "0x804a80": [],
+        "0x804a81": []
+      }
+    },
+    "flag42_test_v42017": {
+      "fresh_installer_span_bytes": 256,
+      "fresh_installer_span_end_exclusive": "0x804b80",
+      "fresh_installer_span_start": "0x804a80",
+      "pristine_ff": true,
+      "raw_pointer_refs": {
+        "0x804900": [],
+        "0x804a80": [],
+        "0x804a81": []
+      }
+    },
+    "flag60_prod_v60014": {
+      "fresh_installer_span_bytes": 256,
+      "fresh_installer_span_end_exclusive": "0x804b80",
+      "fresh_installer_span_start": "0x804a80",
+      "pristine_ff": true,
+      "raw_pointer_refs": {
+        "0x804900": [],
+        "0x804a80": [],
+        "0x804a81": []
+      }
+    },
+    "flag60_test_api60016_internal60017": {
+      "fresh_installer_span_bytes": 256,
+      "fresh_installer_span_end_exclusive": "0x804b80",
+      "fresh_installer_span_start": "0x804a80",
+      "pristine_ff": true,
+      "raw_pointer_refs": {
+        "0x804900": [],
+        "0x804a80": [],
+        "0x804a81": []
+      }
+    }
+  },
+  "kind": "ditoo_plus_vram8c_fixed_resident_installer",
+  "method_limits": [
+    "The exact purchased unit runs v42012 while preserved exact-model branches are v42016/v42017/v60014/v60017; live 8D remains a separately reviewed exact-unit inference/gate, never automatic authority.",
+    "The installer is intentionally single-image and one-allocation. It is not a reusable loader, generic uploader, arbitrary write, or arbitrary call primitive.",
+    "The stage1 source uses the previously executed 0x00804900 area only as data. Installer execution moves to pristine unreferenced 0x00804a81 so no rewritten 8B I-cache line is executed.",
+    "No VRAM-8D or VRAM-9 packet/manifest authority is created by this offline artifact."
+  ],
+  "ok": true,
+  "promotion": {
+    "vram8c_allocator_abi_closed": true,
+    "vram8c_bounded_installer_closed_offline": true,
+    "vram8c_cache_privilege_closed": true,
+    "vram8c_callback_context_closed": true,
+    "vram8c_fixed_resident_image_length": 80,
+    "vram8c_fixed_resident_image_measured": true,
+    "vram8c_status": "CLOSED_OFFLINE",
+    "vram8d_live_authorized": false,
+    "vram8d_manifest_may_be_prepared_offline": true,
+    "vram9_authorized": false
+  },
+  "safety": {
+    "bluetooth_opened": false,
+    "device_io": false,
+    "firmware_or_flash_mutation": false,
+    "live_authority_created": false,
+    "live_packet_generation": false,
+    "offline_analysis_only": true,
+    "persistent_mutation": false,
+    "runtime_018_touched": false
+  },
+  "schema_version": 1,
+  "stage0_installer": {
+    "bytes_hex": "f8b50c1c1d4d68681d49884232d1a8681c4988422ed1a8691b4988422ad1002714222b1c186804333f18013afad1002f20d15020154b984700281bd0061c2b1c311c14221868043308600431013af9d130680f4988420ad1f06c0e49884206d10d4b9847301c213060638047f8bd301c0a4b984700206063f8bdc046004980004f4452310100200050002000bdbf40084752443147524432e00c8000cfbf4008",
+    "entry": "0x804a81",
+    "fixed_calls": {
+      "fwl_free_thumb_failure_only": "0x840bfcf",
+      "fwl_malloc_thumb": "0x840bfbd",
+      "invalidate_i_cache_arm": "0x800ce0",
+      "stage1_entry": "allocation_base + 0x21 only"
+    },
+    "length_bytes": 160,
+    "listing": [
+      {
+        "bytes": "f8b5",
+        "instruction": "PUSH {r3-r7, LR}",
+        "offset": "0x00"
+      },
+      {
+        "bytes": "0c1c",
+        "instruction": "MOV r4, r1 (ADDS #0)",
+        "offset": "0x02"
+      },
+      {
+        "bytes": "1d4d",
+        "instruction": "LDR r5, =stage1_source",
+        "offset": "0x04"
+      },
+      {
+        "bytes": "6868",
+        "instruction": "LDR r0, [r5, #0x4]",
+        "offset": "0x06"
+      },
+      {
+        "bytes": "1d49",
+        "instruction": "LDR r1, =magic",
+        "offset": "0x08"
+      },
+      {
+        "bytes": "8842",
+        "instruction": "CMP r0, r1",
+        "offset": "0x0a"
+      },
+      {
+        "bytes": "32d1",
+        "instruction": "BNE fail",
+        "offset": "0x0c"
+      },
+      {
+        "bytes": "a868",
+        "instruction": "LDR r0, [r5, #0x8]",
+        "offset": "0x0e"
+      },
+      {
+        "bytes": "1c49",
+        "instruction": "LDR r1, =abi_header",
+        "offset": "0x10"
+      },
+      {
+        "bytes": "8842",
+        "instruction": "CMP r0, r1",
+        "offset": "0x12"
+      },
+      {
+        "bytes": "2ed1",
+        "instruction": "BNE fail",
+        "offset": "0x14"
+      },
+      {
+        "bytes": "a869",
+        "instruction": "LDR r0, [r5, #0x18]",
+        "offset": "0x16"
+      },
+      {
+        "bytes": "1b49",
+        "instruction": "LDR r1, =len_entry",
+        "offset": "0x18"
+      },
+      {
+        "bytes": "8842",
+        "instruction": "CMP r0, r1",
+        "offset": "0x1a"
+      },
+      {
+        "bytes": "2ad1",
+        "instruction": "BNE fail",
+        "offset": "0x1c"
+      },
+      {
+        "bytes": "0027",
+        "instruction": "MOVS r7, #0x0",
+        "offset": "0x1e"
+      },
+      {
+        "bytes": "1422",
+        "instruction": "MOVS r2, #0x14",
+        "offset": "0x20"
+      },
+      {
+        "bytes": "2b1c",
+        "instruction": "MOV r3, r5 (ADDS #0)",
+        "offset": "0x22"
+      },
+      {
+        "bytes": "1868",
+        "instruction": "LDR r0, [r3, #0x0]",
+        "offset": "0x24"
+      },
+      {
+        "bytes": "0433",
+        "instruction": "ADDS r3, #0x4",
+        "offset": "0x26"
+      },
+      {
+        "bytes": "3f18",
+        "instruction": "ADDS r7, r7, r0",
+        "offset": "0x28"
+      },
+      {
+        "bytes": "013a",
+        "instruction": "SUBS r2, #0x1",
+        "offset": "0x2a"
+      },
+      {
+        "bytes": "fad1",
+        "instruction": "BNE checksum_loop",
+        "offset": "0x2c"
+      },
+      {
+        "bytes": "002f",
+        "instruction": "CMP r7, #0x0",
+        "offset": "0x2e"
+      },
+      {
+        "bytes": "20d1",
+        "instruction": "BNE fail",
+        "offset": "0x30"
+      },
+      {
+        "bytes": "5020",
+        "instruction": "MOVS r0, #0x50",
+        "offset": "0x32"
+      },
+      {
+        "bytes": "154b",
+        "instruction": "LDR r3, =fwl_malloc",
+        "offset": "0x34"
+      },
+      {
+        "bytes": "9847",
+        "instruction": "BLX r3",
+        "offset": "0x36"
+      },
+      {
+        "bytes": "0028",
+        "instruction": "CMP r0, #0x0",
+        "offset": "0x38"
+      },
+      {
+        "bytes": "1bd0",
+        "instruction": "BEQ fail",
+        "offset": "0x3a"
+      },
+      {
+        "bytes": "061c",
+        "instruction": "MOV r6, r0 (ADDS #0)",
+        "offset": "0x3c"
+      },
+      {
+        "bytes": "2b1c",
+        "instruction": "MOV r3, r5 (ADDS #0)",
+        "offset": "0x3e"
+      },
+      {
+        "bytes": "311c",
+        "instruction": "MOV r1, r6 (ADDS #0)",
+        "offset": "0x40"
+      },
+      {
+        "bytes": "1422",
+        "instruction": "MOVS r2, #0x14",
+        "offset": "0x42"
+      },
+      {
+        "bytes": "1868",
+        "instruction": "LDR r0, [r3, #0x0]",
+        "offset": "0x44"
+      },
+      {
+        "bytes": "0433",
+        "instruction": "ADDS r3, #0x4",
+        "offset": "0x46"
+      },
+      {
+        "bytes": "0860",
+        "instruction": "STR r0, [r1, #0x0]",
+        "offset": "0x48"
+      },
+      {
+        "bytes": "0431",
+        "instruction": "ADDS r1, #0x4",
+        "offset": "0x4a"
+      },
+      {
+        "bytes": "013a",
+        "instruction": "SUBS r2, #0x1",
+        "offset": "0x4c"
+      },
+      {
+        "bytes": "f9d1",
+        "instruction": "BNE copy_loop",
+        "offset": "0x4e"
+      },
+      {
+        "bytes": "3068",
+        "instruction": "LDR r0, [r6, #0x0]",
+        "offset": "0x50"
+      },
+      {
+        "bytes": "0f49",
+        "instruction": "LDR r1, =pre_guard",
+        "offset": "0x52"
+      },
+      {
+        "bytes": "8842",
+        "instruction": "CMP r0, r1",
+        "offset": "0x54"
+      },
+      {
+        "bytes": "0ad1",
+        "instruction": "BNE fail_alloc",
+        "offset": "0x56"
+      },
+      {
+        "bytes": "f06c",
+        "instruction": "LDR r0, [r6, #0x4c]",
+        "offset": "0x58"
+      },
+      {
+        "bytes": "0e49",
+        "instruction": "LDR r1, =post_guard",
+        "offset": "0x5a"
+      },
+      {
+        "bytes": "8842",
+        "instruction": "CMP r0, r1",
+        "offset": "0x5c"
+      },
+      {
+        "bytes": "06d1",
+        "instruction": "BNE fail_alloc",
+        "offset": "0x5e"
+      },
+      {
+        "bytes": "0d4b",
+        "instruction": "LDR r3, =invalidate_i_cache_arm",
+        "offset": "0x60"
+      },
+      {
+        "bytes": "9847",
+        "instruction": "BLX r3",
+        "offset": "0x62"
+      },
+      {
+        "bytes": "301c",
+        "instruction": "MOV r0, r6 (ADDS #0)",
+        "offset": "0x64"
+      },
+      {
+        "bytes": "2130",
+        "instruction": "ADDS r0, #0x21",
+        "offset": "0x66"
+      },
+      {
+        "bytes": "6063",
+        "instruction": "STR r0, [r4, #0x34]",
+        "offset": "0x68"
+      },
+      {
+        "bytes": "8047",
+        "instruction": "BLX r0",
+        "offset": "0x6a"
+      },
+      {
+        "bytes": "f8bd",
+        "instruction": "POP {r3-r7, PC}",
+        "offset": "0x6c"
+      },
+      {
+        "bytes": "301c",
+        "instruction": "MOV r0, r6 (ADDS #0)",
+        "offset": "0x6e"
+      },
+      {
+        "bytes": "0a4b",
+        "instruction": "LDR r3, =fwl_free",
+        "offset": "0x70"
+      },
+      {
+        "bytes": "9847",
+        "instruction": "BLX r3",
+        "offset": "0x72"
+      },
+      {
+        "bytes": "0020",
+        "instruction": "MOVS r0, #0x0",
+        "offset": "0x74"
+      },
+      {
+        "bytes": "6063",
+        "instruction": "STR r0, [r4, #0x34]",
+        "offset": "0x76"
+      },
+      {
+        "bytes": "f8bd",
+        "instruction": "POP {r3-r7, PC}",
+        "offset": "0x78"
+      },
+      {
+        "bytes": "c046",
+        "instruction": "NOP (literal alignment)",
+        "offset": "0x7a"
+      },
+      {
+        "bytes": "00498000",
+        "instruction": ".word stage1_source=0x00804900",
+        "offset": "0x7c"
+      },
+      {
+        "bytes": "4f445231",
+        "instruction": ".word magic=0x3152444f",
+        "offset": "0x80"
+      },
+      {
+        "bytes": "01002000",
+        "instruction": ".word abi_header=0x00200001",
+        "offset": "0x84"
+      },
+      {
+        "bytes": "50002000",
+        "instruction": ".word len_entry=0x00200050",
+        "offset": "0x88"
+      },
+      {
+        "bytes": "bdbf4008",
+        "instruction": ".word fwl_malloc=0x0840bfbd",
+        "offset": "0x8c"
+      },
+      {
+        "bytes": "47524431",
+        "instruction": ".word pre_guard=0x31445247",
+        "offset": "0x90"
+      },
+      {
+        "bytes": "47524432",
+        "instruction": ".word post_guard=0x32445247",
+        "offset": "0x94"
+      },
+      {
+        "bytes": "e00c8000",
+        "instruction": ".word invalidate_i_cache_arm=0x00800ce0",
+        "offset": "0x98"
+      },
+      {
+        "bytes": "cfbf4008",
+        "instruction": ".word fwl_free=0x0840bfcf",
+        "offset": "0x9c"
+      }
+    ],
+    "max_pre_runtime50_bytes": 256,
+    "sha256": "a8cbfb748a890e7a473e994e9c7fd280f846334b3ed601006e9236aabb5126d8",
+    "source": "0x804a80",
+    "stack_alignment_preserved_mod8": true,
+    "stack_frame_bytes": 24
+  },
+  "stage1_v0": {
+    "allocation_request": 80,
+    "behavior": [
+      "self-locate allocation base from PC; ignores caller-provided registers for addressing",
+      "set state=1 only if initial state is zero",
+      "increment one in-allocation heartbeat on each invocation",
+      "set the already-reviewed stock energy-control byte to 1 as the positive 8D liveness marker",
+      "return with BX LR; no stock service call and no input interception"
+    ],
+    "bytes_hex": "475244314f44523101002000000000000000000001000800500020008aa58b1500a2243ad368002b01d10123d360136901331361012102484068c1737047c046f0308000ffffffffffffffff47524432",
+    "entry_offset": "0x20",
+    "entry_thumb_delta": "0x21",
+    "header": {
+      "abi_version": 1,
+      "build_id": "0x80001",
+      "checksum": "u32 additive sum of all 20 initial words == 0",
+      "entry_offset": "0x20",
+      "header_length": 32,
+      "heartbeat_offset": "0x10",
+      "length": 80,
+      "magic": "ODR1",
+      "post_guard": "0x32445247",
+      "pre_guard": "0x31445247",
+      "state_offset": "0x0c"
+    },
+    "image_length": 80,
+    "listing": [
+      {
+        "bytes": "47524431",
+        "instruction": ".word PRE_GUARD",
+        "offset": "0x00"
+      },
+      {
+        "bytes": "4f445231",
+        "instruction": ".word MAGIC ODR1",
+        "offset": "0x04"
+      },
+      {
+        "bytes": "01002000",
+        "instruction": ".word ABI=1|HEADER_LEN=0x20",
+        "offset": "0x08"
+      },
+      {
+        "bytes": "00000000",
+        "instruction": ".word state=0 (mutable)",
+        "offset": "0x0c"
+      },
+      {
+        "bytes": "00000000",
+        "instruction": ".word heartbeat=0 (mutable)",
+        "offset": "0x10"
+      },
+      {
+        "bytes": "01000800",
+        "instruction": ".word BUILD_ID",
+        "offset": "0x14"
+      },
+      {
+        "bytes": "50002000",
+        "instruction": ".word LEN=0x50|ENTRY=0x20",
+        "offset": "0x18"
+      },
+      {
+        "bytes": "8aa58b15",
+        "instruction": ".word additive checksum compensation",
+        "offset": "0x1c"
+      },
+      {
+        "bytes": "00a2",
+        "instruction": "ADR r2, PC+0",
+        "offset": "0x20"
+      },
+      {
+        "bytes": "243a",
+        "instruction": "SUBS r2, #0x24",
+        "offset": "0x22"
+      },
+      {
+        "bytes": "d368",
+        "instruction": "LDR r3, [r2, #0xc]",
+        "offset": "0x24"
+      },
+      {
+        "bytes": "002b",
+        "instruction": "CMP r3, #0x0",
+        "offset": "0x26"
+      },
+      {
+        "bytes": "01d1",
+        "instruction": "BNE state_done",
+        "offset": "0x28"
+      },
+      {
+        "bytes": "0123",
+        "instruction": "MOVS r3, #0x1",
+        "offset": "0x2a"
+      },
+      {
+        "bytes": "d360",
+        "instruction": "STR r3, [r2, #0xc]",
+        "offset": "0x2c"
+      },
+      {
+        "bytes": "1369",
+        "instruction": "LDR r3, [r2, #0x10]",
+        "offset": "0x2e"
+      },
+      {
+        "bytes": "0133",
+        "instruction": "ADDS r3, #0x1",
+        "offset": "0x30"
+      },
+      {
+        "bytes": "1361",
+        "instruction": "STR r3, [r2, #0x10]",
+        "offset": "0x32"
+      },
+      {
+        "bytes": "0121",
+        "instruction": "MOVS r1, #0x1",
+        "offset": "0x34"
+      },
+      {
+        "bytes": "0248",
+        "instruction": "LDR r0, =energy_state_global",
+        "offset": "0x36"
+      },
+      {
+        "bytes": "4068",
+        "instruction": "LDR r0, [r0, #0x4]",
+        "offset": "0x38"
+      },
+      {
+        "bytes": "c173",
+        "instruction": "STRB r1, [r0, #0xf]",
+        "offset": "0x3a"
+      },
+      {
+        "bytes": "7047",
+        "instruction": "BX LR",
+        "offset": "0x3c"
+      },
+      {
+        "bytes": "c046",
+        "instruction": "NOP (literal alignment)",
+        "offset": "0x3e"
+      },
+      {
+        "bytes": "f0308000",
+        "instruction": ".word energy_state_global=0x008030f0",
+        "offset": "0x40"
+      },
+      {
+        "bytes": "47524432",
+        "instruction": ".word POST_GUARD",
+        "offset": "0x4c"
+      }
+    ],
+    "sha256": "d2a7a4fb116ba52261e4e2e345b6c190ab09bf6ff28d5a53a59730c12fa8ee2d"
+  }
+}

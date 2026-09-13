@@ -1,5 +1,15 @@
 # OpenDitoo VRAM-8..11 RAM API roadmap — 2026-09-12
 
+## 2026-09-13 VRAM-8C offline closure / VRAM-8B grant still unconsumed — CURRENT
+
+**VRAM-8C is CLOSED OFFLINE.** New reproducible authority is `tools/ditoo_vram8c_context.py`, `artifacts/analysis/volatile_ram_api_vram8c_context.json`, `tools/ditoo_vram8c_installer_model.py`, `artifacts/analysis/volatile_ram_api_vram8c_installer.json`, and the exact stage-0/stage-1 binaries beside it. The hardware timer IRQ only marks MicroTask work pending; the IRQ-return path rewrites SPSR to `0x33` (Thumb + privileged SVC) and injects resident dispatcher `0x008015ed`, which later BLXes the VoiceTip worker. Thus the controlled runtime50 callback is deferred out of the IRQ handler and executes in privileged SVC context across 4/4 preserved Plus branches. `Fwl_Malloc` at app Thumb `0x0840bfbd` and `Fwl_Free` at `0x0840bfcf` are pinned 4/4; both bracket their inner allocator/free call with shared busy byte `0x008030c4`, and the already-promoted VoiceTip worker defers while that byte is set. The stock ARM I-cache invalidation helper at `0x00800ce0` is therefore callable from this specific callback context.
+
+The bounded installer is now concrete rather than aspirational: one fixed **80-byte** stage-1 image (SHA-256 `d2a7a4fb116ba52261e4e2e345b6c190ab09bf6ff28d5a53a59730c12fa8ee2d`) is embedded as data at `0x00804900`; one fixed **160-byte** installer stage-0 (SHA-256 `a8cbfb748a890e7a473e994e9c7fd280f846334b3ed601006e9236aabb5126d8`) executes from fresh pristine/unreferenced Thumb entry `0x00804a81`, avoiding the 8B `0x00804901` I-cache line. It validates fixed magic/ABI/length/entry plus a whole-image additive integrity check, requests exactly `Fwl_Malloc(0x50)`, copies exactly 20 words, rechecks fixed guards, invalidates I-cache, derives only `allocation_base + 0x21`, installs that fixed callback and invokes it once. Any pre-allocation failure clears the custom callback; any post-allocation guard failure frees that exact allocation, clears the callback, and never executes stage-1. There is no host-selected address/length/entry, chunking, generic upload, arbitrary write/call target, interpreter, or shell. Stage-1 v0 is intentionally inert: self-locating header/state, one bounded heartbeat, existing typed energy byte set to `1` for future 8D liveness, then `BX LR`; no input interception or stock-service call. Reboot/power loss clears the retained allocation.
+
+Verification: focused VRAM-8A/8B/8C suite 18/18 PASS; both 8C selfchecks PASS; `git diff --check` PASS. Broad `scripts/verify_day1_offline.py` ran 399 tests and had only the two established unrelated W9B missing-Pillow errors (`ModuleNotFoundError: PIL`), with no new VRAM/parser/product failures.
+
+**Authority/order is unchanged:** `OPENDITOO-VRAM8B-CANARY-001` already has the owner's exact grant materialized locally but remains **authorized/unconsumed** because no claim, Runtime 018 handover, Bluetooth socket, experiment packet, or result has occurred. Do not request the 8B grant again. Do not execute or prepare live 8D authority ahead of 8B: first obtain a real 8B PASS/terminal result; only then may a separately reviewed 8D one-use manifest be prepared/granted. The older 8A artifact's embedded `DESIGN_ADVANCED_NOT_CLOSED` 8C snapshot is intentionally immutable because the existing 8B manifest/grant hash-binds it; this dedicated 8C checkpoint supersedes that historical snapshot without changing any 8A/8B bytes.
+
 ## Status and authority boundary
 
 VRAM-6/7 is CLOSED LIVE PASS under the precommitted composite discriminator. `OPENDITOO-VRAM67-BXLR-001` and `OPENDITOO-VRAM67-BXLR-002` are both consumed and non-replayable. The accepted exact-unit result proves, under the already-promoted deterministic placement/VoiceTip trigger model, that a controlled Thumb callback at `0x00804779` can execute `70 47` (`BX LR`) and return without destabilizing the device.
@@ -84,7 +94,7 @@ Can a payload larger than `BX LR` obey the real callback ABI, perform one bounde
 
 ---
 
-## VRAM-8B — one-use live nontrivial returning canary — PREPARED / UNAUTHORIZED
+## VRAM-8B — one-use live nontrivial returning canary — AUTHORIZED / UNCONSUMED
 
 ### Question
 
@@ -142,7 +152,7 @@ Prefer an allocated/reserved window over “unused-looking RAM”. If allocation
 
 ### Current ranked result
 
-The current offline ranking rejects hardcoded free-looking app-heap addresses, the live display backing, runtime50/adjacent live objects, and unreserved upper identity-mapped SRAM. The preferred design is **one deliberately retained application-heap allocation owned by OpenDitoo for the boot session**, but it is not promoted until callback task-vs-interrupt context and allocator ABI/reentrancy are closed. No stage-1 image exists yet, so a maximum image length must not be guessed; freeze it only after the single fixed image is built and measured. The future installer must perform explicit I-cache maintenance before stage-1 execution. Therefore 8C is `DESIGN_ADVANCED_NOT_CLOSED`, not a live-install-ready gate.
+The current offline ranking rejects hardcoded free-looking app-heap addresses, the live display backing, runtime50/adjacent live objects, and unreserved upper identity-mapped SRAM. The preferred design is **one deliberately retained application-heap allocation owned by OpenDitoo for the boot session**, but it is not promoted until callback task-vs-interrupt context and allocator ABI/reentrancy are closed. No stage-1 image exists yet, so a maximum image length must not be guessed; freeze it only after the single fixed image is built and measured. The future installer must perform explicit I-cache maintenance before stage-1 execution. That was the pre-closure state. The dedicated 2026-09-13 artifacts above now close 8C offline with a measured fixed image and bounded installer; 8D remains a separate future live gate and has no authority.
 
 ### Installer contract
 
