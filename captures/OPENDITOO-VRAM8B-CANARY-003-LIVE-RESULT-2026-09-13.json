@@ -1,0 +1,50 @@
+{
+  "authority": {
+    "authorization_consumed": true,
+    "one_use_claim_created": true,
+    "previous_grant_transfers": false,
+    "replay_allowed": false,
+    "retry_allowed": false
+  },
+  "capture_id": "OPENDITOO-VRAM8B-CANARY-003-LIVE-RESULT-2026-09-13",
+  "classification": "CONSUMED_B2_RESPONSE_SEMANTICS_HARNESS_INCONCLUSIVE_NOT_VRAM8_NEGATIVE",
+  "execution": {
+    "application_sends_completed": 1,
+    "claim_sha256": "ebe4c634b881020fca35cc3070b473a3c09e21844f60c03f7c7baa2420b22509",
+    "completed_at_utc": "2026-09-13T07:15:29.0681726+00:00",
+    "connections_attempted": 1,
+    "custom_0x6c_sends": 0,
+    "error": "VRAM8B_RESPONSE_PAYLOAD_REJECTED INNER=0xB2 LENGTH=1 VALUE=232 EXPECTED=0",
+    "execution_assembly_sha256": "a6235b7e6e603dcc71148be3035dbabb9f2481d49d8ad1d783a0c0f6df7b667d",
+    "execution_seal_sha256": "917f31fe28cebd6b4ff3b8b0984f6f0c3834b12347a72aca6a6bd5bedc0a85b6",
+    "fixture_report_sha256": "ebdb4be66725c15435d7ed0d24466ba06fb53b2225005d6e2cd13d25cf82161a",
+    "local_result_sha256": "6f486b5e2df4680822f77a40cc4ab7b4a670dd480a5f0ff9692d97c863e42da1",
+    "manifest_sha256": "adcf33e0883bbb2885715f8a4a86a23c0fc101ca4b6304c0e5f20e2366ef03a0"
+  },
+  "experiment_id": "OPENDITOO-VRAM8B-CANARY-003",
+  "interpretation": {
+    "baseline_b2_payload_hex": "e8",
+    "baseline_b2_payload_value": 232,
+    "baseline_b2_send_completed": true,
+    "baseline_b2_valid_wrapped_response_observed": true,
+    "overwrite_sent": false,
+    "root_cause": "The runner incorrectly required the valid wrapped B2 response payload byte to equal the written value 0. Live 003 proved the B2 reply is a one-byte response whose value can differ (observed 0xE8). The typed canary discriminator remains B3, not B2.",
+    "stage0_reached": false,
+    "successor_requirement": "Validate B2 wrapper/checksum/echo/tag and require exactly one payload byte, but do not assign value semantics; keep B3 exact 0->1->0.",
+    "vram8_execution_result": "UNMEASURED"
+  },
+  "recovery": {
+    "last_error": null,
+    "post_restore_frames_acked_observed": true,
+    "runtime018_restored": true,
+    "runtime_revision": 13,
+    "status": "connected"
+  },
+  "safety": {
+    "custom_overwrite_transmitted": false,
+    "device_crash_or_reboot_observed": false,
+    "flash_write": false,
+    "persistent_firmware_mutation": false
+  },
+  "schema_version": 1
+}

@@ -1,0 +1,310 @@
+{
+  "authoritative_inputs": {
+    "exact_unit_m4": {
+      "path": "captures/OPENDITOO-DAY1-M4-LIVE-RESULT-2026-09-08.json",
+      "sha256": "a40a23c08cfc73a3095819ebaba4e921ce0fa178584099c53b4378e4159d67fd"
+    },
+    "runtime018_policy": {
+      "path": "product/OPENDITOO-PRODUCT-RUNTIME-018.json",
+      "sha256": "895268e91433b0ef18ee717c1378009398ad414d07083aac9eeb4194542b9c8f"
+    },
+    "tier2_display": {
+      "path": "artifacts/analysis/volatile_ram_api_tier2_display.json",
+      "sha256": "e7055f2f37c7404fd53d59d8acf48cd502aeb563ea6a53a045f51bd395871013"
+    },
+    "tier2_placement": {
+      "path": "artifacts/analysis/volatile_ram_api_tier2_placement.json",
+      "sha256": "045c4da0bd2fb2c63609ce578d082e063d263ec3dccce9a8f492c48374182999"
+    },
+    "tier2_trigger": {
+      "path": "artifacts/analysis/volatile_ram_api_tier2_trigger.json",
+      "sha256": "c6ae80bd9df73f6c0b8286a443d26e8ef03b5bf3e16d0fbd552949c666b15cee"
+    },
+    "vram3_execution": {
+      "path": "artifacts/analysis/volatile_ram_api_vram3_execution.json",
+      "sha256": "ae0bd733b6cac05ab39e65a03d896e34c889c2e7c5c476789a16c8cbe414803d"
+    },
+    "vram67_002_live_result": {
+      "path": "captures/OPENDITOO-VRAM67-BXLR-002-LIVE-RESULT-2026-09-12.json",
+      "sha256": "2e70c964a0e812749b92b34c99074aa971d98140ff3e32d7ed54a776f143a269"
+    },
+    "vram8a_stage0": {
+      "path": "artifacts/analysis/volatile_ram_api_vram8_stage0.json",
+      "sha256": "764422ca3d95ca8a6e60857a2ccd21e7123a93fefe462d840f7f528117485004"
+    }
+  },
+  "authority": {
+    "authorization_consumed": false,
+    "grant_materialization_rule": "Only after the owner sends the exact fresh VRAM-8B grant text. Any future grant must bind the committed manifest SHA-256 and fixture-report SHA-256 and create a fresh one-use nonce/claim before socket creation.",
+    "one_use": true,
+    "previous_grants_transfer": false,
+    "required_grant_text": "Grant OPENDITOO-VRAM8B-CANARY-004 -- stock btplayer selected",
+    "retry": false,
+    "transmission_authorized": false
+  },
+  "expected_responses": {
+    "baseline_expected": 0,
+    "baseline_or_restore_zero": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-expected-b3-0.bin",
+      "sha256": "c6fba154f3a08cb140bef05566b07c76b848d65ce09e288267b4617c37d1f821",
+      "wire_hex": "01060004b35500120102"
+    },
+    "echo_command": "0xb3",
+    "payload_length": 1,
+    "post_stage0_expected": 1,
+    "post_stage0_one": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-expected-b3-1.bin",
+      "sha256": "bf66aa418a0e2f889392e36135286eff94fb71ff86d6883701090da25835acc1",
+      "wire_hex": "01060004b35501130102"
+    },
+    "restored_expected": 0,
+    "tag": "0x55",
+    "unexpected_or_missing_response": "NOT_PASS_STOP_NO_RETRY",
+    "wrapped_outer_command": "0x04"
+  },
+  "experiment_id": "OPENDITOO-VRAM8B-CANARY-004",
+  "fixture_report": {
+    "path": "artifacts/analysis/volatile_ram_api_vram8b_fixture_004.json",
+    "sha256": "b85b0f104d6ed8b1d2781080bb8fa3acbe1a7c89c06d90a1bfd842e1564b9e2e"
+  },
+  "kind": "openditoo_vram8b_positive_canary_one_use_manifest",
+  "live_boundary": {
+    "no_bluetooth_open_before_grant": true,
+    "no_grant_or_claim_file_exists_from_this_preparation": true,
+    "runner_not_materialized": false,
+    "runtime018_must_remain_untouched_until_fresh_owner_grant": true,
+    "vram8d_resident_install_is_separate_future_grant": true,
+    "vram9_not_authorized": true
+  },
+  "predecessor": {
+    "classification": "CONSUMED_B2_RESPONSE_SEMANTICS_HARNESS_INCONCLUSIVE_NOT_VRAM8_NEGATIVE",
+    "experiment_id": "OPENDITOO-VRAM8B-CANARY-003",
+    "live_result": "captures/OPENDITOO-VRAM8B-CANARY-003-LIVE-RESULT-2026-09-13.json",
+    "reason": "003 reached Bluetooth and completed the first stock B2 send, then stopped because the valid one-byte B2 response carried 0xE8 rather than the harness-assumed 0x00. No B3, 0x6e, 0xa5, or custom 0x6c send was reached."
+  },
+  "purpose": "Fresh successor to consumed VRAM8B-003. Same exact eight transmit frames and typed 0->1->0 B3 canary; live evidence changes only B2 reply semantics from exact value 0 to valid wrapped one-byte payload with unconstrained value.",
+  "response_policy": {
+    "baseline_get_b3": {
+      "budget_ms": 2000,
+      "expected_inner_command": "0xb3",
+      "expected_payload_hex": "00",
+      "fixture": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-expected-b3-0.bin",
+      "mode": "REQUIRED_EXACT"
+    },
+    "baseline_set_b2": {
+      "budget_ms": 2000,
+      "evidence": "live 003 observed a valid wrapped B2 response with payload 0xE8 after SET 0; B2 reply value semantics are not promoted",
+      "expected_inner_command": "0xb2",
+      "expected_payload_length": 1,
+      "mode": "REQUIRED_WRAPPED_ONE_BYTE_ANY_VALUE"
+    },
+    "framing": "01 | length_le16 | outer_command=0x04 | inner_command | tag=0x55 | payload | checksum_le16 | 02",
+    "malformed_or_checksum_failure": "STOP_NO_RETRY",
+    "overwrite_6c": {
+      "expected_inner_command": "0x6c",
+      "max_frames": 1,
+      "max_wire_bytes": 64,
+      "mode": "OPTIONAL_MATCHING_DRAIN",
+      "quiet_window_ms": 150,
+      "tag": "0x55"
+    },
+    "post_get_b3": {
+      "budget_ms": 2000,
+      "expected_inner_command": "0xb3",
+      "expected_payload_hex": "01",
+      "fixture": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-expected-b3-1.bin",
+      "mode": "REQUIRED_EXACT"
+    },
+    "prime_6e": {
+      "action": "continue after normal inter-packet delay; do not read or wait",
+      "evidence": "stock 0x6e send completed; no wrapped response arrived within 2000 ms",
+      "live_predecessor": "OPENDITOO-VRAM8B-CANARY-002",
+      "mode": "NO_RESPONSE_REQUIRED_LIVE_EVIDENCE"
+    },
+    "restore_get_b3": {
+      "budget_ms": 2000,
+      "expected_inner_command": "0xb3",
+      "expected_payload_hex": "00",
+      "fixture": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-expected-b3-0.bin",
+      "mode": "REQUIRED_EXACT"
+    },
+    "restore_set_b2": {
+      "budget_ms": 2000,
+      "evidence": "live 003 observed a valid wrapped B2 response with payload 0xE8 after SET 0; B2 reply value semantics are not promoted",
+      "expected_inner_command": "0xb2",
+      "expected_payload_length": 1,
+      "mode": "REQUIRED_WRAPPED_ONE_BYTE_ANY_VALUE"
+    },
+    "unexpected_frame": "STOP_NO_RETRY",
+    "voicetip_a5": {
+      "expected_inner_command": "0xa5",
+      "max_frames": 1,
+      "max_wire_bytes": 64,
+      "mode": "OPTIONAL_MATCHING_DRAIN",
+      "quiet_window_ms": 150,
+      "tag": "0x55"
+    }
+  },
+  "result": null,
+  "schema_version": 1,
+  "sequence": [
+    {
+      "class": "stock-shaped",
+      "command": "0xb2",
+      "key": "baseline_set",
+      "ordinal": 1,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-01-baseline-set.bin",
+      "purpose": "force fixed canary baseline 0",
+      "sha256": "3f98ef3e2af07ccd2151bd06ae96ad8bdfc82d8fb1ed94c0f66d3580ae75ca47",
+      "wire_hex": "010400b200b60002",
+      "wire_length": 8,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0xb3",
+      "key": "baseline_get",
+      "ordinal": 2,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-02-baseline-get.bin",
+      "purpose": "typed baseline proof; require decoded raw value 0",
+      "sha256": "6fe20a0815b73bb62acf228634f664379efae9983842eeca6ac7974c2f2bea7c",
+      "wire_hex": "010300b3b60002",
+      "wire_length": 7,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0x6e",
+      "key": "prime",
+      "ordinal": 3,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-03-prime.bin",
+      "purpose": "prime content mode 0x0b",
+      "sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec",
+      "wire_hex": "0104006e01730002",
+      "wire_length": 8,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0xa5",
+      "key": "voicetip",
+      "ordinal": 4,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-04-voicetip.bin",
+      "purpose": "VoiceTip setup selector 2/model 0x22",
+      "sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316",
+      "wire_hex": "010600a5010201af0002",
+      "wire_length": 10,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    {
+      "class": "custom-once",
+      "command": "0x6c",
+      "key": "overwrite",
+      "ordinal": 5,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-05-overwrite.bin",
+      "purpose": "exact 1088-byte overwrite with fixed nontrivial stage-0",
+      "sha256": "298f1901ea9cc94fd172302117cd2e5cf411eacb578b16be5de3ecf1c52e0906",
+      "wire_hex": null,
+      "wire_length": 1099,
+      "wire_prefix_hex": "0147046c00004004ffffffffffffffff",
+      "wire_suffix_hex": "ffffffffffffffffff014980007d2c02"
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0xb3",
+      "key": "post_get",
+      "ordinal": 6,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-06-post-get.bin",
+      "purpose": "positive stage-0 marker after hold; require decoded raw value 1",
+      "sha256": "6fe20a0815b73bb62acf228634f664379efae9983842eeca6ac7974c2f2bea7c",
+      "wire_hex": "010300b3b60002",
+      "wire_length": 7,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0xb2",
+      "key": "restore_set",
+      "ordinal": 7,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-07-restore-set.bin",
+      "purpose": "restore fixed baseline 0",
+      "sha256": "3f98ef3e2af07ccd2151bd06ae96ad8bdfc82d8fb1ed94c0f66d3580ae75ca47",
+      "wire_hex": "010400b200b60002",
+      "wire_length": 8,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0xb3",
+      "key": "restore_get",
+      "ordinal": 8,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-004-08-restore-get.bin",
+      "purpose": "typed restoration proof; require decoded raw value 0",
+      "sha256": "6fe20a0815b73bb62acf228634f664379efae9983842eeca6ac7974c2f2bea7c",
+      "wire_hex": "010300b3b60002",
+      "wire_length": 7,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    }
+  ],
+  "stage0": {
+    "bytes_hex": "10b5034c6468e27b01235a40e27310bdf0308000",
+    "callback_source_offset": "0x43c",
+    "callback_value": "0x804901",
+    "entry": "0x804901",
+    "runtime50_base": "0x804b80",
+    "runtime50_model": "0x22",
+    "runtime50_source_offset": "0x408",
+    "sha256": "1cdd53f83a75021b47cedc65bbac9f5ee1d488863d029d5900d4687efcf5264b",
+    "source_address": "0x804900",
+    "source_length": 1088,
+    "source_offset": "0x188",
+    "source_sha256": "1f7d0761fd905e91b23ea3c3024b2b7f22f6025467dc4e06690757a6b10634ca"
+  },
+  "status": "prepared_unauthorized",
+  "stop_policy": {
+    "ambiguous_or_partial_send": "STOP_NO_RETRY_RESTORE_RUNTIME018",
+    "baseline_not_zero": "STOP_NO_CUSTOM_OVERWRITE_RESTORE_RUNTIME018",
+    "candidate_pass": "RESTORE_RUNTIME018_RECORD_RESULT_STOP_BEFORE_ANY_VRAM8D_OR_VRAM9_WORK",
+    "disconnect_or_crash": "STOP_NO_RETRY_RESTORE_RUNTIME018_IF_POSSIBLE",
+    "post_get_not_one": "NOT_PASS_RESTORE_BASELINE_AND_RUNTIME018_STOP",
+    "restore_get_not_zero": "NOT_PASS_STOP_AND_RECORD_RESTORE_FAILURE",
+    "unexpected_or_missing_b3_response": "STOP_NO_RETRY_RESTORE_RUNTIME018"
+  },
+  "success_discriminator": {
+    "interpretation": "The 0 -> 1 -> 0 typed stock readback is the positive RAM-only execution marker. Liveness alone is insufficient, and crash/reboot/disconnect/timing behavior can never be success.",
+    "required": [
+      "baseline GET decodes to raw energy-control value 0",
+      "all eight frozen application sends complete on the same RFCOMM connection with no retry",
+      "the single custom 0x6c overwrite is sent exactly once",
+      "after the full post-overwrite hold, GET decodes to raw value 1",
+      "the connection remains alive and no crash/reboot/watchdog/disconnect symptom occurs",
+      "restore SET 0 then GET decodes to 0",
+      "accepted Runtime 018 is restored afterward and returns connected with last_error=null"
+    ]
+  },
+  "target": {
+    "installed_firmware_version_assumption": 42012,
+    "mac": "11:75:58:CE:DE:C7",
+    "model": "Divoom Ditoo Plus",
+    "purchased_unit_only": true,
+    "rfcomm_channel": 1
+  },
+  "transport_budget": {
+    "connect_budget_ms": 15000,
+    "exact_application_sends": 8,
+    "inter_packet_delay_ms": 40,
+    "max_connections": 1,
+    "max_custom_0x6c_sends": 1,
+    "observation_hold_ms_after_overwrite": 75000,
+    "reconnect": false,
+    "retry": false,
+    "total_budget_ms": 100000
+  }
+}
