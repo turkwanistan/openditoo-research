@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "capture_id": "OPENDITOO-VRAM8B-CANARY-006-LIVE-RESULT-2026-09-13",
+  "experiment_id": "OPENDITOO-VRAM8B-CANARY-006",
+  "classification": "CONSUMED_TYPED_CANARY_NEGATIVE_RELOCATED_STAGE0_EFFECT_NOT_OBSERVED",
+  "authority": {
+    "authorization_consumed": true,
+    "one_use_claim_created": true,
+    "previous_grant_transfers": false,
+    "replay_allowed": false,
+    "retry_allowed": false
+  },
+  "execution": {
+    "connections_attempted": 1,
+    "application_sends_completed": 6,
+    "custom_0x6c_sends": 1,
+    "completed_at_utc": "2026-09-13T07:42:39.7617461+00:00",
+    "error": "VRAM8B_RESPONSE_PAYLOAD_REJECTED INNER=0xB3 LENGTH=1 VALUE=0 EXPECTED=1",
+    "execution_assembly_sha256": "cf44d9cdb35024f5f393d9fae32c51ee67e09e48e1cc4572e586d9126ae1f40d",
+    "manifest_sha256": "0cc58e980c0d73c61113adb6a3068bc706fa07bf9cc420259a7d348f554b5540",
+    "fixture_report_sha256": "886f99add1c3e4128c2923509ff58e3d451e5a89cf4877ee690cc03b438bb9f6",
+    "claim_sha256": "0c805ff04f7814cd4f5daa5f5ba1f8bfc54531782dcc1bef5e2bdfb686122323",
+    "execution_seal_sha256": "41680a6f157a67c8b1d78660f033663f43e186f27ff2c41844ea79c77d58e814",
+    "local_result_sha256": "2d59fddc7dfbe7965975befbf2315f6a40eddd9ac4a4862b8d0d2f97787ca017"
+  },
+  "live_observation": {
+    "baseline_b3_value": 0,
+    "overwrite_sent_exactly_once": true,
+    "post_overwrite_hold_ms": 75000,
+    "connection_survived_hold": true,
+    "expected_stage0_value": 1,
+    "post_hold_b3_value": 0,
+    "a5_unsolicited_report": "valid wrapped inner 0xBD drained within bounded optional window",
+    "post_hold_unsolicited_report": "valid wrapped inner 0xBD skipped while correlating post B3",
+    "restore_b2_b3_not_reached": true
+  },
+  "diagnostic_delta_from_005": {
+    "stage0_bytes_unchanged": "10b5034c6468e27b01235a40e27310bdf0308000",
+    "old_entry": "0x00804901",
+    "new_entry": "0x00804A81",
+    "new_site_basis": "v42016/v42017/v60014/v60017 offline corpus marks 0x00804A80 as pristine/unreferenced and 8C selected it to avoid the 8B execution line",
+    "other_transport_timing_oracle_policy_unchanged": true
+  },
+  "interpretation": {
+    "exact_006_configuration_result": "NEGATIVE",
+    "stage0_effect_observed": false,
+    "transport_harness_reached_target_question": true,
+    "execution_site_cache_hypothesis_weakened": true,
+    "not_a_general_volatile_ram_path_disproof": true,
+    "critical_exact_version_boundary": "The purchased unit is v42012 but exact v42012 bytes are unrecovered. Callback placement, VoiceTip structure fields, and the energy state pointer/field used by the 8B canary were derived from later preserved Plus firmware branches and must not be silently promoted to exact-unit facts.",
+    "remaining_root_causes_not_distinguished": [
+      "the v42012 live overwrite does not land on runtime50+0x34 at the later-branch-derived source offset",
+      "the v42012 VoiceTip callback field/trigger differs from the later preserved branches",
+      "the callback executes but the v42016-derived energy state pointer cell/address or +0x0f field differs on v42012"
+    ],
+    "next_probe": "Stop sending additional code-pointer guesses. First capture an exact-unit stock-only VoiceTip control transcript: stock 0x6e prime + stock 0xA5 selector 2/model 0x22, no custom 0x6c, then 75 seconds of timestamped full wrapped device reports. Use that exact-unit baseline to design a later non-executing/data-only placement discriminator."
+  },
+  "recovery": {
+    "runtime018_restored": true,
+    "runtime_revision": 13,
+    "status": "connected",
+    "last_error": null
+  },
+  "safety": {
+    "device_crash_or_reboot_observed": false,
+    "flash_write": false,
+    "persistent_firmware_mutation": false
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "authority": {
+    "authorization_consumed": false,
+    "grant_materialization_rule": "Fresh owner grant binds committed manifest SHA-256 + fixture-report SHA-256 and a fresh one-use nonce before socket creation.",
+    "one_use": true,
+    "previous_grants_transfer": false,
+    "required_grant_text": "Grant OPENDITOO-VRAM8B-CONTROL-007 -- stock btplayer selected",
+    "retry": false,
+    "transmission_authorized": false
+  },
+  "exact_version_boundary": "Installed v42012 is exact-unit evidence, but exact v42012 firmware bytes are unrecovered. Later-branch static addresses/structure layouts are hypotheses only until live-calibrated.",
+  "experiment_id": "OPENDITOO-VRAM8B-CONTROL-007",
+  "fixture_report": {
+    "path": "artifacts/analysis/volatile_ram_api_vram8b_control_007.json",
+    "sha256": "95ad61a7de060ed6b53a31e74180cca803e48f98b1385f646c2dabbd8805cb34"
+  },
+  "kind": "openditoo_vram8b_exact_unit_stock_voicetip_control_one_use_manifest",
+  "live_boundary": {
+    "custom_0x6c_authorized": false,
+    "no_bluetooth_open_before_grant": true,
+    "runtime018_must_remain_untouched_until_fresh_owner_grant": true,
+    "vram8d_authorized": false
+  },
+  "predecessor": {
+    "classification": "CONSUMED_TYPED_CANARY_NEGATIVE_RELOCATED_STAGE0_EFFECT_NOT_OBSERVED",
+    "experiment_id": "OPENDITOO-VRAM8B-CANARY-006",
+    "live_result": "captures/OPENDITOO-VRAM8B-CANARY-006-LIVE-RESULT-2026-09-13.json",
+    "live_result_sha256": "e234abc26db2b1c122585c19593bb5cc38316690c4ea53e5fb01b183ef961de5"
+  },
+  "purpose": "Exact-unit v42012 stock-only VoiceTip baseline: 0x6e prime + 0xA5 selector2/model0x22, then 75s receive-only full wrapped-report capture. No custom 0x6c, no overflow, no RAM/code mutation.",
+  "receive_policy": {
+    "concatenated_frames_supported": true,
+    "disconnect": "STOP_NO_RETRY",
+    "duration_ms": 75000,
+    "fragmentation_supported": true,
+    "malformed_or_checksum_failure": "STOP_NO_RETRY",
+    "max_reports": 64,
+    "max_wire_bytes_per_report": 64,
+    "record_fields": [
+      "elapsed_ms",
+      "wire_hex",
+      "wire_length",
+      "outer_command",
+      "inner_command",
+      "tag",
+      "payload_hex",
+      "checksum_le16"
+    ],
+    "start": "immediately after completed 0xA5 send",
+    "zero_reports_is_valid_completion": true
+  },
+  "schema_version": 1,
+  "sequence": [
+    {
+      "command": "0x6e",
+      "ordinal": 1,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CONTROL-007-01-prime.bin",
+      "sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec",
+      "source_equivalent": "OPENDITOO-VRAM8B-CANARY-006-03-prime.bin",
+      "wire_hex": "0104006e01730002",
+      "wire_length": 8
+    },
+    {
+      "command": "0xa5",
+      "ordinal": 2,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CONTROL-007-02-voicetip.bin",
+      "sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316",
+      "source_equivalent": "OPENDITOO-VRAM8B-CANARY-006-04-voicetip.bin",
+      "wire_hex": "010600a5010201af0002",
+      "wire_length": 10
+    }
+  ],
+  "status": "prepared_unauthorized",
+  "stop_policy": {
+    "disconnect": "STOP_NO_RETRY_RESTORE_RUNTIME018_IF_POSSIBLE",
+    "malformed_report": "STOP_NO_RETRY_RESTORE_RUNTIME018",
+    "normal_completion": "RESTORE_RUNTIME018_RECORD_TRANSCRIPT_STOP",
+    "partial_or_ambiguous_send": "STOP_NO_RETRY_RESTORE_RUNTIME018",
+    "report_budget_exhausted": "STOP_NO_RETRY_RESTORE_RUNTIME018"
+  },
+  "success_discriminator": {
+    "interpretation": "CONTROL_TRANSCRIPT_COMPLETE only. This experiment does not prove callback execution, overwrite placement, or volatile code execution.",
+    "required": [
+      "exact two frozen stock sends complete on one RFCOMM connection",
+      "no custom 0x6c send occurs",
+      "connection remains alive for the full 75-second receive-only window",
+      "every captured report passes framing/checksum/tag validation",
+      "Runtime 018 restores connected with last_error=null"
+    ]
+  },
+  "target": {
+    "installed_firmware_version_assumption": 42012,
+    "mac": "11:75:58:CE:DE:C7",
+    "model": "Divoom Ditoo Plus",
+    "purchased_unit_only": true,
+    "rfcomm_channel": 1
+  },
+  "transport_budget": {
+    "connect_budget_ms": 15000,
+    "exact_application_sends": 2,
+    "inter_packet_delay_ms": 40,
+    "max_connections": 1,
+    "max_custom_0x6c_sends": 0,
+    "max_reports": 64,
+    "max_wire_bytes_per_report": 64,
+    "receive_only_ms_after_a5": 75000,
+    "reconnect": false,
+    "retry": false,
+    "total_budget_ms": 95000
+  }
+}

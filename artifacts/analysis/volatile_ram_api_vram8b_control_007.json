@@ -1,0 +1,64 @@
+{
+  "experiment_id": "OPENDITOO-VRAM8B-CONTROL-007",
+  "kind": "openditoo_vram8b_exact_unit_stock_voicetip_control_fixture",
+  "predecessor": {
+    "classification": "CONSUMED_TYPED_CANARY_NEGATIVE_RELOCATED_STAGE0_EFFECT_NOT_OBSERVED",
+    "experiment_id": "OPENDITOO-VRAM8B-CANARY-006",
+    "live_result": "captures/OPENDITOO-VRAM8B-CANARY-006-LIVE-RESULT-2026-09-13.json",
+    "live_result_sha256": "e234abc26db2b1c122585c19593bb5cc38316690c4ea53e5fb01b183ef961de5"
+  },
+  "purpose": "Exact-unit v42012 stock-only VoiceTip baseline: 0x6e prime + 0xA5 selector2/model0x22, then 75s receive-only full wrapped-report capture. No custom 0x6c, no overflow, no RAM/code mutation.",
+  "receive_capture": {
+    "concatenated_frames_supported": true,
+    "disconnect": "STOP_NO_RETRY",
+    "duration_ms": 75000,
+    "fragmentation_supported": true,
+    "malformed_or_checksum_failure": "STOP_NO_RETRY",
+    "max_reports": 64,
+    "max_wire_bytes_per_report": 64,
+    "record_fields": [
+      "elapsed_ms",
+      "wire_hex",
+      "wire_length",
+      "outer_command",
+      "inner_command",
+      "tag",
+      "payload_hex",
+      "checksum_le16"
+    ],
+    "start": "immediately after completed 0xA5 send",
+    "zero_reports_is_valid_completion": true
+  },
+  "safety": {
+    "callback_pointer_write": false,
+    "custom_0x6c_sends": 0,
+    "custom_code": false,
+    "flash_write": false,
+    "persistent_mutation": false,
+    "ram_overflow": false,
+    "reconnect": false,
+    "retry": false,
+    "stock_packets_only": true
+  },
+  "schema_version": 1,
+  "transmit_fixtures": [
+    {
+      "command": "0x6e",
+      "ordinal": 1,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CONTROL-007-01-prime.bin",
+      "sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec",
+      "source_equivalent": "OPENDITOO-VRAM8B-CANARY-006-03-prime.bin",
+      "wire_hex": "0104006e01730002",
+      "wire_length": 8
+    },
+    {
+      "command": "0xa5",
+      "ordinal": 2,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CONTROL-007-02-voicetip.bin",
+      "sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316",
+      "source_equivalent": "OPENDITOO-VRAM8B-CANARY-006-04-voicetip.bin",
+      "wire_hex": "010600a5010201af0002",
+      "wire_length": 10
+    }
+  ]
+}
