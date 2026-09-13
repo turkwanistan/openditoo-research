@@ -5816,6 +5816,47 @@ class VolatileRamVram8bManifestTests(unittest.TestCase):
         self.assertFalse(live["safety"]["runtime_018_touched"])
 
 
+class VolatileRamVram8bSuccessor002Tests(unittest.TestCase):
+    """Consumed 001 boundary + response-synchronous fresh 002 gate; offline only."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_vram8b_live_gate_002")
+
+    def test_001_stopped_before_any_custom_overwrite(self) -> None:
+        r = json.loads((ROOT / "captures/OPENDITOO-VRAM8B-CANARY-001-LIVE-RESULT-2026-09-13.json").read_text())
+        self.assertEqual(r["classification"], "CONSUMED_TRANSPORT_HARNESS_INCONCLUSIVE_NOT_VRAM8_NEGATIVE")
+        self.assertEqual(r["execution"]["application_sends_completed"], 2)
+        self.assertEqual(r["execution"]["custom_0x6c_sends"], 0)
+        self.assertFalse(r["interpretation"]["stage0_reached"])
+        self.assertFalse(r["interpretation"]["overwrite_sent"])
+        self.assertTrue(r["recovery"]["runtime018_restored"])
+
+    def test_002_is_fresh_unauthorized_response_synchronous_successor(self) -> None:
+        r = self._mod().build_report()
+        self.assertTrue(r["ok"])
+        self.assertTrue(r["predecessor_consumed_before_overwrite"])
+        self.assertTrue(r["response_synchronous"])
+        self.assertEqual(r["transmit_frames"], 8)
+        self.assertEqual(r["custom_0x6c_frames"], 1)
+        self.assertFalse(r["authority"]["grant_exists"])
+        self.assertFalse(r["authority"]["claim_exists"])
+        self.assertFalse(r["authority"]["result_exists"])
+        self.assertFalse(r["authority"]["transmission_authorized"])
+
+    def test_002_response_contract_pins_b2_and_typed_b3(self) -> None:
+        m = json.loads((ROOT / "experiments/OPENDITOO-VRAM8B-CANARY-002.json").read_text())
+        rp = m["response_policy"]
+        self.assertEqual(rp["baseline_set_b2"]["mode"], "REQUIRED_EXACT")
+        self.assertEqual(rp["baseline_set_b2"]["expected_payload_hex"], "00")
+        self.assertEqual(rp["prime_6e"]["mode"], "REQUIRED_MATCHING_WRAPPED")
+        self.assertEqual(rp["voicetip_a5"]["mode"], "OPTIONAL_MATCHING_DRAIN")
+        self.assertEqual(rp["overwrite_6c"]["mode"], "OPTIONAL_MATCHING_DRAIN")
+        self.assertEqual(rp["post_get_b3"]["expected_payload_hex"], "01")
+        self.assertEqual(rp["unexpected_frame"], "STOP_NO_RETRY")
+
+
 class VolatileRamVram8cContextTests(unittest.TestCase):
     """VRAM-8C deferred callback context + allocator contract; offline only."""
 

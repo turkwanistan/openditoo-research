@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "capture_id": "OPENDITOO-VRAM8B-CANARY-001-LIVE-RESULT-2026-09-13",
+  "experiment_id": "OPENDITOO-VRAM8B-CANARY-001",
+  "classification": "CONSUMED_TRANSPORT_HARNESS_INCONCLUSIVE_NOT_VRAM8_NEGATIVE",
+  "authority": {
+    "one_use_claim_created": true,
+    "authorization_consumed": true,
+    "retry_allowed": false,
+    "replay_allowed": false,
+    "previous_grant_transfers": false
+  },
+  "execution": {
+    "manifest_sha256": "8a63e8f776c0f4409e077d066d987ade03c6b0b8bf38d2004643fc93a43ee11d",
+    "fixture_report_sha256": "a9d36cf8f5f29405a0478a35939188a58bb2a26968ae3227c5b6ec4aa4831af2",
+    "execution_assembly_sha256": "4ceb9dc4a564860b8d8165d8938e594b24a31b9aa5bdb078bafc768e908b2068",
+    "execution_seal_sha256": "fec5dde471b415d87ad42ce35a881b40e6d3de9b7f5b1318e38f3a5948e28580",
+    "claim_sha256": "1ec1b8720c2b28f9d84124d626289da26e4eb6f3f8e05792c02c177e055fecbd",
+    "local_result_sha256": "969c45ac97544c7428960c4a92dcb11a1b800ef37fb8080bc38f57a90a1a4647",
+    "connections_attempted": 1,
+    "application_sends_completed": 2,
+    "custom_0x6c_sends": 0,
+    "error": "VRAM8B_B3_WRAPPER_REJECTED",
+    "completed_at_utc": "2026-09-13T06:32:08.208468+00:00"
+  },
+  "interpretation": {
+    "stage0_reached": false,
+    "overwrite_sent": false,
+    "vram8_execution_result": "UNMEASURED",
+    "root_cause": "The runner issued stock baseline SET_ENERGY_CTRL (0xb2) then GET_ENERGY_CTRL (0xb3), but read only after the GET. Static 4/4 preserved-branch analysis shows the 0xb2 handler converges on the same stock one-byte wrapped-response sender used by 0xb3. The queued 0xb2 response was therefore consumed as the first frame after the 0xb3 request and rejected by the runner's B3-only classifier.",
+    "stock_b2_response_path": "0x126bc setter -> branch to shared one-byte response path at 0x126dc -> call 0xe724",
+    "stock_b3_response_path": "0x126cc getter -> one-byte response path at 0x126dc -> call 0xe724",
+    "likely_zero_b2_ack_wire_hex": "01060004b25500110102",
+    "successor_requirement": "Consume and validate each characterized stock response immediately after its producing command; never allow a prior response to remain queued for a later typed B3 discriminator."
+  },
+  "recovery": {
+    "runtime018_restored": true,
+    "runtime_revision": 13,
+    "status": "connected",
+    "last_error": null,
+    "post_restore_frames_acked_observed": true
+  },
+  "safety": {
+    "persistent_firmware_mutation": false,
+    "flash_write": false,
+    "custom_overwrite_transmitted": false,
+    "device_crash_or_reboot_observed": false
+  }
+}
