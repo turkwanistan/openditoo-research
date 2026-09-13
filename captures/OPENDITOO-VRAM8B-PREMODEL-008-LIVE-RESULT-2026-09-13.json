@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-VRAM8B-PREMODEL-008",
+  "classification": "PASS_PREMODEL_CONTROL_MATCHES_CONTROL_007",
+  "consumed": true,
+  "replay_forbidden": true,
+  "exact_version_boundary": "Exact v42012 firmware bytes remain unrecovered; later-branch runtime50 offsets remain hypotheses.",
+  "manifest_sha256": "201b55743131fa143abcbc360a76d9c22a85f5177217d897b3726802e6b5bbf8",
+  "fixture_report_sha256": "84edcd2ae29b90a7c9ccb7359a9aba4b8ba28cf23841360f9cfc3e5a90c963c3",
+  "execution_assembly_sha256": "e7604d38f68c55b10b4d9d232c972ef8b6ae2b61f34133730c5ea8d162f0730f",
+  "claim_state": "CONSUMED_BEFORE_BLUETOOTH_OPEN_NO_RETRY",
+  "result": {
+    "schema_version": 1,
+    "experiment_id": "OPENDITOO-VRAM8B-PREMODEL-008",
+    "outcome": "premodel_differential_transcript_complete",
+    "connections_attempted": 1,
+    "application_sends_completed": 3,
+    "custom_0x6c_sends": 1,
+    "retry": false,
+    "reconnect": false,
+    "overwrite_elapsed_ms_from_a5": 44,
+    "observation_ms": 75014,
+    "connection_survived_observation": true,
+    "reports": [
+      {
+        "ElapsedMs": 18,
+        "Phase": "pre_overwrite",
+        "WireHex": "01090004bd5513014b007e0102",
+        "WireLength": 13,
+        "OuterCommand": 4,
+        "InnerCommand": 189,
+        "Tag": 85,
+        "PayloadHex": "13014b00",
+        "ChecksumLe16": 382
+      },
+      {
+        "ElapsedMs": 65316,
+        "Phase": "post_overwrite",
+        "WireHex": "01090004bd5513011e00510102",
+        "WireLength": 13,
+        "OuterCommand": 4,
+        "InnerCommand": 189,
+        "Tag": 85,
+        "PayloadHex": "13011e00",
+        "ChecksumLe16": 337
+      }
+    ],
+    "report_count": 2,
+    "execution_assembly_sha256": "e7604d38f68c55b10b4d9d232c972ef8b6ae2b61f34133730c5ea8d162f0730f",
+    "completed_at_utc": "2026-09-13T08:36:29.3829098+00:00",
+    "interpretation": "PREMODEL differential transcript only: one 0x410-byte data-only 0x6c copy stops before the predicted runtime50 model byte and callback under later-branch geometry. Comparison with CONTROL-007 is required before any placement claim."
+  },
+  "control_007": {
+    "path": "captures/OPENDITOO-VRAM8B-CONTROL-007-LIVE-RESULT-2026-09-13.json",
+    "sha256": "42f53970da762c86c585cd50013beea9620bd6c94ac6b7e7737beb184aa449a0",
+    "classification": "PASS_EXACT_UNIT_STOCK_VOICETIP_TRANSCRIPT",
+    "wire_frames_identical": true,
+    "payload_sequence_identical": true,
+    "early_elapsed_delta_ms": -5,
+    "late_elapsed_delta_ms": 64
+  },
+  "interpretation": "The 0x410-byte all-0xff data-only overwrite preserved the exact-unit stock VoiceTip semantic lifecycle: early 13 01 4b 00, late 13 01 1e 00, and full-window connection survival. This closes PREMODEL-008 as the pre-model control. It does not by itself prove the later-branch runtime50 address; it authorizes preparation only (not execution) of the one-byte 0x411 model-sentinel successor."
+}

@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "experiment_id": "OPENDITOO-VRAM8B-MODEL-SENTINEL-009",
+  "kind": "openditoo_vram8b_model_sentinel_differential_one_use_manifest",
+  "status": "prepared_unauthorized",
+  "purpose": "One-byte exact-unit differential after PREMODEL-008: preserve stock 0x6e/A5, timing and 75-second transcript, but extend the all-0xff 0x6c source from 0x410 to exactly 0x411 bytes. Under preserved later-branch geometry this changes exactly predicted runtime50 model +0x08 to 0xff while remaining far short of callback +0x34.",
+  "exact_version_boundary": "Exact v42012 bytes are unrecovered. Addresses/offsets are hypotheses until the live differential establishes or weakens them.",
+  "predecessor_premodel": {
+    "path": "captures/OPENDITOO-VRAM8B-PREMODEL-008-LIVE-RESULT-2026-09-13.json",
+    "sha256": "1f41c44ef20a7cdceca2e89166cc29cb6b8bf79c642752fc7be319900e57ad7f"
+  },
+  "fixture_report": {
+    "path": "artifacts/analysis/volatile_ram_api_vram8b_model_sentinel_009.json",
+    "sha256": "7292b0bdef25c9b5468dae905d13eb9b2fbc4e9b175a9220e7b9c35796f6c097"
+  },
+  "authority": {
+    "transmission_authorized": false,
+    "authorization_consumed": false,
+    "one_use": true,
+    "retry": false,
+    "previous_grants_transfer": false,
+    "required_grant_text": "Grant OPENDITOO-VRAM8B-MODEL-SENTINEL-009 -- stock btplayer selected",
+    "grant_materialization_rule": "Fresh owner grant binds committed manifest SHA-256 + fixture-report SHA-256 and fresh one-use nonce before socket creation."
+  },
+  "target": {
+    "model": "Divoom Ditoo Plus",
+    "purchased_unit_only": true,
+    "mac": "11:75:58:CE:DE:C7",
+    "rfcomm_channel": 1,
+    "installed_firmware_version_assumption": 42012
+  },
+  "sequence": [
+    {
+      "ordinal": 1,
+      "command": "0x6e",
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-MODEL-SENTINEL-009-01-prime.bin",
+      "sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec",
+      "wire_length": 8,
+      "wire_hex": "0104006e01730002"
+    },
+    {
+      "ordinal": 2,
+      "command": "0xa5",
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-MODEL-SENTINEL-009-02-voicetip.bin",
+      "sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316",
+      "wire_length": 10,
+      "wire_hex": "010600a5010201af0002"
+    },
+    {
+      "ordinal": 3,
+      "command": "0x6c",
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-MODEL-SENTINEL-009-03-overwrite.bin",
+      "sha256": "9f80e0452c3f1876348482c289fdb1f9ee6ec99a4ebfef133d1b496d58de77e8",
+      "wire_length": 1052,
+      "declared_source_length": 1041,
+      "wire_prefix_hex": "0118046c00001104ffffffffffffffff",
+      "wire_suffix_hex": "ffffffffffffffffffffffffff8c0d02"
+    }
+  ],
+  "timing": {
+    "prime_to_a5_ms": 40,
+    "a5_to_overwrite_target_ms": 40,
+    "capture_window_from_a5_ms": 75000
+  },
+  "receive_policy": {
+    "start": "immediately after completed 0xA5 send",
+    "overwrite_target_elapsed_ms_from_a5": 40,
+    "capture_window_ms_from_a5": 75000,
+    "fragmentation_supported": true,
+    "concatenated_frames_supported": true,
+    "record_full_wire_and_payload": true,
+    "zero_reports_is_valid_completion": true,
+    "malformed_or_checksum_failure": "STOP_NO_RETRY",
+    "disconnect": "STOP_NO_RETRY"
+  },
+  "transport_budget": {
+    "max_connections": 1,
+    "exact_application_sends": 3,
+    "max_custom_0x6c_sends": 1,
+    "custom_0x6c_declared_source_length": 1041,
+    "max_reports": 64,
+    "max_wire_bytes_per_report": 64,
+    "connect_budget_ms": 15000,
+    "total_budget_ms": 95000,
+    "retry": false,
+    "reconnect": false
+  },
+  "safety_boundary": {
+    "custom_code": false,
+    "callback_pointer_write": false,
+    "predicted_model_byte_write": true,
+    "predicted_model_byte_value": "0xff",
+    "predicted_callback_field_touched": false,
+    "predicted_last_runtime50_offset": "0x08",
+    "flash_write": false,
+    "persistent_write": false,
+    "runtime018_restore_required": true
+  },
+  "success_discriminator": {
+    "required": [
+      "exact three sends on one connection",
+      "exact one custom 0x6c with declared source length 0x411",
+      "full 75-second from-A5 capture completes",
+      "all captured frames validate",
+      "Runtime 018 restores connected with last_error=null"
+    ],
+    "interpretation": "MODEL-SENTINEL differential transcript only. Compare to PREMODEL-008/CONTROL-007. A lifecycle change after the one-byte extension supports the predicted model-boundary hypothesis; an unchanged lifecycle weakens that hypothesis or the assumed semantics. Do not infer callback reach."
+  },
+  "next_after_terminal_result": "Stop and interpret the 008/009 differential before any executable callback canary or VRAM-8D work."
+}

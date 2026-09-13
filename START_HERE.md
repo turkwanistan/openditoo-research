@@ -4,9 +4,17 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## ▶ CURRENT STATE — read this first (2026-09-13)
 
-**Session-rotation handoff:** `notes/OPENDITOO-HANDOFF-2026-09-13-PREMODEL-008.md`. New sessions should read the current block below, then that compact handoff, and avoid rehydrating older VRAM history unless those files point to it.
+**Session-rotation handoff:** `notes/OPENDITOO-HANDOFF-2026-09-13-MODEL-SENTINEL-009.md`. New sessions should read the current block below, then that compact handoff, and avoid rehydrating older VRAM history unless those files point to it.
 
-## 2026-09-13 exact-unit VoiceTip baseline closed / PREMODEL-008 prepared — CURRENT
+## 2026-09-13 PREMODEL-008 PASS / MODEL-SENTINEL-009 prepared — CURRENT
+
+`OPENDITOO-VRAM8B-PREMODEL-008` is **consumed / PASS_PREMODEL_CONTROL_MATCHES_CONTROL_007**. Its one data-only `0x6c` used exactly `0x410` bytes of `0xFF`, was sent 44 ms after A5, and preserved CONTROL-007's exact semantic transcript: wrapped `0xBD` payload `13 01 4b 00` at 18 ms, then `13 01 1e 00` at 65,316 ms; the connection survived through 75,014 ms and Runtime 018 revision 13 restored `connected`, `last_error=null`. Durable evidence: `captures/OPENDITOO-VRAM8B-PREMODEL-008-LIVE-RESULT-2026-09-13.json` (SHA-256 `1f41c44ef20a7cdceca2e89166cc29cb6b8bf79c642752fc7be319900e57ad7f`). This closes the predicted runtime50 `+0..+7` side as non-perturbing for the observed lifecycle, without promoting the later-branch runtime50 base to exact-v42012 fact.
+
+Fresh `OPENDITOO-VRAM8B-MODEL-SENTINEL-009` is **prepared / unauthorized / unconsumed**. The sole device-side delta from 008 is one additional source byte: `0x410 -> 0x411`, with the entire prior all-`0xFF` prefix unchanged and new byte offset `0x410 = 0xFF`; stock `0x6e`/A5 frames, timing, capture window, one-connection policy and no-retry/no-reconnect policy are unchanged. Under the later-branch hypothesis this reaches exactly predicted model `+0x08 = 0xFF` and remains far short of callback `+0x34`; no custom code or callback pointer exists. Manifest SHA-256 `c0687e106867da409de0747be7900e4df3d863cfc7daa2324f0f2579d645bb01`; fixture-report SHA-256 `7292b0bdef25c9b5468dae905d13eb9b2fbc4e9b175a9220e7b9c35796f6c097`. Gate PASS; focused delta tests 2/2 PASS; no 009 grant/claim/handover/execution/result exists. Exact future grant: **`Grant OPENDITOO-VRAM8B-MODEL-SENTINEL-009 -- stock btplayer selected`**.
+
+Do not return to executable callback canaries or VRAM-8D until the 008/009 data-only differential is terminally interpreted.
+
+## 2026-09-13 exact-unit VoiceTip baseline closed / PREMODEL-008 prepared — HISTORICAL
 
 `OPENDITOO-VRAM8B-CONTROL-007` is **consumed / PASS_EXACT_UNIT_STOCK_VOICETIP_TRANSCRIPT**. On one RFCOMM connection it sent only stock `0x6e 01` then stock `0xA5 01 02 01`, with no custom `0x6c`, and captured the full 75-second exact-v42012 receive stream. Two valid wrapped `0xBD` reports occurred: payload `13 01 4b 00` at **23 ms**, then `13 01 1e 00` at **65,252 ms**. The connection survived through 75,003 ms and Runtime 018 revision 13 restored `connected`, `last_error=null`. Durable evidence: `captures/OPENDITOO-VRAM8B-CONTROL-007-LIVE-RESULT-2026-09-13.json` (SHA-256 `42f53970da762c86c585cd50013beea9620bd6c94ac6b7e7737beb184aa449a0`). This closes the exact-unit stock VoiceTip/report timing baseline; it does not by itself prove later-branch RAM addresses.
 
