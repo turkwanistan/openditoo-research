@@ -4,7 +4,7 @@
 
 VRAM-6/7 is CLOSED LIVE PASS under the precommitted composite discriminator. `OPENDITOO-VRAM67-BXLR-001` and `OPENDITOO-VRAM67-BXLR-002` are both consumed and non-replayable. The accepted exact-unit result proves, under the already-promoted deterministic placement/VoiceTip trigger model, that a controlled Thumb callback at `0x00804779` can execute `70 47` (`BX LR`) and return without destabilizing the device.
 
-This roadmap begins **after** that proof. It does not authorize any new Ditoo traffic. No VRAM-8+ manifest/grant exists merely because this file exists. Every new live experiment still requires its own frozen one-use manifest and exact owner grant under `AGENTS.md`.
+This roadmap begins **after** that proof. It does not authorize any new Ditoo traffic. **VRAM-8A has now closed offline and `OPENDITOO-VRAM8B-CANARY-001` exists as a frozen `prepared_unauthorized` manifest; its existence is not authority.** No VRAM-8+ live grant has transferred or been materialized. Every new live experiment still requires its own frozen one-use manifest and exact owner grant under `AGENTS.md`.
 
 The product objective remains narrow: turn the proven volatile execution primitive into a **RAM-resident, reboot-cleared OpenDitoo API**. Do not turn it into a general debugger, arbitrary memory editor, arbitrary ARM-code launcher, persistent firmware patch, or raw-packet product surface.
 
@@ -49,7 +49,7 @@ The exploit/bootstrap path is therefore an installer for volatile RAM state, not
 
 ---
 
-## VRAM-8A — nontrivial returning stage-0, OFFLINE DESIGN/PROOF
+## VRAM-8A — nontrivial returning stage-0 — CLOSED OFFLINE
 
 ### Question
 
@@ -78,13 +78,13 @@ Can a payload larger than `BX LR` obey the real callback ABI, perform one bounde
 - exact stage-0 fixture bytes and disassembly listing under an offline fixture path;
 - focused tests pinning ABI preservation, touched addresses, maximum instruction/byte count, and return path.
 
-### Gate to VRAM-8B
+### Closure result
 
-Promote only if the exact payload has a positive canary whose mechanism is independently understood and the stage-0 returns normally on all modeled paths. If no positive canary can be made trustworthy, stop and solve observability before any live grant.
+**CLOSED OFFLINE.** `tools/ditoo_vram8_stage0_model.py` proves the callback ABI across 4/4 preserved branches and freezes a 20-byte leaf at fresh Thumb entry `0x00804901`. Exact bytes are `10b5034c6468e27b01235a40e27310bdf0308000` (SHA-256 `1cdd53f83a75021b47cedc65bbac9f5ee1d488863d029d5900d4687efcf5264b`). The payload preserves `r4`/SP/LR, makes no calls, and toggles exactly the one-byte volatile energy-control field rooted through pointer cell `0x008030f4`. Stock `0xb2` establishes/restores baseline 0 and stock `0xb3` returns the raw byte, giving a precommitted positive `0 -> 1 -> 0` typed readback. Task-vs-IRQ context remains unknown, so the leaf/no-call restriction is part of the proof. The fresh `0x00804900` source span is pristine/unreferenced 4/4 and intentionally avoids the already-executed VRAM67 cache line.
 
 ---
 
-## VRAM-8B — one-use live nontrivial returning canary
+## VRAM-8B — one-use live nontrivial returning canary — PREPARED / UNAUTHORIZED
 
 ### Question
 
@@ -102,6 +102,11 @@ Freeze one new one-use manifest only after 8A closes. Keep the bootstrap packet 
 - Runtime 018 suspend/restore procedure;
 - explicit negative outcomes: crash, reboot, disconnect, timeout, ambiguous canary, or failed Runtime 018 restore are NOT PASS.
 
+
+### Prepared manifest state
+
+`experiments/OPENDITOO-VRAM8B-CANARY-001.json` and `artifacts/analysis/volatile_ram_api_vram8b_fixture.json` freeze the exact one-use candidate. The transcript is eight sends on one connection: stock baseline `0xb2`, baseline `0xb3`, stock `0x6e`, stock `0xa5`, exactly one custom `0x6c`, post-hold `0xb3`, restore `0xb2`, restore `0xb3`; retry/reconnect are false and the callback observation hold is 75 seconds. PASS requires typed readback `0 -> 1 -> 0`, normal liveness and Runtime 018 restoration. The manifest is `prepared_unauthorized`; no runner/grant/claim/handover has been created and no device I/O occurred. The only next live authority would be the exact fresh owner grant `Grant OPENDITOO-VRAM8B-CANARY-001 -- stock btplayer selected`. VRAM-8D remains a separate later grant.
+
 ### Success
 
 All of the following must occur:
@@ -116,7 +121,7 @@ This closes “our code can safely do bounded work”, which is stronger than th
 
 ---
 
-## VRAM-8C — bounded resident-window and installer design, OFFLINE
+## VRAM-8C — bounded resident-window and installer design — ADVANCED / NOT CLOSED
 
 ### Question
 
@@ -133,6 +138,11 @@ Rank candidate RAM windows with hard evidence. A usable destination must be:
 - either statically reserved/unused or obtained through a deterministic stock allocator call whose lifetime is deliberately retained.
 
 Prefer an allocated/reserved window over “unused-looking RAM”. If allocation is used, stage-0 owns allocation once, stores the pointer only in reviewed device-side state, and the host still never chooses the address.
+
+
+### Current ranked result
+
+The current offline ranking rejects hardcoded free-looking app-heap addresses, the live display backing, runtime50/adjacent live objects, and unreserved upper identity-mapped SRAM. The preferred design is **one deliberately retained application-heap allocation owned by OpenDitoo for the boot session**, but it is not promoted until callback task-vs-interrupt context and allocator ABI/reentrancy are closed. No stage-1 image exists yet, so a maximum image length must not be guessed; freeze it only after the single fixed image is built and measured. The future installer must perform explicit I-cache maintenance before stage-1 execution. Therefore 8C is `DESIGN_ADVANCED_NOT_CLOSED`, not a live-install-ready gate.
 
 ### Installer contract
 

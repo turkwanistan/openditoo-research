@@ -1,0 +1,260 @@
+{
+  "authoritative_inputs": {
+    "exact_unit_m4": {
+      "path": "captures/OPENDITOO-DAY1-M4-LIVE-RESULT-2026-09-08.json",
+      "sha256": "a40a23c08cfc73a3095819ebaba4e921ce0fa178584099c53b4378e4159d67fd"
+    },
+    "runtime018_policy": {
+      "path": "product/OPENDITOO-PRODUCT-RUNTIME-018.json",
+      "sha256": "895268e91433b0ef18ee717c1378009398ad414d07083aac9eeb4194542b9c8f"
+    },
+    "tier2_display": {
+      "path": "artifacts/analysis/volatile_ram_api_tier2_display.json",
+      "sha256": "e7055f2f37c7404fd53d59d8acf48cd502aeb563ea6a53a045f51bd395871013"
+    },
+    "tier2_placement": {
+      "path": "artifacts/analysis/volatile_ram_api_tier2_placement.json",
+      "sha256": "045c4da0bd2fb2c63609ce578d082e063d263ec3dccce9a8f492c48374182999"
+    },
+    "tier2_trigger": {
+      "path": "artifacts/analysis/volatile_ram_api_tier2_trigger.json",
+      "sha256": "c6ae80bd9df73f6c0b8286a443d26e8ef03b5bf3e16d0fbd552949c666b15cee"
+    },
+    "vram3_execution": {
+      "path": "artifacts/analysis/volatile_ram_api_vram3_execution.json",
+      "sha256": "ae0bd733b6cac05ab39e65a03d896e34c889c2e7c5c476789a16c8cbe414803d"
+    },
+    "vram67_002_live_result": {
+      "path": "captures/OPENDITOO-VRAM67-BXLR-002-LIVE-RESULT-2026-09-12.json",
+      "sha256": "2e70c964a0e812749b92b34c99074aa971d98140ff3e32d7ed54a776f143a269"
+    },
+    "vram8a_stage0": {
+      "path": "artifacts/analysis/volatile_ram_api_vram8_stage0.json",
+      "sha256": "764422ca3d95ca8a6e60857a2ccd21e7123a93fefe462d840f7f528117485004"
+    }
+  },
+  "authority_boundary": {
+    "claim_materialized": false,
+    "grant_materialized": false,
+    "previous_grants_transfer": false,
+    "required_grant_text": "Grant OPENDITOO-VRAM8B-CANARY-001 -- stock btplayer selected",
+    "runner_materialized": false,
+    "status": "PREPARED_UNAUTHORIZED_STOP_BEFORE_LIVE"
+  },
+  "experiment_id": "OPENDITOO-VRAM8B-CANARY-001",
+  "fixtures": {
+    "baseline_get": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-02-baseline-get.bin",
+      "sha256": "6fe20a0815b73bb62acf228634f664379efae9983842eeca6ac7974c2f2bea7c",
+      "wire_hex": "010300b3b60002",
+      "wire_length": 7,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    "baseline_set": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-01-baseline-set.bin",
+      "sha256": "3f98ef3e2af07ccd2151bd06ae96ad8bdfc82d8fb1ed94c0f66d3580ae75ca47",
+      "wire_hex": "010400b200b60002",
+      "wire_length": 8,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    "expected_b3_0": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-expected-b3-0.bin",
+      "sha256": "c6fba154f3a08cb140bef05566b07c76b848d65ce09e288267b4617c37d1f821",
+      "wire_hex": "01060004b35500120102"
+    },
+    "expected_b3_1": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-expected-b3-1.bin",
+      "sha256": "bf66aa418a0e2f889392e36135286eff94fb71ff86d6883701090da25835acc1",
+      "wire_hex": "01060004b35501130102"
+    },
+    "overwrite": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-05-overwrite.bin",
+      "sha256": "298f1901ea9cc94fd172302117cd2e5cf411eacb578b16be5de3ecf1c52e0906",
+      "wire_hex": null,
+      "wire_length": 1099,
+      "wire_prefix_hex": "0147046c00004004ffffffffffffffff",
+      "wire_suffix_hex": "ffffffffffffffffff014980007d2c02"
+    },
+    "post_get": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-06-post-get.bin",
+      "sha256": "6fe20a0815b73bb62acf228634f664379efae9983842eeca6ac7974c2f2bea7c",
+      "wire_hex": "010300b3b60002",
+      "wire_length": 7,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    "prime": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-03-prime.bin",
+      "sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec",
+      "wire_hex": "0104006e01730002",
+      "wire_length": 8,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    "restore_get": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-08-restore-get.bin",
+      "sha256": "6fe20a0815b73bb62acf228634f664379efae9983842eeca6ac7974c2f2bea7c",
+      "wire_hex": "010300b3b60002",
+      "wire_length": 7,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    "restore_set": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-07-restore-set.bin",
+      "sha256": "3f98ef3e2af07ccd2151bd06ae96ad8bdfc82d8fb1ed94c0f66d3580ae75ca47",
+      "wire_hex": "010400b200b60002",
+      "wire_length": 8,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    },
+    "source": {
+      "length": 1088,
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-source.bin",
+      "sha256": "1f7d0761fd905e91b23ea3c3024b2b7f22f6025467dc4e06690757a6b10634ca"
+    },
+    "voicetip": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-001-04-voicetip.bin",
+      "sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316",
+      "wire_hex": "010600a5010201af0002",
+      "wire_length": 10,
+      "wire_prefix_hex": null,
+      "wire_suffix_hex": null
+    }
+  },
+  "kind": "openditoo_vram8b_positive_canary_fixture",
+  "ok": true,
+  "response_contract": {
+    "baseline_expected": 0,
+    "echo_command": "0xb3",
+    "payload_length": 1,
+    "post_stage0_expected": 1,
+    "restored_expected": 0,
+    "tag": "0x55",
+    "unexpected_or_missing_response": "NOT_PASS_STOP_NO_RETRY",
+    "wrapped_outer_command": "0x04"
+  },
+  "safety": {
+    "bluetooth_opened": false,
+    "device_io": false,
+    "firmware_or_flash_mutation": false,
+    "generic_loader_or_raw_call_surface": false,
+    "offline_preparation_only": true,
+    "packets_transmitted": 0,
+    "persistent_mutation": false,
+    "runtime_018_touched": false
+  },
+  "schema_version": 1,
+  "sequence": [
+    {
+      "class": "stock-shaped",
+      "command": "0xb2",
+      "key": "baseline_set",
+      "ordinal": 1,
+      "purpose": "force fixed canary baseline 0"
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0xb3",
+      "key": "baseline_get",
+      "ordinal": 2,
+      "purpose": "typed baseline proof; require decoded raw value 0"
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0x6e",
+      "key": "prime",
+      "ordinal": 3,
+      "purpose": "prime content mode 0x0b"
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0xa5",
+      "key": "voicetip",
+      "ordinal": 4,
+      "purpose": "VoiceTip setup selector 2/model 0x22"
+    },
+    {
+      "class": "custom-once",
+      "command": "0x6c",
+      "key": "overwrite",
+      "ordinal": 5,
+      "purpose": "exact 1088-byte overwrite with fixed nontrivial stage-0"
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0xb3",
+      "key": "post_get",
+      "ordinal": 6,
+      "purpose": "positive stage-0 marker after hold; require decoded raw value 1"
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0xb2",
+      "key": "restore_set",
+      "ordinal": 7,
+      "purpose": "restore fixed baseline 0"
+    },
+    {
+      "class": "stock-shaped",
+      "command": "0xb3",
+      "key": "restore_get",
+      "ordinal": 8,
+      "purpose": "typed restoration proof; require decoded raw value 0"
+    }
+  ],
+  "stage0": {
+    "bytes_hex": "10b5034c6468e27b01235a40e27310bdf0308000",
+    "callback_source_offset": "0x43c",
+    "callback_value": "0x804901",
+    "entry": "0x804901",
+    "runtime50_base": "0x804b80",
+    "runtime50_model": "0x22",
+    "runtime50_source_offset": "0x408",
+    "sha256": "1cdd53f83a75021b47cedc65bbac9f5ee1d488863d029d5900d4687efcf5264b",
+    "source_address": "0x804900",
+    "source_length": 1088,
+    "source_offset": "0x188",
+    "source_sha256": "1f7d0761fd905e91b23ea3c3024b2b7f22f6025467dc4e06690757a6b10634ca"
+  },
+  "stop_policy": {
+    "ambiguous_or_partial_send": "STOP_NO_RETRY_RESTORE_RUNTIME018",
+    "baseline_not_zero": "STOP_NO_CUSTOM_OVERWRITE_RESTORE_RUNTIME018",
+    "candidate_pass": "RESTORE_RUNTIME018_RECORD_RESULT_STOP_BEFORE_ANY_VRAM8D_OR_VRAM9_WORK",
+    "disconnect_or_crash": "STOP_NO_RETRY_RESTORE_RUNTIME018_IF_POSSIBLE",
+    "post_get_not_one": "NOT_PASS_RESTORE_BASELINE_AND_RUNTIME018_STOP",
+    "restore_get_not_zero": "NOT_PASS_STOP_AND_RECORD_RESTORE_FAILURE",
+    "unexpected_or_missing_b3_response": "STOP_NO_RETRY_RESTORE_RUNTIME018"
+  },
+  "success_discriminator": {
+    "interpretation": "The 0 -> 1 -> 0 typed stock readback is the positive RAM-only execution marker. Liveness alone is insufficient, and crash/reboot/disconnect/timing behavior can never be success.",
+    "required": [
+      "baseline GET decodes to raw energy-control value 0",
+      "all eight frozen application sends complete on the same RFCOMM connection with no retry",
+      "the single custom 0x6c overwrite is sent exactly once",
+      "after the full post-overwrite hold, GET decodes to raw value 1",
+      "the connection remains alive and no crash/reboot/watchdog/disconnect symptom occurs",
+      "restore SET 0 then GET decodes to 0",
+      "accepted Runtime 018 is restored afterward and returns connected with last_error=null"
+    ]
+  },
+  "target": {
+    "installed_firmware_version_assumption": 42012,
+    "mac": "11:75:58:CE:DE:C7",
+    "model": "Divoom Ditoo Plus",
+    "purchased_unit_only": true,
+    "rfcomm_channel": 1
+  },
+  "transport_budget": {
+    "connect_budget_ms": 15000,
+    "exact_application_sends": 8,
+    "inter_packet_delay_ms": 40,
+    "max_connections": 1,
+    "max_custom_0x6c_sends": 1,
+    "observation_hold_ms_after_overwrite": 75000,
+    "reconnect": false,
+    "retry": false,
+    "total_budget_ms": 100000
+  }
+}

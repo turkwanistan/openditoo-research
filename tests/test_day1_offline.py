@@ -5650,6 +5650,172 @@ class VolatileRamVram3ExecutionTests(unittest.TestCase):
         self.assertFalse(committed["safety"]["runtime_018_touched"])
 
 
+class VolatileRamVram8Stage0Tests(unittest.TestCase):
+    """VRAM-8A callback ABI + nontrivial positive canary; offline only."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_vram8_stage0_model")
+
+    def test_callback_abi_and_clean_return_are_closed_cross_branch(self) -> None:
+        r = self._mod().build_report()
+        self.assertTrue(r["ok"])
+        self.assertEqual(len(r["branches"]), 4)
+        abi = r["callback_abi"]
+        self.assertEqual(abi["cross_branch"], "4_OF_4_PRESERVED_PLUS_BRANCHES")
+        self.assertIn("callback value itself", abi["entry_registers"]["r0"])
+        self.assertIn("0x00804b80", abi["entry_registers"]["r1"])
+        self.assertIn("ignored", abi["return_value_semantics"])
+        self.assertIn("bit0=1", abi["thumb_state"])
+        self.assertFalse(abi["interrupt_preemption_constraint"]["non_interrupt_task_context_proven"])
+        self.assertTrue(abi["interrupt_preemption_constraint"]["vram8a_fixture_complies"])
+        for b in r["branches"].values():
+            self.assertEqual(b["stack_frame_deltas_bytes"]["periodic_dispatcher"], -24)
+            self.assertEqual(b["stack_frame_deltas_bytes"]["worker"], -32)
+            self.assertEqual(b["stack_frame_deltas_bytes"]["callback_function"], -8)
+            self.assertEqual(b["stack_frame_deltas_bytes"]["wrapper"], -8)
+
+    def test_stage0_fixture_is_exact_bounded_leaf_and_preserves_callee_saved_state(self) -> None:
+        m = self._mod()
+        r = m.build_report()
+        s = r["stage0"]
+        self.assertEqual(s["source"], "0x804900")
+        self.assertEqual(s["entry"], "0x804901")
+        self.assertEqual(s["source_offset"], "0x188")
+        self.assertEqual(s["length_bytes"], 20)
+        self.assertEqual(s["code_bytes"], 16)
+        self.assertEqual(s["bytes_hex"], "10b5034c6468e27b01235a40e27310bdf0308000")
+        self.assertEqual(s["sha256"], "1cdd53f83a75021b47cedc65bbac9f5ee1d488863d029d5900d4687efcf5264b")
+        self.assertEqual(s["instructions_executed"], 8)
+        self.assertEqual(s["branches_or_loops"], 0)
+        self.assertEqual(s["stock_calls"], 0)
+        self.assertEqual(s["stack_net_delta"], 0)
+        self.assertEqual(s["callee_saved_registers_touched"], ["r4"])
+        self.assertEqual(s["callee_saved_registers_restored"], ["r4"])
+        self.assertTrue(s["touched_addresses"]["no_other_data_writes"])
+        writes = s["touched_addresses"]["writes"]
+        self.assertEqual(writes[0]["address"], "*(u32*)0x008030f4 + 0x0f")
+        self.assertEqual(writes[0]["width"], 1)
+        self.assertEqual(m.STAGE0_BYTES, (ROOT / "artifacts/analysis/volatile_ram_api_vram8_stage0.bin").read_bytes())
+
+    def test_stage0_uses_fresh_first_execution_span_not_consumed_vram67_location(self) -> None:
+        r = self._mod().build_report()
+        fresh = r["stage0"]["fresh_first_execution_span"]
+        self.assertTrue(fresh["pristine_ff_4_of_4"])
+        self.assertEqual(fresh["raw_source_pointer_xrefs_4_of_4"], 0)
+        self.assertEqual(fresh["raw_thumb_entry_xrefs_4_of_4"], 0)
+        self.assertEqual(fresh["alignment_bytes"], 0x100)
+        self.assertEqual(fresh["checked_bytes"], 0x40)
+        self.assertNotEqual(r["stage0"]["entry"], "0x804779")
+        for b in r["branches"].values():
+            self.assertTrue(b["fresh_stage0_span_pristine_ff"])
+            self.assertEqual(b["fresh_stage0_raw_source_pointer_xrefs"], [])
+            self.assertEqual(b["fresh_stage0_raw_thumb_entry_xrefs"], [])
+
+    def test_energy_control_canary_is_typed_positive_and_reversible(self) -> None:
+        r = self._mod().build_report()
+        c = r["positive_canary"]
+        self.assertEqual(c["status"], "PROMOTED_OFFLINE")
+        self.assertEqual(c["stock_commands"]["set"], "0xb2 SPP_SET_ENERGY_CTRL")
+        self.assertEqual(c["stock_commands"]["get"], "0xb3 SPP_GET_ENERGY_CTRL")
+        self.assertEqual(c["backing"]["object_pointer_cell"], "0x8030f4")
+        self.assertEqual(c["backing"]["field"], "*(u32*)0x008030f4 + 0x0f")
+        self.assertEqual(c["precommitted_transform"], {
+            "baseline": 0, "operation": "XOR bit0", "mask": 1, "expected_after_stage0": 1,
+        })
+        self.assertIn("one-byte", c["typed_observation"])
+        for b in r["branches"].values():
+            self.assertEqual(b["energy_state_global"], "0x8030f0")
+            self.assertEqual(b["energy_state_object_pointer_cell"], "0x8030f4")
+            self.assertEqual(b["energy_field_offset"], "0xf")
+            self.assertEqual(b["energy_set_direct_bl_xrefs"], ["0x126be"])
+            self.assertEqual(b["energy_get_direct_bl_xrefs"], ["0x126cc"])
+            self.assertEqual(b["canonical_energy_field_writers"], ["0x14d9e"])
+            self.assertTrue(b["typed_query_returns_raw_one_byte"])
+
+    def test_vram8c_rejects_unreserved_addresses_and_keeps_installer_bounded(self) -> None:
+        r = self._mod().build_report()
+        d = r["resident_window_vram8c"]
+        self.assertEqual(d["status"], "DESIGN_ADVANCED_NOT_CLOSED")
+        self.assertEqual(d["ranked_candidates"][0]["verdict"], "PREFERRED_PENDING_CONTEXT_AND_ALLOCATOR_ABI")
+        self.assertEqual(d["ranked_candidates"][1]["verdict"], "REJECT")
+        self.assertEqual(d["ranked_candidates"][2]["verdict"], "REJECT_RESIDENT")
+        contract = d["bounded_installer_contract"]
+        self.assertIn("host never supplies an address", contract["destination"])
+        self.assertEqual(contract["max_image_length"], "UNSET_UNTIL_STAGE1_SIZE_IS_MEASURED_AND_FROZEN")
+        self.assertIn("explicit I-cache maintenance", contract["cache"])
+        self.assertIn("host-selected address", contract["forbidden"])
+        self.assertIn("generic ARM uploader", contract["forbidden"])
+        self.assertFalse(r["promotion"]["vram8c_resident_window_closed"])
+        self.assertTrue(r["promotion"]["vram8c_design_advanced"])
+
+    def test_committed_vram8a_artifacts_are_current_and_offline_only(self) -> None:
+        m = self._mod()
+        live = m.build_report()
+        committed = json.loads((ROOT / "artifacts/analysis/volatile_ram_api_vram8_stage0.json").read_text())
+        self.assertEqual(committed, live)
+        self.assertEqual((ROOT / "artifacts/analysis/volatile_ram_api_vram8_stage0.bin").read_bytes(), m.STAGE0_BYTES)
+        self.assertTrue(committed["safety"]["offline_analysis_only"])
+        self.assertFalse(committed["safety"]["device_io"])
+        self.assertFalse(committed["safety"]["live_packet_generation"])
+        self.assertFalse(committed["safety"]["runtime_018_touched"])
+        self.assertFalse(committed["promotion"]["vram8b_live_authorized"])
+
+
+class VolatileRamVram8bManifestTests(unittest.TestCase):
+    """VRAM-8B one-use positive-canary manifest; frozen offline and unauthorized."""
+
+    def _mod(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        import importlib
+        return importlib.import_module("ditoo_vram8b_live_gate")
+
+    def test_manifest_freezes_exact_typed_canary_sequence(self) -> None:
+        m = self._mod()
+        r = m.build_report()
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["experiment_id"], "OPENDITOO-VRAM8B-CANARY-001")
+        self.assertEqual([x["command"] for x in r["sequence"]], ["0xb2", "0xb3", "0x6e", "0xa5", "0x6c", "0xb3", "0xb2", "0xb3"])
+        self.assertEqual(r["transport_budget"]["exact_application_sends"], 8)
+        self.assertEqual(r["transport_budget"]["max_custom_0x6c_sends"], 1)
+        self.assertFalse(r["transport_budget"]["retry"])
+        self.assertEqual(r["response_contract"]["baseline_expected"], 0)
+        self.assertEqual(r["response_contract"]["post_stage0_expected"], 1)
+        self.assertEqual(r["response_contract"]["restored_expected"], 0)
+        self.assertIn("0 -> 1 -> 0", r["success_discriminator"]["interpretation"])
+
+    def test_manifest_is_hash_bound_and_stops_before_live_authority(self) -> None:
+        m = self._mod()
+        r = m.build_report()
+        manifest = m.build_manifest(r)
+        self.assertEqual(manifest["status"], "prepared_unauthorized")
+        self.assertFalse(manifest["authority"]["transmission_authorized"])
+        self.assertFalse(manifest["authority"]["authorization_consumed"])
+        self.assertFalse(manifest["authority"]["previous_grants_transfer"])
+        self.assertTrue(manifest["authority"]["one_use"])
+        self.assertFalse(manifest["authority"]["retry"])
+        self.assertTrue(manifest["live_boundary"]["runtime018_must_remain_untouched_until_fresh_owner_grant"])
+        self.assertTrue(manifest["live_boundary"]["runner_not_materialized"])
+        self.assertTrue(manifest["live_boundary"]["vram8d_resident_install_is_separate_future_grant"])
+        self.assertTrue(manifest["live_boundary"]["vram9_not_authorized"])
+        self.assertEqual(manifest["stage0"]["entry"], "0x804901")
+        self.assertEqual(manifest["stage0"]["sha256"], "1cdd53f83a75021b47cedc65bbac9f5ee1d488863d029d5900d4687efcf5264b")
+        for item in manifest["sequence"]:
+            self.assertRegex(item["sha256"], r"^[0-9a-f]{64}$")
+
+    def test_committed_vram8b_fixtures_and_manifest_are_current(self) -> None:
+        m = self._mod()
+        live, manifest = m.verify_committed()
+        self.assertEqual(json.loads((ROOT / "artifacts/analysis/volatile_ram_api_vram8b_fixture.json").read_text()), live)
+        self.assertEqual(json.loads((ROOT / "experiments/OPENDITOO-VRAM8B-CANARY-001.json").read_text()), manifest)
+        self.assertTrue(live["safety"]["offline_preparation_only"])
+        self.assertFalse(live["safety"]["device_io"])
+        self.assertFalse(live["safety"]["bluetooth_opened"])
+        self.assertEqual(live["safety"]["packets_transmitted"], 0)
+        self.assertFalse(live["safety"]["runtime_018_touched"])
+
+
 class OfficialTestBranchLineageTests(unittest.TestCase):
     """Official test-branch provenance/lineage audit; offline and non-installing."""
 

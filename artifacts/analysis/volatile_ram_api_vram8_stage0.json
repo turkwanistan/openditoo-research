@@ -1,0 +1,398 @@
+{
+  "branches": {
+    "flag42_prod_v42016": {
+      "callback_blx": "0x1fac4",
+      "callback_function": "0x1fa8a",
+      "canonical_energy_field_writers": [
+        "0x14d9e"
+      ],
+      "energy_field_offset": "0xf",
+      "energy_get_direct_bl_xrefs": [
+        "0x126cc"
+      ],
+      "energy_get_helper": "0x14da2",
+      "energy_set_direct_bl_xrefs": [
+        "0x126be"
+      ],
+      "energy_set_helper": "0x14d92",
+      "energy_state_global": "0x8030f0",
+      "energy_state_object_pointer_cell": "0x8030f4",
+      "fresh_stage0_file_offset": "0x4900",
+      "fresh_stage0_raw_source_pointer_xrefs": [],
+      "fresh_stage0_raw_thumb_entry_xrefs": [],
+      "fresh_stage0_span_pristine_ff": true,
+      "stack_frame_deltas_bytes": {
+        "callback_function": -8,
+        "periodic_dispatcher": -24,
+        "worker": -32,
+        "wrapper": -8
+      },
+      "typed_query_returns_raw_one_byte": true,
+      "worker": "0x1fb42",
+      "wrapper": "0x1ff6c"
+    },
+    "flag42_test_v42017": {
+      "callback_blx": "0x1fab8",
+      "callback_function": "0x1fa7e",
+      "canonical_energy_field_writers": [
+        "0x14d9e"
+      ],
+      "energy_field_offset": "0xf",
+      "energy_get_direct_bl_xrefs": [
+        "0x126cc"
+      ],
+      "energy_get_helper": "0x14da2",
+      "energy_set_direct_bl_xrefs": [
+        "0x126be"
+      ],
+      "energy_set_helper": "0x14d92",
+      "energy_state_global": "0x8030f0",
+      "energy_state_object_pointer_cell": "0x8030f4",
+      "fresh_stage0_file_offset": "0x4900",
+      "fresh_stage0_raw_source_pointer_xrefs": [],
+      "fresh_stage0_raw_thumb_entry_xrefs": [],
+      "fresh_stage0_span_pristine_ff": true,
+      "stack_frame_deltas_bytes": {
+        "callback_function": -8,
+        "periodic_dispatcher": -24,
+        "worker": -32,
+        "wrapper": -8
+      },
+      "typed_query_returns_raw_one_byte": true,
+      "worker": "0x1fb36",
+      "wrapper": "0x1ff60"
+    },
+    "flag60_prod_v60014": {
+      "callback_blx": "0x1fac4",
+      "callback_function": "0x1fa8a",
+      "canonical_energy_field_writers": [
+        "0x14d9e"
+      ],
+      "energy_field_offset": "0xf",
+      "energy_get_direct_bl_xrefs": [
+        "0x126cc"
+      ],
+      "energy_get_helper": "0x14da2",
+      "energy_set_direct_bl_xrefs": [
+        "0x126be"
+      ],
+      "energy_set_helper": "0x14d92",
+      "energy_state_global": "0x8030f0",
+      "energy_state_object_pointer_cell": "0x8030f4",
+      "fresh_stage0_file_offset": "0x4900",
+      "fresh_stage0_raw_source_pointer_xrefs": [],
+      "fresh_stage0_raw_thumb_entry_xrefs": [],
+      "fresh_stage0_span_pristine_ff": true,
+      "stack_frame_deltas_bytes": {
+        "callback_function": -8,
+        "periodic_dispatcher": -24,
+        "worker": -32,
+        "wrapper": -8
+      },
+      "typed_query_returns_raw_one_byte": true,
+      "worker": "0x1fb42",
+      "wrapper": "0x1ff6c"
+    },
+    "flag60_test_api60016_internal60017": {
+      "callback_blx": "0x1fac4",
+      "callback_function": "0x1fa8a",
+      "canonical_energy_field_writers": [
+        "0x14d9e"
+      ],
+      "energy_field_offset": "0xf",
+      "energy_get_direct_bl_xrefs": [
+        "0x126cc"
+      ],
+      "energy_get_helper": "0x14da2",
+      "energy_set_direct_bl_xrefs": [
+        "0x126be"
+      ],
+      "energy_set_helper": "0x14d92",
+      "energy_state_global": "0x8030f0",
+      "energy_state_object_pointer_cell": "0x8030f4",
+      "fresh_stage0_file_offset": "0x4900",
+      "fresh_stage0_raw_source_pointer_xrefs": [],
+      "fresh_stage0_raw_thumb_entry_xrefs": [],
+      "fresh_stage0_span_pristine_ff": true,
+      "stack_frame_deltas_bytes": {
+        "callback_function": -8,
+        "periodic_dispatcher": -24,
+        "worker": -32,
+        "wrapper": -8
+      },
+      "typed_query_returns_raw_one_byte": true,
+      "worker": "0x1fb42",
+      "wrapper": "0x1ff6c"
+    }
+  },
+  "callback_abi": {
+    "condition_flags": "caller-clobbered; stock post-BLX path does not consume callback flags",
+    "cross_branch": "4_OF_4_PRESERVED_PLUS_BRANCHES",
+    "entry_registers": {
+      "lr": "Thumb return address written by BLX; bit0 set for return to callback+0x3c",
+      "r0": "runtime50+0x34 callback value itself; for VRAM-8A 0x00804901",
+      "r1": "runtime50 base 0x00804b80",
+      "r2": "unspecified/caller-saved; stage-0 must not depend on entry value",
+      "r3": "unspecified/caller-saved; stage-0 must not depend on entry value",
+      "r4_r11": "callee-saved under stock Thumb ABI; preserve any register touched"
+    },
+    "interrupt_preemption_constraint": {
+      "non_interrupt_task_context_proven": false,
+      "rule": "Until task/IRQ context is independently closed, stage-0 must be a bounded leaf: no allocator, locks, waits, stock helper calls, MMIO, cache helper calls, or interrupt-state changes.",
+      "vram8a_fixture_complies": true
+    },
+    "return_value_semantics": "ignored: stock immediately reloads r0 from [r4] after BLX",
+    "stack": {
+      "nested_call_requirement": "none; VRAM-8A stage-0 is a leaf and makes no stock/helper call",
+      "relative_alignment": "periodic dispatcher (-24), worker (-32), callback (-8), wrapper (-8) all preserve SP mod 8",
+      "stage0_delta": "PUSH {r4,lr} is -8; POP {r4,pc} restores exact SP"
+    },
+    "thumb_state": "callback pointer bit0=1; BLX enters Thumb and saved LR returns to Thumb"
+  },
+  "kind": "ditoo_plus_vram8a_nontrivial_returning_stage0",
+  "method_limits": [
+    "No VRAM-8+ packet was generated or transmitted and Runtime 018 was not stopped or touched.",
+    "Task/IRQ context is intentionally not overclaimed; this is why the promoted stage-0 is a leaf RAM-only mutation with no calls.",
+    "The fresh 0x00804900 execution span avoids the already-used VRAM67-002 location; it does not promote cache-coherent arbitrary code rewriting.",
+    "VRAM-8C remains design-only until a safe resident allocation context and allocator ABI are independently proven."
+  ],
+  "ok": true,
+  "positive_canary": {
+    "backing": {
+      "field": "*(u32*)0x008030f4 + 0x0f",
+      "object_pointer_cell": "0x8030f4",
+      "state_global": "0x8030f0",
+      "width_bytes": 1
+    },
+    "future_live_discriminator": [
+      "stock SET_ENERGY_CTRL 0 establishes a fixed benign baseline",
+      "stock GET_ENERGY_CTRL must confirm raw value 0 before trigger",
+      "the exact VRAM-8A stage-0 executes after the already-promoted VoiceTip timeout and changes only that byte 0 -> 1",
+      "stock GET_ENERGY_CTRL returning raw value 1 is the positive execution marker",
+      "normal callback return/liveness must also remain intact",
+      "stock SET_ENERGY_CTRL 0 followed by GET=0 is the bounded restoration check"
+    ],
+    "invalid_oracles": [
+      "crash",
+      "reboot",
+      "disconnect",
+      "watchdog",
+      "timeout",
+      "timing-only change",
+      "peripheral register effect"
+    ],
+    "mechanism": "typed stock volatile control byte readback",
+    "precommitted_transform": {
+      "baseline": 0,
+      "expected_after_stage0": 1,
+      "mask": 1,
+      "operation": "XOR bit0"
+    },
+    "status": "PROMOTED_OFFLINE",
+    "stock_commands": {
+      "get": "0xb3 SPP_GET_ENERGY_CTRL",
+      "set": "0xb2 SPP_SET_ENERGY_CTRL"
+    },
+    "typed_observation": "SPP_GET_ENERGY_CTRL calls 0x14da2, returns the raw +0x0f byte in r0, copies that byte into a one-byte command-0xb3 response, and has no alternate direct getter callsite.",
+    "writer_uniqueness": "Across the pinned corpus, the canonical direct STATE_GLOBAL -> [global+4] -> STRB +0x0f writer is only 0x14d9e inside 0x14d92, and that setter has exactly one direct BL xref: the stock 0xb2 handler."
+  },
+  "promotion": {
+    "next_owner_boundary": "PREPARE_HASH_BOUND_VRAM8B_MANIFEST_OFFLINE_THEN_STOP_FOR_EXPLICIT_OWNER_GRANT",
+    "vram8a_callback_abi_closed": true,
+    "vram8a_nontrivial_returning_stage0_closed_offline": true,
+    "vram8a_positive_reversible_canary_closed_offline": true,
+    "vram8b_live_authorized": false,
+    "vram8b_manifest_may_be_prepared_offline": true,
+    "vram8c_design_advanced": true,
+    "vram8c_resident_window_closed": false
+  },
+  "resident_window_vram8c": {
+    "bounded_installer_contract": {
+      "cache": "explicit I-cache maintenance is mandatory before first stage-1 execution",
+      "destination": "device-side retained-allocation result only; host never supplies an address",
+      "entry": "one fixed stage-1 entry offset inside the retained allocation",
+      "failure": "validation failure performs no execution and leaves stock path fail-open",
+      "forbidden": [
+        "host-selected address",
+        "host-selected call target",
+        "poke(addr,bytes)",
+        "goto(addr)",
+        "generic ARM uploader",
+        "interpreter/shell",
+        "generic raw-packet product surface"
+      ],
+      "guards": "fixed pre/post guards plus allocation/image bounds before copy/execute",
+      "header": [
+        "fixed magic",
+        "fixed version",
+        "fixed image length bound",
+        "integrity digest/check"
+      ],
+      "image": "single fixed resident image preferred; no chunking unless measured image size later requires it",
+      "max_image_length": "UNSET_UNTIL_STAGE1_SIZE_IS_MEASURED_AND_FROZEN",
+      "rollback": "reboot/power loss fully removes resident state"
+    },
+    "current_blockers": [
+      "callback task-vs-interrupt context is not yet proven; allocator calls are forbidden from the VRAM-8A leaf",
+      "exact allocator-call ABI/reentrancy contract for a retained allocation is not yet promoted for this callback context",
+      "compiled stage-1 size does not exist yet, so a maximum image length must not be guessed"
+    ],
+    "ranked_candidates": [
+      {
+        "candidate": "one deliberate retained app-heap allocation owned by OpenDitoo for the boot session",
+        "rank": 1,
+        "reason": "avoids hardcoding allocator-owned free RAM and permits guards/state/code to live in one bounded object",
+        "verdict": "PREFERRED_PENDING_CONTEXT_AND_ALLOCATOR_ABI"
+      },
+      {
+        "candidate": "hardcoded free-looking address inside 0x00804000..0x0081cfff",
+        "rank": 2,
+        "reason": "application heap is allocator-owned; free-looking is not reserved/stable",
+        "verdict": "REJECT"
+      },
+      {
+        "candidate": "0x00804778 display backing / VRAM-8A controlled span",
+        "rank": 3,
+        "reason": "live display backing and overwrite carrier; not a stable resident store",
+        "verdict": "REJECT_RESIDENT"
+      },
+      {
+        "candidate": "0x00804b80 runtime50 or adjacent live startup objects",
+        "rank": 4,
+        "reason": "live stock object/metadata with proven callback/deadline/handle semantics",
+        "verdict": "REJECT"
+      },
+      {
+        "candidate": "upper identity-mapped SRAM outside the app heap",
+        "rank": 5,
+        "reason": "no reservation proof; may be stack/other resident runtime storage",
+        "verdict": "REJECT_UNPROVEN"
+      }
+    ],
+    "status": "DESIGN_ADVANCED_NOT_CLOSED"
+  },
+  "safety": {
+    "bluetooth_opened": false,
+    "device_io": false,
+    "firmware_mutation": false,
+    "flash_or_peripheral_access": false,
+    "generic_loader_or_raw_call_surface": false,
+    "live_packet_generation": false,
+    "offline_analysis_only": true,
+    "persistent_mutation": false,
+    "runtime_018_touched": false
+  },
+  "schema_version": 1,
+  "stage0": {
+    "branches_or_loops": 0,
+    "bytes_hex": "10b5034c6468e27b01235a40e27310bdf0308000",
+    "callee_saved_registers_restored": [
+      "r4"
+    ],
+    "callee_saved_registers_touched": [
+      "r4"
+    ],
+    "caller_saved_registers_touched": [
+      "r2",
+      "r3"
+    ],
+    "code_bytes": 16,
+    "controlled_source_base": "0x804778",
+    "disassembly": [
+      {
+        "bytes": "10b5",
+        "instruction": "PUSH {r4, LR}",
+        "offset": "0x00"
+      },
+      {
+        "bytes": "034c",
+        "instruction": "LDR r4, [PC, #0x0c]",
+        "offset": "0x02"
+      },
+      {
+        "bytes": "6468",
+        "instruction": "LDR r4, [r4, #4]",
+        "offset": "0x04"
+      },
+      {
+        "bytes": "e27b",
+        "instruction": "LDRB r2, [r4, #0x0f]",
+        "offset": "0x06"
+      },
+      {
+        "bytes": "0123",
+        "instruction": "MOVS r3, #1",
+        "offset": "0x08"
+      },
+      {
+        "bytes": "5a40",
+        "instruction": "EORS r2, r3",
+        "offset": "0x0a"
+      },
+      {
+        "bytes": "e273",
+        "instruction": "STRB r2, [r4, #0x0f]",
+        "offset": "0x0c"
+      },
+      {
+        "bytes": "10bd",
+        "instruction": "POP {r4, PC}",
+        "offset": "0x0e"
+      },
+      {
+        "bytes": "f0308000",
+        "instruction": ".word 0x008030f0",
+        "offset": "0x10"
+      }
+    ],
+    "entry": "0x804901",
+    "fresh_first_execution_span": {
+      "alignment_bytes": 256,
+      "checked_bytes": 64,
+      "pristine_ff_4_of_4": true,
+      "raw_source_pointer_xrefs_4_of_4": 0,
+      "raw_thumb_entry_xrefs_4_of_4": 0,
+      "reason": "VRAM67-002 used 0x00804779; VRAM-8A intentionally relocates 0x188 bytes away to an unreferenced pristine span instead of rewriting the previously executed location.",
+      "scope_limit": "This preserves the first-execution cache premise only for this fixture. Resident/reused code still requires explicit I-cache maintenance before execution."
+    },
+    "instructions_executed": 8,
+    "length_bytes": 20,
+    "sha256": "1cdd53f83a75021b47cedc65bbac9f5ee1d488863d029d5900d4687efcf5264b",
+    "source": "0x804900",
+    "source_offset": "0x188",
+    "stack_net_delta": 0,
+    "stock_calls": 0,
+    "touched_addresses": {
+      "no_other_data_writes": true,
+      "reads": [
+        {
+          "address": "0x8030f4",
+          "meaning": "stock live state-object pointer",
+          "width": 4
+        },
+        {
+          "address": "*(u32*)0x008030f4 + 0x0f",
+          "meaning": "stock energy-control byte",
+          "width": 1
+        },
+        {
+          "address": "SP-8..SP-1",
+          "meaning": "temporary saved r4/LR stack frame",
+          "width": 8
+        }
+      ],
+      "writes": [
+        {
+          "address": "*(u32*)0x008030f4 + 0x0f",
+          "meaning": "energy-control canary byte only",
+          "width": 1
+        },
+        {
+          "address": "SP-8..SP-1",
+          "meaning": "temporary saved r4/LR, restored by epilogue",
+          "width": 8
+        }
+      ]
+    }
+  }
+}

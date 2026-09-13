@@ -1,5 +1,32 @@
 # OpenDitoo handoff — volatile RAM API / parser-exhaustion phase — 2026-09-12
 
+## 2026-09-12 VRAM-8A closure / VRAM-8B fresh-grant boundary — CURRENT
+
+This checkpoint supersedes later-in-file wording that still calls VRAM-8A the next gate. VRAM-0..7 remain closed. **VRAM-8A is CLOSED OFFLINE** and VRAM-8B is prepared but explicitly unauthorized.
+
+Authoritative new evidence:
+
+- `tools/ditoo_vram8_stage0_model.py`;
+- `artifacts/analysis/volatile_ram_api_vram8_stage0.json`;
+- `artifacts/analysis/volatile_ram_api_vram8_stage0.bin`;
+- `tools/ditoo_vram8b_live_gate.py`;
+- `artifacts/analysis/volatile_ram_api_vram8b_fixture.json`;
+- `experiments/OPENDITOO-VRAM8B-CANARY-001.json` plus its frozen fixtures.
+
+**Callback ABI, 4/4 branches:** at the controlled `BLX`, `r0` is the callback pointer itself, `r1` is runtime50 `0x00804b80`, `r2/r3` are unspecified caller-saved values, `r4` is callee-saved and stock-live after return, and LR is the Thumb return address. The stock callback immediately reloads `r0` after `BLX`, so the callback return value is ignored. Periodic-dispatch/worker/callback/wrapper stack frames are -24/-32/-8/-8 bytes and preserve SP mod 8. Task-vs-IRQ context is intentionally **not** overclaimed; therefore the promoted 8A payload is a bounded leaf with no allocator, locks, waits, helper calls, MMIO, cache helper or interrupt-state change.
+
+**Exact nontrivial stage-0:** source `0x00804900`, Thumb entry `0x00804901`, controlled-source offset `0x188`, exact bytes `10b5034c6468e27b01235a40e27310bdf0308000`, SHA-256 `1cdd53f83a75021b47cedc65bbac9f5ee1d488863d029d5900d4687efcf5264b`. It executes eight Thumb instructions, saves/restores `r4/LR`, reads the stock state-object pointer at `0x008030f4`, XORs bit0 of exactly one byte at `*(u32*)0x008030f4 + 0x0f`, restores SP/r4 and returns. It has no branch/loop and no stock call. The source is deliberately relocated away from consumed VRAM67 entry `0x00804779`: `0x00804900..+0x3f` is pristine `0xff` and raw-unreferenced across all four preserved branches. This is a one-fixture first-execution cache premise, not permission for arbitrary rewritten code; resident/reused code still requires explicit I-cache maintenance.
+
+**Positive canary:** `0xb2 SPP_SET_ENERGY_CTRL` and `0xb3 SPP_GET_ENERGY_CTRL` use a shared volatile state object rooted at `0x008030f0`; `[0x008030f4]` is its live object pointer and byte `+0x0f` is the typed energy-control value. Across 4/4 branches, the stock `0xb2` setter helper has exactly one direct caller, the `0xb3` getter has exactly one direct caller, and the canonical direct writer of that field is the stock setter. A future live 8B transcript is therefore precommitted to stock SET=0 -> GET=0, exact frozen trigger/stage-0, post-hold GET=1, then stock SET=0 -> GET=0 restoration. Crash, reboot, disconnect, watchdog, timeout, timing-only change or hardware side effect is never success.
+
+**VRAM-8B prepared / unauthorized:** `OPENDITOO-VRAM8B-CANARY-001` freezes exactly eight application sends on one RFCOMM connection: baseline `0xb2`, baseline `0xb3`, stock `0x6e`, stock `0xa5`, exactly one custom `0x6c`, post-hold `0xb3`, restore `0xb2`, restore `0xb3`. Retry/reconnect are false; the post-overwrite hold is 75,000 ms. The source SHA-256 is `1f7d0761fd905e91b23ea3c3024b2b7f22f6025467dc4e06690757a6b10634ca`. Expected wrapped `0xb3` zero/one responses are themselves frozen fixtures. No runner, local grant, claim, handover, Bluetooth open, Runtime 018 stop or packet transmission was materialized. Previous grants never transfer.
+
+**VRAM-8C design state:** `DESIGN_ADVANCED_NOT_CLOSED`. Preferred resident storage is one deliberate retained app-heap allocation owned for the boot session, but only after callback task/IRQ context and allocator ABI/reentrancy are independently proven. Hardcoded free-looking heap, live display backing, runtime50/adjacent live objects and unreserved upper SRAM are rejected. The installer contract is fixed device-side destination, fixed entry, fixed magic/version/integrity, guard/bounds validation before copy/execute, mandatory I-cache maintenance, fail-closed validation, reboot rollback, and one fixed image unless measured size forces bounded chunking. Max image length remains intentionally unset until the stage-1 image actually exists and is measured.
+
+**Exact stop boundary:** do not begin VRAM-8D or VRAM-9 and do not touch Runtime 018/device Bluetooth. A future live 8B execution requires the fresh exact owner grant `Grant OPENDITOO-VRAM8B-CANARY-001 -- stock btplayer selected`. That grant has **not** been given or materialized by this checkpoint.
+
+**Checkpoint verification:** `ditoo_vram8_stage0_model.py --selfcheck` PASS; `ditoo_vram8b_live_gate.py --selfcheck` PASS; focused Tier-2 trigger + VRAM-3 + VRAM-8A + VRAM-8B suite **17/17 PASS**; `git diff --check` PASS. The required single broad `python3 scripts/verify_day1_offline.py` run executed **390 tests** and produced exactly the two established unrelated W9B optical `ModuleNotFoundError: PIL` errors (`test_both_regions_decode_from_one_filmed_frame`, `test_decoding_survives_a_perspective_skewed_region`), with no new VRAM/parser/product error. The broad verifier was intentionally not rerun.
+
 ## New active research route
 
 The owner does **not** want the recovery project to depend on clips, continuity measurements, attached debug hardware or deeper disassembly. Physical MassBoot/SPI work is therefore deferred even though `OPENDITOO-MASSBOOT-M2-UNPOWERED-MAP-001` remains authorized/unconsumed.
@@ -228,7 +255,7 @@ Planning-session verification: focused VRAM67 gate tests = **14/14 PASS**; `git 
 
 ### Exact next gate
 
-VRAM-6/7 is closed PASS under the precommitted composite discriminator. The adopted detailed next-phase plan is `notes/OPENDITOO-VRAM8-11-RAM-API-ROADMAP-2026-09-12.md`. **VRAM-8A is the exact next gate:** recover the real callback ABI at the controlled `BLX`, build a nontrivial returning Thumb stage-0, and prove one positive reversible RAM-only canary offline. Do not replay 001/002 and do not send any new device traffic under their consumed grants. If VRAM-8A closes strongly, prepare a fresh one-use VRAM-8B live-canary manifest and STOP for a new explicit owner grant. In parallel, VRAM-8C resident-window/installer design may advance offline, but VRAM-8D live installation remains a later independent grant.
+VRAM-6/7 remains closed PASS under the precommitted composite discriminator. VRAM-8A is now CLOSED OFFLINE as recorded in the current checkpoint above. The exact next live boundary is the prepared-but-unauthorized `OPENDITOO-VRAM8B-CANARY-001`; VRAM-8C remains design-advanced but not closed, and VRAM-8D remains a later independent gate.
 
 ## Immediate executor order
 

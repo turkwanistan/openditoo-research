@@ -316,6 +316,12 @@ Under the precommitted composite discriminator and the already-promoted determin
 
 Both 001 and 002 are consumed and must not be replayed. No prior authority transfers. Stop here before any VRAM-8 packet design is executed live.
 
+## VRAM-8 current implementation checkpoint — 8A CLOSED / 8B PREPARED UNAUTHORIZED / 8C DESIGN ADVANCED
+
+The detailed post-VRAM-7 route is now governed by `notes/OPENDITOO-VRAM8-11-RAM-API-ROADMAP-2026-09-12.md`; this checkpoint supersedes any older generic “bounded loader” wording below. VRAM-8A closed offline with `tools/ditoo_vram8_stage0_model.py`: the real callback ABI is pinned 4/4, and the exact 20-byte leaf at fresh entry `0x00804901` toggles one volatile energy-control byte only and returns cleanly. Stock `0xb2/0xb3` provide the fixed typed `0 -> 1 -> 0` canary/readback/restoration path. The fresh entry avoids the consumed VRAM67 `0x00804779` execution line; resident/reused code still requires explicit I-cache maintenance.
+
+`OPENDITOO-VRAM8B-CANARY-001` is frozen as `prepared_unauthorized`: eight exact sends, one custom `0x6c`, no retry/reconnect, typed canary plus clean Runtime 018 restoration required. No runner/grant/claim was materialized and no live device action occurred. VRAM-8C has rejected unreserved fixed RAM windows and currently prefers one retained device-side allocation, pending task/IRQ-context and allocator-ABI proof plus an actually measured stage-1 size. Do not begin VRAM-8D or VRAM-9 before a separately granted 8B live canary and independently closed 8C installer proof.
+
 ## Phase VRAM-8 — from returning stage-0 to bounded resident installer
 
 VRAM-7's returning `BX LR` proof is necessary but intentionally minimal. Do **not** jump directly from that proof to a general loader. The adopted detailed ladder is now in `notes/OPENDITOO-VRAM8-11-RAM-API-ROADMAP-2026-09-12.md` and splits VRAM-8 into independent gates:
