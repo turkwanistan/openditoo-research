@@ -1,0 +1,335 @@
+# OpenDitoo VRAM-8..11 RAM API roadmap — 2026-09-12
+
+## Status and authority boundary
+
+VRAM-6/7 is CLOSED LIVE PASS under the precommitted composite discriminator. `OPENDITOO-VRAM67-BXLR-001` and `OPENDITOO-VRAM67-BXLR-002` are both consumed and non-replayable. The accepted exact-unit result proves, under the already-promoted deterministic placement/VoiceTip trigger model, that a controlled Thumb callback at `0x00804779` can execute `70 47` (`BX LR`) and return without destabilizing the device.
+
+This roadmap begins **after** that proof. It does not authorize any new Ditoo traffic. No VRAM-8+ manifest/grant exists merely because this file exists. Every new live experiment still requires its own frozen one-use manifest and exact owner grant under `AGENTS.md`.
+
+The product objective remains narrow: turn the proven volatile execution primitive into a **RAM-resident, reboot-cleared OpenDitoo API**. Do not turn it into a general debugger, arbitrary memory editor, arbitrary ARM-code launcher, persistent firmware patch, or raw-packet product surface.
+
+## Design principles that apply to every milestone
+
+1. **Separate one question per live grant.** Do not combine “nontrivial code works”, “loader works”, “API ingress works”, and “input claim works” into one experiment.
+2. **Prefer RAM-only reversible state.** No flash/update/factory paths, no MassBoot, no filesystem persistence, no permanent gallery writes.
+3. **No host-selected addresses.** The host never supplies a destination address, call address, patch address, or arbitrary code pointer.
+4. **One fixed target and one controller.** Continue to bind the exact purchased Ditoo and coordinate with Runtime 018 ownership.
+5. **Fail closed during installation; fail open during product use.** Loader corruption/refusal must not execute. A lost API host must restore/forward stock behavior automatically.
+6. **Restore original stock semantics.** Any RAM hook must retain the original target/word(s), support explicit release, and disappear fully on reboot.
+7. **Crash/timing is never the oracle.** Success needs a positive, deterministic observation plus clean return/liveness.
+8. **Keep v0 tiny.** API_INFO/PING and bounded input claim come before brightness/volume/service wrappers.
+
+## Preferred architecture
+
+The preferred end state is:
+
+```text
+stock Bluetooth SPP ingress
+    -> narrowly hooked RAM-resident ingress seam
+        -> fixed OpenDitoo API dispatcher
+            -> API_INFO / PING
+            -> bounded input-claim state
+            -> later typed stock-service wrappers
+        -> unclaimed/unknown traffic forwards through original stock path
+```
+
+Bootstrap remains separate from the steady-state API:
+
+```text
+stock btplayer precondition
+ -> frozen 0x6e content prime
+ -> frozen stock 0xa5 VoiceTip setup
+ -> bounded custom 0x6c overwrite
+ -> tiny returning stage-0
+ -> fixed loader/install action
+ -> return to stock firmware
+```
+
+The exploit/bootstrap path is therefore an installer for volatile RAM state, not the API’s normal command path.
+
+---
+
+## VRAM-8A — nontrivial returning stage-0, OFFLINE DESIGN/PROOF
+
+### Question
+
+Can a payload larger than `BX LR` obey the real callback ABI, perform one bounded reversible RAM-only action, and return cleanly?
+
+### Work
+
+1. Recover the callback calling convention precisely at the `0x1fa8a` family BLX site across all preserved Plus branches:
+   - live register values and which are caller/callee-saved;
+   - stack alignment and frame expectations;
+   - LR/Thumb-state behavior;
+   - whether callback return value is consumed;
+   - whether interrupts/preemption create any additional preservation requirement.
+2. Build a minimal Thumb stage-0 skeleton with explicit prologue/epilogue and branch-independent constants where possible.
+3. Select **one positive canary effect** using this ranking:
+   - preferred: mutate a proven volatile display/control field that stock code naturally observes, then restore it or let stock overwrite it;
+   - acceptable: call one already-understood leaf stock routine whose effect is RAM-only/reversible, with exact ABI proven first;
+   - fallback: create a RAM canary that can be positively observed through an already-proven typed readback path.
+4. Reject canaries that rely on reboot, disconnect, timing, watchdog behavior, peripheral-register pokes, flash writes, or uncertain hardware side effects.
+5. Emulate/symbolically walk the exact stage-0 bytes against the recovered ABI and prove all touched addresses lie in the reviewed volatile set.
+
+### Required artifacts
+
+- `tools/ditoo_vram8_stage0_model.py` or equivalent deterministic analyzer;
+- `artifacts/analysis/volatile_ram_api_vram8_stage0.json`;
+- exact stage-0 fixture bytes and disassembly listing under an offline fixture path;
+- focused tests pinning ABI preservation, touched addresses, maximum instruction/byte count, and return path.
+
+### Gate to VRAM-8B
+
+Promote only if the exact payload has a positive canary whose mechanism is independently understood and the stage-0 returns normally on all modeled paths. If no positive canary can be made trustworthy, stop and solve observability before any live grant.
+
+---
+
+## VRAM-8B — one-use live nontrivial returning canary
+
+### Question
+
+Does the exact-unit Ditoo execute a nontrivial stage-0 action and still return cleanly?
+
+### Live shape
+
+Freeze one new one-use manifest only after 8A closes. Keep the bootstrap packet count as small as the proven sequence allows. The manifest must bind:
+
+- exact stage-0 bytes/hash;
+- exact canary target/effect and its expected observation;
+- exact target/version assumption;
+- one connection / packet count / timing budget;
+- no retry/reconnect;
+- Runtime 018 suspend/restore procedure;
+- explicit negative outcomes: crash, reboot, disconnect, timeout, ambiguous canary, or failed Runtime 018 restore are NOT PASS.
+
+### Success
+
+All of the following must occur:
+
+1. exact custom overwrite sent once;
+2. the chosen positive canary is observed exactly as designed;
+3. callback returns and device remains responsive;
+4. Runtime 018 restores and ACKs a fresh product frame;
+5. no retry or second experiment attempt occurs.
+
+This closes “our code can safely do bounded work”, which is stronger than the VRAM-7 returning no-op proof.
+
+---
+
+## VRAM-8C — bounded resident-window and installer design, OFFLINE
+
+### Question
+
+Where can a small resident stage-1 live safely for the remainder of the boot, and how can stage-0 install it without exposing arbitrary memory operations?
+
+### Resident-window selection
+
+Rank candidate RAM windows with hard evidence. A usable destination must be:
+
+- writable + executable on the exact mapping;
+- not stack, allocator metadata, runtime50, display backing that stock will immediately reuse, DMA/audio buffers, or a known global object;
+- stable for the intended boot/session lifetime;
+- large enough for stage-1 code + state + guard words;
+- either statically reserved/unused or obtained through a deterministic stock allocator call whose lifetime is deliberately retained.
+
+Prefer an allocated/reserved window over “unused-looking RAM”. If allocation is used, stage-0 owns allocation once, stores the pointer only in reviewed device-side state, and the host still never chooses the address.
+
+### Installer contract
+
+Start with the smallest protocol that fits the evidence:
+
+- fixed magic/version;
+- fixed maximum image length;
+- fixed destination chosen by device-side code/design, never host input;
+- image length + integrity field;
+- exact expected stage-1 build hash/version;
+- copy only after all bounds checks pass;
+- optional guard/canary words before and after the resident region;
+- one fixed stage-1 entry point derived from the installed image layout;
+- installation refusal on duplicate/inconsistent metadata;
+- no execution when integrity fails.
+
+If stage-1 fits safely inside one bootstrap source, prefer a **single-shot fixed-image installer first**. Add chunking only if size evidence requires it. If chunking becomes necessary, freeze chunk size/count, reject duplicates/out-of-order chunks, and keep total payload bounded; do not create a reusable arbitrary upload channel.
+
+### Gate
+
+Offline proof must show the installer cannot write outside the selected window under any accepted metadata and cannot branch anywhere except the one fixed stage-1 entry.
+
+---
+
+## VRAM-8D — live resident installer + stage-1 liveness proof
+
+### Question
+
+Can stage-0 install one fixed reviewed stage-1 image into the selected RAM window, invoke its fixed entry/init path, and return to stock firmware?
+
+### Stage-1 v0 for this gate
+
+Keep it intentionally inert. Suggested behavior:
+
+- write/maintain a resident header: magic, ABI version, build ID, state=`installed`;
+- optionally increment one bounded heartbeat/counter when invoked through a reviewed local path;
+- perform no input interception and no stock-service call yet.
+
+The positive observation should reuse the trustworthy canary/readout mechanism established in VRAM-8A/B rather than inventing a new ambiguous oracle.
+
+### Success
+
+- installer integrity passes;
+- stage-1 init runs exactly once;
+- positive installed/liveness marker observed;
+- stock callback returns;
+- device + Runtime 018 recover normally;
+- no second install attempt under the same grant.
+
+After PASS, the project has a proven volatile resident code container. Only then move to API ingress.
+
+---
+
+## VRAM-9A — RAM-resident API ingress seam, OFFLINE
+
+### Question
+
+What is the lowest-risk reversible RAM hook that can route a small reserved command family to stage-1 while forwarding everything else unchanged?
+
+### Research order
+
+1. Reuse the complete SPP atlas and dispatcher analysis; do not restart generic command enumeration.
+2. Search first for RAM-resident indirection already used by stock firmware:
+   - callback/function-pointer tables;
+   - registered RX handlers;
+   - task/message dispatch pointers;
+   - copied parser tables or mutable category handlers.
+3. Prefer replacing **one RAM pointer/table entry** over patching executable code bytes.
+4. Pin the original target and exact forward path. Unknown/non-OpenDitoo commands must tail-call/forward stock behavior unchanged.
+5. Define an OpenDitoo command discriminator that does not collide with any implemented stock command/subcommand in the pinned atlas.
+6. Prove hook install, hook remove, duplicate install refusal, and reboot rollback offline.
+
+### Reject
+
+- ROM/flash text patching;
+- generic parser replacement;
+- host-selected hook addresses;
+- stealing a stock command whose side effects are not fully understood;
+- any ingress design that cannot forward unclaimed traffic exactly.
+
+---
+
+## VRAM-9B — API v0: API_INFO + PING/PONG
+
+### Scope
+
+First steady-state API should expose only liveness and identity:
+
+- `API_INFO` -> magic, API version, build ID/hash prefix, capability bits;
+- `PING(nonce)` -> `PONG(nonce)`;
+- optional `API_RELEASE` if needed to uninstall the RAM hook cleanly.
+
+No input claim, brightness, volume, arbitrary memory, or arbitrary execution yet.
+
+### Protocol rules
+
+- fixed framing and maximum message size;
+- explicit version;
+- bounded nonce/data sizes;
+- malformed/unknown API packets rejected without touching stock state;
+- non-API stock traffic forwarded unchanged;
+- API state cleared on reboot;
+- host command surface is typed only.
+
+### Live gate
+
+Use one fresh manifest to install the already-reviewed resident image and exercise a tiny fixed transcript (`API_INFO`, one or a few PING/PONGs, optional release). Prove stock behavior still works after release/expiry and Runtime 018 can resume.
+
+---
+
+## VRAM-9C — fail-open physical input claim
+
+### Objective
+
+Add the first useful OpenDitoo feature: temporarily claim the front-panel input path in RAM.
+
+### Contract
+
+- `CLAIM_INPUT(ttl_ms)` with strict min/max TTL;
+- `RENEW_INPUT(ttl_ms)`;
+- `RELEASE_INPUT`;
+- typed `INPUT_EVENT` reports with key, press/release/repeat semantics;
+- TTL expiration automatically restores stock forwarding;
+- host loss must fail open;
+- power lifecycle/emergency controls remain untouched;
+- no long-hold mapping until semantics are explicitly proven safe.
+
+### Implementation preference
+
+Hook the already-mapped category-`0x82`/keypad producer-consumer seam only if a reversible RAM indirection exists. When claim is inactive, forward the original event unchanged. When active, consume only the explicitly supported input events and report them to the host.
+
+### Acceptance ladder
+
+1. offline synthetic event tests;
+2. live short claim with one key family;
+3. expiry without host traffic -> stock behavior restored automatically;
+4. explicit release -> stock behavior restored;
+5. host disconnect/power-cycle -> fail-open/reboot rollback.
+
+Do not combine all acceptance cases into the first grant.
+
+---
+
+## VRAM-10 — typed stock-service bridge
+
+Only after API_INFO/PING and fail-open input claim are stable, add useful wrappers one at a time. Recommended order:
+
+1. **brightness** — map a claimed button to a reviewed stock brightness setter/state transition;
+2. **volume/audio state** — only after exact semantics and media contention are understood;
+3. **display/page mode** wrappers around already-proven stock paths;
+4. **device info/battery/status** where safe read semantics exist;
+5. selected image/scene operations if they reduce dependence on the external Host.
+
+Every service is typed and bounded. Stage-1 may call only compiled-in reviewed stock entry points; the host never supplies a function address. Preserve an option to forward the original stock adjustment so OpenDitoo can consume a button yet still request the normal behavior deliberately.
+
+Each new service gets focused offline proof and, when needed, its own narrow live acceptance rather than widening the entire API implicitly.
+
+---
+
+## VRAM-11 — session-autonomous behavior
+
+After the API and service bridge are stable, allow small local logic to continue after the bootstrap host disconnects. This is **session-autonomous**, not cold-boot persistent.
+
+Candidate uses:
+
+- local button-to-page rules;
+- tiny animation/state machines;
+- bounded timers;
+- simple display behavior using already-approved service wrappers.
+
+Requirements:
+
+- strict RAM/code/state budget;
+- watchdog/fail-open behavior;
+- no arbitrary interpreter, FORTH, shell, or uploaded ARM snippets;
+- reboot/power loss fully clears it;
+- explicit distinction in docs/UI between “installed for this boot” and “starts by itself”.
+
+Cold-boot offline behavior remains out of scope unless a future separately reviewed persistent delivery mechanism exists.
+
+---
+
+## Milestone artifact discipline
+
+At every material phase update the durable state, not chat memory:
+
+- this roadmap;
+- `START_HERE.md` current-state routing;
+- `notes/OPENDITOO-HANDOFF-2026-09-12-VOLATILE-RAM-API.md` or a dated successor handoff;
+- the main volatile-RAM plan;
+- deterministic analysis JSON/tools/tests;
+- one-use manifests only after an offline candidate freezes.
+
+Use focused tests while iterating. At milestone/handoff boundaries run analyzer selfchecks, relevant unit suites, `git diff --check`, hash verification, and the broad `python3 scripts/verify_day1_offline.py` once, comparing against the known constrained-WSL missing-Pillow baseline rather than “fixing” unrelated W9B code.
+
+## Immediate next-session executor target
+
+The next session should work **offline through VRAM-8A and as much of VRAM-8C design as evidence permits**, beginning with the callback ABI and canary-selection problem. It should not create live authority merely to make progress. If VRAM-8A closes with a strong positive canary, prepare (but do not grant or execute) one fresh one-use VRAM-8B manifest and stop at the owner grant boundary.
+
+Do not replay VRAM67-001/002. Do not begin API ingress/input hooks before a nontrivial returning canary and bounded resident installer are independently proven.

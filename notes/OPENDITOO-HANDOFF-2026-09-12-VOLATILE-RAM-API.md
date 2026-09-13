@@ -86,7 +86,7 @@ Two simple placement strategies are now closed. The persistent display root has 
 
 **VRAM-3 execution environment:** exact Ditoo initialization pins the application heap to `0x00804000..0x0081cfff` (0x19000 bytes), inside the stock identity-mapped SRAM window `0x00803000..0x0081ffff`. Stage-1 enables the ARMv5T short-descriptor MMU and I/D caches. The mapping is cacheable/write-through/non-bufferable and ARMv5T short descriptors have no XN bit, so mapped heap SRAM is executable. The now-proven first target is Thumb `0x00804779`; the corresponding preserved-image span is `0xff` fill across 4/4 branches and has zero raw address references, reducing stale-I-cache concern for first use. The minimal offline stage-0 witness is exactly `70 47` (`BX LR`), which returns through the stock `BLX` callsite without persistent mutation. Larger/reused code would still need explicit I-cache maintenance.
 
-**Current promotion state:** controlled adjacent heap overwrite = proven; executable heap RAM = proven; real indirect-call sink = proven; deterministic victim placement = **proven offline**; deterministic post-overwrite callback invocation = **proven offline**; minimal returning Thumb stage-0 target = **proven offline**. This is still not a live execution result. `OPENDITOO-VRAM67-BXLR-001` is now consumed but **transport-harness inconclusive**; its custom overwrite never transmitted. Fresh successor 002 is prepared offline and requires a new exact owner grant.
+**Current promotion state:** controlled adjacent heap overwrite = proven; executable heap RAM = proven; real indirect-call sink = proven; deterministic victim placement = **proven offline**; deterministic post-overwrite callback invocation = **proven offline**; minimal returning Thumb stage-0 target = **LIVE PASS under the precommitted composite trigger model** via consumed `OPENDITOO-VRAM67-BXLR-002`. `OPENDITOO-VRAM67-BXLR-001` remains consumed/transport-harness-inconclusive and 002 remains consumed/PASS; neither may be replayed. The active next objective is the offline **VRAM-8A callback-ABI + positive-canary proof**, governed by `notes/OPENDITOO-VRAM8-11-RAM-API-ROADMAP-2026-09-12.md`.
 
 ### VRAM-6/7 live attempt 001 — CONSUMED / INCONCLUSIVE BEFORE 0xA5 SEND
 
@@ -100,7 +100,7 @@ Root cause is the runner's Winsock model, not device behavior: `FD_WRITE` is the
 
 Interpretation follows the precommitted composite discriminator: the deterministic placement, preserved VoiceTip deadline/handles, timeout-to-runtime50-callback path, executable Thumb heap mapping, and `0x00804779 -> 70 47 (BX LR)` witness were already promoted offline. Given the exact overwrite completed and the same RFCOMM connection remained healthy through the callback window before normal product liveness returned, **VRAM-6/7 is a live returning-stage0 PASS under that promoted trigger model**. There is intentionally no independent wire-level stage0 marker; do not overstate the result beyond that model.
 
-Both 001 and 002 are consumed. Do not replay either. No authority transfers forward. **STOP BEFORE VRAM-8 bounded-loader design or any new live-device action.**
+Both 001 and 002 are consumed. Do not replay either. No authority transfers forward. **Offline VRAM-8A/8C design is now permitted; STOP before any VRAM-8+ live-device action unless a fresh reviewed one-use manifest is explicitly granted.**
 
 ### VRAM-6/7 one-use live-gate preparation 001 — HISTORICAL
 
@@ -220,26 +220,26 @@ Verification at this checkpoint:
 - broad verifier: **381 tests**, exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors, zero new Tier-2/VRAM/recovery/product failures;
 - no device I/O, live packet generation, Runtime 018 change, persistent mutation, MassBoot action, or physical work occurred.
 
+### VRAM-8..11 roadmap planning checkpoint — READY FOR HANDOFF
+
+The post-VRAM-7 roadmap is now adopted in `notes/OPENDITOO-VRAM8-11-RAM-API-ROADMAP-2026-09-12.md`. It deliberately separates four different proofs that were previously compressed into “bounded loader”: VRAM-8A callback ABI + positive nontrivial returning canary (offline), VRAM-8B exact-unit live canary (fresh grant), VRAM-8C resident-window + bounded installer proof (offline), and VRAM-8D resident-stage1 live install/liveness proof (fresh grant). VRAM-9 then splits into reversible ingress (9A), API_INFO/PING (9B), and fail-open physical input claim (9C) before any VRAM-10 brightness/volume/service bridge. VRAM-11 remains session-autonomous RAM behavior only, never cold-boot persistence.
+
+Planning-session verification: focused VRAM67 gate tests = **14/14 PASS**; `git diff --check` = PASS; broad `python3 scripts/verify_day1_offline.py` = **381 tests with exactly the two known unrelated W9B optical `ModuleNotFoundError: PIL` errors**, no new VRAM/parser/product failures. No Ditoo traffic, Runtime 018 mutation, manifest grant, claim, flash/update path, MassBoot action, or physical work occurred while creating this roadmap.
+
 ### Exact next gate
 
-VRAM-6/7 is closed PASS under the precommitted composite discriminator. The project is now at a **design-only boundary before VRAM-8**. Do not replay 001/002 and do not send any new device traffic under their consumed grants. The next session may design and review a bounded RAM-loader protocol offline, but any implementation that would transmit a new packet sequence requires a fresh reviewed manifest and fresh explicit owner grant.
+VRAM-6/7 is closed PASS under the precommitted composite discriminator. The adopted detailed next-phase plan is `notes/OPENDITOO-VRAM8-11-RAM-API-ROADMAP-2026-09-12.md`. **VRAM-8A is the exact next gate:** recover the real callback ABI at the controlled `BLX`, build a nontrivial returning Thumb stage-0, and prove one positive reversible RAM-only canary offline. Do not replay 001/002 and do not send any new device traffic under their consumed grants. If VRAM-8A closes strongly, prepare a fresh one-use VRAM-8B live-canary manifest and STOP for a new explicit owner grant. In parallel, VRAM-8C resident-window/installer design may advance offline, but VRAM-8D live installation remains a later independent grant.
 
 ## Immediate executor order
 
 1. Preflight: `git status`, HEAD/upstream, preserve all concurrent/untracked work.
 2. Read `START_HERE.md` current-state block, this handoff, then the volatile-RAM plan.
-3. Read only the relevant closed evidence, especially:
-   - `notes/OPENDITOO-FULL-INPUT-TAKEOVER-RESEARCH-2026-09-11.md` Route C + later FIRM/telemetry addenda;
-   - `notes/OPENDITOO-SOFTWARE-FIRST-RECOVERY-R0-2026-09-12.md` dispatcher/readback closure;
-   - `artifacts/analysis/software_recovery_surface.json`;
-   - `artifacts/analysis/keypad_pipeline.json`;
-   - period APK recovery artifact/provenance;
-   - exact-unit framing/drawing capture notes as needed.
-4. Treat **VRAM-0/VRAM-1 and Tier-1 direct-SPP VRAM-2 as CLOSED** unless the pinned corpus or atlas fails closed.
-5. Treat the corrected Tier-2 sequence and returning Thumb `BX LR` witness as PROMOTED OFFLINE, and treat `OPENDITOO-VRAM67-BXLR-002` as the consumed live PASS under that promoted composite trigger model. Both 001/002 are historical and non-replayable. Do not begin VRAM-8 transmission or reopen generic codec hunting without a new reviewed design/manifest and explicit fresh authority.
-6. Promote a parser only for deterministic controlled RAM/control-flow influence; source overreads/crashes alone remain negative evidence.
-7. Use OptiPlex Lab for disposable heavyweight tools when useful; accepted conclusions should be reproducible from the WSL repo without depending on an opaque GUI state.
-8. Continue autonomously through offline milestones until a true live-device boundary or a genuine technical blocker.
+3. Read `notes/OPENDITOO-VRAM8-11-RAM-API-ROADMAP-2026-09-12.md`, then only the closed evidence needed for the immediate proof: `artifacts/analysis/volatile_ram_api_tier2_trigger.json`, `artifacts/analysis/volatile_ram_api_tier2_placement.json`, `artifacts/analysis/volatile_ram_api_vram3_execution.json`, the corresponding analyzers, and preserved branch images/disassembly as referenced by them. Pull input-takeover/keypad research only when VRAM-9C begins.
+4. Treat **VRAM-0..7 as CLOSED**. Do not reopen generic SPP/codec hunting unless a current pinned claim fails closed.
+5. Start VRAM-8A by pinning the controlled callback ABI: register/stack/Thumb/LR/return-value expectations and interrupt/preemption constraints. Then rank positive reversible canary mechanisms and reject crash/timing/disconnect as observability.
+6. Build deterministic stage-0 bytes + analyzer/artifact/tests offline. If the canary closes strongly, prepare (but do not grant/execute) one fresh VRAM-8B manifest and stop at the owner grant boundary.
+7. In parallel, advance VRAM-8C only as far as evidence permits: rank resident RAM windows and prove a fixed-destination bounded installer with no host-selected addresses/call targets. Prefer a single fixed image before chunking.
+8. Use OptiPlex Lab for disposable heavyweight tools when useful; accepted conclusions must be reproducible from the WSL repo. Continue autonomously through offline gates; do not ask routine questions whose answers can be derived from evidence.
 
 ## Execution posture
 
@@ -270,11 +270,11 @@ No existing M2 or product-runtime grant transfers to parser probing.
 
 ## Desired handoff result from the next session
 
-Best case: one deterministic Ditoo-specific candidate progresses from SPP bytes to controlled RAM/control-flow influence and is ready for a bounded live discriminator.
+Best case: VRAM-8A closes with exact callback-ABI evidence, a machine-checkable nontrivial returning stage-0, and one positive reversible RAM-only canary; a fresh VRAM-8B one-use manifest is fully frozen but unauthorized, while VRAM-8C has a ranked resident-window/installer design.
 
-Acceptable negative result: Tier-1 direct SPP surface is comprehensively closed with machine-checkable coverage and the route moves deliberately to Bluetooth profile/media surfaces.
+Acceptable partial result: callback ABI is closed but no trustworthy positive canary or resident window survives review. Persist the blocker and stop before live traffic rather than substituting crash/timing behavior.
 
-Bad result: a pile of crashes/strings with no coverage accounting or controllability analysis. Avoid that.
+Bad result: jumping directly to a generic loader/API, arbitrary address/call primitives, or a live experiment whose only oracle is crash/reboot/disconnect/timing. Avoid that.
 
 ## Handoff verification
 

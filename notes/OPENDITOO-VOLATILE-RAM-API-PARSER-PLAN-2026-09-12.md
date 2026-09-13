@@ -316,26 +316,31 @@ Under the precommitted composite discriminator and the already-promoted determin
 
 Both 001 and 002 are consumed and must not be replayed. No prior authority transfers. Stop here before any VRAM-8 packet design is executed live.
 
-## Phase VRAM-8 — bounded RAM loader
+## Phase VRAM-8 — from returning stage-0 to bounded resident installer
 
-Once stage-0 execution is proven, stop exploiting parser internals for every feature. Convert the primitive into a narrow loader protocol.
+VRAM-7's returning `BX LR` proof is necessary but intentionally minimal. Do **not** jump directly from that proof to a general loader. The adopted detailed ladder is now in `notes/OPENDITOO-VRAM8-11-RAM-API-ROADMAP-2026-09-12.md` and splits VRAM-8 into independent gates:
 
-Desired loader properties:
+- **VRAM-8A (offline):** recover the callback ABI precisely and build one nontrivial returning Thumb stage-0 with a positive, reversible RAM-only canary;
+- **VRAM-8B (fresh one-use live grant):** prove that exact canary action occurs and the callback/device/Runtime 018 all return cleanly;
+- **VRAM-8C (offline):** select a defensible resident RAM window and prove a fixed-destination, bounds-checked installer; prefer a single fixed image first, adding chunking only if size evidence requires it;
+- **VRAM-8D (fresh one-use live grant):** install one inert reviewed stage-1 image, invoke its fixed init/liveness path, return to stock firmware, and restore Runtime 018.
 
-- fixed reserved RAM destination window;
-- explicit maximum payload size;
-- chunk index + total length;
-- CRC32/SHA-256 or equivalent end-to-end integrity check;
-- no arbitrary destination address supplied by the host;
-- no arbitrary call address supplied by the host;
-- one fixed entry point after successful verification;
-- version/magic handshake;
-- duplicate/out-of-order chunks rejected;
-- loader can be abandoned safely and disappears on reboot.
+Loader/installer properties remain strict:
 
-The host-side OpenDitoo transport should expose typed operations, not `poke(addr, bytes)` / `goto(addr)` APIs.
+- fixed device-side destination/window, never a host-supplied address;
+- explicit maximum image size;
+- version/magic + integrity verification;
+- one fixed stage-1 entry point;
+- no execution on bounds/integrity failure;
+- duplicate/inconsistent installation state rejected;
+- if chunking is eventually necessary, fixed chunk size/count with duplicate/out-of-order rejection;
+- all state disappears on reboot/power loss.
+
+The host-side OpenDitoo transport must expose typed install/API operations, never `poke(addr, bytes)`, `goto(addr)`, arbitrary ARM upload, or a generic raw-send product route.
 
 ## Phase VRAM-9 — RAM-resident OpenDitoo API v0
+
+The detailed adopted sequence is in `notes/OPENDITOO-VRAM8-11-RAM-API-ROADMAP-2026-09-12.md`: first prove a reversible RAM ingress seam plus `API_INFO`/`PING` forwarding semantics (VRAM-9A/9B), then add the bounded fail-open physical-input claim (VRAM-9C). Do not merge these into the first resident-install grant.
 
 Keep v0 intentionally tiny. Suggested wire contract over the already-proven SYS SPP channel:
 
@@ -448,8 +453,9 @@ If a candidate is promoted, the route remains open only through the staged live 
 - **VRAM-5** evidence ranking / live-candidate gate.
 - **VRAM-6** one bounded exact-unit parser discriminator (new grant).
 - **VRAM-7** tiny RAM code-execution + clean-return proof (new grant).
-- **VRAM-8** bounded fixed-destination RAM loader.
-- **VRAM-9** OpenDitoo API v0 + fail-open input claim.
+- **VRAM-8A/B** nontrivial returning stage-0 + positive reversible canary (offline, then fresh-grant live).
+- **VRAM-8C/D** bounded fixed-destination resident installer (offline, then fresh-grant live).
+- **VRAM-9A/B/C** reversible API ingress -> API_INFO/PING -> fail-open input claim.
 - **VRAM-10** typed stock-service bridge (brightness/volume/etc.).
 - **VRAM-11** optional session-autonomous local behavior; never confuse with cold-boot persistence.
 
@@ -465,6 +471,6 @@ Immediate offline work is now:
 4. treat **VRAM-3 as closed positive**: `0x00804779` is executable Thumb RAM with no NX barrier, lies in a pristine `0xff`-filled unreferenced span, and the minimal returning witness is `70 47` (`BX LR`);
 5. preserve the exact 1088-byte witness geometry: callback source offset `0x43c`; controlled runtime50 byte0=`0xff`, byte8=`0x22`, callback=`0x00804779`; last overwritten victim offset `+0x37`; preserve `+0x3c/+0x40/+0x44`;
 6. VRAM-6/7 is now closed live PASS under the precommitted composite discriminator. Both 001 and 002 are consumed/non-replayable. The next gate is offline VRAM-8 bounded-loader design; any new live packet sequence needs a fresh reviewed manifest and fresh explicit owner grant;
-7. do not expand immediately to a loader/API until this bounded live returning-stage-0 proof exists. A crash, reboot, disconnect, timeout, or timing-only effect is not success and must never be used as the primary oracle.
+7. the bounded live returning-stage-0 proof now exists; the next step is **not** a generic loader. Follow the adopted roadmap: close VRAM-8A callback ABI + positive canary first, then a separate fresh-grant VRAM-8B live canary, then VRAM-8C/D resident installation. Crash, reboot, disconnect, timeout, or timing-only effects remain invalid success oracles.
 
 Do not replay 001 or 002. Runtime 018 restored cleanly after 002. No new live transmission is authorized by either consumed grant; stop before VRAM-8 live work.
