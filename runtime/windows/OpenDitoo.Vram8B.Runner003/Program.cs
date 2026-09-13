@@ -24,7 +24,7 @@ if (args.Length != 2 || args[0] != "--repo-root")
 }
 
 var repoRoot = Path.GetFullPath(args[1]);
-var localDir = Path.Combine(repoRoot, ".openditoo-local", "vram8b-canary-002");
+var localDir = Path.Combine(repoRoot, ".openditoo-local", "vram8b-canary-003");
 var grantPath = Path.Combine(localDir, "grant.json");
 var handoverPath = Path.Combine(localDir, "handover.json");
 var executionPath = Path.Combine(localDir, "execution.json");

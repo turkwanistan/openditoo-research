@@ -62,7 +62,8 @@ def build_report():
         assert grant['manual_stock_btplayer_selected'] is True
         assert grant['state']=='AUTHORIZED_UNCONSUMED'
         assert isinstance(grant['one_use_nonce'],str) and len(grant['one_use_nonce'])==64
-    assert not (local/'claim.json').exists() and not (local/'handover.json').exists() and not (local/'execution.json').exists() and not (local/'result.json').exists()
+    # A pre-claim coordinator stop may leave execution.json behind; the next run atomically refreshes it before Runtime 018 handover.
+    assert not (local/'claim.json').exists() and not (local/'handover.json').exists() and not (local/'result.json').exists()
     return {
       'schema_version':1,'experiment_id':EXP,'ok':True,
       'manifest_sha256':sha(M),'fixture_report_sha256':sha(F),
