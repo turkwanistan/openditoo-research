@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "capture_id": "OPENDITOO-VRAM8B-CANARY-002-LIVE-RESULT-2026-09-13",
+  "experiment_id": "OPENDITOO-VRAM8B-CANARY-002",
+  "classification": "CONSUMED_TRANSPORT_HARNESS_INCONCLUSIVE_NOT_VRAM8_NEGATIVE",
+  "authority": {
+    "one_use_claim_created": true,
+    "authorization_consumed": true,
+    "retry_allowed": false,
+    "replay_allowed": false,
+    "previous_grant_transfers": false
+  },
+  "execution": {
+    "manifest_sha256": "0f054872b6886a6eacea9ae71ab43f01ef393d1cf55e4e242535f73d6a1cc758",
+    "fixture_report_sha256": "6b87fe811a22614654bcb0fb30fd8ffcaa84442ef73291a7af4925920dc0fd9a",
+    "execution_assembly_sha256": "b3a3818ace077e430d49f53e66798faeff8ecf2e1fc56f292dd93b242e2b5b82",
+    "execution_seal_sha256": "14b42c1eda035a1a936f4ae316f0622356869c155e2d2794e295adc5a8c90049",
+    "claim_sha256": "07bb2781115d9d21ae1d130ff405f5845785bd8275b1b057becf51f1351e4bff",
+    "local_result_sha256": "08a03faccfecdbc98a5aa45708929bba0dcb261eaad347b540f4d52dc8760836",
+    "connections_attempted": 1,
+    "application_sends_completed": 3,
+    "custom_0x6c_sends": 0,
+    "error": "VRAM8B_PRIME_0X6E_RECV_TIMEOUT; NO_RETRY",
+    "completed_at_utc": "2026-09-13T07:03:15.9616594+00:00"
+  },
+  "interpretation": {
+    "stage0_reached": false,
+    "overwrite_sent": false,
+    "vram8_execution_result": "UNMEASURED",
+    "baseline_response_synchronization_proven_live": true,
+    "prime_0x6e_send_completed": true,
+    "root_cause": "002 correctly synchronized B2 then typed B3 baseline responses and completed the stock 0x6e prime send. It then required a matching wrapped 0x6e response that did not arrive within the frozen 2000 ms receive budget. No 0xa5 or custom 0x6c send was reached.",
+    "live_correction": "Do not require a 0x6e response. Preserve the exact 0x6e transmit frame and continue after the normal inter-packet delay. Keep exact required B2/B3 responses and bounded optional matching drains for a5/6c."
+  },
+  "recovery": {
+    "runtime018_restored": true,
+    "runtime_revision": 13,
+    "status": "connected",
+    "last_error": null,
+    "post_restore_frames_acked_observed": true
+  },
+  "safety": {
+    "persistent_firmware_mutation": false,
+    "flash_write": false,
+    "custom_overwrite_transmitted": false,
+    "device_crash_or_reboot_observed": false
+  }
+}
