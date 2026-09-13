@@ -51,13 +51,24 @@ def build_report():
     assert rp['restore_get_b3']['mode']=='REQUIRED_EXACT'
     assert rp['unexpected_frame']=='STOP_NO_RETRY'
     local=ROOT/'.openditoo-local/vram8b-canary-003'
-    assert not (local/'grant.json').exists() and not (local/'claim.json').exists() and not (local/'result.json').exists()
+    grant_path=local/'grant.json'
+    grant_exists=grant_path.exists()
+    if grant_exists:
+        grant=json.loads(grant_path.read_text())
+        assert grant['experiment_id']==EXP
+        assert grant['grant_text']==m['authority']['required_grant_text']
+        assert grant['manifest_sha256']==EXPECTED_M
+        assert grant['fixture_report_sha256']==EXPECTED_F
+        assert grant['manual_stock_btplayer_selected'] is True
+        assert grant['state']=='AUTHORIZED_UNCONSUMED'
+        assert isinstance(grant['one_use_nonce'],str) and len(grant['one_use_nonce'])==64
+    assert not (local/'claim.json').exists() and not (local/'handover.json').exists() and not (local/'execution.json').exists() and not (local/'result.json').exists()
     return {
       'schema_version':1,'experiment_id':EXP,'ok':True,
       'manifest_sha256':sha(M),'fixture_report_sha256':sha(F),
       'transmit_frames':len(m['sequence']),'custom_0x6c_frames':sum(1 for x in m['sequence'] if x['command']=='0x6c'),
       'predecessor_consumed_before_overwrite':True,'baseline_sync_proven_live':True,'prime_response_wait_removed':True,
-      'authority':{'grant_exists':False,'claim_exists':False,'result_exists':False,'transmission_authorized':False},
+      'authority':{'grant_exists':grant_exists,'claim_exists':False,'result_exists':False,'grant_state':'AUTHORIZED_UNCONSUMED' if grant_exists else None},
       'safety':{'offline_only':True,'device_io':False,'runtime018_touched':False}
     }
 def main():
@@ -70,6 +81,6 @@ def main():
         print('VRAM8B_003_PRIME_RESPONSE_WAIT_REMOVED=true')
         print('VRAM8B_003_TRANSMIT_FRAMES=8')
         print('VRAM8B_003_CUSTOM_0X6C=1')
-        print('VRAM8B_003_LIVE_AUTHORIZED=false')
+        print('VRAM8B_003_GRANT_MATERIALIZED='+('true' if r['authority']['grant_exists'] else 'false'))
     return 0
 if __name__=='__main__': raise SystemExit(main())
