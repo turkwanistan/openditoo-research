@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "capture_id": "OPENDITOO-VRAM8B-CANARY-004-LIVE-RESULT-2026-09-13",
+  "experiment_id": "OPENDITOO-VRAM8B-CANARY-004",
+  "classification": "CONSUMED_MULTIPLEXED_VALID_REPORT_HARNESS_INCONCLUSIVE_NOT_VRAM8_NEGATIVE",
+  "authority": {
+    "one_use_claim_created": true,
+    "authorization_consumed": true,
+    "retry_allowed": false,
+    "replay_allowed": false,
+    "previous_grant_transfers": false
+  },
+  "execution": {
+    "claim_sha256": "18f0946f2a387e1bf1a1c135c76e4e36a61974816d513d41dbf6b70d63a61797",
+    "execution_seal_sha256": "44aea576c2d7534e3832325dc8c371a6a954e7aaaa01974011a12c39962551c7",
+    "local_result_sha256": "b0f8919be3ac048777a0d926250d0d2ff74f9794c267fb58e6ea58e06fa9577e",
+    "connections_attempted": 1,
+    "application_sends_completed": 4,
+    "custom_0x6c_sends": 0,
+    "error": "VRAM8B_RESPONSE_WRAPPER_REJECTED OUTER=0x04 INNER=0xBD TAG=0x55 EXPECTED_INNER=0xA5",
+    "completed_at_utc": "2026-09-13T07:22:59.2352525+00:00"
+  },
+  "interpretation": {
+    "stage0_reached": false,
+    "overwrite_sent": false,
+    "vram8_execution_result": "UNMEASURED",
+    "baseline_b2_semantics_fix_passed_live": true,
+    "baseline_b3_query_completed_before_later_stock_sends": true,
+    "prime_0x6e_send_completed": true,
+    "voicetip_0xa5_send_completed": true,
+    "observed_valid_unrelated_inner_command": "0xBD",
+    "root_cause": "The optional A5 receive drain received a valid wrapped 0xBD report and rejected it only because the harness incorrectly assumed a request/response-only receive stream. 0xBD is independently established in this repo as unsolicited Ditoo state/input traffic.",
+    "successor_requirement": "Correlate required B2/B3 replies while boundedly skipping other valid wrapped reports; optional A5/6C drains may consume valid unrelated reports without treating command mismatch as fatal."
+  },
+  "recovery": {
+    "runtime018_restored": true,
+    "runtime_revision": 13,
+    "status": "connected",
+    "last_error": null
+  },
+  "safety": {
+    "persistent_firmware_mutation": false,
+    "flash_write": false,
+    "custom_overwrite_transmitted": false,
+    "device_crash_or_reboot_observed": false
+  }
+}

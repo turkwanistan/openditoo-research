@@ -1,0 +1,141 @@
+{
+  "experiment_id": "OPENDITOO-VRAM8B-CANARY-005",
+  "kind": "openditoo_vram8b_005_multiplexed_receive_fixture",
+  "predecessor": "OPENDITOO-VRAM8B-CANARY-004",
+  "response_fixtures": {
+    "expected-b3-0": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-expected-b3-0.bin",
+      "sha256": "c6fba154f3a08cb140bef05566b07c76b848d65ce09e288267b4617c37d1f821",
+      "wire_hex": "01060004b35500120102"
+    },
+    "expected-b3-1": {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-expected-b3-1.bin",
+      "sha256": "bf66aa418a0e2f889392e36135286eff94fb71ff86d6883701090da25835acc1",
+      "wire_hex": "01060004b35501130102"
+    }
+  },
+  "response_policy": {
+    "baseline_get_b3": {
+      "budget_ms": 2000,
+      "expected_inner_command": "0xb3",
+      "expected_payload_hex": "00",
+      "fixture": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-expected-b3-0.bin",
+      "mode": "REQUIRED_EXACT",
+      "correlation": "REQUIRED_MATCH_WITH_BOUNDED_VALID_UNRELATED_SKIP",
+      "max_unrelated_valid_frames": 8
+    },
+    "baseline_set_b2": {
+      "budget_ms": 2000,
+      "evidence": "live 003 observed a valid wrapped B2 response with payload 0xE8 after SET 0; B2 reply value semantics are not promoted",
+      "expected_inner_command": "0xb2",
+      "expected_payload_length": 1,
+      "mode": "REQUIRED_MATCHING_WRAPPED_ONE_BYTE_ANY_VALUE",
+      "correlation": "REQUIRED_MATCH_WITH_BOUNDED_VALID_UNRELATED_SKIP",
+      "max_unrelated_valid_frames": 8
+    },
+    "framing": "01 | length_le16 | outer_command=0x04 | inner_command | tag=0x55 | payload | checksum_le16 | 02",
+    "malformed_or_checksum_failure": "STOP_NO_RETRY",
+    "overwrite_6c": {
+      "expected_inner_command": "0x6c",
+      "max_frames": 4,
+      "max_wire_bytes": 64,
+      "mode": "BOUNDED_VALID_REPORT_DRAIN",
+      "quiet_window_ms": 150,
+      "tag": "0x55",
+      "unrelated_valid_reports": "accepted_as_multiplexed_traffic"
+    },
+    "post_get_b3": {
+      "budget_ms": 2000,
+      "expected_inner_command": "0xb3",
+      "expected_payload_hex": "01",
+      "fixture": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-expected-b3-1.bin",
+      "mode": "REQUIRED_EXACT",
+      "correlation": "REQUIRED_MATCH_WITH_BOUNDED_VALID_UNRELATED_SKIP",
+      "max_unrelated_valid_frames": 8
+    },
+    "prime_6e": {
+      "action": "continue after normal inter-packet delay; do not read or wait",
+      "evidence": "stock 0x6e send completed; no wrapped response arrived within 2000 ms",
+      "live_predecessor": "OPENDITOO-VRAM8B-CANARY-002",
+      "mode": "NO_RESPONSE_REQUIRED_LIVE_EVIDENCE"
+    },
+    "restore_get_b3": {
+      "budget_ms": 2000,
+      "expected_inner_command": "0xb3",
+      "expected_payload_hex": "00",
+      "fixture": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-expected-b3-0.bin",
+      "mode": "REQUIRED_EXACT",
+      "correlation": "REQUIRED_MATCH_WITH_BOUNDED_VALID_UNRELATED_SKIP",
+      "max_unrelated_valid_frames": 8
+    },
+    "restore_set_b2": {
+      "budget_ms": 2000,
+      "evidence": "live 003 observed a valid wrapped B2 response with payload 0xE8 after SET 0; B2 reply value semantics are not promoted",
+      "expected_inner_command": "0xb2",
+      "expected_payload_length": 1,
+      "mode": "REQUIRED_MATCHING_WRAPPED_ONE_BYTE_ANY_VALUE",
+      "correlation": "REQUIRED_MATCH_WITH_BOUNDED_VALID_UNRELATED_SKIP",
+      "max_unrelated_valid_frames": 8
+    },
+    "unexpected_frame": "VALID_UNRELATED_SKIP_WITHIN_BUDGET; MALFORMED_OR_CHECKSUM_FAILURE_STOP_NO_RETRY",
+    "voicetip_a5": {
+      "expected_inner_command": "0xa5",
+      "max_frames": 4,
+      "max_wire_bytes": 64,
+      "mode": "BOUNDED_VALID_REPORT_DRAIN",
+      "quiet_window_ms": 150,
+      "tag": "0x55",
+      "unrelated_valid_reports": "accepted_as_multiplexed_traffic"
+    }
+  },
+  "safety": {
+    "bluetooth_opened": false,
+    "device_io": false,
+    "live_authority_created": false,
+    "offline_preparation_only": true,
+    "runtime018_touched": false
+  },
+  "schema_version": 1,
+  "transmit_fixture_sha256": [
+    {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-01-baseline-set.bin",
+      "sha256": "3f98ef3e2af07ccd2151bd06ae96ad8bdfc82d8fb1ed94c0f66d3580ae75ca47"
+    },
+    {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-02-baseline-get.bin",
+      "sha256": "6fe20a0815b73bb62acf228634f664379efae9983842eeca6ac7974c2f2bea7c"
+    },
+    {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-03-prime.bin",
+      "sha256": "9f643ace4ce755ddcd04446c0cb21bbaa23b53f123788a225d1c9eda81e213ec"
+    },
+    {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-04-voicetip.bin",
+      "sha256": "4cf9f3d0458664a2c99681e6a672b8eaefea3a043d83a2f15a751aabcd9d0316"
+    },
+    {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-05-overwrite.bin",
+      "sha256": "298f1901ea9cc94fd172302117cd2e5cf411eacb578b16be5de3ecf1c52e0906"
+    },
+    {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-06-post-get.bin",
+      "sha256": "6fe20a0815b73bb62acf228634f664379efae9983842eeca6ac7974c2f2bea7c"
+    },
+    {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-07-restore-set.bin",
+      "sha256": "3f98ef3e2af07ccd2151bd06ae96ad8bdfc82d8fb1ed94c0f66d3580ae75ca47"
+    },
+    {
+      "path": "experiments/fixtures/OPENDITOO-VRAM8B-CANARY-005-08-restore-get.bin",
+      "sha256": "6fe20a0815b73bb62acf228634f664379efae9983842eeca6ac7974c2f2bea7c"
+    }
+  ],
+  "transmit_sequence_reused_byte_for_byte": true,
+  "live_evidence": {
+    "predecessor_result": "captures/OPENDITOO-VRAM8B-CANARY-004-LIVE-RESULT-2026-09-13.json",
+    "application_sends_completed": 4,
+    "custom_0x6c_sends": 0,
+    "valid_unrelated_inner_command": "0xBD",
+    "independent_repo_evidence": "0xBD is established as unsolicited Ditoo state/input traffic in product/input captures"
+  }
+}
