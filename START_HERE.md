@@ -4,6 +4,8 @@ OpenDitoo is the preservation-first Divoom Ditoo Plus project. Exact-unit eviden
 
 ## ▶ CURRENT STATE — read this first (2026-09-13)
 
+**Session-rotation handoff:** `notes/OPENDITOO-HANDOFF-2026-09-13-PREMODEL-008.md`. New sessions should read the current block below, then that compact handoff, and avoid rehydrating older VRAM history unless those files point to it.
+
 ## 2026-09-13 exact-unit VoiceTip baseline closed / PREMODEL-008 prepared — CURRENT
 
 `OPENDITOO-VRAM8B-CONTROL-007` is **consumed / PASS_EXACT_UNIT_STOCK_VOICETIP_TRANSCRIPT**. On one RFCOMM connection it sent only stock `0x6e 01` then stock `0xA5 01 02 01`, with no custom `0x6c`, and captured the full 75-second exact-v42012 receive stream. Two valid wrapped `0xBD` reports occurred: payload `13 01 4b 00` at **23 ms**, then `13 01 1e 00` at **65,252 ms**. The connection survived through 75,003 ms and Runtime 018 revision 13 restored `connected`, `last_error=null`. Durable evidence: `captures/OPENDITOO-VRAM8B-CONTROL-007-LIVE-RESULT-2026-09-13.json` (SHA-256 `42f53970da762c86c585cd50013beea9620bd6c94ac6b7e7737beb184aa449a0`). This closes the exact-unit stock VoiceTip/report timing baseline; it does not by itself prove later-branch RAM addresses.
